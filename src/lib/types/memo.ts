@@ -42,4 +42,4 @@ export type FilterType = 'all' | 'pinned' | 'favorites' | 'archived';
 
 export type SortType = 'recent' | 'oldest' | 'title' | 'updated';
 
-export type ViewMode = 'grid' | 'list';
+export type ViewMode = 'grid' | 'list' | 'compact';

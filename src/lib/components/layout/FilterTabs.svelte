@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { cn } from '$utils';
-	import { Pin, Star, Grid, List, EyeOff } from 'lucide-svelte';
+	import { Pin, Star, Grid, List, EyeOff, LayoutList } from 'lucide-svelte';
 	import { filterStore } from '$stores/filter.svelte';
 	import SortDropdown from './SortDropdown.svelte';
 	import type { FilterType } from '$types/memo';
@@ -81,6 +81,18 @@
 				title="리스트 뷰"
 			>
 				<List class="w-4 h-4" />
+			</button>
+			<button
+				onclick={() => filterStore.setViewMode('compact')}
+				class={cn(
+					'p-1.5 rounded-md transition-all',
+					currentViewMode === 'compact'
+						? 'bg-background text-foreground shadow-sm'
+						: 'text-muted-foreground hover:text-foreground'
+				)}
+				title="컴팩트 뷰"
+			>
+				<LayoutList class="w-4 h-4" />
 			</button>
 		</div>
 	</div>

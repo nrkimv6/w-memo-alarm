@@ -141,13 +141,15 @@
 				class={cn(
 					viewMode === 'grid'
 						? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'
-						: 'flex flex-col gap-3'
+						: 'flex flex-col gap-3',
+					viewMode === 'compact' && 'gap-1'
 				)}
 			>
 				{#each filteredMemos as memo (memo.id)}
 					<MemoCard
 						{memo}
-						compact={viewMode === 'list'}
+						compact={viewMode === 'list' || viewMode === 'compact'}
+						ultraCompact={viewMode === 'compact'}
 						onClick={handleView}
 						onEdit={handleEdit}
 						onDelete={handleDelete}

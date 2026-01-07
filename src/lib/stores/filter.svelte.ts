@@ -7,7 +7,8 @@ function loadViewMode(): ViewMode {
 	if (typeof window === 'undefined') return 'grid';
 	try {
 		const saved = localStorage.getItem(VIEW_MODE_KEY);
-		return saved === 'list' ? 'list' : 'grid';
+		if (saved === 'list' || saved === 'compact') return saved;
+		return 'grid';
 	} catch {
 		return 'grid';
 	}

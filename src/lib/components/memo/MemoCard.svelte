@@ -10,6 +10,7 @@
 	interface Props {
 		memo: Memo;
 		compact?: boolean;
+		ultraCompact?: boolean;
 		onClick?: (memo: Memo) => void;
 		onEdit: (memo: Memo) => void;
 		onDelete: (memo: Memo) => void;
@@ -18,7 +19,7 @@
 		onToggleActive?: (id: string) => void;
 	}
 
-	let { memo, compact = false, onClick, onEdit, onDelete, onTogglePin, onToggleFavorite, onToggleActive }: Props = $props();
+	let { memo, compact = false, ultraCompact = false, onClick, onEdit, onDelete, onTogglePin, onToggleFavorite, onToggleActive }: Props = $props();
 
 	const folder = $derived(memo.folderId ? foldersStore.getById(memo.folderId) : null);
 	const isInactive = $derived(memo.isActive === false);
@@ -55,21 +56,48 @@
 </script>
 
 <Card
-	class={cn('group relative cursor-pointer', memo.isPinned && 'memo-card-pinned', isInactive && 'opacity-50')}
+	class={cn(
+		'group relative cursor-pointer',
+		memo.isPinned && 'memo-card-pinned',
+		isInactive && 'opacity-50',
+		ultraCompact && 'py-2 px-3'
+	)}
 	onclick={handleCardClick}
 >
 	<!-- Pin/Favorite indicators -->
-	{#if memo.isPinned}
+	{#if memo.isPinned && !ultraCompact}
 		<div class="absolute -top-2 -right-2 w-7 h-7 bg-secondary rounded-full flex items-center justify-center shadow-md z-10">
 			<Pin class="w-3.5 h-3.5 text-white fill-white" />
 		</div>
 	{/if}
 
-	<!-- Header -->
-	<header class="flex items-start justify-between gap-3 mb-2">
-		<h3 class={cn('font-semibold text-foreground', compact ? 'text-base line-clamp-1' : 'text-lg line-clamp-2')}>
-			{memo.title || '제목 없음'}
-		</h3>
+	<!-- Ultra Compact Mode: Single row -->
+	{#if ultraCompact}
+		<div class="flex items-center gap-3">
+			{#if memo.isPinned}
+				<Pin class="w-3.5 h-3.5 text-secondary flex-shrink-0" />
+			{/if}
+			<h3 class="text-sm font-medium text-foreground truncate flex-1">
+				{memo.title || '제목 없음'}
+			</h3>
+			{#if memo.tags.length > 0}
+				<span class="text-xs text-muted-foreground truncate max-w-[100px]">
+					#{memo.tags[0]}
+				</span>
+			{/if}
+			<time class="text-xs text-muted-foreground flex-shrink-0">
+				{formatRelativeTime(memo.updatedAt)}
+			</time>
+			{#if memo.isFavorite}
+				<Star class="w-3 h-3 text-warning fill-warning flex-shrink-0" />
+			{/if}
+		</div>
+	{:else}
+		<!-- Header -->
+		<header class="flex items-start justify-between gap-3 mb-2">
+			<h3 class={cn('font-semibold text-foreground', compact ? 'text-base line-clamp-1' : 'text-lg line-clamp-2')}>
+				{memo.title || '제목 없음'}
+			</h3>
 
 		<!-- Hover actions -->
 		<div class="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -185,4 +213,5 @@
 			</div>
 		{/if}
 	</footer>
+	{/if}
 </Card>
