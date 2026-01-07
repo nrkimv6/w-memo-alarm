@@ -10,3 +10,4 @@ export { default as ReminderSettings } from './ReminderSettings.svelte';
 export { default as TodayReminders } from './TodayReminders.svelte';
 export { default as FolderSelector } from './FolderSelector.svelte';
 export { default as FolderTabs } from './FolderTabs.svelte';
+export { default as QuickMemoInput } from './QuickMemoInput.svelte';

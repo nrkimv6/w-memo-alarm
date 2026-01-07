@@ -11,7 +11,8 @@
 		SearchBar,
 		TagFilter,
 		TodayReminders,
-		FolderTabs
+		FolderTabs,
+		QuickMemoInput
 	} from '$lib/components/memo';
 	import { memosStore } from '$lib/stores/memos.svelte';
 	import { filterStore } from '$lib/stores/filter.svelte';
@@ -132,12 +133,20 @@
 	<div class="sticky top-14 z-20 bg-background/95 backdrop-blur-sm border-b border-border/50">
 		<div class="max-w-6xl mx-auto px-4 py-4 space-y-4">
 			<!-- Title and Create button -->
-			<div class="flex items-center justify-between">
-				<h1 class="text-xl font-bold tracking-tight text-foreground">메모 목록</h1>
-				<Button onclick={handleCreateNew}>
+			<div class="flex items-center justify-between gap-4">
+				<h1 class="text-xl font-bold tracking-tight text-foreground shrink-0">메모 목록</h1>
+				<div class="flex-1 max-w-md hidden sm:block">
+					<QuickMemoInput />
+				</div>
+				<Button onclick={handleCreateNew} class="shrink-0">
 					<Plus class="w-4 h-4" />
-					새 메모
+					<span class="hidden sm:inline">새 메모</span>
 				</Button>
+			</div>
+
+			<!-- Quick memo input for mobile -->
+			<div class="sm:hidden">
+				<QuickMemoInput />
 			</div>
 
 			<!-- Search bar -->
