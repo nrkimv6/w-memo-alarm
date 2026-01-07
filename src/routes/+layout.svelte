@@ -4,6 +4,7 @@
 	import type { Snippet } from 'svelte';
 	import { themeStore } from '$lib/stores/theme.svelte';
 	import { settingsStore } from '$lib/stores/settings.svelte';
+	import { notificationStore } from '$lib/stores/notifications.svelte';
 	import { Toast } from '$lib/components/ui';
 
 	let { children }: { children: Snippet } = $props();
@@ -11,6 +12,7 @@
 	onMount(() => {
 		themeStore.init();
 		settingsStore.init();
+		notificationStore.init();
 	});
 </script>
 

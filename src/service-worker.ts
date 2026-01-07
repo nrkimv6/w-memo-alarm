@@ -61,3 +61,45 @@ sw.addEventListener('fetch', (event) => {
 		})
 	);
 });
+
+// Push 이벤트 수신 (VAPID Web Push)
+sw.addEventListener('push', (event) => {
+	const data = event.data?.json() ?? {
+		title: '메모 알람',
+		body: '알림이 있습니다'
+	};
+
+	event.waitUntil(
+		sw.registration.showNotification(data.title, {
+			body: data.body,
+			icon: '/favicon.png',
+			badge: '/favicon.png',
+			tag: data.tag || 'memo-reminder',
+			data: { url: data.url || '/', memoId: data.memoId },
+			vibrate: [200, 100, 200],
+			requireInteraction: true
+		})
+	);
+});
+
+// 알림 클릭
+sw.addEventListener('notificationclick', (event) => {
+	event.notification.close();
+
+	const url = event.notification.data?.url || '/';
+
+	event.waitUntil(
+		sw.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+			// 이미 열린 창이 있으면 포커스
+			for (const client of clientList) {
+				if (client.url.includes(sw.location.origin) && 'focus' in client) {
+					(client as WindowClient).focus();
+					(client as WindowClient).navigate(url);
+					return;
+				}
+			}
+			// 없으면 새 창 열기
+			return sw.clients.openWindow(url);
+		})
+	);
+});

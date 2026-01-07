@@ -232,6 +232,86 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 			} as SyncResponse);
 		}
 
+		// Push 구독 관련 액션
+		if (action === 'subscribe_push') {
+			const { subscription } = body;
+			if (!subscription?.endpoint || !subscription?.p256dh || !subscription?.auth) {
+				return json({ success: false, error: 'Invalid subscription data' }, { status: 400 });
+			}
+
+			// 기존 구독 확인 (endpoint 기준)
+			const existing = await db.prepare(
+				'SELECT id FROM push_subscriptions WHERE endpoint = ?'
+			).bind(subscription.endpoint).first();
+
+			if (existing) {
+				// 업데이트
+				await db.prepare(`
+					UPDATE push_subscriptions SET
+						user_id = ?, p256dh = ?, auth = ?, alarm_time = ?, notify_days = ?, timezone = ?, updated_at = ?
+					WHERE endpoint = ?
+				`).bind(
+					userId,
+					subscription.p256dh,
+					subscription.auth,
+					subscription.alarm_time || '09:00',
+					JSON.stringify(subscription.notify_days || [0,1,2,3,4,5,6]),
+					subscription.timezone || 'Asia/Seoul',
+					now,
+					subscription.endpoint
+				).run();
+			} else {
+				// 새 구독
+				await db.prepare(`
+					INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth, alarm_time, notify_days, timezone, created_at, updated_at)
+					VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+				`).bind(
+					userId,
+					subscription.endpoint,
+					subscription.p256dh,
+					subscription.auth,
+					subscription.alarm_time || '09:00',
+					JSON.stringify(subscription.notify_days || [0,1,2,3,4,5,6]),
+					subscription.timezone || 'Asia/Seoul',
+					now,
+					now
+				).run();
+			}
+
+			return json({ success: true });
+		}
+
+		if (action === 'update_push_settings') {
+			const { endpoint, alarm_time, notify_days, timezone } = body;
+			if (!endpoint) {
+				return json({ success: false, error: 'Endpoint required' }, { status: 400 });
+			}
+
+			await db.prepare(`
+				UPDATE push_subscriptions SET alarm_time = ?, notify_days = ?, timezone = ?, updated_at = ?
+				WHERE endpoint = ? AND user_id = ?
+			`).bind(
+				alarm_time || '09:00',
+				JSON.stringify(notify_days || [0,1,2,3,4,5,6]),
+				timezone || 'Asia/Seoul',
+				now,
+				endpoint,
+				userId
+			).run();
+
+			return json({ success: true });
+		}
+
+		if (action === 'unsubscribe_push') {
+			const { endpoint } = body;
+			if (!endpoint) {
+				return json({ success: false, error: 'Endpoint required' }, { status: 400 });
+			}
+
+			await db.prepare('DELETE FROM push_subscriptions WHERE endpoint = ?').bind(endpoint).run();
+			return json({ success: true });
+		}
+
 		return json({ success: false, error: 'Invalid action' } as SyncResponse, { status: 400 });
 	} catch (error) {
 		console.error('Sync error:', error);

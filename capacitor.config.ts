@@ -4,11 +4,22 @@ const config: CapacitorConfig = {
 	appId: 'com.woory.memoalarm',
 	appName: 'Memo Alarm',
 	webDir: 'build',
+	server: {
+		androidScheme: 'https'
+	},
 	plugins: {
 		LocalNotifications: {
 			smallIcon: 'ic_stat_icon',
-			iconColor: '#8B5CF6'
+			iconColor: '#4d8066'
+		},
+		SplashScreen: {
+			launchShowDuration: 2000,
+			backgroundColor: '#4d8066',
+			showSpinner: false
 		}
+	},
+	android: {
+		allowMixedContent: true
 	}
 };
 
