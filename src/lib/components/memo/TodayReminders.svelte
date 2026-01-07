@@ -9,9 +9,10 @@
 
 	interface Props {
 		onMemoClick?: (memo: Memo) => void;
+		onViewAll?: () => void;
 	}
 
-	let { onMemoClick }: Props = $props();
+	let { onMemoClick, onViewAll }: Props = $props();
 
 	let expanded = $state(true);
 
@@ -65,6 +66,15 @@
 
 		{#if expanded}
 			<div class="px-4 pb-4 space-y-2">
+				<!-- 전체 알림 보기 버튼 -->
+				{#if onViewAll}
+					<button
+						onclick={onViewAll}
+						class="w-full text-center py-2 text-sm text-primary hover:text-primary/80 transition-colors"
+					>
+						전체 알림 보기
+					</button>
+				{/if}
 				<!-- 예정된 알림 -->
 				{#each upcomingReminders as memo}
 					<button

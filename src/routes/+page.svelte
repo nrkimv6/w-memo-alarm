@@ -12,7 +12,8 @@
 		TagFilter,
 		TodayReminders,
 		FolderTabs,
-		QuickMemoInput
+		QuickMemoInput,
+		ScheduledRemindersModal
 	} from '$lib/components/memo';
 	import { memosStore } from '$lib/stores/memos.svelte';
 	import { filterStore } from '$lib/stores/filter.svelte';
@@ -25,6 +26,7 @@
 	let showForm = $state(false);
 	let showDeleteDialog = $state(false);
 	let showDetailModal = $state(false);
+	let showRemindersModal = $state(false);
 	let editingMemo = $state<Memo | null>(null);
 	let deletingMemo = $state<Memo | null>(null);
 	let viewingMemo = $state<Memo | null>(null);
@@ -170,7 +172,7 @@
 	<!-- Main content -->
 	<main class="max-w-6xl mx-auto px-4 py-6 space-y-6">
 		<!-- 오늘의 알림 -->
-		<TodayReminders onMemoClick={handleEdit} />
+		<TodayReminders onMemoClick={handleEdit} onViewAll={() => showRemindersModal = true} />
 
 		{#if filteredMemos.length === 0}
 			<!-- Empty state -->
@@ -234,4 +236,10 @@
 	onEdit={handleEdit}
 	onDelete={handleDelete}
 	onShare={handleShare}
+/>
+
+<ScheduledRemindersModal
+	bind:open={showRemindersModal}
+	onClose={() => showRemindersModal = false}
+	onMemoClick={handleEdit}
 />
