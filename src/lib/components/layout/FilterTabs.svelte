@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { cn } from '$utils';
-	import { Pin, Star, Grid, List } from 'lucide-svelte';
+	import { Pin, Star, Grid, List, EyeOff } from 'lucide-svelte';
 	import { filterStore } from '$stores/filter.svelte';
 	import SortDropdown from './SortDropdown.svelte';
 	import type { FilterType } from '$types/memo';
@@ -13,6 +13,7 @@
 
 	const currentFilter = $derived(filterStore.filter);
 	const currentViewMode = $derived(filterStore.viewMode);
+	const showInactive = $derived(filterStore.showInactive);
 </script>
 
 <div class="flex items-center justify-between gap-4">
@@ -38,6 +39,20 @@
 
 	<!-- Sort and View controls -->
 	<div class="flex items-center gap-2">
+		<!-- Show inactive toggle -->
+		<button
+			onclick={() => filterStore.setShowInactive(!showInactive)}
+			class={cn(
+				'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors',
+				showInactive
+					? 'bg-muted/80 text-foreground'
+					: 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+			)}
+			title={showInactive ? '비활성 숨기기' : '비활성 표시'}
+		>
+			<EyeOff class="w-3.5 h-3.5" />
+		</button>
+
 		<!-- Sort dropdown -->
 		<SortDropdown />
 

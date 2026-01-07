@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Pin, Star, Edit3, Trash2, ExternalLink, Folder } from 'lucide-svelte';
+	import { Pin, Star, Edit3, Trash2, ExternalLink, Folder, EyeOff, Eye } from 'lucide-svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import type { Memo } from '$lib/types/memo';
@@ -15,9 +15,10 @@
 		onDelete: (memo: Memo) => void;
 		onTogglePin: (id: string) => void;
 		onToggleFavorite: (id: string) => void;
+		onToggleActive?: (id: string) => void;
 	}
 
-	let { memo, compact = false, onClick, onEdit, onDelete, onTogglePin, onToggleFavorite }: Props = $props();
+	let { memo, compact = false, onClick, onEdit, onDelete, onTogglePin, onToggleFavorite, onToggleActive }: Props = $props();
 
 	const folder = $derived(memo.folderId ? foldersStore.getById(memo.folderId) : null);
 	const isInactive = $derived(memo.isActive === false);
@@ -92,6 +93,22 @@
 			>
 				<Star class={cn('w-4 h-4', memo.isFavorite && 'fill-current')} />
 			</button>
+			{#if onToggleActive}
+				<button
+					onclick={(e) => { e.stopPropagation(); onToggleActive(memo.id); }}
+					class={cn(
+						'p-1.5 rounded-md transition-colors',
+						isInactive ? 'text-muted-foreground/50' : 'text-muted-foreground hover:text-foreground'
+					)}
+					title={isInactive ? '활성화' : '비활성화'}
+				>
+					{#if isInactive}
+						<Eye class="w-4 h-4" />
+					{:else}
+						<EyeOff class="w-4 h-4" />
+					{/if}
+				</button>
+			{/if}
 			<button
 				onclick={() => onEdit(memo)}
 				class="p-1.5 rounded-md text-muted-foreground hover:text-foreground transition-colors"

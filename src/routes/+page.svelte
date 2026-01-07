@@ -153,6 +153,7 @@
 						onDelete={handleDelete}
 						onTogglePin={(id) => memosStore.togglePin(id)}
 						onToggleFavorite={(id) => memosStore.toggleFavorite(id)}
+						onToggleActive={(id) => memosStore.toggleActive(id)}
 					/>
 				{/each}
 			</div>
