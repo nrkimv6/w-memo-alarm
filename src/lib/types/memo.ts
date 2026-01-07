@@ -7,6 +7,15 @@ export interface Folder {
 	createdAt: number;
 }
 
+export interface ChecklistItem {
+	id: string;
+	text: string;
+	completed: boolean;
+}
+
+export type MemoType = 'note' | 'bookmark' | 'task';
+export type Priority = 'low' | 'medium' | 'high';
+
 export interface Memo {
 	id: string;
 	title: string;
@@ -35,6 +44,11 @@ export interface Memo {
 	folderId?: string;
 	// Phase 8: 열람 이력
 	openHistory?: number[];
+	// Phase 12: 체크리스트 & 태스크
+	memoType?: MemoType;
+	checklist?: ChecklistItem[];
+	dueDate?: string; // YYYY-MM-DD
+	priority?: Priority;
 }
 
 export type MemoCreate = Omit<Memo, 'id' | 'createdAt' | 'updatedAt' | 'isPinned' | 'isFavorite' | 'isActive' | 'openCount' | 'openHistory'>;

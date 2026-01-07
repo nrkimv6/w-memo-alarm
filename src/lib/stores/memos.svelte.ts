@@ -193,6 +193,16 @@ function createMemosStore() {
 		return memos.find((m) => m.id === id);
 	}
 
+	function toggleChecklistItem(memoId: string, itemId: string): void {
+		const memo = memos.find((m) => m.id === memoId);
+		if (memo?.checklist) {
+			const newChecklist = memo.checklist.map((item) =>
+				item.id === itemId ? { ...item, completed: !item.completed } : item
+			);
+			update(memoId, { checklist: newChecklist });
+		}
+	}
+
 	function getAllTags(): string[] {
 		const tagSet = new Set<string>();
 		memos.forEach((m) => m.tags.forEach((t) => tagSet.add(t)));
@@ -239,6 +249,7 @@ function createMemosStore() {
 		addOpenHistory,
 		incrementOpenCount,
 		getById,
+		toggleChecklistItem,
 		getAllTags,
 		importMemos,
 		clearAll

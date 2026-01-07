@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { X, Plus, Link } from 'lucide-svelte';
+	import { X, Plus, Link, ListChecks } from 'lucide-svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Textarea from '$lib/components/ui/Textarea.svelte';
@@ -8,7 +8,8 @@
 	import EmojiPicker from './EmojiPicker.svelte';
 	import ReminderSettings from './ReminderSettings.svelte';
 	import FolderSelector from './FolderSelector.svelte';
-	import type { Memo } from '$lib/types/memo';
+	import ChecklistEditor from './ChecklistEditor.svelte';
+	import type { Memo, ChecklistItem } from '$lib/types/memo';
 	import { memosStore } from '$lib/stores/memos.svelte';
 	import { foldersStore } from '$lib/stores/folders.svelte';
 	import { toastStore } from '$lib/stores/toast.svelte';
@@ -33,6 +34,8 @@
 	let showUrlInput = $state(false);
 	let reminder = $state<Reminder | undefined>(undefined);
 	let folderId = $state<string | undefined>(undefined);
+	let checklist = $state<ChecklistItem[]>([]);
+	let showChecklist = $state(false);
 
 	// 편집 모드일 때 기존 데이터 로드
 	$effect(() => {
@@ -45,6 +48,8 @@
 			showUrlInput = !!memo.url;
 			reminder = memo.reminder ? { ...memo.reminder } : undefined;
 			folderId = memo.folderId;
+			checklist = memo.checklist ? [...memo.checklist] : [];
+			showChecklist = (memo.checklist?.length || 0) > 0;
 		} else if (open && !memo) {
 			title = '';
 			content = '';
@@ -53,6 +58,8 @@
 			emoji = '🔗';
 			showUrlInput = false;
 			folderId = undefined;
+			checklist = [];
+			showChecklist = false;
 			// Apply default reminder settings if autoReminderOnCreate is enabled
 			if (settingsStore.settings.autoReminderOnCreate) {
 				const defaultReminder = settingsStore.getDefaultReminder();
@@ -92,7 +99,8 @@
 			url: url.trim() || undefined,
 			emoji: url.trim() ? emoji : undefined,
 			reminder,
-			folderId
+			folderId,
+			checklist: checklist.length > 0 ? checklist : undefined
 		};
 
 		const isEdit = !!memo;
@@ -117,6 +125,8 @@
 		showUrlInput = false;
 		reminder = undefined;
 		folderId = undefined;
+		checklist = [];
+		showChecklist = false;
 		onClose();
 	}
 </script>
@@ -211,6 +221,23 @@
 				</div>
 			{/if}
 		</div>
+
+		<!-- 체크리스트 -->
+		{#if showChecklist}
+			<ChecklistEditor
+				items={checklist}
+				onItemsChange={(items) => checklist = items}
+			/>
+		{:else}
+			<button
+				type="button"
+				onclick={() => showChecklist = true}
+				class="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+			>
+				<ListChecks class="w-4 h-4" />
+				체크리스트 추가
+			</button>
+		{/if}
 
 		<!-- 알림 설정 -->
 		<ReminderSettings {reminder} onReminderChange={(r) => reminder = r} />

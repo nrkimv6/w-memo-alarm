@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Pin, Star, Edit3, Trash2, ExternalLink, Folder, EyeOff, Eye } from 'lucide-svelte';
+	import { Pin, Star, Edit3, Trash2, ExternalLink, Folder, EyeOff, Eye, CheckSquare } from 'lucide-svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import type { Memo } from '$lib/types/memo';
@@ -23,6 +23,9 @@
 
 	const folder = $derived(memo.folderId ? foldersStore.getById(memo.folderId) : null);
 	const isInactive = $derived(memo.isActive === false);
+	const hasChecklist = $derived((memo.checklist?.length || 0) > 0);
+	const checklistComplete = $derived(memo.checklist?.filter((i) => i.completed).length || 0);
+	const checklistTotal = $derived(memo.checklist?.length || 0);
 
 	function getDomain(url: string): string {
 		try {
@@ -179,6 +182,20 @@
 					+{memo.tags.length - (compact ? 2 : 4)}
 				</Badge>
 			{/if}
+		</div>
+	{/if}
+
+	<!-- Checklist progress -->
+	{#if hasChecklist}
+		<div class="flex items-center gap-2 mb-3 text-xs text-muted-foreground">
+			<CheckSquare class="w-3.5 h-3.5" />
+			<div class="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+				<div
+					class="h-full bg-primary transition-all duration-300"
+					style="width: {checklistTotal > 0 ? Math.round((checklistComplete / checklistTotal) * 100) : 0}%"
+				></div>
+			</div>
+			<span>{checklistComplete}/{checklistTotal}</span>
 		</div>
 	{/if}
 

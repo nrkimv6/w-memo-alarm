@@ -12,3 +12,4 @@ export { default as FolderSelector } from './FolderSelector.svelte';
 export { default as FolderTabs } from './FolderTabs.svelte';
 export { default as QuickMemoInput } from './QuickMemoInput.svelte';
 export { default as ScheduledRemindersModal } from './ScheduledRemindersModal.svelte';
+export { default as ChecklistEditor } from './ChecklistEditor.svelte';
