@@ -27,6 +27,9 @@ export interface Memo {
 		time: string; // HH:mm
 		days: number[]; // 0-6 (일-토)
 		autoOpen: boolean;
+		// Phase 11: One-time reminder
+		type?: 'repeat' | 'once';
+		date?: string; // YYYY-MM-DD for one-time reminders
 	};
 	// Phase 7: 폴더
 	folderId?: string;

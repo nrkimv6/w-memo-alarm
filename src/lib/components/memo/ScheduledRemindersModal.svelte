@@ -33,6 +33,30 @@
 		return days.map((d) => dayLabels[d]).join(', ');
 	}
 
+	function formatDate(dateStr: string): string {
+		const date = new Date(dateStr);
+		const today = new Date();
+		const tomorrow = new Date();
+		tomorrow.setDate(tomorrow.getDate() + 1);
+
+		if (dateStr === today.toISOString().split('T')[0]) return '오늘';
+		if (dateStr === tomorrow.toISOString().split('T')[0]) return '내일';
+
+		return date.toLocaleDateString('ko-KR', {
+			month: 'short',
+			day: 'numeric',
+			weekday: 'short'
+		});
+	}
+
+	function getReminderLabel(memo: Memo): string {
+		if (!memo.reminder) return '';
+		if (memo.reminder.type === 'once' && memo.reminder.date) {
+			return formatDate(memo.reminder.date);
+		}
+		return getDayLabels(memo.reminder.days || []);
+	}
+
 	function handleMemoClick(memo: Memo) {
 		if (onMemoClick) {
 			onMemoClick(memo);
@@ -85,7 +109,10 @@
 							<div class="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
 								<span class="font-medium text-foreground">{memo.reminder?.time}</span>
 								<span>•</span>
-								<span>{getDayLabels(memo.reminder?.days || [])}</span>
+								<span>{getReminderLabel(memo)}</span>
+								{#if memo.reminder?.type === 'once'}
+									<span class="px-1.5 py-0.5 rounded bg-secondary/20 text-secondary text-[10px] font-medium">1회</span>
+								{/if}
 							</div>
 						</div>
 						<button

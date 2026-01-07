@@ -56,6 +56,26 @@
 		return days[day];
 	}
 
+	function formatReminderSchedule(reminder: NonNullable<typeof memo>['reminder']): string {
+		if (!reminder) return '';
+		if (reminder.type === 'once' && reminder.date) {
+			const date = new Date(reminder.date);
+			const today = new Date();
+			const tomorrow = new Date();
+			tomorrow.setDate(tomorrow.getDate() + 1);
+
+			if (reminder.date === today.toISOString().split('T')[0]) return '오늘';
+			if (reminder.date === tomorrow.toISOString().split('T')[0]) return '내일';
+
+			return date.toLocaleDateString('ko-KR', {
+				month: 'short',
+				day: 'numeric',
+				weekday: 'short'
+			});
+		}
+		return reminder.days.map(getDayLabel).join(', ');
+	}
+
 	function handleEdit() {
 		if (memo) {
 			onEdit(memo);
@@ -204,8 +224,11 @@
 						<Bell class="w-4 h-4" />
 						<span>{memo.reminder.time}</span>
 						<span class="text-xs">
-							({memo.reminder.days.map(getDayLabel).join(', ')})
+							({formatReminderSchedule(memo.reminder)})
 						</span>
+						{#if memo.reminder.type === 'once'}
+							<span class="px-1.5 py-0.5 rounded bg-secondary/20 text-secondary text-[10px] font-medium">1회</span>
+						{/if}
 					</div>
 				{/if}
 
