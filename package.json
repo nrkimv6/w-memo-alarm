@@ -1,0 +1,36 @@
+{
+	"name": "memo-alarm",
+	"version": "0.0.1",
+	"private": true,
+	"scripts": {
+		"dev": "vite dev",
+		"build": "vite build",
+		"preview": "vite preview",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
+	},
+	"devDependencies": {
+		"@sveltejs/adapter-static": "^3.0.8",
+		"@sveltejs/kit": "^2.15.2",
+		"@sveltejs/vite-plugin-svelte": "^5.0.3",
+		"@tailwindcss/vite": "^4.0.0",
+		"svelte": "^5.16.6",
+		"svelte-check": "^4.1.3",
+		"tailwindcss": "^4.0.0",
+		"typescript": "^5.7.3",
+		"vite": "^6.0.7"
+	},
+	"dependencies": {
+		"@capacitor/android": "^8.0.0",
+		"@capacitor/cli": "^8.0.0",
+		"@capacitor/core": "^8.0.0",
+		"@capacitor/local-notifications": "^8.0.0",
+		"bits-ui": "^1.2.1",
+		"clsx": "^2.1.1",
+		"date-fns": "^4.1.0",
+		"lucide-svelte": "^0.469.0",
+		"tailwind-merge": "^2.6.0",
+		"tailwind-variants": "^0.3.1"
+	},
+	"type": "module"
+}

@@ -1,0 +1,348 @@
+@import 'tailwindcss';
+
+/*
+ * Memo Alarm Design System
+ *
+ * 색상 믹스:
+ * - gentle-notes: warm cream 베이스, sage green 프라이머리
+ * - v0-bookmark: sketchy 스타일, 링크/핀 포인트 색상
+ */
+
+@theme {
+	/* 폰트 */
+	--font-sans: 'Noto Sans KR', system-ui, sans-serif;
+
+	/* 라운드 */
+	--radius-sm: 0.375rem;
+	--radius-md: 0.5rem;
+	--radius-lg: 0.75rem;
+	--radius-xl: 1rem;
+
+	/* 색상 - gentle-notes HSL 베이스 */
+	--color-background: hsl(40 33% 97%);
+	--color-foreground: hsl(30 10% 15%);
+	--color-card: hsl(40 30% 95%);
+	--color-card-foreground: hsl(30 10% 15%);
+	--color-popover: hsl(40 35% 98%);
+	--color-popover-foreground: hsl(30 10% 15%);
+
+	/* Primary - Sage green */
+	--color-primary: hsl(150 35% 40%);
+	--color-primary-foreground: hsl(40 33% 97%);
+
+	/* Secondary - Warm coral (pins, highlights) */
+	--color-secondary: hsl(15 75% 65%);
+	--color-secondary-foreground: hsl(30 10% 15%);
+
+	/* Muted */
+	--color-muted: hsl(40 20% 92%);
+	--color-muted-foreground: hsl(30 10% 45%);
+
+	/* Accent - Soft teal */
+	--color-accent: hsl(170 40% 45%);
+	--color-accent-foreground: hsl(40 33% 97%);
+
+	/* Semantic */
+	--color-destructive: hsl(0 55% 55%);
+	--color-destructive-foreground: hsl(40 33% 97%);
+	--color-success: hsl(145 45% 42%);
+	--color-warning: hsl(38 85% 55%);
+	--color-info: hsl(205 65% 50%);
+
+	/* Border */
+	--color-border: hsl(35 20% 88%);
+	--color-input: hsl(35 25% 90%);
+	--color-ring: hsl(150 35% 40%);
+
+	/* v0-bookmark 포인트 색상 */
+	--color-link: hsl(210 50% 63%);
+	--color-pin-highlight: hsl(25 70% 70%);
+
+	/* 커스텀 토큰 - memo system */
+	--color-memo-pinned-bg: hsl(15 65% 95%);
+	--color-memo-pinned-border: hsl(15 75% 65%);
+	--color-tag-bg: hsl(150 30% 92%);
+	--color-tag-text: hsl(150 35% 30%);
+	--color-shadow: hsl(30 15% 50%);
+}
+
+/* 다크 모드 */
+.dark {
+	--color-background: hsl(30 15% 10%);
+	--color-foreground: hsl(35 20% 90%);
+	--color-card: hsl(30 12% 14%);
+	--color-card-foreground: hsl(35 20% 90%);
+	--color-popover: hsl(30 12% 12%);
+	--color-popover-foreground: hsl(35 20% 90%);
+	--color-primary: hsl(150 40% 55%);
+	--color-primary-foreground: hsl(30 15% 10%);
+	--color-secondary: hsl(15 70% 60%);
+	--color-secondary-foreground: hsl(35 20% 90%);
+	--color-muted: hsl(30 10% 18%);
+	--color-muted-foreground: hsl(35 15% 60%);
+	--color-accent: hsl(170 40% 50%);
+	--color-accent-foreground: hsl(30 15% 10%);
+	--color-destructive: hsl(0 55% 50%);
+	--color-destructive-foreground: hsl(35 20% 90%);
+	--color-border: hsl(30 10% 22%);
+	--color-input: hsl(30 10% 20%);
+	--color-ring: hsl(150 40% 55%);
+	--color-link: hsl(210 55% 68%);
+	--color-memo-pinned-bg: hsl(15 40% 18%);
+	--color-memo-pinned-border: hsl(15 70% 55%);
+	--color-tag-bg: hsl(150 25% 20%);
+	--color-tag-text: hsl(150 35% 70%);
+}
+
+@layer base {
+	* {
+		@apply border-border;
+	}
+
+	body {
+		@apply bg-background text-foreground antialiased;
+		font-feature-settings: 'rlig' 1, 'calt' 1;
+	}
+}
+
+@layer components {
+	/* 메모 카드 - gentle-notes 스타일 */
+	.memo-card {
+		@apply bg-card rounded-xl border border-border p-6 transition-all duration-200;
+		box-shadow: 0 2px 8px -2px hsl(30 15% 50% / 0.08);
+	}
+
+	.memo-card:hover {
+		@apply -translate-y-0.5;
+		box-shadow: 0 8px 20px -4px hsl(30 15% 50% / 0.12);
+	}
+
+	.memo-card-pinned {
+		@apply bg-memo-pinned-bg;
+		border-left: 4px solid hsl(15 75% 65%);
+	}
+
+	/* 태그 - gentle-notes + sketchy */
+	.memo-tag {
+		@apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium transition-colors;
+		@apply bg-tag-bg text-tag-text;
+	}
+
+	.memo-tag:hover {
+		@apply opacity-80;
+	}
+
+	.sketchy-tag {
+		box-shadow: 1px 1px 0 hsl(0 0% 0% / 0.08);
+		transform: rotate(-0.5deg);
+	}
+
+	/* 링크 - v0-bookmark sketchy 스타일 */
+	.sketchy-link {
+		text-decoration: none;
+		background-image: linear-gradient(90deg, hsl(210 50% 63%) 0%, hsl(210 50% 63%) 100%);
+		background-repeat: no-repeat;
+		background-size: 0% 2px;
+		background-position: 0 100%;
+		transition: background-size 0.3s ease;
+	}
+
+	.sketchy-link:hover {
+		background-size: 100% 2px;
+	}
+
+	/* 입력 - sketchy 스타일 */
+	.sketchy-input {
+		@apply bg-background border border-input rounded-lg px-4 py-2;
+		box-shadow: 2px 2px 0 hsl(0 0% 0% / 0.05);
+	}
+
+	.sketchy-input:focus {
+		@apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+		box-shadow: 3px 3px 0 hsl(210 50% 63% / 0.15);
+	}
+
+	/* 버튼 공통 스타일 */
+	.btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		border-radius: 0.5rem;
+		padding: 0.5rem 1rem;
+		font-size: 0.875rem;
+		font-weight: 500;
+		transition: all 0.2s;
+	}
+
+	.btn:focus {
+		outline: none;
+		box-shadow: 0 0 0 2px var(--color-background), 0 0 0 4px var(--color-ring);
+	}
+
+	.btn:disabled {
+		pointer-events: none;
+		opacity: 0.5;
+	}
+
+	.btn-primary {
+		background-color: var(--color-primary);
+		color: var(--color-primary-foreground);
+	}
+
+	.btn-primary:hover {
+		opacity: 0.9;
+	}
+
+	.btn-secondary {
+		background-color: hsl(15 75% 65% / 0.2);
+		color: var(--color-secondary);
+		border: 1px solid hsl(15 75% 65% / 0.3);
+	}
+
+	.btn-secondary:hover {
+		background-color: hsl(15 75% 65% / 0.3);
+	}
+
+	.btn-ghost {
+		background-color: transparent;
+		color: var(--color-muted-foreground);
+	}
+
+	.btn-ghost:hover {
+		background-color: var(--color-muted);
+		color: var(--color-foreground);
+	}
+
+	.btn-destructive {
+		background-color: var(--color-destructive);
+		color: var(--color-destructive-foreground);
+	}
+
+	.btn-destructive:hover {
+		opacity: 0.9;
+	}
+
+	/* 토글 스위치 - v0-bookmark 스타일 */
+	.toggle-switch {
+		@apply relative w-10 h-5 rounded-full border-2 border-dashed transition-all duration-200;
+		@apply bg-muted border-border;
+	}
+
+	.toggle-switch.active {
+		@apply bg-link border-link;
+	}
+
+	.toggle-switch-thumb {
+		@apply absolute top-0.5 w-3 h-3 rounded-full bg-white shadow-sm transition-all duration-200;
+		left: 0.25rem;
+	}
+
+	.toggle-switch.active .toggle-switch-thumb {
+		left: 1.25rem;
+	}
+
+	/* FAB (플로팅 액션 버튼) */
+	.fab {
+		@apply fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg;
+		@apply bg-primary text-primary-foreground;
+		@apply flex items-center justify-center;
+		@apply hover:shadow-xl hover:scale-105 transition-all duration-200;
+	}
+}
+
+@layer utilities {
+	/* 애니메이션 */
+	.animate-fade-in {
+		animation: fade-in 0.3s ease-out;
+	}
+
+	.animate-scale-in {
+		animation: scale-in 0.2s ease-out;
+	}
+
+	.animate-slide-up {
+		animation: slide-up 0.3s ease-out;
+	}
+
+	@keyframes fade-in {
+		from {
+			opacity: 0;
+			transform: translateY(8px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	@keyframes scale-in {
+		from {
+			opacity: 0;
+			transform: scale(0.95);
+		}
+		to {
+			opacity: 1;
+			transform: scale(1);
+		}
+	}
+
+	@keyframes slide-up {
+		from {
+			opacity: 0;
+			transform: translateY(16px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	/* 모달 애니메이션 - v0-bookmark sketchy-modal */
+	.modal-appear {
+		animation: modal-appear 0.2s ease-out;
+	}
+
+	@keyframes modal-appear {
+		from {
+			opacity: 0;
+			transform: scale(0.95) translateY(-10px);
+		}
+		to {
+			opacity: 1;
+			transform: scale(1) translateY(0);
+		}
+	}
+
+	/* 커스텀 스크롤바 */
+	.custom-scrollbar::-webkit-scrollbar {
+		width: 8px;
+		height: 8px;
+	}
+
+	.custom-scrollbar::-webkit-scrollbar-track {
+		@apply bg-muted rounded;
+	}
+
+	.custom-scrollbar::-webkit-scrollbar-thumb {
+		@apply bg-muted-foreground/30 rounded;
+	}
+
+	.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+		@apply bg-muted-foreground/50;
+	}
+
+	/* Reduced motion */
+	@media (prefers-reduced-motion: reduce) {
+		.animate-fade-in,
+		.animate-scale-in,
+		.animate-slide-up,
+		.modal-appear {
+			animation: none;
+		}
+
+		* {
+			transition-duration: 0.01ms !important;
+		}
+	}
+}
