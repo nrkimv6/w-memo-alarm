@@ -1,5 +1,7 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { formatDistanceToNow, format, isToday, isYesterday } from 'date-fns';
+import { ko } from 'date-fns/locale';
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -9,24 +11,20 @@ export function generateId(): string {
 	return crypto.randomUUID();
 }
 
-export function formatRelativeTime(date: Date): string {
-	const now = new Date();
-	const diff = now.getTime() - date.getTime();
-	const seconds = Math.floor(diff / 1000);
-	const minutes = Math.floor(seconds / 60);
-	const hours = Math.floor(minutes / 60);
-	const days = Math.floor(hours / 24);
+export function formatRelativeTime(date: Date | number): string {
+	const d = typeof date === 'number' ? new Date(date) : date;
+	return formatDistanceToNow(d, { addSuffix: true, locale: ko });
+}
 
-	if (days > 0) {
-		return days === 1 ? '어제' : `${days}일 전`;
+export function formatSmartDate(date: Date | number): string {
+	const d = typeof date === 'number' ? new Date(date) : date;
+	if (isToday(d)) {
+		return `오늘 ${format(d, 'HH:mm')}`;
 	}
-	if (hours > 0) {
-		return `${hours}시간 전`;
+	if (isYesterday(d)) {
+		return `어제 ${format(d, 'HH:mm')}`;
 	}
-	if (minutes > 0) {
-		return `${minutes}분 전`;
-	}
-	return '방금 전';
+	return format(d, 'M월 d일 HH:mm', { locale: ko });
 }
 
 export function formatAlarmTime(date: Date): string {

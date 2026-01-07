@@ -5,7 +5,7 @@
 	import type { Memo } from '$lib/types/memo';
 	import { memosStore } from '$lib/stores/memos.svelte';
 	import { foldersStore } from '$lib/stores/folders.svelte';
-	import { cn } from '$lib/utils';
+	import { cn, formatRelativeTime } from '$lib/utils';
 
 	interface Props {
 		memo: Memo;
@@ -23,19 +23,6 @@
 
 	const folder = $derived(memo.folderId ? foldersStore.getById(memo.folderId) : null);
 	const isInactive = $derived(memo.isActive === false);
-
-	function formatRelativeTime(timestamp: number): string {
-		const now = Date.now();
-		const diff = now - timestamp;
-		const minutes = Math.floor(diff / 60000);
-		const hours = Math.floor(minutes / 60);
-		const days = Math.floor(hours / 24);
-
-		if (days > 0) return days === 1 ? '어제' : `${days}일 전`;
-		if (hours > 0) return `${hours}시간 전`;
-		if (minutes > 0) return `${minutes}분 전`;
-		return '방금 전';
-	}
 
 	function getDomain(url: string): string {
 		try {
