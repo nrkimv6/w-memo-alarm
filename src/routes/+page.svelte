@@ -19,7 +19,7 @@
 	import { notificationStore } from '$lib/stores/notifications.svelte';
 	import { toastStore } from '$lib/stores/toast.svelte';
 	import type { Memo } from '$lib/types/memo';
-	import { cn } from '$lib/utils';
+	import { cn, shareMemo } from '$lib/utils';
 
 	let showForm = $state(false);
 	let showDeleteDialog = $state(false);
@@ -77,6 +77,10 @@
 	function handleDetailClose() {
 		showDetailModal = false;
 		viewingMemo = null;
+	}
+
+	function handleShare(memo: Memo) {
+		shareMemo(memo);
 	}
 </script>
 
@@ -176,4 +180,5 @@
 	onClose={handleDetailClose}
 	onEdit={handleEdit}
 	onDelete={handleDelete}
+	onShare={handleShare}
 />
