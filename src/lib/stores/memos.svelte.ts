@@ -2,6 +2,36 @@ import type { Memo, MemoCreate, MemoUpdate } from '$lib/types/memo';
 import { isNative, scheduleNotification, cancelNotification } from '$lib/utils/capacitor';
 
 const STORAGE_KEY = 'memo-alarm-memos';
+const INITIALIZED_KEY = 'memo-alarm-initialized';
+
+const SAMPLE_MEMOS: Omit<Memo, 'id' | 'createdAt' | 'updatedAt'>[] = [
+	{
+		title: '메모 알람 앱에 오신 것을 환영합니다! 🎉',
+		content: '이 앱은 메모와 북마크를 관리하고, 알림을 설정할 수 있는 앱입니다.\n\n키보드 단축키:\n• N: 새 메모 만들기\n• /: 검색 포커스\n• Esc: 모달 닫기',
+		tags: ['시작하기', '도움말'],
+		isPinned: true,
+		isFavorite: false,
+		isActive: true
+	},
+	{
+		title: '북마크 예시',
+		content: 'URL을 추가하면 북마크로 사용할 수 있습니다.',
+		tags: ['예시', '북마크'],
+		isPinned: false,
+		isFavorite: true,
+		isActive: true,
+		url: 'https://github.com',
+		emoji: '🐙'
+	},
+	{
+		title: '알림 설정하기',
+		content: '메모에 알림을 설정하면 지정한 시간에 알림을 받을 수 있습니다.\n편집 버튼을 눌러 알림을 설정해보세요.',
+		tags: ['예시', '알림'],
+		isPinned: false,
+		isFavorite: false,
+		isActive: true
+	}
+];
 
 function generateId(): string {
 	return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
@@ -34,6 +64,22 @@ function createMemosStore() {
 		if (initialized) return;
 		memos = loadFromStorage();
 		initialized = true;
+
+		// Add sample memos on first run
+		if (typeof window !== 'undefined' && !localStorage.getItem(INITIALIZED_KEY)) {
+			if (memos.length === 0) {
+				const now = Date.now();
+				const sampleMemos: Memo[] = SAMPLE_MEMOS.map((sample, index) => ({
+					...sample,
+					id: generateId(),
+					createdAt: now - index * 60000, // Stagger creation times
+					updatedAt: now - index * 60000
+				}));
+				memos = sampleMemos;
+				saveToStorage(memos);
+			}
+			localStorage.setItem(INITIALIZED_KEY, 'true');
+		}
 	}
 
 	function add(data: MemoCreate): Memo {
