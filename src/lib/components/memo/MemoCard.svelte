@@ -10,13 +10,14 @@
 	interface Props {
 		memo: Memo;
 		compact?: boolean;
+		onClick?: (memo: Memo) => void;
 		onEdit: (memo: Memo) => void;
 		onDelete: (memo: Memo) => void;
 		onTogglePin: (id: string) => void;
 		onToggleFavorite: (id: string) => void;
 	}
 
-	let { memo, compact = false, onEdit, onDelete, onTogglePin, onToggleFavorite }: Props = $props();
+	let { memo, compact = false, onClick, onEdit, onDelete, onTogglePin, onToggleFavorite }: Props = $props();
 
 	const folder = $derived(memo.folderId ? foldersStore.getById(memo.folderId) : null);
 	const isInactive = $derived(memo.isActive === false);
@@ -46,9 +47,16 @@
 		e.stopPropagation();
 		memosStore.incrementOpenCount(memo.id);
 	}
+
+	function handleCardClick() {
+		onClick?.(memo);
+	}
 </script>
 
-<Card class={cn('group relative', memo.isPinned && 'memo-card-pinned', isInactive && 'opacity-50')}>
+<Card
+	class={cn('group relative cursor-pointer', memo.isPinned && 'memo-card-pinned', isInactive && 'opacity-50')}
+	onclick={handleCardClick}
+>
 	<!-- Pin/Favorite indicators -->
 	{#if memo.isPinned}
 		<div class="absolute -top-2 -right-2 w-7 h-7 bg-secondary rounded-full flex items-center justify-center shadow-md z-10">

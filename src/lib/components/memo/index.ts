@@ -1,5 +1,6 @@
 export { default as MemoForm } from './MemoForm.svelte';
 export { default as MemoCard } from './MemoCard.svelte';
+export { default as MemoDetailModal } from './MemoDetailModal.svelte';
 export { default as DeleteConfirmDialog } from './DeleteConfirmDialog.svelte';
 export { default as TagInput } from './TagInput.svelte';
 export { default as TagFilter } from './TagFilter.svelte';

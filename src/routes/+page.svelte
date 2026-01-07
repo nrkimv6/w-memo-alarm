@@ -6,6 +6,7 @@
 	import {
 		MemoForm,
 		MemoCard,
+		MemoDetailModal,
 		DeleteConfirmDialog,
 		SearchBar,
 		TagFilter,
@@ -21,8 +22,10 @@
 
 	let showForm = $state(false);
 	let showDeleteDialog = $state(false);
+	let showDetailModal = $state(false);
 	let editingMemo = $state<Memo | null>(null);
 	let deletingMemo = $state<Memo | null>(null);
+	let viewingMemo = $state<Memo | null>(null);
 
 	const filteredMemos = $derived(filterStore.getFilteredMemos());
 	const viewMode = $derived(filterStore.viewMode);
@@ -61,6 +64,16 @@
 	function handleFormClose() {
 		showForm = false;
 		editingMemo = null;
+	}
+
+	function handleView(memo: Memo) {
+		viewingMemo = memo;
+		showDetailModal = true;
+	}
+
+	function handleDetailClose() {
+		showDetailModal = false;
+		viewingMemo = null;
 	}
 </script>
 
@@ -128,6 +141,7 @@
 					<MemoCard
 						{memo}
 						compact={viewMode === 'list'}
+						onClick={handleView}
 						onEdit={handleEdit}
 						onDelete={handleDelete}
 						onTogglePin={(id) => memosStore.togglePin(id)}
@@ -151,4 +165,12 @@
 	title={deletingMemo?.title}
 	onConfirm={confirmDelete}
 	onCancel={() => (deletingMemo = null)}
+/>
+
+<MemoDetailModal
+	bind:open={showDetailModal}
+	memo={viewingMemo}
+	onClose={handleDetailClose}
+	onEdit={handleEdit}
+	onDelete={handleDelete}
 />
