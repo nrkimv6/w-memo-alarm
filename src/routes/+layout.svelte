@@ -3,6 +3,7 @@
 	import '../app.css';
 	import type { Snippet } from 'svelte';
 	import { themeStore } from '$lib/stores/theme.svelte';
+	import { Toast } from '$lib/components/ui';
 
 	let { children }: { children: Snippet } = $props();
 
@@ -14,3 +15,5 @@
 <div class="min-h-screen bg-background">
 	{@render children()}
 </div>
+
+<Toast />

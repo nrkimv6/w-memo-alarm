@@ -11,6 +11,7 @@
 	import type { Memo } from '$lib/types/memo';
 	import { memosStore } from '$lib/stores/memos.svelte';
 	import { foldersStore } from '$lib/stores/folders.svelte';
+	import { toastStore } from '$lib/stores/toast.svelte';
 
 	type Reminder = NonNullable<Memo['reminder']>;
 
@@ -87,10 +88,13 @@
 			folderId
 		};
 
-		if (memo) {
+		const isEdit = !!memo;
+		if (isEdit) {
 			memosStore.update(memo.id, data);
+			toastStore.success('메모가 수정되었습니다');
 		} else {
 			memosStore.add(data);
+			toastStore.success('메모가 저장되었습니다');
 		}
 
 		handleClose();

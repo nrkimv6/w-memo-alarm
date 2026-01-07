@@ -17,6 +17,7 @@
 	import { filterStore } from '$lib/stores/filter.svelte';
 	import { foldersStore } from '$lib/stores/folders.svelte';
 	import { notificationStore } from '$lib/stores/notifications.svelte';
+	import { toastStore } from '$lib/stores/toast.svelte';
 	import type { Memo } from '$lib/types/memo';
 	import { cn } from '$lib/utils';
 
@@ -56,7 +57,9 @@
 
 	function confirmDelete() {
 		if (deletingMemo) {
+			const title = deletingMemo.title || '메모';
 			memosStore.remove(deletingMemo.id);
+			toastStore.success(`"${title}" 삭제됨`);
 			deletingMemo = null;
 		}
 	}
