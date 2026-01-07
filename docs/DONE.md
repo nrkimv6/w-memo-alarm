@@ -1,5 +1,13 @@
 # DONE (최근 20개)
 
+- [x] 2026-01-08: P2 Web Push 서버 발송 구현 (memo-alarm-notification.md)
+  - `data/migrations/002_push_subscriptions.sql`: push_subscriptions 테이블
+  - `src/lib/server/web-push.ts`: Web Push 발송 (VAPID JWT, 암호화)
+  - `src/routes/api/cron/send-push/+server.ts`: Cron API 엔드포인트
+  - `src/app.d.ts`: 환경변수 타입 추가
+  - `wrangler.toml`: 환경변수 템플릿 추가
+  - 설정 필요: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT, CRON_SECRET
+
 - [x] 2026-01-07: Phase 13-15 완료 + 버그 수정 + D1 배포
   - Phase 13: 소셜 & 공유 (ShareModal, QR 코드, 이미지 내보내기)
   - Phase 14: 클라우드 동기화 (D1 데이터베이스, 6자리 동기화 코드)
