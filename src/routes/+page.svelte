@@ -38,6 +38,47 @@
 		filterStore.init();
 		foldersStore.init();
 		notificationStore.init();
+
+		// Keyboard shortcuts
+		function handleKeydown(e: KeyboardEvent) {
+			// Ignore if typing in input/textarea
+			const target = e.target as HTMLElement;
+			if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+				// Allow Escape to work even in inputs
+				if (e.key === 'Escape') {
+					target.blur();
+				}
+				return;
+			}
+
+			// N: New memo
+			if (e.key === 'n' || e.key === 'N') {
+				e.preventDefault();
+				handleCreateNew();
+			}
+
+			// /: Focus search
+			if (e.key === '/') {
+				e.preventDefault();
+				const searchInput = document.querySelector<HTMLInputElement>('[data-search-input]');
+				searchInput?.focus();
+			}
+
+			// Escape: Close modals
+			if (e.key === 'Escape') {
+				if (showDetailModal) {
+					handleDetailClose();
+				} else if (showForm) {
+					handleFormClose();
+				} else if (showDeleteDialog) {
+					deletingMemo = null;
+					showDeleteDialog = false;
+				}
+			}
+		}
+
+		window.addEventListener('keydown', handleKeydown);
+		return () => window.removeEventListener('keydown', handleKeydown);
 	});
 
 	function handleCreateNew() {

@@ -21,9 +21,10 @@
 	<Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
 	<input
 		type="text"
-		placeholder="메모 검색..."
+		placeholder="메모 검색... (/ 로 포커스)"
 		value={inputValue}
 		oninput={handleInput}
+		data-search-input
 		class="w-full pl-9 pr-9 py-2 rounded-lg border border-input bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring sketchy-input"
 	/>
 	{#if inputValue}
