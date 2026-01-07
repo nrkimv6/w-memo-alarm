@@ -134,9 +134,11 @@ function createFilterStore() {
 					return a.createdAt - b.createdAt;
 				case 'title':
 					return a.title.localeCompare(b.title);
+				case 'updated':
+					return b.updatedAt - a.updatedAt;
 				case 'recent':
 				default:
-					return b.updatedAt - a.updatedAt;
+					return b.createdAt - a.createdAt;
 			}
 		});
 

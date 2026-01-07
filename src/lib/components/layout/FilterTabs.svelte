@@ -2,6 +2,7 @@
 	import { cn } from '$utils';
 	import { Pin, Star, Grid, List } from 'lucide-svelte';
 	import { filterStore } from '$stores/filter.svelte';
+	import SortDropdown from './SortDropdown.svelte';
 	import type { FilterType } from '$types/memo';
 
 	const tabs: { id: FilterType; label: string; icon?: typeof Pin }[] = [
@@ -35,31 +36,37 @@
 		{/each}
 	</nav>
 
-	<!-- View mode toggle -->
-	<div class="flex gap-1 p-1 bg-muted rounded-lg">
-		<button
-			onclick={() => filterStore.setViewMode('grid')}
-			class={cn(
-				'p-1.5 rounded-md transition-all',
-				currentViewMode === 'grid'
-					? 'bg-background text-foreground shadow-sm'
-					: 'text-muted-foreground hover:text-foreground'
-			)}
-			title="그리드 뷰"
-		>
-			<Grid class="w-4 h-4" />
-		</button>
-		<button
-			onclick={() => filterStore.setViewMode('list')}
-			class={cn(
-				'p-1.5 rounded-md transition-all',
-				currentViewMode === 'list'
-					? 'bg-background text-foreground shadow-sm'
-					: 'text-muted-foreground hover:text-foreground'
-			)}
-			title="리스트 뷰"
-		>
-			<List class="w-4 h-4" />
-		</button>
+	<!-- Sort and View controls -->
+	<div class="flex items-center gap-2">
+		<!-- Sort dropdown -->
+		<SortDropdown />
+
+		<!-- View mode toggle -->
+		<div class="flex gap-1 p-1 bg-muted rounded-lg">
+			<button
+				onclick={() => filterStore.setViewMode('grid')}
+				class={cn(
+					'p-1.5 rounded-md transition-all',
+					currentViewMode === 'grid'
+						? 'bg-background text-foreground shadow-sm'
+						: 'text-muted-foreground hover:text-foreground'
+				)}
+				title="그리드 뷰"
+			>
+				<Grid class="w-4 h-4" />
+			</button>
+			<button
+				onclick={() => filterStore.setViewMode('list')}
+				class={cn(
+					'p-1.5 rounded-md transition-all',
+					currentViewMode === 'list'
+						? 'bg-background text-foreground shadow-sm'
+						: 'text-muted-foreground hover:text-foreground'
+				)}
+				title="리스트 뷰"
+			>
+				<List class="w-4 h-4" />
+			</button>
+		</div>
 	</div>
 </div>

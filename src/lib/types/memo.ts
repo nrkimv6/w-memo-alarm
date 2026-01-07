@@ -40,6 +40,6 @@ export type MemoUpdate = Partial<Omit<Memo, 'id' | 'createdAt'>>;
 
 export type FilterType = 'all' | 'pinned' | 'favorites' | 'archived';
 
-export type SortType = 'recent' | 'oldest' | 'title';
+export type SortType = 'recent' | 'oldest' | 'title' | 'updated';
 
 export type ViewMode = 'grid' | 'list';
