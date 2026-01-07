@@ -23,6 +23,8 @@ function saveViewMode(mode: ViewMode): void {
 	}
 }
 
+export type TagFilterMode = 'or' | 'and';
+
 function createFilterStore() {
 	let filter = $state<FilterType>('all');
 	let sort = $state<SortType>('recent');
@@ -31,6 +33,7 @@ function createFilterStore() {
 	let selectedFolderId = $state<string | null>(null);
 	let showInactive = $state(false);
 	let viewMode = $state<ViewMode>('grid');
+	let tagFilterMode = $state<TagFilterMode>('or');
 	let initialized = $state(false);
 
 	function init() {
@@ -69,6 +72,14 @@ function createFilterStore() {
 
 	function clearTags() {
 		selectedTags = [];
+	}
+
+	function setTagFilterMode(mode: TagFilterMode) {
+		tagFilterMode = mode;
+	}
+
+	function toggleTagFilterMode() {
+		tagFilterMode = tagFilterMode === 'or' ? 'and' : 'or';
 	}
 
 	function setViewMode(mode: ViewMode) {
@@ -112,9 +123,15 @@ function createFilterStore() {
 			);
 		}
 
-		// Filter by selected tags
+		// Filter by selected tags (AND/OR mode)
 		if (selectedTags.length > 0) {
-			result = result.filter((m) => selectedTags.some((t) => m.tags.includes(t)));
+			if (tagFilterMode === 'and') {
+				// AND: memo must have ALL selected tags
+				result = result.filter((m) => selectedTags.every((t) => m.tags.includes(t)));
+			} else {
+				// OR: memo must have ANY of the selected tags
+				result = result.filter((m) => selectedTags.some((t) => m.tags.includes(t)));
+			}
 		}
 
 		// Sort
@@ -168,12 +185,17 @@ function createFilterStore() {
 		get viewMode() {
 			return viewMode;
 		},
+		get tagFilterMode() {
+			return tagFilterMode;
+		},
 		init,
 		setFilter,
 		setSort,
 		setSearch,
 		toggleTag,
 		clearTags,
+		setTagFilterMode,
+		toggleTagFilterMode,
 		setFolderId,
 		setShowInactive,
 		setViewMode,

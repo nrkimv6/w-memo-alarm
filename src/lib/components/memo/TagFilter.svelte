@@ -7,6 +7,7 @@
 
 	const allTags = $derived(memosStore.getAllTags());
 	const selectedTags = $derived(filterStore.selectedTags);
+	const tagFilterMode = $derived(filterStore.tagFilterMode);
 </script>
 
 {#if allTags.length > 0}
@@ -24,6 +25,21 @@
 				{tag}
 			</button>
 		{/each}
+
+		{#if selectedTags.length > 1}
+			<button
+				onclick={() => filterStore.toggleTagFilterMode()}
+				class={cn(
+					'px-2 py-1 text-xs rounded-md border transition-colors font-medium',
+					tagFilterMode === 'and'
+						? 'bg-secondary/20 text-secondary border-secondary/50'
+						: 'bg-muted text-muted-foreground border-border'
+				)}
+				title={tagFilterMode === 'and' ? '모든 태그 포함 (AND)' : '하나라도 포함 (OR)'}
+			>
+				{tagFilterMode === 'and' ? 'AND' : 'OR'}
+			</button>
+		{/if}
 
 		{#if selectedTags.length > 0}
 			<button

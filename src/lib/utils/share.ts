@@ -79,3 +79,58 @@ function canShare(data: ShareData): boolean {
 	if (!navigator.canShare) return true; // Assume it can share if canShare is not available
 	return navigator.canShare(data);
 }
+
+// SNS Share URLs
+export function getTwitterShareUrl(memo: Memo): string {
+	const shareData = formatMemoForShare(memo);
+	let text = shareData.title;
+	if (memo.tags.length > 0) {
+		text += ` #${memo.tags.join(' #')}`;
+	}
+	const params = new URLSearchParams({ text });
+	if (shareData.url) {
+		params.set('url', shareData.url);
+	}
+	return `https://twitter.com/intent/tweet?${params.toString()}`;
+}
+
+export function getFacebookShareUrl(memo: Memo): string {
+	const shareData = formatMemoForShare(memo);
+	const url = shareData.url || '';
+	return `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(shareData.title)}`;
+}
+
+export function getKakaoShareUrl(memo: Memo): string {
+	// Kakao requires SDK, so we'll use the talk share URL
+	const shareData = formatMemoForShare(memo);
+	const text = encodeURIComponent(shareData.text);
+	return `https://story.kakao.com/share?url=${encodeURIComponent(shareData.url || '')}&text=${text}`;
+}
+
+export type SharePlatform = 'twitter' | 'facebook' | 'kakao' | 'copy' | 'native';
+
+export function shareToSNS(memo: Memo, platform: SharePlatform): void {
+	let url: string;
+
+	switch (platform) {
+		case 'twitter':
+			url = getTwitterShareUrl(memo);
+			window.open(url, '_blank', 'width=600,height=400');
+			break;
+		case 'facebook':
+			url = getFacebookShareUrl(memo);
+			window.open(url, '_blank', 'width=600,height=400');
+			break;
+		case 'kakao':
+			url = getKakaoShareUrl(memo);
+			window.open(url, '_blank', 'width=600,height=400');
+			break;
+		case 'copy':
+			copyToClipboard(memo);
+			break;
+		case 'native':
+		default:
+			shareMemo(memo);
+			break;
+	}
+}

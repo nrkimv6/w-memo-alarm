@@ -1,0 +1,13 @@
+name = "wservice-memo-alarm"
+compatibility_date = "2026-01-05"
+compatibility_flags = ["nodejs_compat"]
+main = ".svelte-kit/cloudflare/_worker.js"
+
+[assets]
+directory = ".svelte-kit/cloudflare"
+binding = "ASSETS"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "memo-alarm-db"
+database_id = "c670a00b-db20-4046-aaf6-8ddaf0553a88"

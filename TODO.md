@@ -1,6 +1,52 @@
 # Memo Alarm - TODO
 
-> 현재 Phase: **모든 Phase 완료!** 🎉
+> 현재 Phase: **Phase 1-15 완료** ✅
+
+---
+
+## Bugs
+
+(해결됨)
+
+## In Progress
+
+(없음)
+
+## Pending
+- [ ] Phase 16: 배포 완성도 (아래 상세)
+
+---
+
+## Phase 16: 배포 완성도
+
+### 16.1 PWA 필수 (높음)
+- [x] 아이콘 파일 생성 (`static/icons/icon-192.png`, `icon-512.png`)
+- [x] favicon.png 생성 (`static/favicon.png`)
+- [ ] OG 이미지 생성 (`static/og-image.png`, 1200x630)
+- [x] Service Worker 구현 (`src/service-worker.ts`)
+- [x] robots.txt 생성 (`static/robots.txt`)
+
+### 16.2 SEO/메타태그 (높음)
+- [x] Open Graph 메타태그 추가 (app.html)
+- [x] Twitter Card 메타태그 추가 (app.html)
+
+### 16.3 에러/접근성 (중간)
+- [ ] +error.svelte 페이지 생성
+- [ ] A11y 감사 (label 연결, 키보드 네비게이션)
+
+### 16.4 Capacitor 완성 (중간)
+- [ ] SplashScreen 플러그인 설정
+- [ ] capacitor.config.ts에 server.androidScheme 추가
+- [ ] AndroidManifest.xml 권한 확인 (SCHEDULE_EXACT_ALARM, POST_NOTIFICATIONS)
+- [ ] 스플래시 이미지 생성 (drawable-*/splash.png)
+
+### 16.5 보안/캐싱 (낮음)
+- [ ] _headers 파일 (X-Frame-Options, Cache-Control)
+- [ ] 번들 크기 최적화 (html2canvas, qrcode 동적 import 검토)
+
+---
+
+## Completed Phases
 
 ---
 

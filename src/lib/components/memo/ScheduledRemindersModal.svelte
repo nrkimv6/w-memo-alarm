@@ -97,9 +97,12 @@
 
 			<div class="space-y-2 max-h-[400px] overflow-y-auto">
 				{#each memosWithReminders as memo (memo.id)}
-					<button
+					<div
+						role="button"
+						tabindex="0"
 						onclick={() => handleMemoClick(memo)}
-						class="w-full flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors text-left"
+						onkeydown={(e) => e.key === 'Enter' && handleMemoClick(memo)}
+						class="w-full flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors text-left cursor-pointer"
 					>
 						<div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
 							<Clock class="w-5 h-5 text-primary" />
@@ -122,7 +125,7 @@
 						>
 							<BellOff class="w-4 h-4" />
 						</button>
-					</button>
+					</div>
 				{/each}
 			</div>
 		{/if}

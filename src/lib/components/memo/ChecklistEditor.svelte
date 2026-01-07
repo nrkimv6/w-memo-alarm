@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Plus, X, GripVertical, Check, Square, CheckSquare } from 'lucide-svelte';
+	import { Plus, X, GripVertical, Check, Square, CheckSquare, ChevronUp, ChevronDown, Eye, EyeOff } from 'lucide-svelte';
 	import type { ChecklistItem } from '$lib/types/memo';
 	import { cn } from '$lib/utils';
 
@@ -11,6 +11,7 @@
 	let { items, onItemsChange }: Props = $props();
 
 	let newItemText = $state('');
+	let hideCompleted = $state(false);
 
 	function generateId(): string {
 		return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
@@ -54,9 +55,22 @@
 		);
 	}
 
+	function moveItem(id: string, direction: 'up' | 'down') {
+		const index = items.findIndex((item) => item.id === id);
+		if (index === -1) return;
+		if (direction === 'up' && index === 0) return;
+		if (direction === 'down' && index === items.length - 1) return;
+
+		const newItems = [...items];
+		const targetIndex = direction === 'up' ? index - 1 : index + 1;
+		[newItems[index], newItems[targetIndex]] = [newItems[targetIndex], newItems[index]];
+		onItemsChange(newItems);
+	}
+
 	const completedCount = $derived(items.filter((item) => item.completed).length);
 	const totalCount = $derived(items.length);
 	const progress = $derived(totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0);
+	const visibleItems = $derived(hideCompleted ? items.filter((item) => !item.completed) : items);
 </script>
 
 <div class="space-y-3">
@@ -65,11 +79,32 @@
 			<CheckSquare class="w-4 h-4" />
 			체크리스트
 		</span>
-		{#if totalCount > 0}
-			<span class="text-xs text-muted-foreground">
-				{completedCount}/{totalCount} ({progress}%)
-			</span>
-		{/if}
+		<div class="flex items-center gap-2">
+			{#if completedCount > 0}
+				<button
+					type="button"
+					onclick={() => hideCompleted = !hideCompleted}
+					class={cn(
+						'p-1 rounded transition-colors text-xs flex items-center gap-1',
+						hideCompleted
+							? 'text-primary bg-primary/10'
+							: 'text-muted-foreground hover:text-foreground'
+					)}
+					title={hideCompleted ? '완료 항목 보기' : '완료 항목 숨기기'}
+				>
+					{#if hideCompleted}
+						<EyeOff class="w-3.5 h-3.5" />
+					{:else}
+						<Eye class="w-3.5 h-3.5" />
+					{/if}
+				</button>
+			{/if}
+			{#if totalCount > 0}
+				<span class="text-xs text-muted-foreground">
+					{completedCount}/{totalCount} ({progress}%)
+				</span>
+			{/if}
+		</div>
 	</div>
 
 	<!-- Progress bar -->
@@ -83,15 +118,36 @@
 	{/if}
 
 	<!-- Items list -->
-	{#if items.length > 0}
+	{#if visibleItems.length > 0}
 		<div class="space-y-1">
-			{#each items as item (item.id)}
+			{#each visibleItems as item, index (item.id)}
 				<div
 					class={cn(
 						'flex items-center gap-2 p-2 rounded-lg bg-muted/50 group',
 						item.completed && 'opacity-60'
 					)}
 				>
+					<!-- Move buttons -->
+					<div class="flex flex-col opacity-0 group-hover:opacity-100 transition-opacity">
+						<button
+							type="button"
+							onclick={() => moveItem(item.id, 'up')}
+							disabled={index === 0}
+							class="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
+							title="위로 이동"
+						>
+							<ChevronUp class="w-3 h-3" />
+						</button>
+						<button
+							type="button"
+							onclick={() => moveItem(item.id, 'down')}
+							disabled={index === visibleItems.length - 1}
+							class="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
+							title="아래로 이동"
+						>
+							<ChevronDown class="w-3 h-3" />
+						</button>
+					</div>
 					<button
 						type="button"
 						onclick={() => toggleItem(item.id)}
@@ -127,6 +183,13 @@
 				</div>
 			{/each}
 		</div>
+	{/if}
+
+	<!-- Hidden completed count -->
+	{#if hideCompleted && completedCount > 0}
+		<p class="text-xs text-muted-foreground text-center">
+			{completedCount}개의 완료된 항목이 숨겨져 있습니다
+		</p>
 	{/if}
 
 	<!-- Add new item -->

@@ -100,6 +100,26 @@ function createFoldersStore() {
 		return [...folders].sort((a, b) => a.order - b.order);
 	}
 
+	// Phase 14: 동기화용 - ID 지정하여 폴더 추가
+	function addFolderWithId(folder: Folder): void {
+		const existing = folders.find((f) => f.id === folder.id);
+		if (existing) {
+			update(folder.id, folder);
+		} else {
+			folders = [...folders, folder];
+			saveToStorage(folders);
+		}
+	}
+
+	// Phase 14: 동기화용 alias
+	function deleteFolder(id: string): boolean {
+		return remove(id);
+	}
+
+	function updateFolder(id: string, data: Partial<Omit<Folder, 'id' | 'createdAt'>>): Folder | null {
+		return update(id, data);
+	}
+
 	return {
 		get folders() {
 			return folders;
@@ -114,7 +134,11 @@ function createFoldersStore() {
 		remove,
 		reorder,
 		getById,
-		getSorted
+		getSorted,
+		// Phase 14: 동기화용
+		addFolderWithId,
+		deleteFolder,
+		updateFolder
 	};
 }
 

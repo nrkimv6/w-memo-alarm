@@ -226,6 +226,29 @@ function createMemosStore() {
 		}
 	}
 
+	// Phase 14: 동기화용 - ID 지정하여 메모 추가
+	function addMemoWithId(memo: Memo): void {
+		const existing = memos.find((m) => m.id === memo.id);
+		if (existing) {
+			update(memo.id, memo);
+		} else {
+			memos = [memo, ...memos];
+			saveToStorage(memos);
+			if (memo.reminder?.enabled && isNative()) {
+				scheduleNotification(memo);
+			}
+		}
+	}
+
+	// Phase 14: 동기화용 alias
+	function deleteMemo(id: string): boolean {
+		return remove(id);
+	}
+
+	function updateMemo(id: string, data: MemoUpdate): Memo | null {
+		return update(id, data);
+	}
+
 	function clearAll(): void {
 		memos = [];
 		saveToStorage(memos);
@@ -252,7 +275,11 @@ function createMemosStore() {
 		toggleChecklistItem,
 		getAllTags,
 		importMemos,
-		clearAll
+		clearAll,
+		// Phase 14: 동기화용
+		addMemoWithId,
+		deleteMemo,
+		updateMemo
 	};
 }
 

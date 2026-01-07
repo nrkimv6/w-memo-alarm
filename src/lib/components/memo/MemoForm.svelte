@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { X, Plus, Link, ListChecks } from 'lucide-svelte';
+	import { onMount } from 'svelte';
+	import { X, Plus, Link, ListChecks, Sparkles } from 'lucide-svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Textarea from '$lib/components/ui/Textarea.svelte';
@@ -14,6 +15,7 @@
 	import { foldersStore } from '$lib/stores/folders.svelte';
 	import { toastStore } from '$lib/stores/toast.svelte';
 	import { settingsStore } from '$lib/stores/settings.svelte';
+	import { suggestTags } from '$lib/utils/ai';
 
 	type Reminder = NonNullable<Memo['reminder']>;
 
@@ -36,6 +38,42 @@
 	let folderId = $state<string | undefined>(undefined);
 	let checklist = $state<ChecklistItem[]>([]);
 	let showChecklist = $state(false);
+
+	// Phase 15: AI 태그 추천
+	let suggestedTags = $state<string[]>([]);
+
+	function updateTagSuggestions() {
+		if (title.trim() || content.trim()) {
+			const suggestions = suggestTags({ title, content, url }, tags);
+			suggestedTags = suggestions.filter(s => !tags.includes(s));
+		} else {
+			suggestedTags = [];
+		}
+	}
+
+	function addSuggestedTag(tag: string) {
+		if (!tags.includes(tag)) {
+			tags = [...tags, tag];
+			suggestedTags = suggestedTags.filter(t => t !== tag);
+		}
+	}
+
+	// Ctrl+S 저장 단축키
+	$effect(() => {
+		if (!open) return;
+
+		function handleKeydown(e: KeyboardEvent) {
+			if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+				e.preventDefault();
+				if (title.trim()) {
+					handleSubmit();
+				}
+			}
+		}
+
+		window.addEventListener('keydown', handleKeydown);
+		return () => window.removeEventListener('keydown', handleKeydown);
+	});
 
 	// 편집 모드일 때 기존 데이터 로드
 	$effect(() => {
@@ -191,7 +229,18 @@
 		{/if}
 
 		<div class="space-y-2">
-			<label for="memo-tags" class="text-sm font-medium">태그</label>
+			<div class="flex items-center justify-between">
+				<label for="memo-tags" class="text-sm font-medium">태그</label>
+				<button
+					type="button"
+					onclick={updateTagSuggestions}
+					class="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors"
+					title="AI 태그 추천"
+				>
+					<Sparkles class="w-3 h-3" />
+					추천
+				</button>
+			</div>
 			<div class="flex gap-2">
 				<Input
 					id="memo-tags"
@@ -204,6 +253,20 @@
 					<Plus class="w-4 h-4" />
 				</Button>
 			</div>
+			{#if suggestedTags.length > 0}
+				<div class="flex flex-wrap gap-2 mt-2">
+					<span class="text-xs text-muted-foreground">추천:</span>
+					{#each suggestedTags as tag}
+						<button
+							type="button"
+							onclick={() => addSuggestedTag(tag)}
+							class="px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+						>
+							+ {tag}
+						</button>
+					{/each}
+				</div>
+			{/if}
 			{#if tags.length > 0}
 				<div class="flex flex-wrap gap-2 mt-2">
 					{#each tags as tag}

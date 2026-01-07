@@ -1,10 +1,11 @@
 <script lang="ts">
-	import { Pin, Star, Edit3, Trash2, ExternalLink, Folder, EyeOff, Eye, CheckSquare } from 'lucide-svelte';
+	import { Pin, Star, Edit3, Trash2, ExternalLink, Folder, EyeOff, Eye, CheckSquare, Check } from 'lucide-svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import type { Memo } from '$lib/types/memo';
 	import { memosStore } from '$lib/stores/memos.svelte';
 	import { foldersStore } from '$lib/stores/folders.svelte';
+	import { selectionStore } from '$lib/stores/selection.svelte';
 	import { cn, formatRelativeTime } from '$lib/utils';
 
 	interface Props {
@@ -20,6 +21,9 @@
 	}
 
 	let { memo, compact = false, ultraCompact = false, onClick, onEdit, onDelete, onTogglePin, onToggleFavorite, onToggleActive }: Props = $props();
+
+	const isSelectionMode = $derived(selectionStore.isSelectionMode);
+	const isSelected = $derived(selectionStore.isSelected(memo.id));
 
 	const folder = $derived(memo.folderId ? foldersStore.getById(memo.folderId) : null);
 	const isInactive = $derived(memo.isActive === false);
@@ -41,7 +45,11 @@
 	}
 
 	function handleCardClick() {
-		onClick?.(memo);
+		if (isSelectionMode) {
+			selectionStore.toggleSelection(memo.id);
+		} else {
+			onClick?.(memo);
+		}
 	}
 </script>
 
@@ -50,10 +58,25 @@
 		'group relative cursor-pointer',
 		memo.isPinned && 'memo-card-pinned',
 		isInactive && 'opacity-50',
-		ultraCompact && 'py-2 px-3'
+		ultraCompact && 'py-2 px-3',
+		isSelectionMode && 'ring-2 ring-border',
+		isSelected && 'ring-2 ring-primary bg-primary/5'
 	)}
 	onclick={handleCardClick}
 >
+	<!-- Selection indicator -->
+	{#if isSelectionMode}
+		<div
+			class={cn(
+				'absolute -top-2 -left-2 w-6 h-6 rounded-full flex items-center justify-center z-20 transition-colors',
+				isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted border-2 border-border'
+			)}
+		>
+			{#if isSelected}
+				<Check class="w-3.5 h-3.5" />
+			{/if}
+		</div>
+	{/if}
 	<!-- Pin/Favorite indicators -->
 	{#if memo.isPinned && !ultraCompact}
 		<div class="absolute -top-2 -right-2 w-7 h-7 bg-secondary rounded-full flex items-center justify-center shadow-md z-10">
