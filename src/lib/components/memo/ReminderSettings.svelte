@@ -3,6 +3,7 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import Toggle from '$lib/components/ui/Toggle.svelte';
 	import { cn } from '$lib/utils';
+	import { settingsStore } from '$lib/stores/settings.svelte';
 
 	interface Reminder {
 		enabled: boolean;
@@ -18,11 +19,13 @@
 
 	let { reminder, onReminderChange }: Props = $props();
 
+	// Use default settings from store when no reminder is provided
+	const defaultReminder = settingsStore.getDefaultReminder();
 	let showSettings = $state(!!reminder);
 	let enabled = $state(reminder?.enabled ?? true);
-	let time = $state(reminder?.time ?? '09:00');
-	let days = $state<number[]>(reminder?.days ?? [1, 2, 3, 4, 5]); // 월-금 기본
-	let autoOpen = $state(reminder?.autoOpen ?? false);
+	let time = $state(reminder?.time ?? defaultReminder.time);
+	let days = $state<number[]>(reminder?.days ?? [...defaultReminder.days]);
+	let autoOpen = $state(reminder?.autoOpen ?? defaultReminder.autoOpen);
 
 	const dayLabels = ['일', '월', '화', '수', '목', '금', '토'];
 

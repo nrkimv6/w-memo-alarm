@@ -12,6 +12,7 @@
 	import { memosStore } from '$lib/stores/memos.svelte';
 	import { foldersStore } from '$lib/stores/folders.svelte';
 	import { toastStore } from '$lib/stores/toast.svelte';
+	import { settingsStore } from '$lib/stores/settings.svelte';
 
 	type Reminder = NonNullable<Memo['reminder']>;
 
@@ -51,8 +52,14 @@
 			url = '';
 			emoji = '🔗';
 			showUrlInput = false;
-			reminder = undefined;
 			folderId = undefined;
+			// Apply default reminder settings if autoReminderOnCreate is enabled
+			if (settingsStore.settings.autoReminderOnCreate) {
+				const defaultReminder = settingsStore.getDefaultReminder();
+				reminder = { ...defaultReminder };
+			} else {
+				reminder = undefined;
+			}
 		}
 	});
 
