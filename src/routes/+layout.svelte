@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { onNavigate } from '$app/navigation';
 	import '../app.css';
 	import type { Snippet } from 'svelte';
 	import { themeStore } from '$lib/stores/theme.svelte';
@@ -8,6 +9,18 @@
 	import { Toast } from '$lib/components/ui';
 
 	let { children }: { children: Snippet } = $props();
+
+	// View Transitions API
+	onNavigate((navigation) => {
+		if (!document.startViewTransition) return;
+
+		return new Promise((resolve) => {
+			document.startViewTransition(async () => {
+				resolve();
+				await navigation.complete;
+			});
+		});
+	});
 
 	onMount(() => {
 		themeStore.init();
