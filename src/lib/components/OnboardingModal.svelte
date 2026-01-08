@@ -10,6 +10,7 @@
 
 	let currentStep = $state(0);
 	let dialogRef: HTMLDialogElement;
+	const step = $derived(steps[currentStep]);
 
 	const steps = [
 		{
@@ -112,7 +113,6 @@
 
 		<!-- Content -->
 		<div class="px-8 py-8">
-			{@const step = steps[currentStep]}
 			<div class="flex flex-col items-center text-center">
 				<!-- Icon -->
 				<div class="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-4">
