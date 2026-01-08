@@ -16,6 +16,7 @@
 		ScheduledRemindersModal,
 		ShareModal
 	} from '$lib/components/memo';
+	import OnboardingModal from '$lib/components/OnboardingModal.svelte';
 	import { memosStore } from '$lib/stores/memos.svelte';
 	import { filterStore } from '$lib/stores/filter.svelte';
 	import { foldersStore } from '$lib/stores/folders.svelte';
@@ -25,11 +26,14 @@
 	import type { Memo } from '$lib/types/memo';
 	import { cn, mergeMemos } from '$lib/utils';
 
+	const ONBOARDING_KEY = 'memo-alarm-onboarding-done';
+
 	let showForm = $state(false);
 	let showDeleteDialog = $state(false);
 	let showDetailModal = $state(false);
 	let showRemindersModal = $state(false);
 	let showShareModal = $state(false);
+	let showOnboarding = $state(false);
 	let editingMemo = $state<Memo | null>(null);
 	let deletingMemo = $state<Memo | null>(null);
 	let viewingMemo = $state<Memo | null>(null);
@@ -47,6 +51,11 @@
 		filterStore.init();
 		foldersStore.init();
 		notificationStore.init();
+
+		// 온보딩 모달 표시 (첫 실행 시)
+		if (typeof window !== 'undefined' && !localStorage.getItem(ONBOARDING_KEY)) {
+			showOnboarding = true;
+		}
 
 		// Keyboard shortcuts
 		function handleKeydown(e: KeyboardEvent) {
@@ -336,3 +345,14 @@
 	memo={sharingMemo}
 	onClose={handleShareClose}
 />
+
+{#if showOnboarding}
+	<OnboardingModal
+		onClose={() => {
+			showOnboarding = false;
+			if (typeof window !== 'undefined') {
+				localStorage.setItem(ONBOARDING_KEY, 'true');
+			}
+		}}
+	/>
+{/if}
