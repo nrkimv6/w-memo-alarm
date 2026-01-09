@@ -55,10 +55,7 @@
                 href="https://woory.day"
                 class="flex items-center gap-2 font-bold text-lg transition-colors hover:text-primary group"
             >
-                <span
-                    class="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-violet-600 dark:from-blue-400 dark:to-violet-400"
-                    >우리공방</span
-                >
+                <span class="text-primary">우리공방</span>
             </a>
         </div>
 
