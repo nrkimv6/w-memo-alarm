@@ -88,21 +88,21 @@
 	{#if ultraCompact}
 		<div class="flex items-center gap-3">
 			{#if memo.isPinned}
-				<Pin class="w-3.5 h-3.5 text-secondary flex-shrink-0" />
+				<Pin class="w-4 h-4 text-secondary flex-shrink-0" />
 			{/if}
 			<h3 class="text-sm font-medium text-foreground truncate flex-1">
 				{memo.title || '제목 없음'}
 			</h3>
 			{#if memo.tags.length > 0}
-				<span class="text-xs text-muted-foreground truncate max-w-[100px]">
+				<span class="text-sm text-muted-foreground truncate max-w-[100px]">
 					#{memo.tags[0]}
 				</span>
 			{/if}
-			<time class="text-xs text-muted-foreground flex-shrink-0">
+			<time class="text-sm text-muted-foreground flex-shrink-0">
 				{formatRelativeTime(memo.updatedAt)}
 			</time>
 			{#if memo.isFavorite}
-				<Star class="w-3 h-3 text-warning fill-warning flex-shrink-0" />
+				<Star class="w-4 h-4 text-warning fill-warning flex-shrink-0" />
 			{/if}
 		</div>
 	{:else}
@@ -113,56 +113,56 @@
 			</h3>
 
 		<!-- Hover actions -->
-		<div class="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+		<div class="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
 			<button
 				onclick={() => onTogglePin(memo.id)}
 				class={cn(
-					'p-1.5 rounded-md transition-colors',
+					'flex min-h-11 min-w-11 items-center justify-center rounded-md transition-colors',
 					memo.isPinned ? 'text-secondary' : 'text-muted-foreground hover:text-secondary'
 				)}
 				title={memo.isPinned ? '고정 해제' : '고정'}
 			>
-				<Pin class={cn('w-4 h-4', memo.isPinned && 'fill-current')} />
+				<Pin class={cn('w-5 h-5', memo.isPinned && 'fill-current')} />
 			</button>
 			<button
 				onclick={() => onToggleFavorite(memo.id)}
 				class={cn(
-					'p-1.5 rounded-md transition-colors',
+					'flex min-h-11 min-w-11 items-center justify-center rounded-md transition-colors',
 					memo.isFavorite ? 'text-warning' : 'text-muted-foreground hover:text-warning'
 				)}
 				title={memo.isFavorite ? '즐겨찾기 해제' : '즐겨찾기'}
 			>
-				<Star class={cn('w-4 h-4', memo.isFavorite && 'fill-current')} />
+				<Star class={cn('w-5 h-5', memo.isFavorite && 'fill-current')} />
 			</button>
 			{#if onToggleActive}
 				<button
 					onclick={(e) => { e.stopPropagation(); onToggleActive(memo.id); }}
 					class={cn(
-						'p-1.5 rounded-md transition-colors',
+						'flex min-h-11 min-w-11 items-center justify-center rounded-md transition-colors',
 						isInactive ? 'text-muted-foreground/50' : 'text-muted-foreground hover:text-foreground'
 					)}
 					title={isInactive ? '활성화' : '비활성화'}
 				>
 					{#if isInactive}
-						<Eye class="w-4 h-4" />
+						<Eye class="w-5 h-5" />
 					{:else}
-						<EyeOff class="w-4 h-4" />
+						<EyeOff class="w-5 h-5" />
 					{/if}
 				</button>
 			{/if}
 			<button
 				onclick={() => onEdit(memo)}
-				class="p-1.5 rounded-md text-muted-foreground hover:text-foreground transition-colors"
+				class="flex min-h-11 min-w-11 items-center justify-center rounded-md text-muted-foreground hover:text-foreground transition-colors"
 				title="수정"
 			>
-				<Edit3 class="w-4 h-4" />
+				<Edit3 class="w-5 h-5" />
 			</button>
 			<button
 				onclick={() => onDelete(memo)}
-				class="p-1.5 rounded-md text-muted-foreground hover:text-destructive transition-colors"
+				class="flex min-h-11 min-w-11 items-center justify-center rounded-md text-muted-foreground hover:text-destructive transition-colors"
 				title="삭제"
 			>
-				<Trash2 class="w-4 h-4" />
+				<Trash2 class="w-5 h-5" />
 			</button>
 		</div>
 	</header>
@@ -188,9 +188,9 @@
 				{getDomain(memo.url)}
 			</a>
 			{#if memo.openCount}
-				<span class="text-xs text-muted-foreground">({memo.openCount}회)</span>
+				<span class="text-sm text-muted-foreground">({memo.openCount}회)</span>
 			{/if}
-			<ExternalLink class="w-3.5 h-3.5 text-muted-foreground" />
+			<ExternalLink class="w-4 h-4 text-muted-foreground" />
 		</div>
 	{/if}
 
@@ -210,8 +210,8 @@
 
 	<!-- Checklist progress -->
 	{#if hasChecklist}
-		<div class="flex items-center gap-2 mb-3 text-xs text-muted-foreground">
-			<CheckSquare class="w-3.5 h-3.5" />
+		<div class="flex items-center gap-2 mb-3 text-sm text-muted-foreground">
+			<CheckSquare class="w-4 h-4" />
 			<div class="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
 				<div
 					class="h-full bg-primary transition-all duration-300"
@@ -223,11 +223,11 @@
 	{/if}
 
 	<!-- Footer -->
-	<footer class="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border/50">
+	<footer class="flex items-center justify-between text-sm text-muted-foreground pt-2 border-t border-border/50">
 		<div class="flex items-center gap-2">
 			<time>{formatRelativeTime(memo.updatedAt)}</time>
 			{#if memo.isFavorite && !memo.isPinned}
-				<Star class="w-3 h-3 text-warning fill-warning" />
+				<Star class="w-4 h-4 text-warning fill-warning" />
 			{/if}
 		</div>
 		{#if folder}

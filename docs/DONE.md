@@ -1,5 +1,13 @@
 # DONE (최근 20개)
 
+- [x] 2026-01-09: P1 MemoCard 모바일 시인성 개선
+  - Ultra compact 모드 아이콘/폰트 개선 (h-3.5→h-4, text-xs→text-sm)
+  - Hover 액션 버튼 터치 타겟 44px로 확대 (p-1.5→min-h-11 min-w-11)
+  - 액션 아이콘 크기 확대 (w-4 h-4→w-5 h-5)
+  - Footer 폰트 크기 개선 (text-xs→text-sm)
+  - 체크리스트 진행률 폰트/아이콘 개선
+  - 참고: common/docs/plan/2026-01-09_mobile-readability-overview.md
+
 - [x] 2026-01-09: 설정 메뉴 통합 (상단 톱니바퀴 + 하단 네비)
   - Header.svelte: 설정 톱니바퀴 버튼 제거 (테마 토글은 유지)
   - /settings 페이지: 모든 설정 기능 통합
