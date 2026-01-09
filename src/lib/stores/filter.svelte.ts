@@ -35,6 +35,7 @@ function createFilterStore() {
 	let viewMode = $state<ViewMode>('grid');
 	let tagFilterMode = $state<TagFilterMode>('or');
 	let initialized = $state(false);
+	let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 	function init() {
 		if (initialized) return;
@@ -59,7 +60,14 @@ function createFilterStore() {
 	}
 
 	function setSearch(query: string) {
-		searchQuery = query;
+		// Debounce search to avoid excessive filtering
+		if (searchDebounceTimer) {
+			clearTimeout(searchDebounceTimer);
+		}
+
+		searchDebounceTimer = setTimeout(() => {
+			searchQuery = query;
+		}, 300);
 	}
 
 	function toggleTag(tag: string) {
