@@ -200,8 +200,6 @@ function createNotificationStore() {
 	function showNotification(memo: Memo, isSnoozed = false): void {
 		if (permission !== 'granted') return;
 
-		if (permission !== 'granted') return;
-
 		const title = isSnoozed ? `⏰ ${memo.title}` : memo.title;
 		const options: NotificationOptions = {
 			body: memo.content || '알림이 도착했습니다',
@@ -226,72 +224,68 @@ function createNotificationStore() {
 				notification.close();
 			};
 		}
+	}
 
+	function getTodayReminders(): Memo[] {
+		const today = new Date().getDay();
+		const now = new Date();
+		const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+		return memosStore.memos.filter((memo) => {
+			if (!memo.reminder?.enabled) return false;
+			if (!memo.reminder.days.includes(today)) return false;
+			return true;
+		}).sort((a, b) => {
+			const timeA = a.reminder?.time || '00:00';
+			const timeB = b.reminder?.time || '00:00';
+			return timeA.localeCompare(timeB);
+		});
+	}
+
+	function getUpcomingReminders(): Memo[] {
+		const today = new Date().getDay();
+		const now = new Date();
+		const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+		return getTodayReminders().filter((memo) => {
+			const reminderTime = memo.reminder?.time || '00:00';
+			return reminderTime >= currentTime;
+		});
+	}
+
+	function getPastReminders(): Memo[] {
+		const now = new Date();
+		const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+		return getTodayReminders().filter((memo) => {
+			const reminderTime = memo.reminder?.time || '00:00';
+			return reminderTime < currentTime;
+		});
+	}
+
+	return {
+		get permission() {
+			return permission;
+		},
+		get initialized() {
+			return initialized;
+		},
+		get snoozedReminders() {
+			return snoozedReminders;
+		},
+		init,
+		requestPermission,
+		showNotification,
+		getTodayReminders,
+		getUpcomingReminders,
+		getPastReminders,
+		startBackgroundCheck,
+		stopBackgroundCheck,
+		checkAndTriggerReminders,
+		snooze,
+		cancelSnooze,
+		getSnoozedUntil
 	};
-}
-	}
-	}
-
-function getTodayReminders(): Memo[] {
-	const today = new Date().getDay();
-	const now = new Date();
-	const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-
-	return memosStore.memos.filter((memo) => {
-		if (!memo.reminder?.enabled) return false;
-		if (!memo.reminder.days.includes(today)) return false;
-		return true;
-	}).sort((a, b) => {
-		const timeA = a.reminder?.time || '00:00';
-		const timeB = b.reminder?.time || '00:00';
-		return timeA.localeCompare(timeB);
-	});
-}
-
-function getUpcomingReminders(): Memo[] {
-	const today = new Date().getDay();
-	const now = new Date();
-	const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-
-	return getTodayReminders().filter((memo) => {
-		const reminderTime = memo.reminder?.time || '00:00';
-		return reminderTime >= currentTime;
-	});
-}
-
-function getPastReminders(): Memo[] {
-	const now = new Date();
-	const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-
-	return getTodayReminders().filter((memo) => {
-		const reminderTime = memo.reminder?.time || '00:00';
-		return reminderTime < currentTime;
-	});
-}
-
-return {
-	get permission() {
-		return permission;
-	},
-	get initialized() {
-		return initialized;
-	},
-	get snoozedReminders() {
-		return snoozedReminders;
-	},
-	init,
-	requestPermission,
-	showNotification,
-	getTodayReminders,
-	getUpcomingReminders,
-	getPastReminders,
-	startBackgroundCheck,
-	stopBackgroundCheck,
-	checkAndTriggerReminders,
-	snooze,
-	cancelSnooze,
-	getSnoozedUntil
-};
 }
 
 export const notificationStore = createNotificationStore();
