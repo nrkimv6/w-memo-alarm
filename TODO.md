@@ -153,9 +153,15 @@ Android: android/app/build/outputs/apk/debug/app-debug.apk
 
 ## AdSense & SEO Preparation (P1)
 > **Goal**: Content enrichment for AdSense approval.
-- [ ] **Content**: Add 'About Service' section (Usage guide, Introduction) - min 300 words
-- [ ] **Content**: Add 'FAQ' section (Accordion UI, 5-10 questions)
-- [ ] **Layout**: Add Footer with Privacy Policy, Terms, Contact links (Link to woory.day)
-- [ ] **SEO**: Verify meta title, description, and OG tags
-- [ ] **Nav**: Ensure clear link back to Main Portal (woory.day)
+- [x] **Content**: Add 'About Service' section (Usage guide, Introduction) - min 300 words ✅
+- [x] **Content**: Add 'FAQ' section (Accordion UI, 5-10 questions) ✅
+- [x] **Layout**: Add Footer with Privacy Policy, Terms, Contact links (Link to woory.day) ✅
+- [x] **SEO**: Verify meta title, description, and OG tags ✅
+- [x] **Nav**: Ensure clear link back to Main Portal (woory.day) ✅
+
+**완료 내역** (2026-01-09):
+- `/about` 페이지 대폭 확장 (2500+ 단어): 싱글 태스킹의 힘 (700+ 단어), 기억 보조 도구로서의 메모 알람 (700+ 단어) 섹션 추가
+- `/contact` 페이지 FAQ 확장 (8개 → 10개 Q&A: 배터리 최적화 설정, 무료 서비스 등 추가)
+- Footer 업데이트 (서비스 소개, 문의하기, Woory.day 포털 링크 추가)
+- SEO 메타태그 대폭 개선 (한글 title/description, keywords, OG tags, Twitter Card, canonical)
 ```

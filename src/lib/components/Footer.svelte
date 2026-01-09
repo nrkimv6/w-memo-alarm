@@ -12,7 +12,13 @@
         className,
     )}
 >
-    <div class="mb-4 flex items-center justify-center gap-6">
+    <div class="mb-4 flex flex-wrap items-center justify-center gap-4 md:gap-6">
+        <a
+            href="/about"
+            class="hover:text-foreground transition-colors"
+        >
+            서비스 소개
+        </a>
         <a
             href="https://woory.day/privacy"
             class="hover:text-foreground transition-colors"
@@ -26,10 +32,16 @@
             이용약관
         </a>
         <a
-            href="https://woory.day/contact"
+            href="/contact"
             class="hover:text-foreground transition-colors"
         >
             문의하기
+        </a>
+        <a
+            href="https://woory.day"
+            class="hover:text-foreground transition-colors"
+        >
+            Woory.day 포털
         </a>
     </div>
     <div class="space-y-1">

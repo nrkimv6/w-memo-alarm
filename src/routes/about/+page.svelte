@@ -231,6 +231,93 @@
             </div>
         </section>
 
+        <!-- Single-Tasking Philosophy -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-semibold mb-6">싱글 태스킹의 힘</h2>
+            <div class="prose prose-gray dark:prose-invert max-w-none">
+                <p class="text-muted-foreground leading-relaxed mb-4">
+                    현대 사회에서는 멀티태스킹이 생산성의 핵심처럼 여겨지지만, 연구 결과는 정반대입니다.
+                    <strong>한 번에 하나의 일에 집중하는 싱글 태스킹</strong>이 오히려 더 효율적이고
+                    스트레스를 줄이며 창의성을 높인다는 사실이 과학적으로 입증되었습니다.
+                    Memo Alarm은 이러한 싱글 태스킹 철학을 바탕으로 설계되었습니다.
+                </p>
+                <p class="text-muted-foreground leading-relaxed mb-4">
+                    멀티태스킹은 실제로는 빠른 작업 전환(context switching)일 뿐이며,
+                    이 과정에서 집중력이 분산되고 뇌가 피로해집니다.
+                    반면 싱글 태스킹은 <strong>하나의 작업에 온전히 몰입</strong>하여 더 높은 품질의 결과를 만들어냅니다.
+                    Memo Alarm은 각 알람마다 하나의 명확한 메모를 연결함으로써,
+                    사용자가 그 순간에 정말 중요한 한 가지 일에만 집중할 수 있도록 돕습니다.
+                </p>
+                <p class="text-muted-foreground leading-relaxed mb-4">
+                    <strong>메모 알람의 싱글 태스킹 적용 방법:</strong>
+                </p>
+                <ul class="list-disc list-inside text-muted-foreground space-y-2 mb-4 ml-4">
+                    <li><strong>하나의 알람, 하나의 목표</strong>: 각 알람은 하나의 명확한 행동 항목만 포함합니다.
+                    "보고서 작성, 이메일 답장, 회의 준비"가 아닌, "보고서 작성" 하나만 설정합니다.</li>
+                    <li><strong>시간 블로킹</strong>: 특정 시간대에 특정 작업만 집중하도록 알람을 배치합니다.
+                    예: 오전 9시 "기획서 작성", 오후 2시 "이메일 처리", 오후 4시 "프로젝트 검토"</li>
+                    <li><strong>휴식 시간 확보</strong>: 집중 작업 후 짧은 휴식을 알림으로 설정하여 뇌가 회복할 시간을 줍니다.
+                    연속된 작업보다 집중-휴식-집중 패턴이 더 효과적입니다.</li>
+                    <li><strong>딥 워크 세션</strong>: 방해받지 않는 집중 시간(Deep Work)을 확보하기 위해
+                    시작과 종료 알람을 설정합니다. 예: "딥워크 시작 (전화 꺼두기)" + "딥워크 종료 (휴식)"</li>
+                </ul>
+                <p class="text-muted-foreground leading-relaxed mb-4">
+                    이러한 방식으로 Memo Alarm을 활용하면, 여러 일을 동시에 하려다 어느 것도 제대로 끝내지 못하는
+                    상황을 피하고, <strong>중요한 일부터 차근차근 완료</strong>하는 습관을 기를 수 있습니다.
+                    하루를 계획할 때 "언제 무엇을 할지" 명확히 정하고, 그 시간이 되면 알림을 받아
+                    오직 그 일에만 집중하세요. 이것이 바로 싱글 태스킹의 힘입니다.
+                </p>
+            </div>
+        </section>
+
+        <!-- Memory Aids Section -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-semibold mb-6">기억 보조 도구로서의 메모 알람</h2>
+            <div class="prose prose-gray dark:prose-invert max-w-none">
+                <p class="text-muted-foreground leading-relaxed mb-4">
+                    인간의 기억력에는 한계가 있습니다. 특히 <strong>단기 기억(working memory)</strong>은
+                    동시에 5-9개 정도의 정보만 보유할 수 있으며, 새로운 정보가 들어오면 이전 정보를 잊어버립니다.
+                    이로 인해 중요한 약속, 마감일, 해야 할 일들을 놓치는 경우가 빈번합니다.
+                    Memo Alarm은 <strong>외부 기억 저장소(external memory)</strong> 역할을 하여
+                    뇌의 부담을 줄이고 중요한 정보를 적시에 상기시켜줍니다.
+                </p>
+                <p class="text-muted-foreground leading-relaxed mb-4">
+                    심리학 연구에 따르면, <strong>능동적 상기(active recall)</strong>가
+                    단순히 정보를 저장하는 것보다 훨씬 효과적입니다.
+                    Memo Alarm은 설정한 시간에 메모를 다시 보여줌으로써 능동적 상기를 유도하며,
+                    이는 장기 기억으로 전환되는 과정을 강화합니다.
+                    반복되는 알람은 <strong>간격 반복(spaced repetition)</strong> 효과를 만들어
+                    중요한 정보를 장기적으로 기억하는 데 도움이 됩니다.
+                </p>
+                <p class="text-muted-foreground leading-relaxed mb-4">
+                    <strong>메모 알람을 효과적인 기억 보조 도구로 활용하는 방법:</strong>
+                </p>
+                <ul class="list-disc list-inside text-muted-foreground space-y-2 mb-4 ml-4">
+                    <li><strong>즉시 기록하기</strong>: 떠오르는 순간 바로 메모하세요.
+                    "나중에 기억할 수 있을 거야"라는 생각은 대부분 실패합니다.
+                    회의 중 언급된 마감일, 길에서 떠오른 아이디어, 지인과의 약속 등을 즉시 기록합니다.</li>
+                    <li><strong>구체적인 행동으로 작성</strong>: "프로젝트 생각해보기"가 아닌
+                    "프로젝트 예산안 3개 작성하기"처럼 명확한 동사를 사용합니다.
+                    모호한 메모는 나중에 봐도 무엇을 해야 할지 기억나지 않습니다.</li>
+                    <li><strong>맥락 정보 추가</strong>: URL 링크, 관련 파일, 연락처 등
+                    작업 수행에 필요한 정보를 함께 저장합니다.
+                    알람이 울렸을 때 바로 행동으로 옮길 수 있도록 준비합니다.</li>
+                    <li><strong>미리 알림 설정</strong>: 중요한 이벤트는 하루 전, 한 시간 전 등
+                    여러 단계의 알람을 설정합니다. 예: 면접 하루 전 "옷 준비", 2시간 전 "면접 자료 검토", 30분 전 "출발"</li>
+                    <li><strong>반복 학습 활용</strong>: 외워야 할 정보(단어, 개념, 절차 등)를
+                    메모에 저장하고 매일 알람을 설정하여 반복 복습합니다.
+                    간격을 점차 늘리면(1일, 3일, 7일, 14일...) 장기 기억으로 정착됩니다.</li>
+                </ul>
+                <p class="text-muted-foreground leading-relaxed mb-4">
+                    Memo Alarm은 단순한 알람 앱이 아니라 <strong>제2의 뇌(second brain)</strong>입니다.
+                    머리로 모든 것을 기억하려 하지 말고, 믿을 수 있는 시스템에 맡기세요.
+                    이렇게 하면 정신적 부담이 줄어들고, 창의적 사고와 문제 해결에 더 많은
+                    인지적 자원을 사용할 수 있습니다. 중요한 것은 놓치지 않고,
+                    뇌는 진짜 중요한 생각에 집중하도록 만드세요.
+                </p>
+            </div>
+        </section>
+
         <!-- Technology Stack -->
         <section class="mb-12">
             <h2 class="text-2xl font-semibold mb-6">기술 스택</h2>

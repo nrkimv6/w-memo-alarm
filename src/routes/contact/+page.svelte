@@ -225,6 +225,39 @@
                         <li>예상 동작과 실제 동작의 차이</li>
                     </ul>
                 </details>
+
+                <details class="group p-4 rounded-lg bg-card border border-border">
+                    <summary class="font-medium cursor-pointer list-none flex items-center justify-between">
+                        <span>배터리 최적화 설정은 어떻게 하나요?</span>
+                        <span class="text-muted-foreground group-open:rotate-180 transition-transform">▼</span>
+                    </summary>
+                    <p class="mt-3 text-sm text-muted-foreground leading-relaxed">
+                        안드로이드 기기에서 알림이 제대로 작동하려면 배터리 최적화를 해제해야 합니다:
+                    </p>
+                    <ul class="mt-2 ml-4 space-y-2 text-sm text-muted-foreground list-disc">
+                        <li><strong>안드로이드</strong>: 설정 - 앱 - Memo Alarm - 배터리 - "제한 없음" 선택</li>
+                        <li><strong>삼성 기기</strong>: 설정 - 앱 - Memo Alarm - 배터리 - "백그라운드 사용량 제한" 해제</li>
+                        <li><strong>샤오미 기기 (MIUI)</strong>: 보안 앱 - 배터리 - 앱 배터리 절약 - Memo Alarm "제한 없음"</li>
+                        <li><strong>아이폰</strong>: 배터리 최적화가 자동으로 관리되어 별도 설정 불필요</li>
+                    </ul>
+                    <p class="mt-3 text-sm text-muted-foreground">
+                        이 설정을 하지 않으면 기기가 절전 모드로 들어갈 때 알림이 지연되거나 울리지 않을 수 있습니다.
+                    </p>
+                </details>
+
+                <details class="group p-4 rounded-lg bg-card border border-border">
+                    <summary class="font-medium cursor-pointer list-none flex items-center justify-between">
+                        <span>Memo Alarm은 무료인가요?</span>
+                        <span class="text-muted-foreground group-open:rotate-180 transition-transform">▼</span>
+                    </summary>
+                    <p class="mt-3 text-sm text-muted-foreground leading-relaxed">
+                        네, Memo Alarm의 모든 기능은 완전히 무료로 제공됩니다.
+                        회원가입 없이도 바로 사용할 수 있으며, 메모 작성, 알람 설정, 반복 알람, URL 링크 등
+                        모든 기능을 제한 없이 이용하실 수 있습니다.
+                        광고 수익으로 운영되므로 사용자에게 비용을 청구하지 않으며,
+                        앞으로도 무료 서비스로 유지될 예정입니다.
+                    </p>
+                </details>
             </div>
         </section>
 
