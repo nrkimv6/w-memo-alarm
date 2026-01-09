@@ -129,10 +129,11 @@
 				>
 					<!-- Move buttons -->
 					<div class="flex flex-col opacity-0 group-hover:opacity-100 transition-opacity">
+						{@const actualIndex = items.findIndex(i => i.id === item.id)}
 						<button
 							type="button"
 							onclick={() => moveItem(item.id, 'up')}
-							disabled={index === 0}
+							disabled={actualIndex === 0}
 							class="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
 							title="위로 이동"
 						>
@@ -141,7 +142,7 @@
 						<button
 							type="button"
 							onclick={() => moveItem(item.id, 'down')}
-							disabled={index === visibleItems.length - 1}
+							disabled={actualIndex === items.length - 1}
 							class="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
 							title="아래로 이동"
 						>
