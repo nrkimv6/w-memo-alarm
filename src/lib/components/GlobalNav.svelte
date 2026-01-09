@@ -15,12 +15,12 @@
         },
         {
             name: "Activity Hub",
-            url: "https://activity-hub.woory.day",
+            url: "https://activity.woory.day",
             description: "문화센터 강좌 검색",
         },
         {
             name: "Screenshot Gen",
-            url: "https://mobile-screenshot-generator.woory.day",
+            url: "https://screenshot.woory.day",
             description: "모바일 목업 생성",
         },
         {
