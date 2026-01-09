@@ -33,7 +33,7 @@
         </a>
     </div>
     <div class="space-y-1">
-        <p>© {year} Woory.day. All rights reserved.</p>
+        <p>© {year} 우리공방. All rights reserved.</p>
         <p class="text-xs text-muted-foreground/60">
             Woory Tools는 여러분의 일상을 돕는 다양한 도구를 제공합니다.
         </p>

@@ -226,7 +226,7 @@ memo-alarm/
 - [ ] adapter-static 설정
 - [ ] GitHub 리포지토리 생성 (wservice-memo-alarm)
 - [ ] Cloudflare Pages 연결
-- [ ] 커스텀 도메인 설정 (memo-alarm.woory.day)
+- [ ] 커스텀 도메인 설정 (memo.woory.day)
 
 ---
 

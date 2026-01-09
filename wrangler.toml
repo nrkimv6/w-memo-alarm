@@ -16,7 +16,7 @@ database_id = "c670a00b-db20-4046-aaf6-8ddaf0553a88"
 # 실제 값은 Cloudflare Dashboard > Settings > Variables에서 설정
 # [vars]
 # VAPID_PUBLIC_KEY = "your-public-key"
-# VAPID_SUBJECT = "mailto:admin@memo-alarm.woory.day"
+# VAPID_SUBJECT = "mailto:contact@woory.day"
 # CRON_SECRET = "your-secret-key"
 
 # VAPID_PRIVATE_KEY는 시크릿으로 설정 (wrangler secret put VAPID_PRIVATE_KEY)

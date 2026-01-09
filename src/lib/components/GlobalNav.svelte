@@ -4,37 +4,37 @@
     // Hardcoded tools list to ensure portability
     const TOOLS = [
         {
-            name: "Sacred Hours",
+            name: "기도시간",
             url: "https://sacred-hours.woory.day",
             description: "기도 시간 관리",
         },
         {
-            name: "Gentle Words",
+            name: "명언집",
             url: "https://gentle-words.woory.day",
             description: "일일 명언 및 묵상",
         },
         {
-            name: "Activity Hub",
+            name: "문센 다모아
             url: "https://activity.woory.day",
             description: "문화센터 강좌 검색",
         },
         {
-            name: "Screenshot Gen",
+            name: "스크린샷 생성기",
             url: "https://screenshot.woory.day",
             description: "모바일 목업 생성",
         },
         {
-            name: "Memo Alarm",
-            url: "https://memo-alarm.woory.day",
+            name: "메모알람",
+            url: "https://memo.woory.day",
             description: "메모 및 알림",
         },
         {
-            name: "Line Minder",
+            name: "회선 관리",
             url: "https://line-minder.woory.day",
             description: "회선 관리",
         },
         {
-            name: "Woory.day",
+            name: "우리공방",
             url: "https://woory.day",
             description: "전체 도구 모음",
         },
@@ -57,7 +57,7 @@
             >
                 <span
                     class="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-violet-600 dark:from-blue-400 dark:to-violet-400"
-                    >Woory.day</span
+                    >우리공방</span
                 >
             </a>
         </div>

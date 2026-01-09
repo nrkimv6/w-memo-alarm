@@ -20,7 +20,7 @@ export const GET: RequestHandler = async ({ platform, request }) => {
 
 	const vapidPublicKey = platform?.env?.VAPID_PUBLIC_KEY;
 	const vapidPrivateKey = platform?.env?.VAPID_PRIVATE_KEY;
-	const vapidSubject = platform?.env?.VAPID_SUBJECT || 'mailto:admin@memo-alarm.woory.day';
+	const vapidSubject = platform?.env?.VAPID_SUBJECT || 'mailto:.contact@woory.day';
 
 	if (!vapidPublicKey || !vapidPrivateKey) {
 		return json({ error: 'VAPID keys not configured' }, { status: 500 });

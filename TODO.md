@@ -106,7 +106,7 @@
 ### 1. Auth Worker 등록
 - [ ] `auth-worker/src/config.ts`에 `memo-alarm` 설정 확인
   - appId: `memo-alarm`
-  - origins: `https://memo-alarm.woory.day`, `http://localhost:5173`
+  - origins: `https://memo.woory.day`, `http://localhost:5173`
   - android.scheme: `com.woory.memoalarm`
 
 ### 2. Supabase 설정

@@ -364,5 +364,5 @@ interface Memo {
 |------|-----|
 | 프로젝트 폴더 | `wtools/memo-alarm/` |
 | 리포지토리 | github.com/nrkimv6/wservice-memo-alarm |
-| 도메인 | memo-alarm.woory.day |
+| 도메인 | memo.woory.day |
 | Pages URL | wservice-memo-alarm.orangepie2236.workers.dev |
