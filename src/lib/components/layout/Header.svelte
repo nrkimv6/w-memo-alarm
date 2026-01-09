@@ -1,12 +1,9 @@
 <script lang="ts">
 	import { onMount } from "svelte";
-	import { Sun, Moon, Settings, Bell, X } from "lucide-svelte";
+	import { Sun, Moon, Bell, X } from "lucide-svelte";
 	import Button from "$lib/components/ui/Button.svelte";
-	import SettingsModal from "./SettingsModal.svelte";
 	import { themeStore } from "$lib/stores/theme.svelte";
 	import { notificationStore } from "$lib/stores/notifications.svelte";
-
-	let showSettings = $state(false);
 	let showNotificationBanner = $state(false);
 	let dismissed = $state(false);
 
@@ -100,20 +97,6 @@
 				{/if}
 				<span class="sr-only">Toggle theme</span>
 			</Button>
-			<Button
-				variant="ghost"
-				size="icon"
-				class="rounded-full"
-				onclick={() => (showSettings = true)}
-			>
-				<Settings class="h-4 w-4" />
-				<span class="sr-only">Settings</span>
-			</Button>
 		</div>
 	</div>
 </header>
-
-<SettingsModal
-	bind:open={showSettings}
-	onClose={() => (showSettings = false)}
-/>

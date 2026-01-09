@@ -1,5 +1,16 @@
 # DONE (최근 20개)
 
+- [x] 2026-01-09: 설정 메뉴 통합 (상단 톱니바퀴 + 하단 네비)
+  - Header.svelte: 설정 톱니바퀴 버튼 제거 (테마 토글은 유지)
+  - /settings 페이지: 모든 설정 기능 통합
+    - 테마 선택 (라이트/다크/시스템)
+    - 클라우드 동기화
+    - 기본 알림 설정
+    - 데이터 관리 (백업/복원)
+    - 위험 영역 (데이터 삭제)
+    - 앱 정보
+  - SettingsModal.svelte 삭제 (더 이상 사용하지 않음)
+
 - [x] 2026-01-08: P2 Web Push 서버 발송 구현 (memo-alarm-notification.md)
   - `data/migrations/002_push_subscriptions.sql`: push_subscriptions 테이블
   - `src/lib/server/web-push.ts`: Web Push 발송 (VAPID JWT, 암호화)
@@ -97,7 +108,6 @@
 ### 컴포넌트 (layout)
 - `src/lib/components/layout/Header.svelte`
 - `src/lib/components/layout/FilterTabs.svelte`
-- `src/lib/components/layout/SettingsModal.svelte`
 
 ### 유틸리티
 - `src/lib/utils/capacitor.ts`
