@@ -6,11 +6,12 @@
 	interface Props {
 		open: boolean;
 		title?: string;
+		message?: string;
 		onConfirm: () => void;
 		onCancel: () => void;
 	}
 
-	let { open = $bindable(false), title = '', onConfirm, onCancel }: Props = $props();
+	let { open = $bindable(false), title = '', message = '', onConfirm, onCancel }: Props = $props();
 
 	function handleConfirm() {
 		onConfirm();
@@ -28,9 +29,15 @@
 		<div class="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
 			<AlertTriangle class="w-6 h-6 text-destructive" />
 		</div>
-		<p class="text-foreground mb-2">
-			<strong>"{title || '이 메모'}"</strong>를 삭제하시겠습니까?
-		</p>
+		{#if message}
+			<p class="text-foreground mb-2">
+				{message}
+			</p>
+		{:else}
+			<p class="text-foreground mb-2">
+				<strong>"{title || '이 메모'}"</strong>를 삭제하시겠습니까?
+			</p>
+		{/if}
 		<p class="text-sm text-muted-foreground">
 			이 작업은 되돌릴 수 없습니다.
 		</p>

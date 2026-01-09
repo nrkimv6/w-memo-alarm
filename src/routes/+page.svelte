@@ -30,6 +30,7 @@
 
 	let showForm = $state(false);
 	let showDeleteDialog = $state(false);
+	let showDeleteSelectedDialog = $state(false);
 	let showDetailModal = $state(false);
 	let showRemindersModal = $state(false);
 	let showShareModal = $state(false);
@@ -187,11 +188,15 @@
 		const ids = Array.from(selectionStore.selectedIds);
 		if (ids.length === 0) return;
 
-		if (confirm(`${ids.length}개의 메모를 삭제하시겠습니까?`)) {
-			ids.forEach((id) => memosStore.remove(id));
-			toastStore.success(`${ids.length}개의 메모가 삭제되었습니다`);
-			selectionStore.endSelection();
-		}
+		showDeleteSelectedDialog = true;
+	}
+
+	function confirmDeleteSelected() {
+		const ids = Array.from(selectionStore.selectedIds);
+		ids.forEach((id) => memosStore.remove(id));
+		toastStore.success(`${ids.length}개의 메모가 삭제되었습니다`);
+		selectionStore.endSelection();
+		showDeleteSelectedDialog = false;
 	}
 </script>
 
@@ -323,6 +328,13 @@
 	title={deletingMemo?.title}
 	onConfirm={confirmDelete}
 	onCancel={() => (deletingMemo = null)}
+/>
+
+<DeleteConfirmDialog
+	bind:open={showDeleteSelectedDialog}
+	message={`${selectedCount}개의 메모를 삭제하시겠습니까?`}
+	onConfirm={confirmDeleteSelected}
+	onCancel={() => (showDeleteSelectedDialog = false)}
 />
 
 <MemoDetailModal

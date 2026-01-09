@@ -3,6 +3,7 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Footer from "$lib/components/Footer.svelte";
+	import ConfirmDialog from '$lib/components/ui/ConfirmDialog.svelte';
 	import { memosStore } from '$lib/stores/memos.svelte';
 	import { themeStore } from '$lib/stores/theme.svelte';
 	import { settingsStore } from '$lib/stores/settings.svelte';
@@ -13,6 +14,8 @@
 	let fileInput: HTMLInputElement;
 	let importing = $state(false);
 	let importError = $state('');
+	let showDisconnectDialog = $state(false);
+	let showClearAllDialog = $state(false);
 
 	const memoCount = $derived(memosStore.memos.length);
 
@@ -37,9 +40,11 @@
 	}
 
 	function handleDisconnect() {
-		if (confirm('동기화 연결을 해제하시겠습니까? 로컬 데이터는 유지됩니다.')) {
-			syncStore.disconnect();
-		}
+		showDisconnectDialog = true;
+	}
+
+	function confirmDisconnect() {
+		syncStore.disconnect();
 	}
 
 	async function copyCode() {
@@ -110,9 +115,11 @@
 	}
 
 	function handleClearAll() {
-		if (confirm('모든 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-			clearAllData();
-		}
+		showClearAllDialog = true;
+	}
+
+	function confirmClearAll() {
+		clearAllData();
 	}
 </script>
 
@@ -421,3 +428,24 @@
 	<!-- Footer -->
 	<Footer className="mt-8" />
 </div>
+
+<!-- Confirm Dialogs -->
+<ConfirmDialog
+	bind:open={showDisconnectDialog}
+	title="동기화 연결 해제"
+	message="동기화 연결을 해제하시겠습니까? 로컬 데이터는 유지됩니다."
+	confirmText="연결 해제"
+	variant="destructive"
+	onConfirm={confirmDisconnect}
+	onCancel={() => {}}
+/>
+
+<ConfirmDialog
+	bind:open={showClearAllDialog}
+	title="모든 데이터 삭제"
+	message="모든 데이터를 삭제하시겠습니까?"
+	confirmText="삭제"
+	variant="destructive"
+	onConfirm={confirmClearAll}
+	onCancel={() => {}}
+/>

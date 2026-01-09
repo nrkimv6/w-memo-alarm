@@ -2,6 +2,7 @@
 	import { Bell, BellOff, Calendar, Clock, Trash2 } from 'lucide-svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
+	import ConfirmDialog from '$lib/components/ui/ConfirmDialog.svelte';
 	import { memosStore } from '$lib/stores/memos.svelte';
 	import type { Memo } from '$lib/types/memo';
 
@@ -12,6 +13,7 @@
 	}
 
 	let { open = $bindable(false), onClose, onMemoClick }: Props = $props();
+	let showDisableAllDialog = $state(false);
 
 	const dayLabels = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -70,13 +72,15 @@
 	}
 
 	function handleDisableAll() {
-		if (confirm('모든 알림을 비활성화하시겠습니까?')) {
-			memosWithReminders.forEach((memo) => {
-				if (memo.reminder) {
-					memosStore.update(memo.id, { reminder: { ...memo.reminder, enabled: false } });
-				}
-			});
-		}
+		showDisableAllDialog = true;
+	}
+
+	function confirmDisableAll() {
+		memosWithReminders.forEach((memo) => {
+			if (memo.reminder) {
+				memosStore.update(memo.id, { reminder: { ...memo.reminder, enabled: false } });
+			}
+		});
 	}
 </script>
 
@@ -142,3 +146,13 @@
 		<Button onclick={onClose}>닫기</Button>
 	{/snippet}
 </Modal>
+
+<ConfirmDialog
+	bind:open={showDisableAllDialog}
+	title="모든 알림 비활성화"
+	message="모든 알림을 비활성화하시겠습니까?"
+	confirmText="비활성화"
+	variant="destructive"
+	onConfirm={confirmDisableAll}
+	onCancel={() => {}}
+/>
