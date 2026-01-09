@@ -1,6 +1,6 @@
 {
-	"name": "Memo Alarm",
-	"short_name": "MemoAlarm",
+	"name": "메모알람",
+	"short_name": "메모알람",
 	"description": "메모와 알림을 관리하는 앱",
 	"start_url": "/",
 	"display": "standalone",
