@@ -14,7 +14,7 @@
             description: "일일 명언 및 묵상",
         },
         {
-            name: "문센 다모아
+            name: "문센 다모아",
             url: "https://activity.woory.day",
             description: "문화센터 강좌 검색",
         },
