@@ -1,5 +1,6 @@
 import type { Memo, MemoCreate, MemoUpdate } from '$lib/types/memo';
 import { isNative, scheduleNotification, cancelNotification } from '$lib/utils/capacitor';
+import { toastStore } from './toast.svelte';
 
 const STORAGE_KEY = 'memo-alarm-memos';
 const INITIALIZED_KEY = 'memo-alarm-initialized';
@@ -53,6 +54,16 @@ function saveToStorage(memos: Memo[]): void {
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(memos));
 	} catch (e) {
 		console.error('Failed to save memos:', e);
+
+		// QuotaExceededError 감지
+		if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+			toastStore.error(
+				'저장 공간 부족',
+				'브라우저 저장 공간이 가득 찼습니다. 오래된 메모를 삭제하거나 내보내기 후 정리해주세요.'
+			);
+		} else {
+			toastStore.error('저장 실패', '메모 저장에 실패했습니다.');
+		}
 	}
 }
 
