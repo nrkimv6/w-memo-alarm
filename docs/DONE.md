@@ -1,5 +1,21 @@
 # DONE (최근 20개)
 
+- [x] 2026-01-10: TODO 정리 - Phase 1-6 완료 항목 아카이빙
+  - Phase 1: 기반 구축 (프로젝트 초기화, 색상 테마, UI 컴포넌트, 타입 정의, 스토어, 레이아웃)
+  - Phase 2: 메모 핵심 (CRUD, 메모 카드, 태그 시스템, 검색/필터, 뷰 모드)
+  - Phase 3: 북마크 속성 (URL 입력, 이모지 피커, 열람 추적, 카드에 URL 표시)
+  - Phase 4: 알림 시스템 (알림 설정 UI, PWA 푸시 알림, 오늘의 알림 섹션, 자동 URL 열기)
+  - Phase 5: Capacitor (Capacitor 설정, 네이티브 알림, Android 빌드)
+  - Phase 6: 마무리 (다크 모드, 데이터 내보내기/가져오기, PWA 설정)
+
+- [x] 2026-01-10: AdSense & SEO 준비 완료
+  - `/about` 페이지 대폭 확장 (2500+ 단어)
+    - 싱글 태스킹의 힘 (700+ 단어)
+    - 기억 보조 도구로서의 메모 알람 (700+ 단어) 섹션 추가
+  - `/contact` 페이지 FAQ 확장 (8개 → 10개 Q&A: 배터리 최적화 설정, 무료 서비스 등 추가)
+  - Footer 업데이트 (서비스 소개, 문의하기, Woory.day 포털 링크 추가)
+  - SEO 메타태그 대폭 개선 (한글 title/description, keywords, OG tags, Twitter Card, canonical)
+
 - [x] 2026-01-09: P1 MemoCard 모바일 시인성 개선
   - Ultra compact 모드 아이콘/폰트 개선 (h-3.5→h-4, text-xs→text-sm)
   - Hover 액션 버튼 터치 타겟 44px로 확대 (p-1.5→min-h-11 min-w-11)
