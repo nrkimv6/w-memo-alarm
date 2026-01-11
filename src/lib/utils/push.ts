@@ -1,7 +1,7 @@
 // VAPID Web Push 유틸리티
 // 브라우저 푸시 구독 및 D1 저장
 
-const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+const VAPID_PUBLIC_KEY = import.meta.env.PUBLIC_VAPID_PUBLIC_KEY;
 const PUSH_ENABLED_KEY = 'memo-alarm:webPushEnabled';
 
 // Base64 URL → Uint8Array 변환
