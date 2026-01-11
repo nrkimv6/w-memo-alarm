@@ -121,6 +121,7 @@
 	{#if visibleItems.length > 0}
 		<div class="space-y-1">
 			{#each visibleItems as item, index (item.id)}
+				{@const actualIndex = items.findIndex(i => i.id === item.id)}
 				<div
 					class={cn(
 						'flex items-center gap-2 p-2 rounded-lg bg-muted/50 group',
@@ -129,7 +130,6 @@
 				>
 					<!-- Move buttons -->
 					<div class="flex flex-col opacity-0 group-hover:opacity-100 transition-opacity">
-						{@const actualIndex = items.findIndex(i => i.id === item.id)}
 						<button
 							type="button"
 							onclick={() => moveItem(item.id, 'up')}
