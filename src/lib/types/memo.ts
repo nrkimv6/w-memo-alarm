@@ -49,6 +49,8 @@ export interface Memo {
 	checklist?: ChecklistItem[];
 	dueDate?: string; // YYYY-MM-DD
 	priority?: Priority;
+	// Online-First: 버전 관리 (충돌 감지용)
+	version?: number;
 }
 
 export type MemoCreate = Omit<Memo, 'id' | 'createdAt' | 'updatedAt' | 'isPinned' | 'isFavorite' | 'isActive' | 'openCount' | 'openHistory'>;

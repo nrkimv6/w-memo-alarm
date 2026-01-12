@@ -1,8 +1,12 @@
 import type { Memo, MemoCreate, MemoUpdate } from '$lib/types/memo';
+import type { RealtimeChannel } from '@supabase/supabase-js';
+import { browser } from '$app/environment';
+import { supabase } from '$lib/services/supabase';
+import { authStore } from './auth.svelte';
 import { isNative, scheduleNotification, cancelNotification } from '$lib/utils/capacitor';
 import { toastStore } from './toast.svelte';
 
-const STORAGE_KEY = 'memo-alarm-memos';
+const CACHE_KEY = 'memo-alarm-memos-cache';
 const INITIALIZED_KEY = 'memo-alarm-initialized';
 
 const SAMPLE_MEMOS: Omit<Memo, 'id' | 'createdAt' | 'updatedAt'>[] = [
@@ -38,124 +42,334 @@ function generateId(): string {
 	return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 }
 
-function loadFromStorage(): Memo[] {
-	if (typeof window === 'undefined') return [];
+// localStorage 캐시 (오프라인 폴백용)
+function loadCacheFromStorage(): Memo[] {
+	if (!browser) return [];
 	try {
-		const data = localStorage.getItem(STORAGE_KEY);
-		return data ? JSON.parse(data) : [];
+		const cached = localStorage.getItem(CACHE_KEY);
+		return cached ? JSON.parse(cached) : [];
 	} catch {
 		return [];
 	}
 }
 
-function saveToStorage(memos: Memo[]): void {
-	if (typeof window === 'undefined') return;
+function saveCacheToStorage(memos: Memo[]): void {
+	if (!browser) return;
 	try {
-		localStorage.setItem(STORAGE_KEY, JSON.stringify(memos));
+		localStorage.setItem(CACHE_KEY, JSON.stringify(memos));
 	} catch (e) {
-		console.error('Failed to save memos:', e);
-
-		// QuotaExceededError 감지
-		if (e instanceof DOMException && e.name === 'QuotaExceededError') {
-			toastStore.error(
-				'저장 공간 부족',
-				'브라우저 저장 공간이 가득 찼습니다. 오래된 메모를 삭제하거나 내보내기 후 정리해주세요.'
-			);
-		} else {
-			toastStore.error('저장 실패', '메모 저장에 실패했습니다.');
-		}
+		console.error('Failed to cache memos:', e);
 	}
+}
+
+// Supabase 타입 변환 함수
+function supabaseToMemo(row: any): Memo {
+	return {
+		id: row.id,
+		title: row.title,
+		content: row.content || '',
+		tags: row.tags || [],
+		isPinned: row.is_pinned || false,
+		isFavorite: row.is_favorite || false,
+		isActive: row.is_active !== false,
+		createdAt: new Date(row.created_at).getTime(),
+		updatedAt: new Date(row.updated_at).getTime(),
+		url: row.url,
+		emoji: row.emoji,
+		openCount: row.open_count || 0,
+		reminder: row.reminder,
+		folderId: row.folder_id,
+		checklist: row.checklist,
+		version: row.version || 1
+	};
+}
+
+function memoToSupabase(memo: Partial<Memo>): any {
+	const result: any = {};
+	if (memo.id !== undefined) result.id = memo.id;
+	if (memo.title !== undefined) result.title = memo.title;
+	if (memo.content !== undefined) result.content = memo.content;
+	if (memo.tags !== undefined) result.tags = memo.tags;
+	if (memo.isPinned !== undefined) result.is_pinned = memo.isPinned;
+	if (memo.isFavorite !== undefined) result.is_favorite = memo.isFavorite;
+	if (memo.isActive !== undefined) result.is_active = memo.isActive;
+	if (memo.url !== undefined) result.url = memo.url;
+	if (memo.emoji !== undefined) result.emoji = memo.emoji;
+	if (memo.openCount !== undefined) result.open_count = memo.openCount;
+	if (memo.reminder !== undefined) result.reminder = memo.reminder;
+	if (memo.folderId !== undefined) result.folder_id = memo.folderId;
+	if (memo.checklist !== undefined) result.checklist = memo.checklist;
+	return result;
 }
 
 function createMemosStore() {
 	let memos = $state<Memo[]>([]);
+	let loading = $state(true);
 	let initialized = $state(false);
+	let subscription: RealtimeChannel | null = null;
 
-	function init() {
+	async function init() {
 		if (initialized) return;
-		memos = loadFromStorage();
-		initialized = true;
 
-		// Add sample memos on first run
-		if (typeof window !== 'undefined' && !localStorage.getItem(INITIALIZED_KEY)) {
-			if (memos.length === 0) {
+		if (!authStore.isAuthenticated) {
+			// 비로그인: localStorage 캐시 읽기 (오프라인)
+			memos = loadCacheFromStorage();
+			loading = false;
+			initialized = true;
+
+			// 샘플 메모 추가 (최초 실행 시)
+			if (browser && !localStorage.getItem(INITIALIZED_KEY) && memos.length === 0) {
 				const now = Date.now();
-				const sampleMemos: Memo[] = SAMPLE_MEMOS.map((sample, index) => ({
+				memos = SAMPLE_MEMOS.map((sample, index) => ({
 					...sample,
 					id: generateId(),
-					createdAt: now - index * 60000, // Stagger creation times
+					createdAt: now - index * 60000,
 					updatedAt: now - index * 60000
 				}));
-				memos = sampleMemos;
-				saveToStorage(memos);
+				saveCacheToStorage(memos);
+				localStorage.setItem(INITIALIZED_KEY, 'true');
 			}
-			localStorage.setItem(INITIALIZED_KEY, 'true');
+			return;
+		}
+
+		// 로그인: Supabase에서 로드
+		await fetchFromSupabase();
+
+		// Realtime 구독
+		subscribeToRealtime();
+
+		loading = false;
+		initialized = true;
+	}
+
+	async function fetchFromSupabase() {
+		if (!authStore.user) return;
+
+		try {
+			const { data, error } = await supabase
+				.from('memos')
+				.select('*')
+				.eq('user_id', authStore.user.id)
+				.order('created_at', { ascending: false });
+
+			if (error) {
+				console.error('Failed to load memos:', error);
+				toastStore.error('메모 로드 실패');
+				memos = loadCacheFromStorage();
+			} else {
+				memos = (data || []).map(supabaseToMemo);
+				saveCacheToStorage(memos);
+			}
+		} catch (e) {
+			console.error('Failed to fetch memos:', e);
+			memos = loadCacheFromStorage();
 		}
 	}
 
-	function add(data: MemoCreate): Memo {
-		const now = Date.now();
-		const newMemo: Memo = {
+	function subscribeToRealtime() {
+		if (!authStore.user) return;
+
+		subscription = supabase
+			.channel('memos')
+			.on(
+				'postgres_changes',
+				{
+					event: 'INSERT',
+					schema: 'public',
+					table: 'memos',
+					filter: `user_id=eq.${authStore.user.id}`
+				},
+				(payload) => {
+					const newMemo = supabaseToMemo(payload.new);
+					memos = [newMemo, ...memos];
+					saveCacheToStorage(memos);
+				}
+			)
+			.on(
+				'postgres_changes',
+				{
+					event: 'UPDATE',
+					schema: 'public',
+					table: 'memos',
+					filter: `user_id=eq.${authStore.user.id}`
+				},
+				(payload) => {
+					const updated = supabaseToMemo(payload.new);
+					memos = memos.map((m) => (m.id === updated.id ? updated : m));
+					saveCacheToStorage(memos);
+				}
+			)
+			.on(
+				'postgres_changes',
+				{
+					event: 'DELETE',
+					schema: 'public',
+					table: 'memos',
+					filter: `user_id=eq.${authStore.user.id}`
+				},
+				(payload) => {
+					memos = memos.filter((m) => m.id !== payload.old.id);
+					saveCacheToStorage(memos);
+				}
+			)
+			.subscribe();
+	}
+
+	async function add(data: MemoCreate): Promise<Memo | null> {
+		if (!authStore.isAuthenticated) {
+			// 비로그인: 로컬 전용
+			const now = Date.now();
+			const newMemo: Memo = {
+				id: generateId(),
+				title: data.title,
+				content: data.content || '',
+				tags: data.tags || [],
+				isPinned: false,
+				isFavorite: false,
+				isActive: true,
+				createdAt: now,
+				updatedAt: now,
+				url: data.url,
+				emoji: data.emoji,
+				reminder: data.reminder,
+				folderId: data.folderId,
+				checklist: data.checklist
+			};
+			memos = [newMemo, ...memos];
+			saveCacheToStorage(memos);
+
+			if (newMemo.reminder?.enabled && isNative()) {
+				scheduleNotification(newMemo);
+			}
+
+			return newMemo;
+		}
+
+		// 로그인: Supabase에 저장
+		const newMemo = memoToSupabase({
 			id: generateId(),
-			title: data.title,
-			content: data.content,
-			tags: data.tags || [],
+			...data,
 			isPinned: false,
 			isFavorite: false,
-			isActive: true,
-			createdAt: now,
-			updatedAt: now,
-			url: data.url,
-			emoji: data.emoji,
-			reminder: data.reminder,
-			folderId: data.folderId
-		};
-		memos = [newMemo, ...memos];
-		saveToStorage(memos);
+			isActive: true
+		});
+		newMemo.user_id = authStore.user!.id;
 
-		// Schedule native notification if reminder is set
-		if (newMemo.reminder?.enabled && isNative()) {
-			scheduleNotification(newMemo);
+		const { data: inserted, error } = await supabase
+			.from('memos')
+			.insert(newMemo)
+			.select()
+			.single();
+
+		if (error) {
+			console.error('Failed to add memo:', error);
+			toastStore.error('메모 저장 실패');
+			return null;
 		}
 
-		return newMemo;
+		const result = supabaseToMemo(inserted);
+
+		// 알림 스케줄링
+		if (isNative() && result.reminder?.enabled) {
+			scheduleNotification(result);
+		}
+
+		return result;
 	}
 
-	function update(id: string, data: MemoUpdate): Memo | null {
-		const index = memos.findIndex((m) => m.id === id);
-		if (index === -1) return null;
+	async function update(id: string, changes: MemoUpdate): Promise<Memo | null> {
+		if (!authStore.isAuthenticated) {
+			// 비로그인: 로컬 전용
+			const index = memos.findIndex((m) => m.id === id);
+			if (index === -1) return null;
 
-		const updated: Memo = {
-			...memos[index],
-			...data,
-			updatedAt: Date.now()
-		};
-		memos = [...memos.slice(0, index), updated, ...memos.slice(index + 1)];
-		saveToStorage(memos);
+			const updated: Memo = {
+				...memos[index],
+				...changes,
+				updatedAt: Date.now()
+			};
+			memos = [...memos.slice(0, index), updated, ...memos.slice(index + 1)];
+			saveCacheToStorage(memos);
 
-		// Update native notification
-		if (isNative()) {
-			if (updated.reminder?.enabled) {
-				scheduleNotification(updated);
+			if (isNative()) {
+				if (updated.reminder?.enabled) {
+					scheduleNotification(updated);
+				} else {
+					cancelNotification(id);
+				}
+			}
+
+			return updated;
+		}
+
+		// 로그인: Supabase 업데이트 (충돌 감지)
+		const currentMemo = memos.find((m) => m.id === id);
+		if (!currentMemo) return null;
+
+		const updateData = memoToSupabase(changes);
+
+		const { data, error } = await supabase
+			.from('memos')
+			.update(updateData)
+			.eq('id', id)
+			.eq('version', currentMemo.version) // 버전 기반 충돌 감지
+			.select()
+			.single();
+
+		if (error) {
+			if (error.code === 'PGRST116') {
+				// 버전 불일치 → 충돌!
+				toastStore.warning('다른 기기에서 수정됨. 최신 데이터로 새로고침합니다.');
+				await fetchFromSupabase();
+				return null;
+			}
+			console.error('Failed to update memo:', error);
+			toastStore.error('메모 수정 실패');
+			return null;
+		}
+
+		const result = supabaseToMemo(data);
+
+		// 알림 재스케줄링
+		if (isNative() && changes.reminder !== undefined) {
+			if (result.reminder?.enabled) {
+				scheduleNotification(result);
 			} else {
 				cancelNotification(id);
 			}
 		}
 
-		return updated;
+		return result;
 	}
 
-	function remove(id: string): boolean {
-		const index = memos.findIndex((m) => m.id === id);
-		if (index === -1) return false;
+	async function remove(id: string): Promise<boolean> {
+		if (!authStore.isAuthenticated) {
+			// 비로그인: 로컬 전용
+			const index = memos.findIndex((m) => m.id === id);
+			if (index === -1) return false;
 
-		// Cancel native notification
+			if (isNative()) {
+				cancelNotification(id);
+			}
+
+			memos = [...memos.slice(0, index), ...memos.slice(index + 1)];
+			saveCacheToStorage(memos);
+			return true;
+		}
+
+		// 로그인: Supabase 삭제
 		if (isNative()) {
 			cancelNotification(id);
 		}
 
-		memos = [...memos.slice(0, index), ...memos.slice(index + 1)];
-		saveToStorage(memos);
+		const { error } = await supabase.from('memos').delete().eq('id', id);
+
+		if (error) {
+			console.error('Failed to delete memo:', error);
+			toastStore.error('메모 삭제 실패');
+			return false;
+		}
+
 		return true;
 	}
 
@@ -220,54 +434,67 @@ function createMemosStore() {
 		return Array.from(tagSet).sort();
 	}
 
-	function importMemos(newMemos: Memo[], replace = false): void {
-		if (replace) {
-			memos = newMemos;
-		} else {
-			// Merge: skip duplicates by id
-			const existingIds = new Set(memos.map((m) => m.id));
-			const toAdd = newMemos.filter((m) => !existingIds.has(m.id));
-			memos = [...toAdd, ...memos];
-		}
-		saveToStorage(memos);
-
-		// Schedule notifications for imported memos with reminders
-		if (isNative()) {
-			memos.filter((m) => m.reminder?.enabled).forEach(scheduleNotification);
-		}
-	}
-
-	// Phase 14: 동기화용 - ID 지정하여 메모 추가
-	function addMemoWithId(memo: Memo): void {
-		const existing = memos.find((m) => m.id === memo.id);
-		if (existing) {
-			update(memo.id, memo);
-		} else {
-			memos = [memo, ...memos];
-			saveToStorage(memos);
-			if (memo.reminder?.enabled && isNative()) {
-				scheduleNotification(memo);
+	async function importMemos(newMemos: Memo[], replace = false): Promise<void> {
+		if (!authStore.isAuthenticated) {
+			// 비로그인: 로컬 전용
+			if (replace) {
+				memos = newMemos;
+			} else {
+				const existingIds = new Set(memos.map((m) => m.id));
+				const toAdd = newMemos.filter((m) => !existingIds.has(m.id));
+				memos = [...toAdd, ...memos];
 			}
+			saveCacheToStorage(memos);
+
+			if (isNative()) {
+				memos.filter((m) => m.reminder?.enabled).forEach(scheduleNotification);
+			}
+			return;
 		}
+
+		// 로그인: Supabase에 일괄 삽입
+		const memosToInsert = newMemos.map((memo) => ({
+			...memoToSupabase(memo),
+			user_id: authStore.user!.id
+		}));
+
+		const { error } = await supabase.from('memos').insert(memosToInsert);
+
+		if (error) {
+			console.error('Failed to import memos:', error);
+			toastStore.error('메모 가져오기 실패');
+			return;
+		}
+
+		toastStore.success(`${newMemos.length}개 메모 가져오기 완료`);
 	}
 
-	// Phase 14: 동기화용 alias
-	function deleteMemo(id: string): boolean {
-		return remove(id);
-	}
-
-	function updateMemo(id: string, data: MemoUpdate): Memo | null {
-		return update(id, data);
+	// 동기화용 (구 버전 호환성)
+	function importData(newMemos: Memo[]): void {
+		importMemos(newMemos, true);
 	}
 
 	function clearAll(): void {
-		memos = [];
-		saveToStorage(memos);
+		if (!authStore.isAuthenticated) {
+			memos = [];
+			saveCacheToStorage(memos);
+			return;
+		}
+
+		toastStore.error('로그인된 상태에서는 개별 삭제만 가능합니다.');
+	}
+
+	function cleanup() {
+		subscription?.unsubscribe();
+		subscription = null;
 	}
 
 	return {
 		get memos() {
 			return memos;
+		},
+		get loading() {
+			return loading;
 		},
 		get initialized() {
 			return initialized;
@@ -286,11 +513,21 @@ function createMemosStore() {
 		toggleChecklistItem,
 		getAllTags,
 		importMemos,
+		importData,
 		clearAll,
-		// Phase 14: 동기화용
-		addMemoWithId,
-		deleteMemo,
-		updateMemo
+		cleanup,
+		// 구 API 호환성 (sync용)
+		deleteMemo: remove,
+		updateMemo: update,
+		addMemoWithId: (memo: Memo) => {
+			// 동기화용 레거시 함수
+			const existing = memos.find((m) => m.id === memo.id);
+			if (existing) {
+				update(memo.id, memo);
+			} else {
+				add(memo);
+			}
+		}
 	};
 }
 
