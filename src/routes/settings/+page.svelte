@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Download, Upload, Trash2, Sun, Moon, Monitor, Bell, Cloud, CloudOff, RefreshCw, Copy, Check, Info } from 'lucide-svelte';
+	import { Download, Upload, Trash2, Sun, Moon, Monitor, Bell, Cloud, CloudOff, RefreshCw, Copy, Check, Info, LogIn, LogOut } from 'lucide-svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Footer from "$lib/components/Footer.svelte";
@@ -8,8 +8,10 @@
 	import { themeStore } from '$lib/stores/theme.svelte';
 	import { settingsStore } from '$lib/stores/settings.svelte';
 	import { syncStore } from '$lib/stores/sync.svelte';
+	import { authStore } from '$lib/stores/auth.svelte';
 	import { downloadFullBackup, importFullBackup, clearAllData } from '$lib/utils/data';
 	import { cn } from '$lib/utils';
+	import { getUserDisplayName, getUserEmail } from '$lib/utils/user';
 
 	let fileInput: HTMLInputElement;
 	let importing = $state(false);
@@ -167,12 +169,18 @@
 			<h2 class="font-semibold">클라우드 동기화</h2>
 		</div>
 
+		<!-- 코드 방식 (간편 동기화) -->
 		<div class="bg-card rounded-xl border border-border p-5">
+			<h3 class="text-sm font-semibold mb-3">간편 동기화 (코드)</h3>
+			<p class="text-xs text-muted-foreground mb-4">
+				6자리 코드로 기기를 연결합니다. 간편하지만 코드 유출 시 보안 위험이 있습니다.
+			</p>
+
 			{#if syncStore.isConnected}
 				<!-- 연결됨 -->
 				<div class="space-y-4">
 					<div class="flex items-center justify-between">
-						<span class="text-sm font-medium text-success">동기화 연결됨</span>
+						<span class="text-sm font-medium text-success">연결됨</span>
 						{#if syncStore.status.isOnline}
 							<span class="flex items-center gap-1 text-xs text-success">
 								<span class="w-2 h-2 rounded-full bg-success animate-pulse"></span>
@@ -187,7 +195,7 @@
 					</div>
 
 					<div class="flex items-center gap-2">
-						<span class="text-xs text-muted-foreground">동기화 코드:</span>
+						<span class="text-xs text-muted-foreground">코드:</span>
 						<code class="px-2 py-1 text-sm font-mono bg-muted rounded">{syncStore.user?.syncCode}</code>
 						<button onclick={copyCode} class="p-1 hover:bg-muted rounded" title="코드 복사">
 							{#if copied}
@@ -222,7 +230,7 @@
 
 					<!-- 자동 동기화 -->
 					<div class="flex items-center justify-between pt-3 border-t border-border/50">
-						<span class="text-sm">자동 동기화 (5분 간격)</span>
+						<span class="text-sm">자동 동기화 (5분)</span>
 						<button
 							type="button"
 							role="switch"
@@ -238,10 +246,6 @@
 			{:else}
 				<!-- 미연결 -->
 				<div class="space-y-4">
-					<p class="text-sm text-muted-foreground">
-						다른 기기와 메모를 동기화하려면 동기화 코드를 생성하거나 기존 코드를 입력하세요.
-					</p>
-
 					<!-- 새 코드 생성 -->
 					<div class="space-y-2">
 						<Input
@@ -256,7 +260,7 @@
 							class="w-full"
 						>
 							<Cloud class="w-4 h-4" />
-							새 동기화 코드 생성
+							새 코드 생성
 						</Button>
 					</div>
 
@@ -270,7 +274,7 @@
 					<div class="space-y-2">
 						<Input
 							bind:value={syncCodeInput}
-							placeholder="동기화 코드 6자리 입력"
+							placeholder="코드 6자리 입력"
 							maxlength={6}
 							class="text-sm font-mono uppercase text-center tracking-widest"
 						/>
@@ -286,6 +290,75 @@
 
 					{#if syncStore.status.error}
 						<p class="text-xs text-destructive">{syncStore.status.error}</p>
+					{/if}
+				</div>
+			{/if}
+		</div>
+
+		<!-- 로그인 방식 (안전 동기화) -->
+		<div class="bg-card rounded-xl border border-border p-5">
+			<h3 class="text-sm font-semibold mb-3">안전 동기화 (로그인)</h3>
+			<p class="text-xs text-muted-foreground mb-4">
+				Google/Kakao 계정으로 로그인하여 안전하게 데이터를 보호합니다.
+			</p>
+
+			{#if authStore.isAuthenticated}
+				<!-- 로그인됨 -->
+				<div class="space-y-4">
+					<div class="flex items-center gap-2">
+						<span class="text-sm font-medium text-success">로그인됨</span>
+					</div>
+
+					<div class="text-sm">
+						{#if authStore.user}
+							<p class="font-medium">{getUserDisplayName(authStore.user)}</p>
+							{#if getUserEmail(authStore.user)}
+								<p class="text-xs text-muted-foreground">
+									{getUserEmail(authStore.user)}
+								</p>
+							{/if}
+						{/if}
+					</div>
+
+					<div class="flex gap-2">
+						<Button
+							variant="secondary"
+							size="sm"
+							onclick={() => authStore.sync()}
+							disabled={authStore.syncing}
+							class="flex-1"
+						>
+							<RefreshCw class={cn('w-4 h-4', authStore.syncing && 'animate-spin')} />
+							{authStore.syncing ? '동기화 중...' : '지금 동기화'}
+						</Button>
+						<Button variant="ghost" size="sm" onclick={() => authStore.signOut()}>
+							<LogOut class="w-4 h-4" />
+							로그아웃
+						</Button>
+					</div>
+				</div>
+			{:else}
+				<!-- 미로그인 -->
+				<div class="space-y-3">
+					<Button
+						variant="default"
+						onclick={() => authStore.signInWithGoogle()}
+						class="w-full"
+					>
+						<LogIn class="w-4 h-4" />
+						Google로 로그인
+					</Button>
+					<Button
+						variant="secondary"
+						onclick={() => authStore.signInWithKakao()}
+						class="w-full"
+					>
+						<LogIn class="w-4 h-4" />
+						Kakao로 로그인
+					</Button>
+
+					{#if authStore.error}
+						<p class="text-xs text-destructive">{authStore.error}</p>
 					{/if}
 				</div>
 			{/if}
