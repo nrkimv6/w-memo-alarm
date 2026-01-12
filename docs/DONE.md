@@ -1,5 +1,27 @@
 # DONE (최근 20개)
 
+- [x] 2026-01-12: **Phase 7: Online-First 아키텍처 전환 완료** ✅
+  - **아키텍처**: D1 + localStorage (offline-first) → Supabase (online-first)
+  - **Phase 1**: Supabase 마이그레이션
+    - `data/migrations/004_supabase_online_first.sql` 생성
+    - `memos`, `folders` 테이블 + RLS 정책 + 인덱스
+    - 버전 기반 충돌 감지 (자동 version 증가 트리거)
+  - **Phase 2**: Store 리팩토링
+    - `memos.svelte.ts`: Supabase CRUD + Realtime 구독 + 버전 충돌 감지
+    - `folders.svelte.ts`: Supabase CRUD + Realtime 구독
+    - 오프라인 폴백 (localStorage 캐시)
+  - **Phase 3**: 알림 스케줄링 통합 (이미 완료)
+  - **Phase 4**: D1 제거
+    - `wrangler.toml`: D1 바인딩 제거
+    - `sync.svelte.ts`, `api/sync/+server.ts` 삭제
+    - 설정 페이지: D1 동기화 UI 제거
+  - **Phase 5**: 빌드 검증
+    - 빌드 성공 (경고만, 에러 없음)
+    - Capacitor 모듈 외부화 (vite.config.ts)
+    - 접근성 개선 (aria-label)
+  - **참고**: `common/docs/archive/2026-01-12_memo-alarm-online-first.md`
+  - **커밋**: 7개 커밋 (3ad7e09...c956ff2)
+
 - [x] 2026-01-10: TODO 정리 - Phase 1-6 완료 항목 아카이빙
   - Phase 1: 기반 구축 (프로젝트 초기화, 색상 테마, UI 컴포넌트, 타입 정의, 스토어, 레이아웃)
   - Phase 2: 메모 핵심 (CRUD, 메모 카드, 태그 시스템, 검색/필터, 뷰 모드)

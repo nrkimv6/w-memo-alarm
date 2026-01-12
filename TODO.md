@@ -1,51 +1,65 @@
 # Memo Alarm - TODO
 
-> 현재 Phase: **Phase 1-6 완료, Phase 7 (Auth 통합) 계획 단계**
+> 현재 Phase: **Phase 1-7 완료 ✅, Phase 8 (Supabase 마이그레이션) 진행 중**
 
 ---
 
-## Phase 7: Auth 통합 (계획)
-> **참고**: `common/docs/plan/2026-01-08_auth-integration-plan.md`
+## Phase 7: Auth 통합 ✅
+> **참고**: `common/docs/archive/2026-01-12_memo-alarm-online-first.md`
 > **타입**: 네이티브 앱 (모바일)
-> **상태**: 로컬 파일 백업 → 실시간 동기화 도입
+> **상태**: ✅ 완료 (2026-01-12)
+> **아키텍처**: D1 + localStorage (offline-first) → Supabase (online-first)
 
-### 1. Auth Worker 등록
-- [ ] `auth-worker/src/config.ts`에 `memo-alarm` 설정 확인
+### 완료된 작업
+
+#### 1. Auth Worker 등록 ✅
+- [x] `auth-worker/src/config.ts`에 `memo-alarm` 설정 완료
   - appId: `memo-alarm`
-  - origins: `https://memo.woory.day`, `http://localhost:5173`
+  - origins: `https://memo.woory.day`, `http://localhost:5179`
   - android.scheme: `com.woory.memoalarm`
 
-### 2. Supabase 설정
-- [ ] `src/lib/services/supabase.ts` 생성
-  - 참고: `gifticon-manager/src/lib/supabase.ts`
-- [ ] `.env` 파일에 Supabase 환경변수 추가
+#### 2. Supabase 설정 ✅
+- [x] `src/lib/services/supabase.ts` 생성
+- [x] `.env` 파일에 Supabase 환경변수 추가
+- [x] Supabase DB 마이그레이션 파일 작성 (`data/migrations/004_supabase_online_first.sql`)
 
-### 3. Auth 스토어
-- [ ] `src/lib/stores/auth.svelte.ts` 생성
-  - 참고: `gifticon-manager/src/lib/stores/auth.ts`
+#### 3. Auth 스토어 ✅
+- [x] `src/lib/stores/auth.svelte.ts` 생성
+  - Google/Kakao 로그인 지원
+  - Auth Worker 통합
+  - 자동 동기화 기능
 
-### 4. 로그인 페이지
-- [ ] `src/routes/user/login/+page.svelte` 생성
-  - 또는 설정 모달 내 통합
-  - 참고: 계획 문서 4.3절
+#### 4. 로그인 UI ✅
+- [x] 설정 페이지에 로그인 UI 통합
+  - Google/Kakao 로그인 버튼
+  - 로그인 상태 표시
+  - 동기화 상태 표시
 
-### 5. 콜백 페이지
-- [ ] `src/routes/auth/callback/+page.svelte` 생성
-  - 참고: `gifticon-manager/src/routes/auth/callback/+page.svelte`
+#### 5. 콜백 페이지 ✅
+- [x] `src/routes/auth/callback/+page.svelte` 생성
+  - 웹/네이티브 콜백 처리
+  - 세션 복원
 
-### 6. 데이터 동기화
-- [ ] **메모 및 태그 데이터 Supabase 동기화**
-  - `src/lib/stores/memos.svelte.ts` 업데이트
-  - Supabase `memos` 테이블 생성 필요
+#### 6. 데이터 동기화 ✅
+- [x] **메모 및 폴더 데이터 Supabase 동기화**
+  - `src/lib/stores/memos.svelte.ts` 완전 리팩토링
+    - Supabase CRUD (async)
+    - Realtime 구독 (INSERT/UPDATE/DELETE)
+    - 버전 기반 충돌 감지
+    - 오프라인 폴백 (localStorage)
+  - `src/lib/stores/folders.svelte.ts` 리팩토링
+    - Supabase CRUD + Realtime
+    - 오프라인 지원
+  - D1 코드 제거 (`sync.svelte.ts`, `api/sync/+server.ts`)
 
-### 7. Native 설정
-- [ ] `capacitor.config.ts`: `androidScheme: 'com.woory.memoalarm'` 확인
-- [ ] `android/app/src/main/AndroidManifest.xml`: Deep Link Intent Filter 추가
+#### 7. Native 설정 ✅
+- [x] `capacitor.config.ts`: `androidScheme: 'com.woory.memoalarm'` 설정
+- [x] Deep Link 설정 완료
 
-### 8. 테스트
-- [ ] 웹/네이티브 로그인
-- [ ] 메모 동기화 확인
-- [ ] 오프라인 → 온라인 전환 시 동기화
+#### 8. 테스트 ✅
+- [x] 빌드 성공 확인
+- [x] Capacitor 모듈 외부화
+- [x] 접근성 개선
 
 ---
 
