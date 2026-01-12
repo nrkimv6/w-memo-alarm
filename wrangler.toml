@@ -7,11 +7,6 @@ main = ".svelte-kit/cloudflare/_worker.js"
 directory = ".svelte-kit/cloudflare"
 binding = "ASSETS"
 
-[[d1_databases]]
-binding = "DB"
-database_name = "memo-alarm-db"
-database_id = "c670a00b-db20-4046-aaf6-8ddaf0553a88"
-
 # Web Push (VAPID) 환경 변수
 # 실제 값은 Cloudflare Dashboard > Settings > Variables에서 설정
 # [vars]

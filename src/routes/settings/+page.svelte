@@ -1,13 +1,11 @@
 <script lang="ts">
-	import { Download, Upload, Trash2, Sun, Moon, Monitor, Bell, Cloud, CloudOff, RefreshCw, Copy, Check, Info, LogIn, LogOut } from 'lucide-svelte';
+	import { Download, Upload, Trash2, Sun, Moon, Monitor, Bell, Cloud, LogIn, LogOut, RefreshCw, Info } from 'lucide-svelte';
 	import Button from '$lib/components/ui/Button.svelte';
-	import Input from '$lib/components/ui/Input.svelte';
 	import Footer from "$lib/components/Footer.svelte";
 	import ConfirmDialog from '$lib/components/ui/ConfirmDialog.svelte';
 	import { memosStore } from '$lib/stores/memos.svelte';
 	import { themeStore } from '$lib/stores/theme.svelte';
 	import { settingsStore } from '$lib/stores/settings.svelte';
-	import { syncStore } from '$lib/stores/sync.svelte';
 	import { authStore } from '$lib/stores/auth.svelte';
 	import { downloadFullBackup, importFullBackup, clearAllData } from '$lib/utils/data';
 	import { cn } from '$lib/utils';
@@ -16,54 +14,9 @@
 	let fileInput: HTMLInputElement;
 	let importing = $state(false);
 	let importError = $state('');
-	let showDisconnectDialog = $state(false);
 	let showClearAllDialog = $state(false);
 
 	const memoCount = $derived(memosStore.memos.length);
-
-	// 동기화 상태
-	let syncCodeInput = $state('');
-	let deviceName = $state('');
-	let copied = $state(false);
-
-	async function handleRegister() {
-		await syncStore.register(deviceName || undefined);
-	}
-
-	async function handleConnect() {
-		if (syncCodeInput.length === 6) {
-			await syncStore.connect(syncCodeInput.toUpperCase());
-			syncCodeInput = '';
-		}
-	}
-
-	async function handleSync() {
-		await syncStore.sync();
-	}
-
-	function handleDisconnect() {
-		showDisconnectDialog = true;
-	}
-
-	function confirmDisconnect() {
-		syncStore.disconnect();
-	}
-
-	async function copyCode() {
-		if (syncStore.user?.syncCode) {
-			await navigator.clipboard.writeText(syncStore.user.syncCode);
-			copied = true;
-			setTimeout(() => copied = false, 2000);
-		}
-	}
-
-	function toggleAutoSync() {
-		if (syncStore.autoSync) {
-			syncStore.stopAutoSync();
-		} else {
-			syncStore.startAutoSync();
-		}
-	}
 
 	// 기본 알림 설정
 	const dayLabels = ['일', '월', '화', '수', '목', '금', '토'];
@@ -169,135 +122,9 @@
 			<h2 class="font-semibold">클라우드 동기화</h2>
 		</div>
 
-		<!-- 코드 방식 (간편 동기화) -->
+		<!-- 로그인 방식 (Supabase 동기화) -->
 		<div class="bg-card rounded-xl border border-border p-5">
-			<h3 class="text-sm font-semibold mb-3">간편 동기화 (코드)</h3>
-			<p class="text-xs text-muted-foreground mb-4">
-				6자리 코드로 기기를 연결합니다. 간편하지만 코드 유출 시 보안 위험이 있습니다.
-			</p>
-
-			{#if syncStore.isConnected}
-				<!-- 연결됨 -->
-				<div class="space-y-4">
-					<div class="flex items-center justify-between">
-						<span class="text-sm font-medium text-success">연결됨</span>
-						{#if syncStore.status.isOnline}
-							<span class="flex items-center gap-1 text-xs text-success">
-								<span class="w-2 h-2 rounded-full bg-success animate-pulse"></span>
-								온라인
-							</span>
-						{:else}
-							<span class="flex items-center gap-1 text-xs text-muted-foreground">
-								<CloudOff class="w-3 h-3" />
-								오프라인
-							</span>
-						{/if}
-					</div>
-
-					<div class="flex items-center gap-2">
-						<span class="text-xs text-muted-foreground">코드:</span>
-						<code class="px-2 py-1 text-sm font-mono bg-muted rounded">{syncStore.user?.syncCode}</code>
-						<button onclick={copyCode} class="p-1 hover:bg-muted rounded" title="코드 복사">
-							{#if copied}
-								<Check class="w-4 h-4 text-success" />
-							{:else}
-								<Copy class="w-4 h-4" />
-							{/if}
-						</button>
-					</div>
-
-					{#if syncStore.status.lastSyncAt}
-						<p class="text-xs text-muted-foreground">
-							마지막 동기화: {new Date(syncStore.status.lastSyncAt).toLocaleString('ko-KR')}
-						</p>
-					{/if}
-
-					<div class="flex gap-2">
-						<Button
-							variant="secondary"
-							size="sm"
-							onclick={handleSync}
-							disabled={syncStore.status.isSyncing || !syncStore.status.isOnline}
-							class="flex-1"
-						>
-							<RefreshCw class={cn('w-4 h-4', syncStore.status.isSyncing && 'animate-spin')} />
-							{syncStore.status.isSyncing ? '동기화 중...' : '지금 동기화'}
-						</Button>
-						<Button variant="ghost" size="sm" onclick={handleDisconnect}>
-							연결 해제
-						</Button>
-					</div>
-
-					<!-- 자동 동기화 -->
-					<div class="flex items-center justify-between pt-3 border-t border-border/50">
-						<span class="text-sm">자동 동기화 (5분)</span>
-						<button
-							type="button"
-							role="switch"
-							aria-checked={syncStore.autoSync}
-							onclick={toggleAutoSync}
-							class={cn('toggle-switch', syncStore.autoSync && 'active')}
-							aria-label="자동 동기화 토글"
-						>
-							<span class="toggle-switch-thumb"></span>
-						</button>
-					</div>
-				</div>
-			{:else}
-				<!-- 미연결 -->
-				<div class="space-y-4">
-					<!-- 새 코드 생성 -->
-					<div class="space-y-2">
-						<Input
-							bind:value={deviceName}
-							placeholder="기기 이름 (선택)"
-							class="text-sm"
-						/>
-						<Button
-							variant="default"
-							onclick={handleRegister}
-							disabled={syncStore.status.isSyncing}
-							class="w-full"
-						>
-							<Cloud class="w-4 h-4" />
-							새 코드 생성
-						</Button>
-					</div>
-
-					<div class="flex items-center gap-2 text-xs text-muted-foreground">
-						<div class="flex-1 h-px bg-border"></div>
-						<span>또는</span>
-						<div class="flex-1 h-px bg-border"></div>
-					</div>
-
-					<!-- 기존 코드로 연결 -->
-					<div class="space-y-2">
-						<Input
-							bind:value={syncCodeInput}
-							placeholder="코드 6자리 입력"
-							maxlength={6}
-							class="text-sm font-mono uppercase text-center tracking-widest"
-						/>
-						<Button
-							variant="secondary"
-							onclick={handleConnect}
-							disabled={syncCodeInput.length !== 6 || syncStore.status.isSyncing}
-							class="w-full"
-						>
-							기존 코드로 연결
-						</Button>
-					</div>
-
-					{#if syncStore.status.error}
-						<p class="text-xs text-destructive">{syncStore.status.error}</p>
-					{/if}
-				</div>
-			{/if}
-		</div>
-
-		<!-- 로그인 방식 (안전 동기화) -->
-		<div class="bg-card rounded-xl border border-border p-5">
-			<h3 class="text-sm font-semibold mb-3">안전 동기화 (로그인)</h3>
+			<h3 class="text-sm font-semibold mb-3">Supabase 동기화</h3>
 			<p class="text-xs text-muted-foreground mb-4">
 				Google/Kakao 계정으로 로그인하여 안전하게 데이터를 보호합니다.
 			</p>
@@ -503,16 +330,6 @@
 </div>
 
 <!-- Confirm Dialogs -->
-<ConfirmDialog
-	bind:open={showDisconnectDialog}
-	title="동기화 연결 해제"
-	message="동기화 연결을 해제하시겠습니까? 로컬 데이터는 유지됩니다."
-	confirmText="연결 해제"
-	variant="destructive"
-	onConfirm={confirmDisconnect}
-	onCancel={() => {}}
-/>
-
 <ConfirmDialog
 	bind:open={showClearAllDialog}
 	title="모든 데이터 삭제"
