@@ -76,3 +76,24 @@ export interface SyncStatus {
 	error?: string;
 	isOnline: boolean;
 }
+
+// 동기화 모드
+export type SyncMode = 'none' | 'code' | 'auth' | 'both';
+
+// Auth 동기화 프로바이더
+export type AuthProvider = 'google' | 'kakao';
+
+// 통합 동기화 설정
+export interface SyncConfig {
+	mode: SyncMode;
+	codeSync?: {
+		enabled: boolean;
+		syncCode?: string;
+		lastSyncAt?: number;
+	};
+	authSync?: {
+		enabled: boolean;
+		provider?: AuthProvider;
+		lastSyncAt?: number;
+	};
+}

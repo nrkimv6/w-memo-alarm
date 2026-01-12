@@ -29,7 +29,7 @@
             href="https://woory.day"
             class="hover:text-foreground transition-colors"
         >
-            Woory.day 포털
+            우리공방 포털
         </a>
     </div>
     <div class="space-y-1">

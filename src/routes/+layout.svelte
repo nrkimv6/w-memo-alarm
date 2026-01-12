@@ -6,6 +6,7 @@
 	import { themeStore } from "$lib/stores/theme.svelte";
 	import { settingsStore } from "$lib/stores/settings.svelte";
 	import { notificationStore } from "$lib/stores/notifications.svelte";
+	import { authStore } from "$lib/stores/auth.svelte";
 	import { Toast } from "$lib/components/ui";
 	import GlobalNav from "$lib/components/GlobalNav.svelte";
 	import BottomNav from "$lib/components/BottomNav.svelte";
@@ -28,6 +29,7 @@
 		themeStore.init();
 		settingsStore.init();
 		notificationStore.init();
+		authStore.initialize();
 	});
 </script>
 

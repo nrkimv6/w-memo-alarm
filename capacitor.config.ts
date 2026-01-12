@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
 	appName: 'Memo Alarm',
 	webDir: 'build',
 	server: {
-		androidScheme: 'https'
+		androidScheme: 'com.woory.memoalarm'
 	},
 	plugins: {
 		LocalNotifications: {
