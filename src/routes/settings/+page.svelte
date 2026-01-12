@@ -210,6 +210,7 @@
 					type="button"
 					role="switch"
 					aria-checked={autoReminderOnCreate}
+					aria-label="자동 알림 토글"
 					onclick={handleAutoReminderToggle}
 					class={cn('toggle-switch', autoReminderOnCreate && 'active')}
 				>

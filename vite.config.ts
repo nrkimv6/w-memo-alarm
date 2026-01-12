@@ -9,5 +9,10 @@ export default defineConfig({
 	},
 	preview: {
 		port: 5179
+	},
+	build: {
+		rollupOptions: {
+			external: ['@capacitor/browser', '@capacitor/core', '@capacitor/local-notifications']
+		}
 	}
 });
