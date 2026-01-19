@@ -82,6 +82,14 @@ sw.addEventListener('push', (event) => {
 	);
 });
 
+// 메시지 수신 (캐시 업데이트용)
+sw.addEventListener('message', (event) => {
+	if (event.data.type === 'SKIP_WAITING') {
+		console.log('[SW] SKIP_WAITING received, activating immediately');
+		sw.skipWaiting();
+	}
+});
+
 // 알림 클릭
 sw.addEventListener('notificationclick', (event) => {
 	event.notification.close();

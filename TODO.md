@@ -130,16 +130,14 @@
 
 ## 개선 아이디어
 
-### P2 (중간)
-- [ ] **캐시 초기화 기능 추가**
+### ✅ P2 (중간) - 완료 (2026-01-19)
+- [x] **캐시 초기화 기능 추가**
   > **참고**: `common/docs/plan/cache-clear-feature.md`
 
-  - [ ] Service Worker 메시지 핸들러 추가 (`src/service-worker.ts`)
-  - [ ] 캐시 초기화 함수 구현
-    - 참고: `gifticon-manager/src/lib/components/settings/SettingsAppInfoSection.svelte:31-69`
-  - [ ] 설정 > 앱 정보 섹션에 버튼 추가
+  - [x] Service Worker 메시지 핸들러 추가 (`src/service-worker.ts`)
+  - [x] 캐시 초기화 함수 구현
+  - [x] 설정 > 앱 정보 섹션에 버튼 추가
     - "앱 업데이트 확인" 버튼
-    - 안내: "새 버전이 있으면 캐시를 초기화하고 업데이트합니다. 저장된 메모는 유지됩니다."
 
 ### P3 (낮음)
 - [ ] **다국어 지원 (i18n)**: 영어 UI 추가

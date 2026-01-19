@@ -15,6 +15,33 @@
 	let importing = $state(false);
 	let importError = $state('');
 	let showClearAllDialog = $state(false);
+	let updating = $state(false);
+
+	async function handleUpdateCheck() {
+		updating = true;
+		try {
+			// 1. 모든 캐시 삭제
+			const cacheNames = await caches.keys();
+			await Promise.all(cacheNames.map((name) => caches.delete(name)));
+
+			// 2. Service Worker 업데이트 확인
+			const registration = await navigator.serviceWorker.getRegistration();
+			if (registration) {
+				// 새 SW가 대기 중이면 활성화
+				if (registration.waiting) {
+					registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+				}
+				// 업데이트 확인
+				await registration.update();
+			}
+
+			// 3. 페이지 새로고침
+			window.location.reload();
+		} catch (error) {
+			console.error('Update check failed:', error);
+			updating = false;
+		}
+	}
 
 	const memoCount = $derived(memosStore.memos.length);
 
@@ -322,6 +349,22 @@
 			<div class="flex justify-between items-center text-sm">
 				<span class="text-muted-foreground">빌드</span>
 				<span class="font-medium">2026.01.09</span>
+			</div>
+
+			<!-- 앱 업데이트 확인 -->
+			<div class="pt-2 border-t border-border">
+				<Button
+					variant="secondary"
+					onclick={handleUpdateCheck}
+					disabled={updating}
+					class="w-full justify-start"
+				>
+					<RefreshCw class={cn('w-4 h-4', updating && 'animate-spin')} />
+					{updating ? '업데이트 확인 중...' : '앱 업데이트 확인'}
+				</Button>
+				<p class="text-xs text-muted-foreground mt-2">
+					새 버전이 있으면 캐시를 초기화하고 업데이트합니다. 저장된 메모는 유지됩니다.
+				</p>
 			</div>
 		</div>
 	</section>
