@@ -107,17 +107,17 @@
   - [ ] 모든 쿼리 SQLite → Postgres 문법 변경
   - [ ] Supabase RLS (Row Level Security) 설정
 
-- [ ] **5. FCM 연동 (백그라운드 알림)**
-  - [ ] Firebase 웹 앱 설정 (VAPID 키 발급)
-  - [ ] `src/lib/fcm.ts` 작성
-  - [ ] `static/firebase-messaging-sw.js` Service Worker 작성
-  - [ ] `+layout.svelte`에서 앱 시작 시 FCM 토큰 등록
-  - [ ] 참고: `common/docs/guide/background-notification-web-pwa.md`
+- [x] **5. FCM 연동 (백그라운드 알림)** ✅ (2026-01-19)
+  - [x] Firebase 웹 앱 설정 - 공통 .env 사용 (line-minder와 동일 프로젝트)
+  - [x] `src/lib/fcm.ts` 작성
+  - [x] `static/firebase-messaging-sw.js` Service Worker 작성
+  - [x] `+layout.svelte`에서 앱 시작 시 FCM 토큰 등록
 
-- [ ] **6. 알림 시스템 통합**
-  - [ ] 기존 Web Push (VAPID) 시스템 평가
-  - [ ] 메모 알림 → `alarm_schedules` 테이블에 저장 (`app_name='memo-alarm'`)
-  - [ ] 기존 Capacitor Local Notifications + Web Push 제거 또는 통합
+- [x] **6. 알림 시스템 통합** ✅ (2026-01-19)
+  - [x] 메모 알림 → `alarm_schedules` 테이블에 저장 (`app_name='memo-alarm'`)
+  - [x] `src/lib/services/alarmSchedules.ts` 작성
+  - [x] `memos.svelte.ts`에서 알림 자동 생성/갱신/삭제
+  - [ ] 기존 Capacitor Local Notifications 유지 (병행 사용)
 
 - [ ] **7. 테스트 & 배포**
   - [ ] 로컬 테스트: 메모 CRUD, 알림 수신

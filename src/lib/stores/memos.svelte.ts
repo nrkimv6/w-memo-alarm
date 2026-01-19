@@ -5,6 +5,7 @@ import { supabase } from '$lib/services/supabase';
 import { authStore } from './auth.svelte';
 import { isNative, scheduleNotification, cancelNotification } from '$lib/utils/capacitor';
 import { toastStore } from './toast.svelte';
+import { createMemoAlarm, updateMemoAlarm, deleteMemoAlarms } from '$lib/services/alarmSchedules';
 
 const CACHE_KEY = 'memo-alarm-memos-cache';
 const INITIALIZED_KEY = 'memo-alarm-initialized';
@@ -269,9 +270,19 @@ function createMemosStore() {
 
 		const result = supabaseToMemo(inserted);
 
-		// 알림 스케줄링
-		if (isNative() && result.reminder?.enabled) {
-			scheduleNotification(result);
+		// 알림 스케줄링 (네이티브: 로컬 알림, 웹: FCM 서버 알림)
+		if (result.reminder?.enabled) {
+			if (isNative()) {
+				scheduleNotification(result);
+			} else {
+				// FCM 서버 알림 등록
+				try {
+					await createMemoAlarm(authStore.user!.id, result.id, result.title, result.reminder);
+					console.log('[Alarms] Created memo alarm for:', result.title);
+				} catch (alarmError) {
+					console.warn('[Alarms] Failed to create alarm:', alarmError);
+				}
+			}
 		}
 
 		return result;
@@ -330,12 +341,22 @@ function createMemosStore() {
 
 		const result = supabaseToMemo(data);
 
-		// 알림 재스케줄링
-		if (isNative() && changes.reminder !== undefined) {
-			if (result.reminder?.enabled) {
-				scheduleNotification(result);
+		// 알림 재스케줄링 (네이티브: 로컬 알림, 웹: FCM 서버 알림)
+		if (changes.reminder !== undefined || changes.title !== undefined) {
+			if (isNative()) {
+				if (result.reminder?.enabled) {
+					scheduleNotification(result);
+				} else {
+					cancelNotification(id);
+				}
 			} else {
-				cancelNotification(id);
+				// FCM 서버 알림 갱신
+				try {
+					await updateMemoAlarm(authStore.user!.id, id, result.title, result.reminder);
+					console.log('[Alarms] Updated memo alarm for:', result.title);
+				} catch (alarmError) {
+					console.warn('[Alarms] Failed to update alarm:', alarmError);
+				}
 			}
 		}
 
@@ -360,6 +381,14 @@ function createMemosStore() {
 		// 로그인: Supabase 삭제
 		if (isNative()) {
 			cancelNotification(id);
+		} else {
+			// FCM 서버 알림 삭제
+			try {
+				await deleteMemoAlarms(id);
+				console.log('[Alarms] Deleted memo alarms for:', id);
+			} catch (alarmError) {
+				console.warn('[Alarms] Failed to delete alarms:', alarmError);
+			}
 		}
 
 		const { error } = await supabase.from('memos').delete().eq('id', id);
