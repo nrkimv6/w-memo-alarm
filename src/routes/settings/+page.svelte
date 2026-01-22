@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Download, Upload, Trash2, Sun, Moon, Monitor, Bell, Cloud, LogIn, LogOut, Info } from 'lucide-svelte';
+	import { Download, Upload, Trash2, Sun, Moon, Monitor, Bell, Cloud, LogIn, LogOut, Info, RefreshCw } from 'lucide-svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Footer from "$lib/components/Footer.svelte";
 	import ConfirmDialog from '$lib/components/ui/ConfirmDialog.svelte';
