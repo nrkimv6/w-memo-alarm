@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Download, Upload, Trash2, Sun, Moon, Monitor, Bell, Cloud, LogIn, LogOut, RefreshCw, Info } from 'lucide-svelte';
+	import { Download, Upload, Trash2, Sun, Moon, Monitor, Bell, Cloud, LogIn, LogOut, Info } from 'lucide-svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Footer from "$lib/components/Footer.svelte";
 	import ConfirmDialog from '$lib/components/ui/ConfirmDialog.svelte';
@@ -174,22 +174,14 @@
 						{/if}
 					</div>
 
-					<div class="flex gap-2">
-						<Button
-							variant="secondary"
-							size="sm"
-							onclick={() => authStore.sync()}
-							disabled={authStore.syncing}
-							class="flex-1"
-						>
-							<RefreshCw class={cn('w-4 h-4', authStore.syncing && 'animate-spin')} />
-							{authStore.syncing ? '동기화 중...' : '지금 동기화'}
-						</Button>
-						<Button variant="ghost" size="sm" onclick={() => authStore.signOut()}>
-							<LogOut class="w-4 h-4" />
-							로그아웃
-						</Button>
-					</div>
+					<Button variant="ghost" size="sm" onclick={() => authStore.signOut()} class="w-full">
+						<LogOut class="w-4 h-4" />
+						로그아웃
+					</Button>
+
+					<p class="text-xs text-muted-foreground">
+						데이터는 자동으로 동기화됩니다.
+					</p>
 				</div>
 			{:else}
 				<!-- 미로그인 -->

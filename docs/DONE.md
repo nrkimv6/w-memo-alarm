@@ -1,5 +1,19 @@
 # DONE (최근 20개)
 
+- [x] 2026-01-20: **Auth 동기화 수정 (user_data 테이블 제거)** ✅
+  - **문제**: auth.svelte.ts가 존재하지 않는 `user_data` 테이블 사용으로 동기화 실패
+  - **해결**: Realtime 자동 동기화로 전환
+  - **수정 내용**:
+    - `auth.svelte.ts`: 수동 동기화 로직 완전 제거
+      - `checkAndSyncData()`, `uploadToServer()`, `downloadFromServer()`, `sync()` 함수 제거
+      - SIGNED_IN 시 Store init만 호출
+      - SIGNED_OUT 시 Store cleanup 호출
+    - `settings/+page.svelte`: "지금 동기화" 버튼 제거
+      - "데이터는 자동으로 동기화됩니다" 안내 추가
+  - **빌드**: 성공 (경고만 존재)
+  - **참고**: `common/docs/plan/2026-01-20_memo-alarm-auth-fix.md`
+  - **커밋**: 2829592 (문서), memo-alarm 리포지토리 별도 커밋 필요
+
 - [x] 2026-01-12: **Phase 7: Online-First 아키텍처 전환 완료** ✅
   - **아키텍처**: D1 + localStorage (offline-first) → Supabase (online-first)
   - **Phase 1**: Supabase 마이그레이션

@@ -7,7 +7,7 @@
 ## Phase 7: Auth 통합 ✅
 > **참고**: `common/docs/archive/2026-01-12_memo-alarm-online-first.md`
 > **타입**: 네이티브 앱 (모바일)
-> **상태**: ✅ 완료 (2026-01-12)
+> **상태**: ✅ 완료 (2026-01-12, 2026-01-20 수정 완료)
 > **아키텍처**: D1 + localStorage (offline-first) → Supabase (online-first)
 
 ### 완료된 작업
@@ -63,7 +63,8 @@
 
 ---
 
-## Phase 8: Supabase 마이그레이션 + 백그라운드 알림 (Phase 3)
+## Phase 8: Supabase 마이그레이션 + 백그라운드 알림 (🚫 Claude 자동 실행 불가 - 권장 금지)
+> **경고**: Firebase Console 설정, DB 마이그레이션 등 수동 작업 필요. Claude가 "다음 작업"으로 이것을 권하지 말 것.
 > **참고**: `common/docs/guide/background-notification-system.md`
 > **목표**: D1 → Supabase 이동, 서버 기반 백그라운드 알림 통합
 > **상태**: ✅ line-minder 구현 완료 (재사용 가능)
