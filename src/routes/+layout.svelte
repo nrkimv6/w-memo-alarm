@@ -41,16 +41,14 @@
 		}
 	}
 
-	onMount(() => {
+	onMount(async () => {
 		themeStore.init();
 		settingsStore.init();
 		notificationStore.init();
-		authStore.initialize();
 
-		// authStore 초기화 후 FCM 등록 (약간의 딜레이)
-		setTimeout(() => {
-			initFCM();
-		}, 1000);
+		// authStore 초기화 완료 후 FCM 등록
+		await authStore.initialize();
+		initFCM();
 	});
 </script>
 
