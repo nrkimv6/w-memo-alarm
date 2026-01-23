@@ -1,9 +1,10 @@
 <script lang="ts">
     import { page } from "$app/stores";
-    import { Home, Settings } from "lucide-svelte";
+    import { Home, List, Settings } from "lucide-svelte";
 
     const navItems = [
         { path: "/", icon: Home, label: "홈" },
+        { path: "/memos", icon: List, label: "전체 메모" },
         { path: "/settings", icon: Settings, label: "설정" },
     ];
 </script>
