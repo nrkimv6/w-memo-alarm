@@ -80,6 +80,14 @@
 		const file = input.files?.[0];
 		if (!file) return;
 
+		// 파일 확장자 검증
+		const fileName = file.name.toLowerCase();
+		if (!fileName.endsWith('.json')) {
+			importError = 'JSON 파일만 가져올 수 있습니다. (.json)';
+			input.value = '';
+			return;
+		}
+
 		importing = true;
 		importError = '';
 
@@ -299,7 +307,7 @@
 				<input
 					bind:this={fileInput}
 					type="file"
-					accept="application/json,.json,text/plain,.txt"
+					accept="*/*"
 					onchange={handleImport}
 					class="hidden"
 				/>

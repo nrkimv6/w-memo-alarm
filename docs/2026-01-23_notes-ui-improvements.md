@@ -33,14 +33,15 @@
 ### 문제
 - `accept=".json"` 속성으로 인해 안드로이드 모바일 웹에서 "사진및 동영상" 카테고리로 표시됨
 - JSON 파일을 찾기 어려움
+- 안드로이드 Chrome은 `accept` 속성을 엄격하게 해석하여 특정 MIME 타입만 허용
 
 ### 해결
-- `accept` 속성 확장: `application/json,.json,text/plain,.txt`
-- MIME 타입과 확장자 모두 지정하여 안드로이드 호환성 향상
-- 파일 관리자에서 "모든 파일" 또는 "문서" 카테고리로 접근 가능
+- `accept="*/*"` - 모든 파일 형식 표시 허용
+- JavaScript에서 파일 확장자 검증 추가 (`.json` 파일만 허용)
+- 잘못된 파일 선택 시 에러 메시지 표시: "JSON 파일만 가져올 수 있습니다. (.json)"
 
 ### 수정 파일
-- `src/routes/settings/+page.svelte` (Line 302)
+- `src/routes/settings/+page.svelte` (Line 78-90, 308)
 
 ---
 
@@ -119,6 +120,23 @@
 | `src/routes/settings/+page.svelte` | 동기화 용어 변경, 파일 선택기 accept 확장 |
 | `src/lib/components/memo/QuickMemoInput.svelte` | + 버튼 제거, 레이아웃 단순화 |
 | `src/routes/+page.svelte` | 검색/필터 분리, 빈 상태 높이 축소 |
+
+---
+
+---
+
+## 6. 카카오 로그인 이메일 숨김 처리
+
+### 문제
+- 카카오 로그인 시 의미없는 이메일이 표시됨
+- 예: `4686421672@kakao.local`
+
+### 해결
+- `@kakao.local`로 끝나는 이메일은 표시하지 않도록 추가 필터링
+- provider 감지 실패 시에도 이메일 패턴으로 필터링
+
+### 수정 파일
+- `src/lib/utils/user.ts` (Line 52-55)
 
 ---
 
