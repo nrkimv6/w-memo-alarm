@@ -1,0 +1,95 @@
+<script lang="ts">
+	import { Pin, Trash2 } from 'lucide-svelte';
+	import type { Snippet } from 'svelte';
+
+	interface Props {
+		onSwipeLeft?: () => void;
+		onSwipeRight?: () => void;
+		children: Snippet;
+	}
+
+	let { onSwipeLeft, onSwipeRight, children }: Props = $props();
+
+	let startX = $state(0);
+	let currentX = $state(0);
+	let isDragging = $state(false);
+	let containerElement: HTMLDivElement;
+
+	const SWIPE_THRESHOLD = 80; // 스와이프 감지 임계값 (px)
+	const MAX_DRAG = 150; // 최대 드래그 거리
+
+	function handleTouchStart(e: TouchEvent) {
+		startX = e.touches[0].clientX;
+		isDragging = true;
+	}
+
+	function handleTouchMove(e: TouchEvent) {
+		if (!isDragging) return;
+		currentX = e.touches[0].clientX - startX;
+
+		// 최대 드래그 거리 제한
+		if (Math.abs(currentX) > MAX_DRAG) {
+			currentX = currentX > 0 ? MAX_DRAG : -MAX_DRAG;
+		}
+	}
+
+	function handleTouchEnd() {
+		if (!isDragging) return;
+
+		// 왼쪽 스와이프 (삭제)
+		if (currentX < -SWIPE_THRESHOLD && onSwipeLeft) {
+			onSwipeLeft();
+		}
+		// 오른쪽 스와이프 (핀 고정)
+		else if (currentX > SWIPE_THRESHOLD && onSwipeRight) {
+			onSwipeRight();
+		}
+
+		// 초기화
+		isDragging = false;
+		currentX = 0;
+		startX = 0;
+	}
+
+	const translateX = $derived(isDragging ? currentX : 0);
+	const showLeftAction = $derived(currentX < -20); // 왼쪽으로 20px 이상 드래그
+	const showRightAction = $derived(currentX > 20); // 오른쪽으로 20px 이상 드래그
+	const leftOpacity = $derived(Math.min(Math.abs(currentX) / SWIPE_THRESHOLD, 1));
+	const rightOpacity = $derived(Math.min(Math.abs(currentX) / SWIPE_THRESHOLD, 1));
+</script>
+
+<div
+	class="relative overflow-hidden"
+	bind:this={containerElement}
+	ontouchstart={handleTouchStart}
+	ontouchmove={handleTouchMove}
+	ontouchend={handleTouchEnd}
+>
+	<!-- 왼쪽 액션 (삭제) -->
+	{#if showLeftAction}
+		<div
+			class="absolute inset-0 bg-destructive flex items-center justify-end px-6 z-0"
+			style="opacity: {leftOpacity}"
+		>
+			<Trash2 class="w-6 h-6 text-white" />
+		</div>
+	{/if}
+
+	<!-- 오른쪽 액션 (핀 고정) -->
+	{#if showRightAction}
+		<div
+			class="absolute inset-0 bg-secondary flex items-center justify-start px-6 z-0"
+			style="opacity: {rightOpacity}"
+		>
+			<Pin class="w-6 h-6 text-white" />
+		</div>
+	{/if}
+
+	<!-- 카드 내용 -->
+	<div
+		class="relative z-10 transition-transform"
+		style="transform: translateX({translateX}px); transition-duration: {isDragging ? '0ms' : '200ms'};"
+	>
+		{@render children()}
+	</div>
+</div>

@@ -16,6 +16,7 @@
 		ScheduledRemindersModal,
 		ShareModal
 	} from '$lib/components/memo';
+	import SwipeGuideModal from '$lib/components/memo/SwipeGuideModal.svelte';
 	import OnboardingModal from '$lib/components/OnboardingModal.svelte';
 	import { memosStore } from '$lib/stores/memos.svelte';
 	import { filterStore } from '$lib/stores/filter.svelte';
@@ -23,6 +24,7 @@
 	import { notificationStore } from '$lib/stores/notifications.svelte';
 	import { selectionStore } from '$lib/stores/selection.svelte';
 	import { toastStore } from '$lib/stores/toast.svelte';
+	import { onboardingStore } from '$lib/stores/onboarding.svelte';
 	import type { Memo } from '$lib/types/memo';
 	import { cn, mergeMemos } from '$lib/utils';
 
@@ -35,6 +37,7 @@
 	let showRemindersModal = $state(false);
 	let showShareModal = $state(false);
 	let showOnboarding = $state(false);
+	let showSwipeGuide = $state(false);
 	let editingMemo = $state<Memo | null>(null);
 	let deletingMemo = $state<Memo | null>(null);
 	let viewingMemo = $state<Memo | null>(null);
@@ -56,6 +59,9 @@
 		// 온보딩 모달 표시 (첫 실행 시)
 		if (typeof window !== 'undefined' && !localStorage.getItem(ONBOARDING_KEY)) {
 			showOnboarding = true;
+		} else if (!onboardingStore.hasSeenSwipeGuide) {
+			// 스와이프 가이드 모달 표시 (온보딩 완료 후 처음)
+			showSwipeGuide = true;
 		}
 
 		// Keyboard shortcuts
@@ -365,6 +371,15 @@
 			if (typeof window !== 'undefined') {
 				localStorage.setItem(ONBOARDING_KEY, 'true');
 			}
+			// 온보딩 완료 후 스와이프 가이드 표시
+			if (!onboardingStore.hasSeenSwipeGuide) {
+				showSwipeGuide = true;
+			}
 		}}
 	/>
 {/if}
+
+<SwipeGuideModal
+	bind:open={showSwipeGuide}
+	onClose={() => showSwipeGuide = false}
+/>

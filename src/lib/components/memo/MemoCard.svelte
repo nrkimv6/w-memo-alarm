@@ -1,7 +1,9 @@
 <script lang="ts">
-	import { Pin, Star, Edit3, Trash2, ExternalLink, Folder, EyeOff, Eye, CheckSquare, Check } from 'lucide-svelte';
+	import { Pin, Star, Edit3, Trash2, ExternalLink, Folder, EyeOff, Eye, CheckSquare, Check, MoreVertical } from 'lucide-svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
+	import KebabMenu from '$lib/components/memo/KebabMenu.svelte';
+	import SwipeableCard from '$lib/components/memo/SwipeableCard.svelte';
 	import type { Memo } from '$lib/types/memo';
 	import { memosStore } from '$lib/stores/memos.svelte';
 	import { foldersStore } from '$lib/stores/folders.svelte';
@@ -53,17 +55,21 @@
 	}
 </script>
 
-<Card
-	class={cn(
-		'group relative cursor-pointer',
-		memo.isPinned && 'memo-card-pinned',
-		isInactive && 'opacity-50',
-		ultraCompact && 'py-2 px-3',
-		isSelectionMode && 'ring-2 ring-border',
-		isSelected && 'ring-2 ring-primary bg-primary/5'
-	)}
-	onclick={handleCardClick}
+<SwipeableCard
+	onSwipeLeft={() => onDelete(memo)}
+	onSwipeRight={() => onTogglePin(memo.id)}
 >
+	<Card
+		class={cn(
+			'group relative cursor-pointer',
+			memo.isPinned && 'memo-card-pinned',
+			isInactive && 'opacity-50',
+			ultraCompact && 'py-2 px-3',
+			isSelectionMode && 'ring-2 ring-border',
+			isSelected && 'ring-2 ring-primary bg-primary/5'
+		)}
+		onclick={handleCardClick}
+	>
 	<!-- Selection indicator -->
 	{#if isSelectionMode}
 		<div
@@ -108,14 +114,14 @@
 	{:else}
 		<!-- Header -->
 		<header class="flex items-start justify-between gap-3 mb-2">
-			<h3 class={cn('font-semibold text-foreground', compact ? 'text-base line-clamp-1' : 'text-lg line-clamp-2')}>
+			<h3 class={cn('font-semibold text-foreground flex-1', compact ? 'text-base line-clamp-1' : 'text-lg line-clamp-2')}>
 				{memo.title || '제목 없음'}
 			</h3>
 
 		<!-- Hover actions -->
-		<div class="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+		<div class="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
 			<button
-				onclick={() => onTogglePin(memo.id)}
+				onclick={(e) => { e.stopPropagation(); onTogglePin(memo.id); }}
 				class={cn(
 					'flex min-h-11 min-w-11 items-center justify-center rounded-md transition-colors',
 					memo.isPinned ? 'text-secondary' : 'text-muted-foreground hover:text-secondary'
@@ -124,46 +130,13 @@
 			>
 				<Pin class={cn('w-5 h-5', memo.isPinned && 'fill-current')} />
 			</button>
-			<button
-				onclick={() => onToggleFavorite(memo.id)}
-				class={cn(
-					'flex min-h-11 min-w-11 items-center justify-center rounded-md transition-colors',
-					memo.isFavorite ? 'text-warning' : 'text-muted-foreground hover:text-warning'
-				)}
-				title={memo.isFavorite ? '즐겨찾기 해제' : '즐겨찾기'}
-			>
-				<Star class={cn('w-5 h-5', memo.isFavorite && 'fill-current')} />
-			</button>
-			{#if onToggleActive}
-				<button
-					onclick={(e) => { e.stopPropagation(); onToggleActive(memo.id); }}
-					class={cn(
-						'flex min-h-11 min-w-11 items-center justify-center rounded-md transition-colors',
-						isInactive ? 'text-muted-foreground/50' : 'text-muted-foreground hover:text-foreground'
-					)}
-					title={isInactive ? '활성화' : '비활성화'}
-				>
-					{#if isInactive}
-						<Eye class="w-5 h-5" />
-					{:else}
-						<EyeOff class="w-5 h-5" />
-					{/if}
-				</button>
-			{/if}
-			<button
-				onclick={() => onEdit(memo)}
-				class="flex min-h-11 min-w-11 items-center justify-center rounded-md text-muted-foreground hover:text-foreground transition-colors"
-				title="수정"
-			>
-				<Edit3 class="w-5 h-5" />
-			</button>
-			<button
-				onclick={() => onDelete(memo)}
-				class="flex min-h-11 min-w-11 items-center justify-center rounded-md text-muted-foreground hover:text-destructive transition-colors"
-				title="삭제"
-			>
-				<Trash2 class="w-5 h-5" />
-			</button>
+			<KebabMenu
+				isInactive={isInactive}
+				hasToggleActive={!!onToggleActive}
+				onEdit={() => onEdit(memo)}
+				onDelete={() => onDelete(memo)}
+				onToggleActive={onToggleActive ? () => onToggleActive(memo.id) : undefined}
+			/>
 		</div>
 	</header>
 
@@ -241,4 +214,5 @@
 		{/if}
 	</footer>
 	{/if}
-</Card>
+	</Card>
+</SwipeableCard>
