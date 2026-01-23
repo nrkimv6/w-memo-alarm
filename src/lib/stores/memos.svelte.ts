@@ -239,7 +239,7 @@ function createMemosStore() {
 			memos = [newMemo, ...memos];
 			saveCacheToStorage(memos);
 
-			if (newMemo.reminder?.enabled && isNative()) {
+			if (newMemo.reminder?.enabled && (await isNative())) {
 				scheduleNotification(newMemo);
 			}
 
@@ -272,7 +272,7 @@ function createMemosStore() {
 
 		// 알림 스케줄링 (네이티브: 로컬 알림, 웹: FCM 서버 알림)
 		if (result.reminder?.enabled) {
-			if (isNative()) {
+			if (await isNative()) {
 				scheduleNotification(result);
 			} else {
 				// FCM 서버 알림 등록
@@ -302,7 +302,7 @@ function createMemosStore() {
 			memos = [...memos.slice(0, index), updated, ...memos.slice(index + 1)];
 			saveCacheToStorage(memos);
 
-			if (isNative()) {
+			if (await isNative()) {
 				if (updated.reminder?.enabled) {
 					scheduleNotification(updated);
 				} else {
@@ -343,7 +343,7 @@ function createMemosStore() {
 
 		// 알림 재스케줄링 (네이티브: 로컬 알림, 웹: FCM 서버 알림)
 		if (changes.reminder !== undefined || changes.title !== undefined) {
-			if (isNative()) {
+			if (await isNative()) {
 				if (result.reminder?.enabled) {
 					scheduleNotification(result);
 				} else {
@@ -369,7 +369,7 @@ function createMemosStore() {
 			const index = memos.findIndex((m) => m.id === id);
 			if (index === -1) return false;
 
-			if (isNative()) {
+			if (await isNative()) {
 				cancelNotification(id);
 			}
 
@@ -379,7 +379,7 @@ function createMemosStore() {
 		}
 
 		// 로그인: Supabase 삭제
-		if (isNative()) {
+		if (await isNative()) {
 			cancelNotification(id);
 		} else {
 			// FCM 서버 알림 삭제
@@ -475,7 +475,7 @@ function createMemosStore() {
 			}
 			saveCacheToStorage(memos);
 
-			if (isNative()) {
+			if (await isNative()) {
 				memos.filter((m) => m.reminder?.enabled).forEach(scheduleNotification);
 			}
 			return;
