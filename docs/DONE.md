@@ -1,5 +1,14 @@
 # DONE (최근 20개)
 
+- [x] 2026-01-23: **Notes UI 개선** ✅
+  - **동기화 용어 변경**: "Supabase 동기화" → "클라우드 보관"
+  - **백업 가져오기**: 안드로이드 파일 선택기 호환성 개선 (`accept` 속성 확장)
+  - **빠른메모 + 버튼 제거**: Enter로 저장 가능하므로 불필요한 버튼 제거
+  - **검색/필터 분리**: 검색 영역과 필터 영역 사이 구분선 추가
+  - **빈 상태 높이 축소**: py-20 → py-8, 스크롤 없이 볼 수 있도록 개선
+  - **수정 파일**: settings/+page.svelte, QuickMemoInput.svelte, +page.svelte
+  - **참고**: docs/2026-01-23_notes-ui-improvements.md
+
 - [x] 2026-01-23: **Capacitor SSR 빌드 에러 수정** ✅
   - **문제**: vite.config.ts에 `ssr.external` 설정 누락으로 SSR 빌드 시 Capacitor 패키지 에러 발생
   - **해결**: `ssr.external`에 Capacitor 패키지 추가
