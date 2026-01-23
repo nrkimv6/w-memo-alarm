@@ -1,10 +1,20 @@
 import { browser } from '$app/environment';
 import type { User, Session } from '@supabase/supabase-js';
-import { Capacitor } from '@capacitor/core';
 import { supabase } from '$lib/services/supabase';
 import { memosStore } from './memos.svelte';
 import { foldersStore } from './folders.svelte';
 import { toastStore } from './toast.svelte';
+
+// Capacitor 네이티브 플랫폼 체크 (동적 import로 웹에서도 안전하게 작동)
+async function isNativePlatform(): Promise<boolean> {
+	if (!browser) return false;
+	try {
+		const { Capacitor } = await import('@capacitor/core');
+		return Capacitor.isNativePlatform();
+	} catch {
+		return false;
+	}
+}
 
 interface AuthState {
 	user: User | null;
@@ -80,7 +90,7 @@ function createAuthStore() {
 
 		try {
 			const returnTo = window.location.pathname;
-			const isNative = Capacitor.isNativePlatform();
+			const isNative = await isNativePlatform();
 			const authUrl = `https://auth.woory.day/google?appId=memo-alarm&returnTo=${encodeURIComponent(returnTo)}${isNative ? '&native=true' : ''}`;
 
 			if (isNative) {
@@ -103,7 +113,7 @@ function createAuthStore() {
 
 		try {
 			const returnTo = window.location.pathname;
-			const isNative = Capacitor.isNativePlatform();
+			const isNative = await isNativePlatform();
 			const authUrl = `https://auth.woory.day/kakao?appId=memo-alarm&returnTo=${encodeURIComponent(returnTo)}${isNative ? '&native=true' : ''}`;
 
 			if (isNative) {
