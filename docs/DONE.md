@@ -1,5 +1,23 @@
 # DONE (최근 20개)
 
+- [x] 2026-01-23: **Capacitor SSR 빌드 에러 수정** ✅
+  - **문제**: vite.config.ts에 `ssr.external` 설정 누락으로 SSR 빌드 시 Capacitor 패키지 에러 발생
+  - **해결**: `ssr.external`에 Capacitor 패키지 추가
+    ```typescript
+    ssr: {
+        noExternal: [],
+        external: ['@capacitor/browser', '@capacitor/core', '@capacitor/local-notifications']
+    }
+    ```
+  - **영향 패키지**:
+    - `@capacitor/browser` - 브라우저 열기 기능
+    - `@capacitor/core` - Capacitor 핵심 모듈
+    - `@capacitor/local-notifications` - 로컬 알림 기능
+  - **결과**: SSR 빌드 시 Capacitor 패키지가 번들링에서 제외되어 Cloudflare Workers 호환성 확보
+  - **관련 파일**: vite.config.ts
+  - **참고**: sacred-hours, line-minder와 동일한 설정 적용
+  - **커밋**: (이전 커밋에서 이미 수정됨)
+
 - [x] 2026-01-20: **Auth 동기화 수정 (user_data 테이블 제거)** ✅
   - **문제**: auth.svelte.ts가 존재하지 않는 `user_data` 테이블 사용으로 동기화 실패
   - **해결**: Realtime 자동 동기화로 전환
