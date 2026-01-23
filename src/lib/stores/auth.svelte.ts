@@ -1,7 +1,6 @@
 import { browser } from '$app/environment';
 import type { User, Session } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
-import { Browser } from '@capacitor/browser';
 import { supabase } from '$lib/services/supabase';
 import { memosStore } from './memos.svelte';
 import { foldersStore } from './folders.svelte';
@@ -86,6 +85,7 @@ function createAuthStore() {
 
 			if (isNative) {
 				// Native: In-App Browser 사용
+				const { Browser } = await import('@capacitor/browser');
 				await Browser.open({ url: authUrl });
 			} else {
 				// Web: 일반 리다이렉트
@@ -108,6 +108,7 @@ function createAuthStore() {
 
 			if (isNative) {
 				// Native: In-App Browser 사용
+				const { Browser } = await import('@capacitor/browser');
 				await Browser.open({ url: authUrl });
 			} else {
 				// Web: 일반 리다이렉트
