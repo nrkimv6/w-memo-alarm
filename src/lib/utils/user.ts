@@ -41,6 +41,7 @@ export function getUserAvatar(user: User | null): string | null {
 export function getUserEmail(user: User | null): string | null {
 	if (!user || !user.email) return null;
 
+	const email = user.email;
 	const provider = user.app_metadata?.provider || user.user_metadata?.provider;
 
 	// 카카오 로그인: 이메일 표시 안 함 (숫자@kakao.local 같은 의미 없는 주소)
@@ -48,6 +49,11 @@ export function getUserEmail(user: User | null): string | null {
 		return null;
 	}
 
+	// @kakao.local로 끝나는 이메일도 표시 안 함 (provider 감지 실패 대비)
+	if (email.endsWith('@kakao.local')) {
+		return null;
+	}
+
 	// 구글 로그인: 이메일 표시
-	return user.email;
+	return email;
 }
