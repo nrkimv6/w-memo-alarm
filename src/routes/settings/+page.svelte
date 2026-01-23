@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Download, Upload, Trash2, Sun, Moon, Monitor, Bell, Cloud, LogIn, LogOut, Info, RefreshCw } from 'lucide-svelte';
+	import { Download, Upload, Trash2, Sun, Moon, Monitor, Bell, Cloud, LogIn, LogOut, Info, RefreshCw, Bug, BellRing, CheckCircle, XCircle } from 'lucide-svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Footer from "$lib/components/Footer.svelte";
 	import ConfirmDialog from '$lib/components/ui/ConfirmDialog.svelte';
@@ -7,6 +7,7 @@
 	import { themeStore } from '$lib/stores/theme.svelte';
 	import { settingsStore } from '$lib/stores/settings.svelte';
 	import { authStore } from '$lib/stores/auth.svelte';
+	import { notificationStore } from '$lib/stores/notifications.svelte';
 	import { downloadFullBackup, importFullBackup, clearAllData } from '$lib/utils/data';
 	import { cn } from '$lib/utils';
 	import { getUserDisplayName, getUserEmail } from '$lib/utils/user';
@@ -16,6 +17,66 @@
 	let importError = $state('');
 	let showClearAllDialog = $state(false);
 	let updating = $state(false);
+
+	// 개발자 모드
+	let devMode = $state(false);
+	let versionTapCount = $state(0);
+	let lastTapTime = $state(0);
+	let testNotificationSent = $state(false);
+
+	function handleVersionTap() {
+		const now = Date.now();
+		// 2초 내에 탭해야 카운트 유지
+		if (now - lastTapTime > 2000) {
+			versionTapCount = 1;
+		} else {
+			versionTapCount++;
+		}
+		lastTapTime = now;
+
+		if (versionTapCount >= 10) {
+			devMode = true;
+			versionTapCount = 0;
+		}
+	}
+
+	async function testNotification() {
+		testNotificationSent = false;
+
+		// 권한 확인 및 요청
+		if (notificationStore.permission !== 'granted') {
+			const granted = await notificationStore.requestPermission();
+			if (!granted) {
+				alert('알림 권한이 필요합니다. 브라우저 설정에서 알림을 허용해주세요.');
+				return;
+			}
+		}
+
+		// 테스트 알림 발송
+		try {
+			const testMemo = {
+				id: 'test-notification',
+				title: '테스트 알림',
+				content: '알림이 정상적으로 작동합니다!',
+				url: '',
+				reminder: null,
+				createdAt: new Date().toISOString(),
+				updatedAt: new Date().toISOString()
+			};
+
+			// @ts-ignore - 테스트용 메모 객체
+			notificationStore.showNotification(testMemo);
+			testNotificationSent = true;
+		} catch (error) {
+			console.error('테스트 알림 실패:', error);
+			alert('알림 발송에 실패했습니다: ' + (error as Error).message);
+		}
+	}
+
+	function triggerManualCheck() {
+		notificationStore.checkAndTriggerReminders();
+		alert('알림 체크가 수동으로 실행되었습니다.');
+	}
 
 	async function handleUpdateCheck() {
 		updating = true;
@@ -336,7 +397,16 @@
 		<div class="bg-card rounded-xl border border-border p-5 space-y-4">
 			<div class="flex justify-between items-center text-sm">
 				<span class="text-muted-foreground">버전</span>
-				<span class="font-medium">1.0.0</span>
+				<button
+					onclick={handleVersionTap}
+					class="font-medium select-none cursor-pointer hover:text-primary transition-colors"
+					title={versionTapCount > 0 ? `${10 - versionTapCount}번 더 탭하세요` : ''}
+				>
+					1.0.0
+					{#if versionTapCount > 0 && versionTapCount < 10}
+						<span class="text-xs text-muted-foreground ml-1">({versionTapCount}/10)</span>
+					{/if}
+				</button>
 			</div>
 			<div class="flex justify-between items-center text-sm">
 				<span class="text-muted-foreground">빌드</span>
@@ -360,6 +430,101 @@
 			</div>
 		</div>
 	</section>
+
+	<!-- 개발자 모드 -->
+	{#if devMode}
+		<section class="space-y-4">
+			<div class="flex items-center gap-2 text-orange-500">
+				<Bug class="w-5 h-5" />
+				<h2 class="font-semibold">개발자 모드</h2>
+				<button
+					onclick={() => devMode = false}
+					class="ml-auto text-xs text-muted-foreground hover:text-foreground"
+				>
+					닫기
+				</button>
+			</div>
+
+			<div class="bg-card rounded-xl border border-orange-500/30 p-5 space-y-4">
+				<!-- 알림 권한 상태 -->
+				<div class="space-y-2">
+					<h3 class="text-sm font-semibold flex items-center gap-2">
+						알림 권한 상태
+						{#if notificationStore.permission === 'granted'}
+							<CheckCircle class="w-4 h-4 text-green-500" />
+						{:else if notificationStore.permission === 'denied'}
+							<XCircle class="w-4 h-4 text-red-500" />
+						{:else}
+							<XCircle class="w-4 h-4 text-yellow-500" />
+						{/if}
+					</h3>
+					<p class="text-xs text-muted-foreground">
+						현재 상태: <span class="font-mono">{notificationStore.permission}</span>
+					</p>
+					{#if notificationStore.permission !== 'granted'}
+						<Button
+							variant="secondary"
+							size="sm"
+							onclick={() => notificationStore.requestPermission()}
+							class="w-full"
+						>
+							알림 권한 요청
+						</Button>
+					{/if}
+				</div>
+
+				<!-- 테스트 알림 -->
+				<div class="space-y-2 pt-2 border-t border-border">
+					<h3 class="text-sm font-semibold flex items-center gap-2">
+						<BellRing class="w-4 h-4" />
+						알림 테스트
+					</h3>
+					<Button
+						variant="default"
+						onclick={testNotification}
+						class="w-full"
+					>
+						테스트 알림 보내기
+					</Button>
+					{#if testNotificationSent}
+						<p class="text-xs text-green-500 flex items-center gap-1">
+							<CheckCircle class="w-3 h-3" />
+							테스트 알림이 발송되었습니다!
+						</p>
+					{/if}
+				</div>
+
+				<!-- 수동 알림 체크 -->
+				<div class="space-y-2 pt-2 border-t border-border">
+					<h3 class="text-sm font-semibold">수동 알림 체크</h3>
+					<p class="text-xs text-muted-foreground">
+						현재 시간에 맞는 알림이 있는지 수동으로 체크합니다.
+					</p>
+					<Button
+						variant="secondary"
+						onclick={triggerManualCheck}
+						class="w-full"
+					>
+						알림 체크 실행
+					</Button>
+				</div>
+
+				<!-- 디버그 정보 -->
+				<div class="space-y-2 pt-2 border-t border-border">
+					<h3 class="text-sm font-semibold">디버그 정보</h3>
+					<div class="text-xs font-mono bg-muted p-3 rounded-lg space-y-1">
+						<p>알림 스토어 초기화: {notificationStore.initialized ? '완료' : '미완료'}</p>
+						<p>오늘 알림 개수: {notificationStore.getTodayReminders().length}</p>
+						<p>예정된 알림: {notificationStore.getUpcomingReminders().length}</p>
+						<p>완료된 알림: {notificationStore.getPastReminders().length}</p>
+						<p>스누즈된 알림: {notificationStore.snoozedReminders.length}</p>
+						<p>Service Worker: {'serviceWorker' in navigator ? '지원됨' : '미지원'}</p>
+						<p>Notification API: {'Notification' in window ? '지원됨' : '미지원'}</p>
+					</div>
+				</div>
+			</div>
+		</section>
+	{/if}
 
 	<!-- Footer -->
 	<Footer className="mt-8" />
