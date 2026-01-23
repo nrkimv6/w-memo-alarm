@@ -11,6 +11,7 @@
 
 <nav
     class="fixed bottom-0 left-0 right-0 bg-card border-t border-border safe-bottom z-50"
+    style="view-transition-name: bottom-nav;"
 >
     <div class="flex items-center justify-around h-16 max-w-lg mx-auto">
         {#each navItems as { path, icon: Icon, label }}

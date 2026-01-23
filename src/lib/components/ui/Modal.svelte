@@ -2,14 +2,18 @@
 	import { cn } from '$lib/utils';
 	import { fade } from 'svelte/transition';
 	import { X } from 'lucide-svelte';
+	import { onMount } from 'svelte';
 
 	let {
 		open = $bindable(false),
 		title,
 		children,
 		footer,
-		class: className
+		class: className,
+		useHistory = true
 	} = $props();
+
+	let hasAddedHistory = $state(false);
 
 	function close() {
 		open = false;
@@ -18,6 +22,41 @@
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === 'Escape' && open) close();
 	}
+
+	// 히스토리 연동: 모달 열릴 때 pushState, back 버튼으로 닫기
+	$effect(() => {
+		if (typeof window === 'undefined' || !useHistory) return;
+
+		if (open && !hasAddedHistory) {
+			// 모달 열릴 때 히스토리 추가
+			history.pushState({ modal: true }, '');
+			hasAddedHistory = true;
+		} else if (!open && hasAddedHistory) {
+			// 모달이 닫힐 때 (back 버튼이 아닌 다른 방법으로)
+			hasAddedHistory = false;
+		}
+	});
+
+	onMount(() => {
+		if (typeof window === 'undefined' || !useHistory) return;
+
+		function handlePopState(e: PopStateEvent) {
+			if (open && hasAddedHistory) {
+				// back 버튼으로 모달 닫기
+				hasAddedHistory = false;
+				open = false;
+			}
+		}
+
+		window.addEventListener('popstate', handlePopState);
+		return () => {
+			window.removeEventListener('popstate', handlePopState);
+			// 컴포넌트 언마운트 시 히스토리 정리
+			if (hasAddedHistory) {
+				history.back();
+			}
+		};
+	});
 </script>
 
 <svelte:window onkeydown={handleKeydown} />

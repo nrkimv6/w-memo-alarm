@@ -11,7 +11,6 @@
 		SearchBar,
 		TagFilter,
 		FolderTabs,
-		QuickMemoInput,
 		ShareModal
 	} from '$lib/components/memo';
 	import { memosStore } from '$lib/stores/memos.svelte';
@@ -206,9 +205,6 @@
 						</Button>
 					</div>
 				{:else}
-					<div class="flex-1 max-w-md hidden sm:block">
-						<QuickMemoInput />
-					</div>
 					<div class="flex items-center gap-2">
 						<Button variant="ghost" onclick={handleStartSelection} class="shrink-0" title="선택 모드">
 							<CheckSquare class="w-4 h-4" />
@@ -220,13 +216,6 @@
 					</div>
 				{/if}
 			</div>
-
-			<!-- Quick memo input for mobile -->
-			{#if !isSelectionMode}
-				<div class="sm:hidden">
-					<QuickMemoInput />
-				</div>
-			{/if}
 
 			<!-- 검색 영역 -->
 			<SearchBar />

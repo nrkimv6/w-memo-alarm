@@ -226,8 +226,10 @@
 				</div>
 			</div>
 
-			<!-- Quick memo input -->
-			<QuickMemoInput />
+			<!-- Quick memo input (검색 모드가 아닐 때만) -->
+			{#if !showSearch}
+				<QuickMemoInput />
+			{/if}
 
 			<!-- Search bar (토글) -->
 			{#if showSearch}
