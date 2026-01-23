@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Download, Upload, Trash2, Sun, Moon, Monitor, Bell, Cloud, LogIn, LogOut, Info, RefreshCw } from 'lucide-svelte';
+	import { Download, Upload, Trash2, Sun, Moon, Monitor, Bell, Cloud, LogIn, LogOut, Info, RefreshCw, Bug, BellRing, CheckCircle, XCircle, Smartphone } from 'lucide-svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Footer from "$lib/components/Footer.svelte";
 	import ConfirmDialog from '$lib/components/ui/ConfirmDialog.svelte';
@@ -7,15 +7,188 @@
 	import { themeStore } from '$lib/stores/theme.svelte';
 	import { settingsStore } from '$lib/stores/settings.svelte';
 	import { authStore } from '$lib/stores/auth.svelte';
+	import { notificationStore } from '$lib/stores/notifications.svelte';
 	import { downloadFullBackup, importFullBackup, clearAllData } from '$lib/utils/data';
 	import { cn } from '$lib/utils';
 	import { getUserDisplayName, getUserEmail } from '$lib/utils/user';
+	import {
+		isNative,
+		requestNotificationPermission as requestNativePermission,
+		checkNotificationPermission as checkNativePermission,
+		scheduleNotification,
+		cancelAllNotifications
+	} from '$lib/utils/capacitor';
 
 	let fileInput: HTMLInputElement;
 	let importing = $state(false);
 	let importError = $state('');
 	let showClearAllDialog = $state(false);
 	let updating = $state(false);
+
+	// 개발자 모드
+	let devMode = $state(false);
+	let versionTapCount = $state(0);
+	let lastTapTime = $state(0);
+	let testNotificationSent = $state(false);
+
+	// Capacitor 상태
+	let isNativePlatform = $state(false);
+	let nativePermission = $state<string>('확인 중...');
+	let pendingNotifications = $state<string[]>([]);
+	let capacitorTestScheduled = $state(false);
+
+	// 초기화 - 페이지 로드 시 네이티브 체크
+	$effect(() => {
+		isNative().then(native => {
+			isNativePlatform = native;
+		});
+	});
+
+	// 개발자 모드 진입 시 상세 상태 체크
+	$effect(() => {
+		if (devMode) {
+			checkCapacitorStatus();
+		}
+	});
+
+	async function checkCapacitorStatus() {
+		isNativePlatform = await isNative();
+		if (isNativePlatform) {
+			const hasPermission = await checkNativePermission();
+			nativePermission = hasPermission ? 'granted' : 'denied';
+			await loadPendingNotifications();
+		} else {
+			nativePermission = 'N/A (웹 환경)';
+		}
+	}
+
+	async function loadPendingNotifications() {
+		if (!isNativePlatform) return;
+		try {
+			const { LocalNotifications } = await import('@capacitor/local-notifications');
+			const pending = await LocalNotifications.getPending();
+			pendingNotifications = pending.notifications.map(n =>
+				`[${n.id}] ${n.title} - ${n.schedule?.at ? new Date(n.schedule.at).toLocaleString() : '시간 없음'}`
+			);
+		} catch (e) {
+			console.error('Failed to load pending notifications:', e);
+			pendingNotifications = ['로드 실패'];
+		}
+	}
+
+	async function requestNativeNotificationPermission() {
+		const granted = await requestNativePermission();
+		nativePermission = granted ? 'granted' : 'denied';
+	}
+
+	async function testCapacitorNotification() {
+		capacitorTestScheduled = false;
+
+		if (!isNativePlatform) {
+			alert('네이티브 앱에서만 사용 가능합니다.');
+			return;
+		}
+
+		try {
+			const { LocalNotifications } = await import('@capacitor/local-notifications');
+
+			// 권한 확인
+			const permission = await LocalNotifications.checkPermissions();
+			if (permission.display !== 'granted') {
+				const req = await LocalNotifications.requestPermissions();
+				if (req.display !== 'granted') {
+					alert('알림 권한이 필요합니다.');
+					return;
+				}
+			}
+
+			// 5초 후 테스트 알림 스케줄링
+			const scheduleTime = new Date(Date.now() + 5000);
+
+			await LocalNotifications.schedule({
+				notifications: [{
+					id: 99999,
+					title: '테스트 백그라운드 알림',
+					body: '5초 후 알림이 정상 작동합니다! 앱을 닫아도 이 알림이 표시되어야 합니다.',
+					schedule: { at: scheduleTime },
+					extra: { memoId: 'test', isTest: true }
+				}]
+			});
+
+			capacitorTestScheduled = true;
+			await loadPendingNotifications();
+			alert(`테스트 알림이 ${scheduleTime.toLocaleTimeString()}에 예약되었습니다.\n\n앱을 백그라운드로 보내거나 닫아도 알림이 와야 합니다.`);
+		} catch (e) {
+			console.error('Capacitor notification test failed:', e);
+			alert('테스트 실패: ' + (e as Error).message);
+		}
+	}
+
+	async function clearAllScheduledNotifications() {
+		if (!isNativePlatform) return;
+
+		try {
+			await cancelAllNotifications();
+			await loadPendingNotifications();
+			alert('모든 예약된 알림이 취소되었습니다.');
+		} catch (e) {
+			alert('취소 실패: ' + (e as Error).message);
+		}
+	}
+
+	function handleVersionTap() {
+		const now = Date.now();
+		// 2초 내에 탭해야 카운트 유지
+		if (now - lastTapTime > 2000) {
+			versionTapCount = 1;
+		} else {
+			versionTapCount++;
+		}
+		lastTapTime = now;
+
+		if (versionTapCount >= 10) {
+			devMode = true;
+			versionTapCount = 0;
+		}
+	}
+
+	async function testNotification() {
+		testNotificationSent = false;
+
+		// 권한 확인 및 요청
+		if (notificationStore.permission !== 'granted') {
+			const granted = await notificationStore.requestPermission();
+			if (!granted) {
+				alert('알림 권한이 필요합니다. 브라우저 설정에서 알림을 허용해주세요.');
+				return;
+			}
+		}
+
+		// 테스트 알림 발송
+		try {
+			const testMemo = {
+				id: 'test-notification',
+				title: '테스트 알림',
+				content: '알림이 정상적으로 작동합니다!',
+				url: '',
+				reminder: null,
+				createdAt: new Date().toISOString(),
+				updatedAt: new Date().toISOString()
+			};
+
+			// @ts-ignore - 테스트용 메모 객체
+			notificationStore.showNotification(testMemo);
+			testNotificationSent = true;
+		} catch (error) {
+			console.error('테스트 알림 실패:', error);
+			alert('알림 발송에 실패했습니다: ' + (error as Error).message);
+		}
+	}
+
+	function triggerManualCheck() {
+		notificationStore.checkAndTriggerReminders();
+		alert('알림 체크가 수동으로 실행되었습니다.');
+	}
 
 	async function handleUpdateCheck() {
 		updating = true;
@@ -216,26 +389,51 @@
 		<div class="flex items-center gap-2 text-primary">
 			<Bell class="w-5 h-5" />
 			<h2 class="font-semibold">기본 알림 설정</h2>
+			{#if !isNativePlatform}
+				<span class="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded flex items-center gap-1">
+					<Smartphone class="w-3 h-3" />
+					앱 전용
+				</span>
+			{/if}
 		</div>
 
 		<div class="bg-card rounded-xl border border-border p-5 space-y-4">
-			<!-- 자동 알림 토글 -->
-			<div class="flex items-center justify-between">
-				<div>
-					<span class="text-sm">새 메모에 자동 알림</span>
-					<p class="text-xs text-muted-foreground">메모 생성 시 자동으로 알림 설정</p>
+			{#if !isNativePlatform}
+				<!-- 웹 환경: 앱 설치 안내 -->
+				<div class="text-center py-4 space-y-3">
+					<div class="w-12 h-12 mx-auto rounded-full bg-muted flex items-center justify-center">
+						<Smartphone class="w-6 h-6 text-muted-foreground" />
+					</div>
+					<div class="space-y-1">
+						<p class="text-sm font-medium">알림 기능은 앱에서만 사용 가능합니다</p>
+						<p class="text-xs text-muted-foreground">
+							백그라운드 알림을 받으려면 앱을 설치해주세요.<br/>
+							웹 브라우저는 탭이 열려 있을 때만 알림이 가능합니다.
+						</p>
+					</div>
+					<p class="text-xs text-muted-foreground">
+						앱 출시 준비 중입니다. 곧 만나요!
+					</p>
 				</div>
-				<button
-					type="button"
-					role="switch"
-					aria-checked={autoReminderOnCreate}
-					aria-label="자동 알림 토글"
-					onclick={handleAutoReminderToggle}
-					class={cn('toggle-switch', autoReminderOnCreate && 'active')}
-				>
-					<span class="toggle-switch-thumb"></span>
-				</button>
-			</div>
+			{:else}
+				<!-- 네이티브 앱: 알림 설정 -->
+				<!-- 자동 알림 토글 -->
+				<div class="flex items-center justify-between">
+					<div>
+						<span class="text-sm">새 메모에 자동 알림</span>
+						<p class="text-xs text-muted-foreground">메모 생성 시 자동으로 알림 설정</p>
+					</div>
+					<button
+						type="button"
+						role="switch"
+						aria-checked={autoReminderOnCreate}
+						aria-label="자동 알림 토글"
+						onclick={handleAutoReminderToggle}
+						class={cn('toggle-switch', autoReminderOnCreate && 'active')}
+					>
+						<span class="toggle-switch-thumb"></span>
+					</button>
+				</div>
 
 			{#if autoReminderOnCreate}
 				<div class="space-y-4 p-3 rounded-lg bg-muted/50 border border-border">
@@ -272,6 +470,7 @@
 						</div>
 					</div>
 				</div>
+			{/if}
 			{/if}
 		</div>
 	</section>
@@ -336,7 +535,16 @@
 		<div class="bg-card rounded-xl border border-border p-5 space-y-4">
 			<div class="flex justify-between items-center text-sm">
 				<span class="text-muted-foreground">버전</span>
-				<span class="font-medium">1.0.0</span>
+				<button
+					onclick={handleVersionTap}
+					class="font-medium select-none cursor-pointer hover:text-primary transition-colors"
+					title={versionTapCount > 0 ? `${10 - versionTapCount}번 더 탭하세요` : ''}
+				>
+					1.0.0
+					{#if versionTapCount > 0 && versionTapCount < 10}
+						<span class="text-xs text-muted-foreground ml-1">({versionTapCount}/10)</span>
+					{/if}
+				</button>
 			</div>
 			<div class="flex justify-between items-center text-sm">
 				<span class="text-muted-foreground">빌드</span>
@@ -360,6 +568,184 @@
 			</div>
 		</div>
 	</section>
+
+	<!-- 개발자 모드 -->
+	{#if devMode}
+		<section class="space-y-4">
+			<div class="flex items-center gap-2 text-orange-500">
+				<Bug class="w-5 h-5" />
+				<h2 class="font-semibold">개발자 모드</h2>
+				<button
+					onclick={() => devMode = false}
+					class="ml-auto text-xs text-muted-foreground hover:text-foreground"
+				>
+					닫기
+				</button>
+			</div>
+
+			<div class="bg-card rounded-xl border border-orange-500/30 p-5 space-y-4">
+				<!-- 알림 권한 상태 -->
+				<div class="space-y-2">
+					<h3 class="text-sm font-semibold flex items-center gap-2">
+						알림 권한 상태
+						{#if notificationStore.permission === 'granted'}
+							<CheckCircle class="w-4 h-4 text-green-500" />
+						{:else if notificationStore.permission === 'denied'}
+							<XCircle class="w-4 h-4 text-red-500" />
+						{:else}
+							<XCircle class="w-4 h-4 text-yellow-500" />
+						{/if}
+					</h3>
+					<p class="text-xs text-muted-foreground">
+						현재 상태: <span class="font-mono">{notificationStore.permission}</span>
+					</p>
+					{#if notificationStore.permission !== 'granted'}
+						<Button
+							variant="secondary"
+							size="sm"
+							onclick={() => notificationStore.requestPermission()}
+							class="w-full"
+						>
+							알림 권한 요청
+						</Button>
+					{/if}
+				</div>
+
+				<!-- 테스트 알림 -->
+				<div class="space-y-2 pt-2 border-t border-border">
+					<h3 class="text-sm font-semibold flex items-center gap-2">
+						<BellRing class="w-4 h-4" />
+						알림 테스트
+					</h3>
+					<Button
+						variant="default"
+						onclick={testNotification}
+						class="w-full"
+					>
+						테스트 알림 보내기
+					</Button>
+					{#if testNotificationSent}
+						<p class="text-xs text-green-500 flex items-center gap-1">
+							<CheckCircle class="w-3 h-3" />
+							테스트 알림이 발송되었습니다!
+						</p>
+					{/if}
+				</div>
+
+				<!-- 수동 알림 체크 -->
+				<div class="space-y-2 pt-2 border-t border-border">
+					<h3 class="text-sm font-semibold">수동 알림 체크</h3>
+					<p class="text-xs text-muted-foreground">
+						현재 시간에 맞는 알림이 있는지 수동으로 체크합니다.
+					</p>
+					<Button
+						variant="secondary"
+						onclick={triggerManualCheck}
+						class="w-full"
+					>
+						알림 체크 실행
+					</Button>
+				</div>
+
+				<!-- Capacitor 백그라운드 알림 (핵심!) -->
+				<div class="space-y-2 pt-2 border-t border-border">
+					<h3 class="text-sm font-semibold flex items-center gap-2">
+						<Bell class="w-4 h-4" />
+						Capacitor 백그라운드 알림
+						{#if isNativePlatform}
+							<span class="text-xs bg-green-500/20 text-green-500 px-2 py-0.5 rounded">네이티브</span>
+						{:else}
+							<span class="text-xs bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded">웹</span>
+						{/if}
+					</h3>
+
+					<div class="text-xs text-muted-foreground space-y-1">
+						<p>플랫폼: {isNativePlatform ? '네이티브 앱' : '웹 브라우저'}</p>
+						<p>네이티브 알림 권한: <span class="font-mono">{nativePermission}</span></p>
+					</div>
+
+					{#if isNativePlatform}
+						{#if nativePermission !== 'granted'}
+							<Button
+								variant="secondary"
+								size="sm"
+								onclick={requestNativeNotificationPermission}
+								class="w-full"
+							>
+								네이티브 알림 권한 요청
+							</Button>
+						{/if}
+
+						<Button
+							variant="default"
+							onclick={testCapacitorNotification}
+							class="w-full"
+						>
+							5초 후 백그라운드 알림 테스트
+						</Button>
+
+						{#if capacitorTestScheduled}
+							<p class="text-xs text-green-500 flex items-center gap-1">
+								<CheckCircle class="w-3 h-3" />
+								테스트 알림이 예약되었습니다! 앱을 닫아보세요.
+							</p>
+						{/if}
+
+						<!-- 예약된 알림 목록 -->
+						<div class="space-y-1 mt-2">
+							<div class="flex items-center justify-between">
+								<span class="text-xs font-semibold">예약된 알림 ({pendingNotifications.length}개)</span>
+								<button
+									onclick={loadPendingNotifications}
+									class="text-xs text-primary hover:underline"
+								>
+									새로고침
+								</button>
+							</div>
+							{#if pendingNotifications.length > 0}
+								<div class="text-xs font-mono bg-muted p-2 rounded max-h-32 overflow-y-auto space-y-1">
+									{#each pendingNotifications as notification}
+										<p class="truncate">{notification}</p>
+									{/each}
+								</div>
+								<Button
+									variant="destructive"
+									size="sm"
+									onclick={clearAllScheduledNotifications}
+									class="w-full"
+								>
+									<Trash2 class="w-3 h-3" />
+									모든 예약 알림 취소
+								</Button>
+							{:else}
+								<p class="text-xs text-muted-foreground">예약된 알림이 없습니다.</p>
+							{/if}
+						</div>
+					{:else}
+						<p class="text-xs text-yellow-600 bg-yellow-500/10 p-2 rounded">
+							백그라운드 알림은 안드로이드 앱에서만 작동합니다.
+							웹에서는 브라우저가 열려 있을 때만 알림이 가능합니다.
+						</p>
+					{/if}
+				</div>
+
+				<!-- 디버그 정보 -->
+				<div class="space-y-2 pt-2 border-t border-border">
+					<h3 class="text-sm font-semibold">디버그 정보</h3>
+					<div class="text-xs font-mono bg-muted p-3 rounded-lg space-y-1">
+						<p>알림 스토어 초기화: {notificationStore.initialized ? '완료' : '미완료'}</p>
+						<p>오늘 알림 개수: {notificationStore.getTodayReminders().length}</p>
+						<p>예정된 알림: {notificationStore.getUpcomingReminders().length}</p>
+						<p>완료된 알림: {notificationStore.getPastReminders().length}</p>
+						<p>스누즈된 알림: {notificationStore.snoozedReminders.length}</p>
+						<p>Service Worker: {'serviceWorker' in navigator ? '지원됨' : '미지원'}</p>
+						<p>Notification API: {'Notification' in window ? '지원됨' : '미지원'}</p>
+						<p>Capacitor 네이티브: {isNativePlatform ? '예' : '아니오'}</p>
+					</div>
+				</div>
+			</div>
+		</section>
+	{/if}
 
 	<!-- Footer -->
 	<Footer className="mt-8" />
