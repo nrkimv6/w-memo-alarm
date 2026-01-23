@@ -11,6 +11,13 @@
 	import { downloadFullBackup, importFullBackup, clearAllData } from '$lib/utils/data';
 	import { cn } from '$lib/utils';
 	import { getUserDisplayName, getUserEmail } from '$lib/utils/user';
+	import {
+		isNative,
+		requestNotificationPermission as requestNativePermission,
+		checkNotificationPermission as checkNativePermission,
+		scheduleNotification,
+		cancelAllNotifications
+	} from '$lib/utils/capacitor';
 
 	let fileInput: HTMLInputElement;
 	let importing = $state(false);
@@ -23,6 +30,104 @@
 	let versionTapCount = $state(0);
 	let lastTapTime = $state(0);
 	let testNotificationSent = $state(false);
+
+	// Capacitor 상태
+	let isNativePlatform = $state(false);
+	let nativePermission = $state<string>('확인 중...');
+	let pendingNotifications = $state<string[]>([]);
+	let capacitorTestScheduled = $state(false);
+
+	// 초기화
+	$effect(() => {
+		if (devMode) {
+			checkCapacitorStatus();
+		}
+	});
+
+	async function checkCapacitorStatus() {
+		isNativePlatform = await isNative();
+		if (isNativePlatform) {
+			const hasPermission = await checkNativePermission();
+			nativePermission = hasPermission ? 'granted' : 'denied';
+			await loadPendingNotifications();
+		} else {
+			nativePermission = 'N/A (웹 환경)';
+		}
+	}
+
+	async function loadPendingNotifications() {
+		if (!isNativePlatform) return;
+		try {
+			const { LocalNotifications } = await import('@capacitor/local-notifications');
+			const pending = await LocalNotifications.getPending();
+			pendingNotifications = pending.notifications.map(n =>
+				`[${n.id}] ${n.title} - ${n.schedule?.at ? new Date(n.schedule.at).toLocaleString() : '시간 없음'}`
+			);
+		} catch (e) {
+			console.error('Failed to load pending notifications:', e);
+			pendingNotifications = ['로드 실패'];
+		}
+	}
+
+	async function requestNativeNotificationPermission() {
+		const granted = await requestNativePermission();
+		nativePermission = granted ? 'granted' : 'denied';
+	}
+
+	async function testCapacitorNotification() {
+		capacitorTestScheduled = false;
+
+		if (!isNativePlatform) {
+			alert('네이티브 앱에서만 사용 가능합니다.');
+			return;
+		}
+
+		try {
+			const { LocalNotifications } = await import('@capacitor/local-notifications');
+
+			// 권한 확인
+			const permission = await LocalNotifications.checkPermissions();
+			if (permission.display !== 'granted') {
+				const req = await LocalNotifications.requestPermissions();
+				if (req.display !== 'granted') {
+					alert('알림 권한이 필요합니다.');
+					return;
+				}
+			}
+
+			// 5초 후 테스트 알림 스케줄링
+			const scheduleTime = new Date(Date.now() + 5000);
+
+			await LocalNotifications.schedule({
+				notifications: [{
+					id: 99999,
+					title: '테스트 백그라운드 알림',
+					body: '5초 후 알림이 정상 작동합니다! 앱을 닫아도 이 알림이 표시되어야 합니다.',
+					schedule: { at: scheduleTime },
+					extra: { memoId: 'test', isTest: true }
+				}]
+			});
+
+			capacitorTestScheduled = true;
+			await loadPendingNotifications();
+			alert(`테스트 알림이 ${scheduleTime.toLocaleTimeString()}에 예약되었습니다.\n\n앱을 백그라운드로 보내거나 닫아도 알림이 와야 합니다.`);
+		} catch (e) {
+			console.error('Capacitor notification test failed:', e);
+			alert('테스트 실패: ' + (e as Error).message);
+		}
+	}
+
+	async function clearAllScheduledNotifications() {
+		if (!isNativePlatform) return;
+
+		try {
+			await cancelAllNotifications();
+			await loadPendingNotifications();
+			alert('모든 예약된 알림이 취소되었습니다.');
+		} catch (e) {
+			alert('취소 실패: ' + (e as Error).message);
+		}
+	}
 
 	function handleVersionTap() {
 		const now = Date.now();
@@ -509,6 +614,88 @@
 					</Button>
 				</div>
 
+				<!-- Capacitor 백그라운드 알림 (핵심!) -->
+				<div class="space-y-2 pt-2 border-t border-border">
+					<h3 class="text-sm font-semibold flex items-center gap-2">
+						<Bell class="w-4 h-4" />
+						Capacitor 백그라운드 알림
+						{#if isNativePlatform}
+							<span class="text-xs bg-green-500/20 text-green-500 px-2 py-0.5 rounded">네이티브</span>
+						{:else}
+							<span class="text-xs bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded">웹</span>
+						{/if}
+					</h3>
+
+					<div class="text-xs text-muted-foreground space-y-1">
+						<p>플랫폼: {isNativePlatform ? '네이티브 앱' : '웹 브라우저'}</p>
+						<p>네이티브 알림 권한: <span class="font-mono">{nativePermission}</span></p>
+					</div>
+
+					{#if isNativePlatform}
+						{#if nativePermission !== 'granted'}
+							<Button
+								variant="secondary"
+								size="sm"
+								onclick={requestNativeNotificationPermission}
+								class="w-full"
+							>
+								네이티브 알림 권한 요청
+							</Button>
+						{/if}
+
+						<Button
+							variant="default"
+							onclick={testCapacitorNotification}
+							class="w-full"
+						>
+							5초 후 백그라운드 알림 테스트
+						</Button>
+
+						{#if capacitorTestScheduled}
+							<p class="text-xs text-green-500 flex items-center gap-1">
+								<CheckCircle class="w-3 h-3" />
+								테스트 알림이 예약되었습니다! 앱을 닫아보세요.
+							</p>
+						{/if}
+
+						<!-- 예약된 알림 목록 -->
+						<div class="space-y-1 mt-2">
+							<div class="flex items-center justify-between">
+								<span class="text-xs font-semibold">예약된 알림 ({pendingNotifications.length}개)</span>
+								<button
+									onclick={loadPendingNotifications}
+									class="text-xs text-primary hover:underline"
+								>
+									새로고침
+								</button>
+							</div>
+							{#if pendingNotifications.length > 0}
+								<div class="text-xs font-mono bg-muted p-2 rounded max-h-32 overflow-y-auto space-y-1">
+									{#each pendingNotifications as notification}
+										<p class="truncate">{notification}</p>
+									{/each}
+								</div>
+								<Button
+									variant="destructive"
+									size="sm"
+									onclick={clearAllScheduledNotifications}
+									class="w-full"
+								>
+									<Trash2 class="w-3 h-3" />
+									모든 예약 알림 취소
+								</Button>
+							{:else}
+								<p class="text-xs text-muted-foreground">예약된 알림이 없습니다.</p>
+							{/if}
+						</div>
+					{:else}
+						<p class="text-xs text-yellow-600 bg-yellow-500/10 p-2 rounded">
+							백그라운드 알림은 안드로이드 앱에서만 작동합니다.
+							웹에서는 브라우저가 열려 있을 때만 알림이 가능합니다.
+						</p>
+					{/if}
+				</div>
+
 				<!-- 디버그 정보 -->
 				<div class="space-y-2 pt-2 border-t border-border">
 					<h3 class="text-sm font-semibold">디버그 정보</h3>
@@ -520,6 +707,7 @@
 						<p>스누즈된 알림: {notificationStore.snoozedReminders.length}</p>
 						<p>Service Worker: {'serviceWorker' in navigator ? '지원됨' : '미지원'}</p>
 						<p>Notification API: {'Notification' in window ? '지원됨' : '미지원'}</p>
+						<p>Capacitor 네이티브: {isNativePlatform ? '예' : '아니오'}</p>
 					</div>
 				</div>
 			</div>
