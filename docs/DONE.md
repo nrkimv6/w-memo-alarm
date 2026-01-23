@@ -1,5 +1,15 @@
 # DONE (최근 20개)
 
+- [x] 2026-01-23: **UI/UX 추가 개선** ✅
+  - **전체메모 탭 빠른추가 제거**: 홈에만 유지
+  - **페이지 전환 깜빡임 수정**: Header/BottomNav에 view-transition-name 추가
+  - **검색 토글 시 빠른추가 숨김**: 검색 모드일 때 QuickMemoInput 숨김
+  - **모달 히스토리 연동**: back 버튼으로 모달 닫기 지원
+  - **핀 버튼 잘림 버그 수정**: SwipeableCard에 pt-3 추가로 overflow 문제 해결
+  - **설정 페이지 헤더 추가**: 다른 페이지와 동일한 헤더 구조 적용
+  - **로그인 버튼 개선**: Google/Kakao 아이콘 추가, 테마 버튼과 동일한 스타일 적용
+  - **수정 파일**: SwipeableCard.svelte, Modal.svelte, settings/+page.svelte, +page.svelte
+
 - [x] 2026-01-23: **홈/전체메모 탭 분리** ✅
   - **하단 네비게이션**: "전체 메모" 탭 추가 (홈, 전체 메모, 설정)
   - **홈 탭 리디자인**: 대시보드 스타일로 변경
