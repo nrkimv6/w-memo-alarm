@@ -258,21 +258,23 @@
 				</div>
 			{/if}
 
-			<!-- Search bar -->
-			<SearchBar />
+			<!-- 검색 영역 -->
+			<div class="pt-2">
+				<SearchBar />
+			</div>
 
-			<!-- Filter tabs and view mode -->
-			<FilterTabs />
+			<!-- 필터/정렬 영역 -->
+			<div class="pt-2 border-t border-border/30 space-y-3">
+				<FilterTabs />
 
-			<!-- Folder tabs -->
-			{#if hasFolders}
-				<FolderTabs />
-			{/if}
+				{#if hasFolders}
+					<FolderTabs />
+				{/if}
 
-			<!-- Tag filter -->
-			{#if allTags.length > 0}
-				<TagFilter />
-			{/if}
+				{#if allTags.length > 0}
+					<TagFilter />
+				{/if}
+			</div>
 		</div>
 	</div>
 
@@ -283,13 +285,13 @@
 
 		{#if filteredMemos.length === 0}
 			<!-- Empty state -->
-			<div class="flex flex-col items-center justify-center py-20 text-center">
-				<div class="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-					<FileText class="w-8 h-8 text-muted-foreground" />
+			<div class="flex flex-col items-center justify-center py-8 text-center">
+				<div class="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
+					<FileText class="w-6 h-6 text-muted-foreground" />
 				</div>
-				<h2 class="text-xl font-semibold mb-2">메모가 없습니다</h2>
-				<p class="text-muted-foreground mb-6">첫 번째 메모를 작성해보세요!</p>
-				<Button onclick={handleCreateNew}>
+				<h2 class="text-lg font-semibold mb-1">메모가 없습니다</h2>
+				<p class="text-sm text-muted-foreground mb-4">첫 번째 메모를 작성해보세요!</p>
+				<Button onclick={handleCreateNew} size="sm">
 					<Plus class="w-4 h-4" />
 					새 메모 만들기
 				</Button>

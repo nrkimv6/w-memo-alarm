@@ -149,11 +149,11 @@
 			<h2 class="font-semibold">클라우드 동기화</h2>
 		</div>
 
-		<!-- 로그인 방식 (Supabase 동기화) -->
+		<!-- 클라우드 보관 -->
 		<div class="bg-card rounded-xl border border-border p-5">
-			<h3 class="text-sm font-semibold mb-3">Supabase 동기화</h3>
+			<h3 class="text-sm font-semibold mb-3">클라우드 보관</h3>
 			<p class="text-xs text-muted-foreground mb-4">
-				Google/Kakao 계정으로 로그인하여 안전하게 데이터를 보호합니다.
+				계정으로 로그인하여 데이터를 안전하게 클라우드에 보관합니다.
 			</p>
 
 			{#if authStore.isAuthenticated}
@@ -299,7 +299,7 @@
 				<input
 					bind:this={fileInput}
 					type="file"
-					accept=".json"
+					accept="application/json,.json,text/plain,.txt"
 					onchange={handleImport}
 					class="hidden"
 				/>
