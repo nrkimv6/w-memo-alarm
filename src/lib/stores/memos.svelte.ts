@@ -288,7 +288,7 @@ function createMemosStore() {
 		return result;
 	}
 
-	async function update(id: string, changes: MemoUpdate): Promise<Memo | null> {
+	async function update(id: string, changes: MemoUpdate, options?: { silent?: boolean }): Promise<Memo | null> {
 		if (!authStore.isAuthenticated) {
 			// 비로그인: 로컬 전용
 			const index = memos.findIndex((m) => m.id === id);
@@ -329,13 +329,17 @@ function createMemosStore() {
 
 		if (error) {
 			if (error.code === 'PGRST116') {
-				// 버전 불일치 → 충돌!
-				toastStore.warning('다른 기기에서 수정됨. 최신 데이터로 새로고침합니다.');
+				// 버전 불일치 → 충돌! (silent 모드가 아닐 때만 토스트 표시)
+				if (!options?.silent) {
+					toastStore.warning('다른 기기에서 수정됨. 최신 데이터로 새로고침합니다.');
+				}
 				await fetchFromSupabase();
 				return null;
 			}
 			console.error('Failed to update memo:', error);
-			toastStore.error('메모 수정 실패');
+			if (!options?.silent) {
+				toastStore.error('메모 수정 실패');
+			}
 			return null;
 		}
 
@@ -432,14 +436,16 @@ function createMemosStore() {
 		if (memo) {
 			const history = memo.openHistory || [];
 			const newHistory = [Date.now(), ...history].slice(0, 10);
-			update(id, { openHistory: newHistory });
+			// 열람 이력은 중요하지 않으므로 silent 모드로 업데이트
+			update(id, { openHistory: newHistory }, { silent: true });
 		}
 	}
 
 	function incrementOpenCount(id: string): void {
 		const memo = memos.find((m) => m.id === id);
 		if (memo) {
-			update(id, { openCount: (memo.openCount || 0) + 1 });
+			// 열람 횟수 증가는 중요하지 않으므로 silent 모드로 업데이트
+			update(id, { openCount: (memo.openCount || 0) + 1 }, { silent: true });
 		}
 	}
 

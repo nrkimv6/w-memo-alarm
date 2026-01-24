@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Pin, Star, Edit3, Trash2, ExternalLink, Folder, EyeOff, Eye, CheckSquare, Check, MoreVertical } from 'lucide-svelte';
+	import { Pin, Star, Edit3, Trash2, ExternalLink, Folder, EyeOff, Eye, CheckSquare, Check, MoreVertical, Link2 } from 'lucide-svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import KebabMenu from '$lib/components/memo/KebabMenu.svelte';
@@ -99,6 +99,18 @@
 			<h3 class="text-sm font-medium text-foreground truncate flex-1">
 				{memo.title || '제목 없음'}
 			</h3>
+			{#if memo.url}
+				<a
+					href={memo.url}
+					target="_blank"
+					rel="noopener noreferrer"
+					onclick={handleUrlClick}
+					class="flex-shrink-0 p-1 rounded hover:bg-muted transition-colors"
+					title={getDomain(memo.url)}
+				>
+					<Link2 class="w-4 h-4 text-link" />
+				</a>
+			{/if}
 			{#if memo.tags.length > 0}
 				<span class="text-sm text-muted-foreground truncate max-w-[100px]">
 					#{memo.tags[0]}
@@ -150,7 +162,11 @@
 	<!-- URL (북마크) -->
 	{#if memo.url}
 		<div class="flex items-center gap-2 text-sm mb-3">
-			<span>{memo.emoji || '🔗'}</span>
+			{#if memo.emoji && memo.emoji !== '🔗'}
+				<span>{memo.emoji}</span>
+			{:else}
+				<Link2 class="w-4 h-4 text-link flex-shrink-0" />
+			{/if}
 			<a
 				href={memo.url}
 				target="_blank"

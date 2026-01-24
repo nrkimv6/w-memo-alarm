@@ -11,7 +11,8 @@
 		Calendar,
 		Eye,
 		Bell,
-		Folder
+		Folder,
+		Link2
 	} from 'lucide-svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
@@ -170,7 +171,11 @@
 			<!-- URL -->
 			{#if memo.url}
 				<div class="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-					<span class="text-2xl">{memo.emoji || '🔗'}</span>
+					{#if memo.emoji && memo.emoji !== '🔗'}
+						<span class="text-2xl">{memo.emoji}</span>
+					{:else}
+						<Link2 class="w-6 h-6 text-link flex-shrink-0" />
+					{/if}
 					<div class="flex-1 min-w-0">
 						<a
 							href={memo.url}
