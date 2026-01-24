@@ -7,6 +7,7 @@
 2. 구버전 코드 제거 (D1 + web-push.ts)
 3. 개발자 모드에 FCM 상태 체크 추가
 4. TypeScript 타입 오류 수정
+5. **오프라인 동기화 상태 표시 기능 (신규)**
 
 ---
 
@@ -671,3 +672,201 @@ function getTodayReminders(): Memo[] {
 |------|----------|
 | `src/lib/components/memo/ReminderSettings.svelte` | $effect 조건에서 `enabled` 제거, 모든 상태 저장 |
 | `src/lib/stores/notifications.svelte.ts` | `getTodayReminders()`에 일회성 알림 처리 추가 |
+
+---
+
+## 7. 오프라인 동기화 상태 표시 기능 (50287d7)
+
+### 배경
+
+사용자가 클라우드 동기화 지연 중에도 불안감 없이 앱을 사용할 수 있도록:
+1. PWA 실행 시 메모가 없다가 한참 뒤에 표시되는 문제 해결
+2. 각 메모의 동기화 상태를 시각적으로 표시
+
+---
+
+### 구현된 기능
+
+#### 1. 캐시 우선 로딩 (Cache-First Loading)
+
+**Before:**
+```
+앱 시작 → Supabase 응답 대기 (수초) → 메모 표시
+```
+
+**After:**
+```
+앱 시작 → 로컬 캐시 즉시 표시 → 백그라운드에서 서버 동기화
+```
+
+**변경 파일**: `src/lib/stores/memos.svelte.ts`
+
+```typescript
+async function init() {
+  // 1. 즉시 캐시에서 로드하여 UI 표시 (local-only 상태)
+  const cached = loadCacheFromStorage();
+  if (cached.length > 0) {
+    memos = cached.map((m) => ({
+      ...m,
+      syncStatus: (m.syncStatus === 'pending' || m.syncStatus === 'failed')
+        ? m.syncStatus
+        : 'local-only' as SyncStatus
+    }));
+    loading = false; // 즉시 UI 표시
+  }
+
+  // 2. 백그라운드에서 서버 동기화
+  syncingFromServer = true;
+  await fetchFromSupabase();
+  syncingFromServer = false;
+  // ...
+}
+```
+
+---
+
+#### 2. 동기화 상태 타입 추가
+
+**변경 파일**: `src/lib/types/memo.ts`
+
+```typescript
+// Before
+export type SyncStatus = 'pending' | 'synced' | 'failed';
+
+// After
+export type SyncStatus = 'local-only' | 'pending' | 'synced' | 'failed';
+```
+
+| 상태 | 의미 | 발생 시점 |
+|------|------|----------|
+| `local-only` | 로컬 캐시에서 로드됨 | 앱 시작 시 서버 응답 전 |
+| `pending` | 서버에 반영 중 | 메모 추가/수정 직후 |
+| `synced` | 서버와 동기화됨 | 서버 응답 완료 |
+| `failed` | 동기화 실패 | 네트워크 오류 등 |
+
+---
+
+#### 3. 메모 카드 상태 아이콘
+
+**변경 파일**: `src/lib/components/memo/MemoCard.svelte`
+
+| 상태 | 아이콘 | 색상 | 동작 |
+|------|--------|------|------|
+| `local-only` | `CloudOff` | 🔵 파란색 | - |
+| `pending` | `RefreshCw` (회전) | 🟡 노란색 | - |
+| `failed` | `AlertTriangle` | 🔴 빨간색 | 탭하여 재시도 |
+| `synced` | 없음 | - | - |
+
+```svelte
+{#if isLocalOnly}
+  <CloudOff class="w-4 h-4 text-blue-500" title="로컬에 저장됨 - 동기화 대기" />
+{:else if isPending}
+  <RefreshCw class="w-4 h-4 text-amber-500 animate-spin" title="동기화 중..." />
+{:else if isFailed}
+  <button onclick={handleRetrySync} title="동기화 실패 - 탭하여 재시도">
+    <AlertTriangle class="w-4 h-4 text-destructive" />
+  </button>
+{/if}
+```
+
+---
+
+#### 4. 글로벌 동기화 상태 배너
+
+**신규 파일**: `src/lib/components/SyncStatusBanner.svelte`
+
+하단에 플로팅 배너로 전체 동기화 상태 표시:
+
+| 상태 | 배너 색상 | 메시지 |
+|------|----------|--------|
+| 오프라인 | 🟡 노란색 | "오프라인 모드 - 변경사항은 로컬에 저장됩니다" |
+| 동기화 실패 | 🔴 빨간색 | "N개 메모 동기화 실패" |
+| 서버 동기화 중 | 🔵 파란색 | "서버에서 메모 동기화 중..." |
+| 업로드 중 | 🟡 노란색 | "N개 메모 동기화 중..." |
+| 로컬 캐시 | 🔵 파란색 | "로컬 캐시에서 로드됨 - 동기화 확인 중" |
+
+---
+
+#### 5. 헤더 동기화 상태 아이콘
+
+**변경 파일**: `src/lib/components/layout/Header.svelte`
+
+헤더 우측에 작은 배지로 현재 상태 표시:
+
+```svelte
+{#if syncState && syncState.type !== 'synced'}
+  <div class="flex items-center gap-1.5 px-2 py-1 rounded-full text-xs">
+    {#if syncState.type === 'offline'}
+      <WifiOff class="w-3.5 h-3.5" />
+    {:else if syncState.type === 'failed'}
+      <AlertTriangle class="w-3.5 h-3.5" />
+    {:else if syncState.type === 'syncing' || syncState.type === 'pending'}
+      <RefreshCw class="w-3.5 h-3.5 animate-spin" />
+    {:else if syncState.type === 'local'}
+      <CloudOff class="w-3.5 h-3.5" />
+    {/if}
+    <span class="hidden sm:inline">{syncState.label}</span>
+  </div>
+{:else if syncState?.type === 'synced'}
+  <Cloud class="w-3.5 h-3.5 text-green-600" title="서버와 동기화됨" />
+{/if}
+```
+
+---
+
+#### 6. 네트워크 상태 Svelte 5 반응형 변환
+
+**변경 파일**: `src/lib/services/networkStatus.ts` → `networkStatus.svelte.ts`
+
+```typescript
+// Before (클래스 기반)
+class NetworkStatus {
+  private _isOnline = true;
+  get isOnline() { return this._isOnline; }
+}
+
+// After (Svelte 5 반응형)
+function createNetworkStatus() {
+  let isOnline = $state(true);
+  // ...
+  return {
+    get isOnline() { return isOnline; }
+  };
+}
+```
+
+---
+
+### 수정된 파일 요약
+
+| 파일 | 변경 내용 |
+|------|----------|
+| `src/lib/types/memo.ts` | `SyncStatus`에 `local-only` 추가 |
+| `src/lib/stores/memos.svelte.ts` | 캐시 우선 로딩, 동기화 상태 getter 추가 |
+| `src/lib/components/memo/MemoCard.svelte` | 상태별 아이콘 표시 |
+| `src/lib/components/SyncStatusBanner.svelte` | 신규 - 글로벌 상태 배너 |
+| `src/lib/components/layout/Header.svelte` | 헤더 상태 아이콘 |
+| `src/lib/services/networkStatus.svelte.ts` | Svelte 5 반응형으로 변환 |
+| `src/lib/services/syncQueue.ts` | import 경로 업데이트 |
+| `src/routes/+layout.svelte` | SyncStatusBanner 추가 |
+
+---
+
+### 사용자 경험 개선
+
+| Before | After |
+|--------|-------|
+| 앱 시작 시 빈 화면 → 수초 후 메모 표시 | 즉시 캐시된 메모 표시 |
+| 동기화 상태 알 수 없음 | 각 메모에 상태 아이콘 |
+| 오프라인 여부 모름 | 하단 배너로 명확히 표시 |
+| 동기화 실패 시 무응답 | 실패 아이콘 + 재시도 버튼 |
+
+---
+
+### 커밋 정보
+
+| 항목 | 값 |
+|------|-----|
+| 해시 | `50287d7` |
+| 브랜치 | `claude/offline-sync-status-nWmRC` |
+| 메시지 | `feat: implement offline sync status display` |
