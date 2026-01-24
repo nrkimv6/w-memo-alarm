@@ -591,51 +591,36 @@
 		<div class="flex items-center gap-2 text-primary">
 			<Bell class="w-5 h-5" />
 			<h2 class="font-semibold">기본 알림 설정</h2>
-			{#if !isNativePlatform}
-				<span class="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded flex items-center gap-1">
-					<Smartphone class="w-3 h-3" />
-					앱 전용
-				</span>
-			{/if}
 		</div>
 
 		<div class="bg-card rounded-xl border border-border p-5 space-y-4">
+			<!-- 플랫폼별 안내 메시지 -->
 			{#if !isNativePlatform}
-				<!-- 웹 환경: 앱 설치 안내 -->
-				<div class="text-center py-4 space-y-3">
-					<div class="w-12 h-12 mx-auto rounded-full bg-muted flex items-center justify-center">
-						<Smartphone class="w-6 h-6 text-muted-foreground" />
-					</div>
-					<div class="space-y-1">
-						<p class="text-sm font-medium">알림 기능은 앱에서만 사용 가능합니다</p>
-						<p class="text-xs text-muted-foreground">
-							백그라운드 알림을 받으려면 앱을 설치해주세요.<br/>
-							웹 브라우저는 탭이 열려 있을 때만 알림이 가능합니다.
-						</p>
-					</div>
-					<p class="text-xs text-muted-foreground">
-						앱 출시 준비 중입니다. 곧 만나요!
+				<div class="flex items-start gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
+					<Info class="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+					<p class="text-xs text-blue-700 dark:text-blue-300">
+						웹 브라우저에서는 로그인 후 FCM 푸시 알림으로 동작합니다.
 					</p>
 				</div>
-			{:else}
-				<!-- 네이티브 앱: 알림 설정 -->
-				<!-- 자동 알림 토글 -->
-				<div class="flex items-center justify-between">
-					<div>
-						<span class="text-sm">새 메모에 자동 알림</span>
-						<p class="text-xs text-muted-foreground">메모 생성 시 자동으로 알림 설정</p>
-					</div>
-					<button
-						type="button"
-						role="switch"
-						aria-checked={autoReminderOnCreate}
-						aria-label="자동 알림 토글"
-						onclick={handleAutoReminderToggle}
-						class={cn('toggle-switch', autoReminderOnCreate && 'active')}
-					>
-						<span class="toggle-switch-thumb"></span>
-					</button>
+			{/if}
+
+			<!-- 자동 알림 토글 -->
+			<div class="flex items-center justify-between">
+				<div>
+					<span class="text-sm">새 메모에 자동 알림</span>
+					<p class="text-xs text-muted-foreground">메모 생성 시 자동으로 알림 설정</p>
 				</div>
+				<button
+					type="button"
+					role="switch"
+					aria-checked={autoReminderOnCreate}
+					aria-label="자동 알림 토글"
+					onclick={handleAutoReminderToggle}
+					class={cn('toggle-switch', autoReminderOnCreate && 'active')}
+				>
+					<span class="toggle-switch-thumb"></span>
+				</button>
+			</div>
 
 			{#if autoReminderOnCreate}
 				<div class="space-y-4 p-3 rounded-lg bg-muted/50 border border-border">
@@ -672,7 +657,6 @@
 						</div>
 					</div>
 				</div>
-			{/if}
 			{/if}
 		</div>
 	</section>
