@@ -7,6 +7,9 @@
 	import { settingsStore } from "$lib/stores/settings.svelte";
 	import { notificationStore } from "$lib/stores/notifications.svelte";
 	import { authStore } from "$lib/stores/auth.svelte";
+	import { memosStore } from "$lib/stores/memos.svelte";
+	import { filterStore } from "$lib/stores/filter.svelte";
+	import { foldersStore } from "$lib/stores/folders.svelte";
 	import { registerFCMToken, setupForegroundMessageListener } from "$lib/fcm";
 	import { setupShareIntentListener, shareIntentToQueryParams, type ShareIntentData } from "$lib/utils/capacitor";
 	import { Toast } from "$lib/components/ui";
@@ -58,8 +61,16 @@
 		settingsStore.init();
 		notificationStore.init();
 
-		// authStore 초기화 완료 후 FCM 등록
+		// authStore 초기화 완료 후 stores 초기화
 		await authStore.initialize();
+
+		// 메모 스토어 초기화 (authStore 상태 확정 후)
+		// 로컬 캐시를 즉시 로드하여 새로고침 시에도 메모가 표시됨
+		await memosStore.init();
+		filterStore.init();
+		foldersStore.init();
+
+		// FCM 등록
 		initFCM();
 
 		// Android Share Intent 리스너 설정

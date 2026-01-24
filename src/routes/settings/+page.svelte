@@ -469,8 +469,14 @@
 <div class="min-h-screen">
 	<Header />
 
-<div class="max-w-2xl mx-auto px-4 py-8 space-y-8 pb-24">
-	<h1 class="text-2xl font-bold">설정</h1>
+	<!-- Header section -->
+	<div class="sticky top-14 z-20 bg-background/95 backdrop-blur-sm border-b border-border/50">
+		<div class="max-w-6xl mx-auto px-4 py-4">
+			<h1 class="text-xl font-bold tracking-tight text-foreground">설정</h1>
+		</div>
+	</div>
+
+<div class="max-w-2xl mx-auto px-4 py-6 space-y-8 pb-24">
 
 	<!-- 테마 -->
 	<section class="space-y-4">
