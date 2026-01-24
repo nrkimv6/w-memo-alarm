@@ -364,78 +364,79 @@ function createMemosStore() {
 	}
 
 	async function update(id: string, changes: MemoUpdate, options?: { silent?: boolean }): Promise<Memo | null> {
-		if (!authStore.isAuthenticated) {
-			// 비로그인: 로컬 전용
-			const index = memos.findIndex((m) => m.id === id);
-			if (index === -1) return null;
+		const index = memos.findIndex((m) => m.id === id);
+		if (index === -1) return null;
 
-			const updated: Memo = {
-				...memos[index],
-				...changes,
-				updatedAt: Date.now()
-			};
-			memos = [...memos.slice(0, index), updated, ...memos.slice(index + 1)];
-			saveCacheToStorage(memos);
+		const originalMemo = memos[index];
 
-			if (await isNative()) {
-				if (updated.reminder?.enabled) {
-					scheduleNotification(updated);
-				} else {
-					cancelNotification(id);
-				}
+		// 1. 즉시 로컬에서 업데이트 (낙관적 업데이트)
+		const optimisticUpdate: Memo = {
+			...originalMemo,
+			...changes,
+			updatedAt: Date.now()
+		};
+		memos = [...memos.slice(0, index), optimisticUpdate, ...memos.slice(index + 1)];
+		saveCacheToStorage(memos);
+
+		// 알림 스케줄링 (네이티브)
+		if (await isNative()) {
+			if (optimisticUpdate.reminder?.enabled) {
+				scheduleNotification(optimisticUpdate);
+			} else {
+				cancelNotification(id);
 			}
-
-			return updated;
 		}
 
-		// 로그인: Supabase 업데이트 (충돌 감지)
-		const currentMemo = memos.find((m) => m.id === id);
-		if (!currentMemo) return null;
+		if (!authStore.isAuthenticated) {
+			// 비로그인: 로컬 전용이므로 완료
+			return optimisticUpdate;
+		}
 
+		// 2. 백그라운드에서 서버 동기화
 		const updateData = memoToSupabase(changes);
 
 		const { data, error } = await supabase
 			.from('memos')
 			.update(updateData)
 			.eq('id', id)
-			.eq('version', currentMemo.version) // 버전 기반 충돌 감지
+			.eq('version', originalMemo.version) // 버전 기반 충돌 감지
 			.select()
 			.single();
 
 		if (error) {
 			if (error.code === 'PGRST116') {
-				// 버전 불일치 → 충돌! (silent 모드가 아닐 때만 토스트 표시)
+				// 버전 불일치 → 충돌! 서버 데이터로 롤백
 				if (!options?.silent) {
 					toastStore.warning('다른 기기에서 수정됨. 최신 데이터로 새로고침합니다.');
 				}
 				await fetchFromSupabase();
 				return null;
 			}
+			// 기타 오류: 롤백
 			console.error('Failed to update memo:', error);
+			memos = [...memos.slice(0, index), originalMemo, ...memos.slice(index + 1)];
+			saveCacheToStorage(memos);
 			if (!options?.silent) {
-				toastStore.error('메모 수정 실패');
+				toastStore.error('메모 수정 실패 - 복원됨');
 			}
 			return null;
 		}
 
+		// 3. 서버 응답으로 최종 업데이트 (version 등 서버에서 관리하는 필드 반영)
 		const result = supabaseToMemo(data);
+		result.syncStatus = 'synced';
+		const currentIndex = memos.findIndex((m) => m.id === id);
+		if (currentIndex !== -1) {
+			memos = [...memos.slice(0, currentIndex), result, ...memos.slice(currentIndex + 1)];
+			saveCacheToStorage(memos);
+		}
 
-		// 알림 재스케줄링 (네이티브: 로컬 알림, 웹: FCM 서버 알림)
+		// FCM 서버 알림 갱신 (웹)
 		if (changes.reminder !== undefined || changes.title !== undefined) {
-			if (await isNative()) {
-				if (result.reminder?.enabled) {
-					scheduleNotification(result);
-				} else {
-					cancelNotification(id);
-				}
-			} else {
-				// FCM 서버 알림 갱신
-				try {
-					await updateMemoAlarm(authStore.user!.id, id, result.title, result.reminder);
-					console.log('[Alarms] Updated memo alarm for:', result.title);
-				} catch (alarmError) {
+			if (!(await isNative())) {
+				updateMemoAlarm(authStore.user!.id, id, result.title, result.reminder).catch((alarmError) => {
 					console.warn('[Alarms] Failed to update alarm:', alarmError);
-				}
+				});
 			}
 		}
 
@@ -443,38 +444,40 @@ function createMemosStore() {
 	}
 
 	async function remove(id: string): Promise<boolean> {
+		// 메모 찾기
+		const memoIndex = memos.findIndex((m) => m.id === id);
+		if (memoIndex === -1) return false;
+
+		const memoToDelete = memos[memoIndex];
+
+		// 알림 취소 (먼저 실행)
+		if (await isNative()) {
+			cancelNotification(id);
+		} else if (authStore.isAuthenticated) {
+			// FCM 서버 알림 삭제 (백그라운드)
+			deleteMemoAlarms(id).catch((alarmError) => {
+				console.warn('[Alarms] Failed to delete alarms:', alarmError);
+			});
+		}
+
+		// 1. 즉시 로컬에서 제거 (낙관적 업데이트)
+		memos = [...memos.slice(0, memoIndex), ...memos.slice(memoIndex + 1)];
+		saveCacheToStorage(memos);
+
 		if (!authStore.isAuthenticated) {
-			// 비로그인: 로컬 전용
-			const index = memos.findIndex((m) => m.id === id);
-			if (index === -1) return false;
-
-			if (await isNative()) {
-				cancelNotification(id);
-			}
-
-			memos = [...memos.slice(0, index), ...memos.slice(index + 1)];
-			saveCacheToStorage(memos);
+			// 비로그인: 로컬 전용이므로 완료
 			return true;
 		}
 
-		// 로그인: Supabase 삭제
-		if (await isNative()) {
-			cancelNotification(id);
-		} else {
-			// FCM 서버 알림 삭제
-			try {
-				await deleteMemoAlarms(id);
-				console.log('[Alarms] Deleted memo alarms for:', id);
-			} catch (alarmError) {
-				console.warn('[Alarms] Failed to delete alarms:', alarmError);
-			}
-		}
-
+		// 2. 백그라운드에서 서버 삭제
 		const { error } = await supabase.from('memos').delete().eq('id', id);
 
 		if (error) {
 			console.error('Failed to delete memo:', error);
-			toastStore.error('메모 삭제 실패');
+			// 롤백: 삭제 실패 시 복원
+			memos = [...memos.slice(0, memoIndex), memoToDelete, ...memos.slice(memoIndex)];
+			saveCacheToStorage(memos);
+			toastStore.error('메모 삭제 실패 - 복원됨');
 			return false;
 		}
 
