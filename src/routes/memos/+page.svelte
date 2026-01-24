@@ -39,9 +39,7 @@
 	const selectedCount = $derived(selectionStore.selectedCount);
 
 	onMount(() => {
-		memosStore.init();
-		filterStore.init();
-		foldersStore.init();
+		// memosStore, filterStore, foldersStore 초기화는 +layout.svelte에서 수행됨
 
 		// Keyboard shortcuts
 		function handleKeydown(e: KeyboardEvent) {

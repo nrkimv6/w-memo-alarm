@@ -83,10 +83,7 @@
 	const filteredMemos = $derived(filterStore.getFilteredMemos());
 
 	onMount(() => {
-		memosStore.init();
-		filterStore.init();
-		foldersStore.init();
-		notificationStore.init();
+		// memosStore, filterStore, foldersStore 초기화는 +layout.svelte에서 수행됨
 
 		if (typeof window !== 'undefined' && !localStorage.getItem(ONBOARDING_KEY)) {
 			showOnboarding = true;
