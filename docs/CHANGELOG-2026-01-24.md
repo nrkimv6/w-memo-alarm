@@ -299,3 +299,224 @@ npm install @capacitor/browser
 - D1 Database (Cloudflare 서버리스 DB)
 - web-push.ts (자체 Web Push 구현)
 - cron/send-push 엔드포인트
+
+---
+
+## 5. 메모 저장/UI 일관성 버그 수정 (1a90d18)
+
+### 수정된 이슈
+
+| # | 이슈 설명 | 심각도 |
+|---|----------|--------|
+| 1 | 메모 저장 후 새로고침 시 리스트에 표시되지 않음 | **높음** |
+| 2 | "우리공방" 헤더가 페이지 전환 시 애니메이션 발생 | 중간 |
+| 3 | 홈/전체메모/설정 탭별 헤더 스타일 불일치 | 낮음 |
+
+---
+
+### 이슈 1: 메모 저장 후 새로고침 시 리스트 미표시 (중요 버그)
+
+#### 원인 분석
+
+```
+문제의 실행 순서:
+1. +layout.svelte의 onMount() 시작
+2. authStore.initialize() 호출 (비동기)
+3. 각 페이지의 onMount()에서 memosStore.init() 호출
+4. 이때 authStore.isAuthenticated 상태가 아직 미확정
+5. memosStore.init()이 잘못된 인증 상태로 초기화
+6. 새로고침 시 localStorage 캐시 로드 실패
+```
+
+#### 해결 방법
+
+`+layout.svelte`에서 `authStore.initialize()` 완료 후 `memosStore.init()` 호출
+
+#### 수정된 파일
+
+##### `src/routes/+layout.svelte` (라인 9-12, 61-68)
+
+**Before:**
+```typescript
+import { authStore } from "$lib/stores/auth.svelte";
+// ... (memosStore import 없음)
+
+onMount(async () => {
+    themeStore.init();
+    settingsStore.init();
+    notificationStore.init();
+
+    await authStore.initialize();
+    initFCM();
+    // ...
+});
+```
+
+**After:**
+```typescript
+import { authStore } from "$lib/stores/auth.svelte";
+import { memosStore } from "$lib/stores/memos.svelte";
+import { filterStore } from "$lib/stores/filter.svelte";
+import { foldersStore } from "$lib/stores/folders.svelte";
+
+onMount(async () => {
+    themeStore.init();
+    settingsStore.init();
+    notificationStore.init();
+
+    // authStore 초기화 완료 후 stores 초기화
+    await authStore.initialize();
+
+    // 메모 스토어 초기화 (authStore 상태 확정 후)
+    // 로컬 캐시를 즉시 로드하여 새로고침 시에도 메모가 표시됨
+    await memosStore.init();
+    filterStore.init();
+    foldersStore.init();
+
+    // FCM 등록
+    initFCM();
+    // ...
+});
+```
+
+##### `src/routes/+page.svelte` (라인 85-86)
+
+**Before:**
+```typescript
+onMount(() => {
+    memosStore.init();
+    filterStore.init();
+    foldersStore.init();
+    notificationStore.init();
+    // ...
+});
+```
+
+**After:**
+```typescript
+onMount(() => {
+    // memosStore, filterStore, foldersStore 초기화는 +layout.svelte에서 수행됨
+    // ...
+});
+```
+
+##### `src/routes/memos/+page.svelte` (라인 41-42)
+
+동일하게 중복 init 호출 제거
+
+---
+
+### 이슈 2: GlobalNav 헤더 페이지 전환 애니메이션
+
+#### 원인 분석
+
+```
+View Transitions API 동작:
+1. 페이지 전환 시 document.startViewTransition() 호출
+2. view-transition-name이 없는 요소는 기본 전환 애니메이션 적용
+3. GlobalNav에 view-transition-name 미설정
+4. 페이지 전환 시 GlobalNav가 fade in/out 애니메이션 발생
+```
+
+#### 해결 방법
+
+`GlobalNav.svelte`에 `view-transition-name` 스타일 추가
+
+#### 수정된 파일
+
+##### `src/lib/components/GlobalNav.svelte` (라인 48)
+
+**Before:**
+```html
+<nav
+    class="sticky top-0 z-[100] w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+>
+```
+
+**After:**
+```html
+<nav
+    class="sticky top-0 z-[100] w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+    style="view-transition-name: global-nav;"
+>
+```
+
+#### 참고: 현재 view-transition-name 설정 현황
+
+| 컴포넌트 | view-transition-name | 파일 위치 |
+|---------|---------------------|-----------|
+| GlobalNav | `global-nav` | `src/lib/components/GlobalNav.svelte:48` |
+| Header | `header` | `src/lib/components/layout/Header.svelte:75` |
+| BottomNav | `bottom-nav` | `src/lib/components/BottomNav.svelte:14` |
+
+---
+
+### 이슈 3: 탭별 헤더 스타일 불일치
+
+#### 원인 분석
+
+| 페이지 | 타이틀 스타일 | sticky | max-width | padding |
+|--------|-------------|--------|-----------|---------|
+| 홈 | `text-xl font-bold tracking-tight` | ✅ `top-14` | `max-w-6xl` | `py-4` |
+| 전체메모 | `text-xl font-bold tracking-tight` | ✅ `top-14` | `max-w-6xl` | `py-4` |
+| 설정 | `text-2xl font-bold` | ❌ 없음 | `max-w-2xl` | `py-8` |
+
+#### 해결 방법
+
+설정 페이지에 홈/전체메모와 동일한 sticky 헤더 섹션 추가
+
+#### 수정된 파일
+
+##### `src/routes/settings/+page.svelte` (라인 469-478)
+
+**Before:**
+```html
+<div class="min-h-screen">
+    <Header />
+
+<div class="max-w-2xl mx-auto px-4 py-8 space-y-8 pb-24">
+    <h1 class="text-2xl font-bold">설정</h1>
+```
+
+**After:**
+```html
+<div class="min-h-screen">
+    <Header />
+
+    <!-- Header section -->
+    <div class="sticky top-14 z-20 bg-background/95 backdrop-blur-sm border-b border-border/50">
+        <div class="max-w-6xl mx-auto px-4 py-4">
+            <h1 class="text-xl font-bold tracking-tight text-foreground">설정</h1>
+        </div>
+    </div>
+
+<div class="max-w-2xl mx-auto px-4 py-6 space-y-8 pb-24">
+```
+
+#### 수정 후 스타일 일관성
+
+| 페이지 | 타이틀 스타일 | sticky | max-width | padding |
+|--------|-------------|--------|-----------|---------|
+| 홈 | `text-xl font-bold tracking-tight` | ✅ `top-14` | `max-w-6xl` | `py-4` |
+| 전체메모 | `text-xl font-bold tracking-tight` | ✅ `top-14` | `max-w-6xl` | `py-4` |
+| 설정 | `text-xl font-bold tracking-tight` | ✅ `top-14` | `max-w-6xl` | `py-4` |
+
+---
+
+### 커밋 정보
+
+| 항목 | 값 |
+|------|-----|
+| 해시 | `1a90d18` |
+| 브랜치 | `claude/fix-memo-persistence-ui-BzSWT` |
+| 메시지 | `fix: memo persistence and UI consistency issues` |
+
+### 수정된 파일 요약
+
+| 파일 | 변경 내용 |
+|------|----------|
+| `src/routes/+layout.svelte` | memosStore/filterStore/foldersStore import 및 초기화 추가 |
+| `src/routes/+page.svelte` | 중복 init 호출 제거 |
+| `src/routes/memos/+page.svelte` | 중복 init 호출 제거 |
+| `src/routes/settings/+page.svelte` | sticky 헤더 섹션 추가, 스타일 통일 |
+| `src/lib/components/GlobalNav.svelte` | view-transition-name 추가 |
