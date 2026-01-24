@@ -71,14 +71,14 @@
 {#if open}
 	<!-- Backdrop -->
 	<div
-		class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm transition-opacity"
+		class="fixed inset-0 z-[200] bg-black/40 backdrop-blur-sm transition-opacity"
 		transition:fade={{ duration: 200 }}
 		onclick={close}
 		role="presentation"
 	></div>
 
 	<!-- Modal Content -->
-	<div class="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+	<div class="fixed inset-0 z-[200] flex items-center justify-center p-4 pointer-events-none">
 		<div
 			class={cn(
 				'bg-card w-full max-w-lg rounded-xl border border-border shadow-lg pointer-events-auto',
