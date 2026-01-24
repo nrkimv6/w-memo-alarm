@@ -1,5 +1,20 @@
 # DONE (최근 20개)
 
+- [x] 2026-01-24: **Optimistic UI 패턴 적용** ✅
+  - **P0 구현**:
+    - `memo.ts`: `SyncStatus` 타입, `syncStatus`, `localId` 필드 추가
+    - `memos.svelte.ts`: `add()` 즉시 UI 반영 + 백그라운드 동기화
+    - `MemoCard.svelte`: 동기화 상태 아이콘 (🔄 pending, ⚠️ failed)
+    - 동기화 실패 시 토스트 알림
+  - **P1 구현**:
+    - `syncQueue.ts`: 동기화 큐 클래스 (지수 백오프: 1초→2초→4초→8초→16초, 최대 5회)
+    - 수동 재시도 버튼 (retrySync 함수 + UI)
+  - **P2 구현**:
+    - `networkStatus.ts`: 네트워크 상태 감지 (navigator.onLine)
+    - 온라인 복구 시 자동 동기화 재개
+  - **효과**: 메모 추가 시 즉시 UI 반영, 네트워크 문제 시 자동 재시도
+  - **참고**: `common/docs/plan/2026-01-23_memo-alarm-optimistic-ui.md`
+
 - [x] 2026-01-23: **UI/UX 추가 개선** ✅
   - **전체메모 탭 빠른추가 제거**: 홈에만 유지
   - **페이지 전환 깜빡임 수정**: Header/BottomNav에 view-transition-name 추가

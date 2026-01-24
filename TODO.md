@@ -4,14 +4,6 @@
 
 ---
 
-## In Progress
-
-- [ ] Optimistic UI 패턴 적용 (from: plan/2026-01-23_memo-alarm-optimistic-ui)
-  - [ ] P0: 메모 타입에 `syncStatus` 필드 추가
-  - [ ] P0: `add()` 함수 Optimistic UI 로직 구현
-  - [ ] P0: 메모 카드에 동기화 상태 아이콘 표시
-  - [ ] P0: 동기화 실패 시 토스트 알림
-
 ---
 
 ## Phase 7: Auth 통합 ✅

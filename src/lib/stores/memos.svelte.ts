@@ -6,6 +6,7 @@ import { authStore } from './auth.svelte';
 import { isNative, scheduleNotification, cancelNotification } from '$lib/utils/capacitor';
 import { toastStore } from './toast.svelte';
 import { createMemoAlarm, updateMemoAlarm, deleteMemoAlarms } from '$lib/services/alarmSchedules';
+import { syncQueue } from '$lib/services/syncQueue';
 
 const CACHE_KEY = 'memo-alarm-memos-cache';
 const INITIALIZED_KEY = 'memo-alarm-initialized';
@@ -142,6 +143,26 @@ function createMemosStore() {
 
 		// Realtime 구독
 		subscribeToRealtime();
+
+		// SyncQueue 설정
+		syncQueue.setUserId(authStore.user?.id || null);
+		syncQueue.setOnStatusChange((localId, status, serverId) => {
+			if (status === 'synced' && serverId) {
+				// 서버 ID로 교체
+				memos = memos.map((m) => {
+					if (m.localId === localId) {
+						return { ...m, id: serverId, syncStatus: 'synced' as SyncStatus, localId: undefined };
+					}
+					return m;
+				});
+				saveCacheToStorage(memos);
+			} else if (status === 'failed') {
+				memos = memos.map((m) =>
+					m.localId === localId ? { ...m, syncStatus: 'failed' as SyncStatus } : m
+				);
+				saveCacheToStorage(memos);
+			}
+		});
 
 		loading = false;
 		initialized = true;
@@ -310,12 +331,9 @@ function createMemosStore() {
 
 		if (error) {
 			console.error('Failed to add memo:', error);
-			// 동기화 실패: 상태만 failed로 변경
-			memos = memos.map((m) =>
-				m.localId === localId ? { ...m, syncStatus: 'failed' as SyncStatus } : m
-			);
-			saveCacheToStorage(memos);
-			toastStore.error('메모 동기화 실패. 나중에 다시 시도합니다.');
+			// 동기화 실패: SyncQueue에 추가하여 자동 재시도
+			syncQueue.add(optimisticMemo);
+			toastStore.warning('메모 동기화 중... 백그라운드에서 재시도합니다.');
 			return optimisticMemo;
 		}
 
@@ -566,6 +584,28 @@ function createMemosStore() {
 		importMemos(newMemos, true);
 	}
 
+	// 실패한 메모 재시도 (SyncQueue 사용)
+	function retrySync(localId: string): boolean {
+		if (!authStore.isAuthenticated || !authStore.user) return false;
+
+		const memo = memos.find((m) => m.localId === localId || m.id === localId);
+		if (!memo || memo.syncStatus !== 'failed') return false;
+
+		// pending 상태로 변경
+		memos = memos.map((m) =>
+			m.localId === localId || m.id === localId
+				? { ...m, syncStatus: 'pending' as SyncStatus }
+				: m
+		);
+		saveCacheToStorage(memos);
+
+		// SyncQueue에 재시도 요청
+		syncQueue.retry(localId, memo);
+		toastStore.info('동기화 재시도 중...');
+
+		return true;
+	}
+
 	function clearAll(): void {
 		if (!authStore.isAuthenticated) {
 			memos = [];
@@ -579,6 +619,7 @@ function createMemosStore() {
 	function cleanup() {
 		subscription?.unsubscribe();
 		subscription = null;
+		syncQueue.clear();
 	}
 
 	return {
@@ -608,6 +649,7 @@ function createMemosStore() {
 		importData,
 		clearAll,
 		cleanup,
+		retrySync,
 		// 구 API 호환성 (sync용)
 		deleteMemo: remove,
 		updateMemo: update,

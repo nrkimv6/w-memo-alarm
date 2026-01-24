@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Pin, Star, Edit3, Trash2, ExternalLink, Folder, EyeOff, Eye, CheckSquare, Check, MoreVertical, Link2 } from 'lucide-svelte';
+	import { Pin, Star, Edit3, Trash2, ExternalLink, Folder, EyeOff, Eye, CheckSquare, Check, MoreVertical, Link2, RefreshCw, AlertTriangle } from 'lucide-svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import KebabMenu from '$lib/components/memo/KebabMenu.svelte';
@@ -32,6 +32,15 @@
 	const hasChecklist = $derived((memo.checklist?.length || 0) > 0);
 	const checklistComplete = $derived(memo.checklist?.filter((i) => i.completed).length || 0);
 	const checklistTotal = $derived(memo.checklist?.length || 0);
+	const syncStatus = $derived(memo.syncStatus);
+	const isPending = $derived(syncStatus === 'pending');
+	const isFailed = $derived(syncStatus === 'failed');
+
+	function handleRetrySync(e: MouseEvent) {
+		e.stopPropagation();
+		const localId = memo.localId || memo.id;
+		memosStore.retrySync(localId);
+	}
 
 	function getDomain(url: string): string {
 		try {
@@ -93,7 +102,17 @@
 	<!-- Ultra Compact Mode: Single row -->
 	{#if ultraCompact}
 		<div class="flex items-center gap-3">
-			{#if memo.isPinned}
+			{#if isPending}
+				<RefreshCw class="w-4 h-4 text-muted-foreground animate-spin flex-shrink-0" />
+			{:else if isFailed}
+				<button
+					onclick={handleRetrySync}
+					class="flex-shrink-0 p-0.5 rounded hover:bg-destructive/10 transition-colors"
+					title="동기화 실패 - 다시 시도"
+				>
+					<AlertTriangle class="w-4 h-4 text-destructive" />
+				</button>
+			{:else if memo.isPinned}
 				<Pin class="w-4 h-4 text-secondary flex-shrink-0" />
 			{/if}
 			<h3 class="text-sm font-medium text-foreground truncate flex-1">
@@ -126,9 +145,22 @@
 	{:else}
 		<!-- Header -->
 		<header class="flex items-start justify-between gap-3 mb-2">
-			<h3 class={cn('font-semibold text-foreground flex-1', compact ? 'text-base line-clamp-1' : 'text-lg line-clamp-2')}>
-				{memo.title || '제목 없음'}
-			</h3>
+			<div class="flex items-center gap-2 flex-1 min-w-0">
+				{#if isPending}
+					<RefreshCw class="w-4 h-4 text-muted-foreground animate-spin flex-shrink-0" />
+				{:else if isFailed}
+					<button
+						onclick={handleRetrySync}
+						class="flex-shrink-0 p-1 rounded hover:bg-destructive/10 transition-colors"
+						title="동기화 실패 - 다시 시도"
+					>
+						<AlertTriangle class="w-4 h-4 text-destructive" />
+					</button>
+				{/if}
+				<h3 class={cn('font-semibold text-foreground flex-1 min-w-0', compact ? 'text-base line-clamp-1' : 'text-lg line-clamp-2')}>
+					{memo.title || '제목 없음'}
+				</h3>
+			</div>
 
 		<!-- Hover actions -->
 		<div class="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
