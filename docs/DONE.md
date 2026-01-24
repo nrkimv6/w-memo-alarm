@@ -1,5 +1,34 @@
 # DONE (최근 20개)
 
+- [x] 2026-01-23: **UI/UX 추가 개선** ✅
+  - **전체메모 탭 빠른추가 제거**: 홈에만 유지
+  - **페이지 전환 깜빡임 수정**: Header/BottomNav에 view-transition-name 추가
+  - **검색 토글 시 빠른추가 숨김**: 검색 모드일 때 QuickMemoInput 숨김
+  - **모달 히스토리 연동**: back 버튼으로 모달 닫기 지원
+  - **핀 버튼 잘림 버그 수정**: SwipeableCard에 pt-3 추가로 overflow 문제 해결
+  - **설정 페이지 헤더 추가**: 다른 페이지와 동일한 헤더 구조 적용
+  - **로그인 버튼 개선**: Google/Kakao 아이콘 추가, 테마 버튼과 동일한 스타일 적용
+  - **수정 파일**: SwipeableCard.svelte, Modal.svelte, settings/+page.svelte, +page.svelte
+
+- [x] 2026-01-23: **홈/전체메모 탭 분리** ✅
+  - **하단 네비게이션**: "전체 메모" 탭 추가 (홈, 전체 메모, 설정)
+  - **홈 탭 리디자인**: 대시보드 스타일로 변경
+    - 검색창 숨김 → 검색 아이콘 클릭 시 노출
+    - 고정된 메모, 즐겨찾기, 알림 예정, 최신 메모 섹션별 표시
+  - **전체 메모 페이지**: /memos 라우트 신규 생성
+  - **수정 파일**: BottomNav.svelte, +page.svelte, memos/+page.svelte
+  - **참고**: docs/2026-01-23_home-allmemos-separation.md
+
+- [x] 2026-01-23: **Notes UI 개선** ✅
+  - **동기화 용어 변경**: "Supabase 동기화" → "클라우드 보관"
+  - **백업 가져오기**: `accept="*/*"` + JS 검증으로 안드로이드 호환성 해결
+  - **빠른메모 + 버튼 제거**: Enter로 저장 가능하므로 불필요한 버튼 제거
+  - **검색/필터 분리**: 검색 영역과 필터 영역 사이 구분선 추가
+  - **빈 상태 높이 축소**: py-20 → py-8, 스크롤 없이 볼 수 있도록 개선
+  - **카카오 이메일 숨김**: `@kakao.local` 이메일 표시 안 함
+  - **수정 파일**: settings/+page.svelte, QuickMemoInput.svelte, +page.svelte, user.ts
+  - **참고**: docs/2026-01-23_notes-ui-improvements.md
+
 - [x] 2026-01-23: **Capacitor SSR 빌드 에러 수정** ✅
   - **문제**: vite.config.ts에 `ssr.external` 설정 누락으로 SSR 빌드 시 Capacitor 패키지 에러 발생
   - **해결**: `ssr.external`에 Capacitor 패키지 추가

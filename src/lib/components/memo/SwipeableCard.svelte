@@ -59,7 +59,7 @@
 </script>
 
 <div
-	class="relative overflow-hidden"
+	class="relative pt-3"
 	bind:this={containerElement}
 	ontouchstart={handleTouchStart}
 	ontouchmove={handleTouchMove}
@@ -68,7 +68,7 @@
 	<!-- 왼쪽 액션 (삭제) -->
 	{#if showLeftAction}
 		<div
-			class="absolute inset-0 bg-destructive flex items-center justify-end px-6 z-0"
+			class="absolute inset-x-0 top-3 bottom-0 bg-destructive flex items-center justify-end px-6 z-0 rounded-xl"
 			style="opacity: {leftOpacity}"
 		>
 			<Trash2 class="w-6 h-6 text-white" />
@@ -78,7 +78,7 @@
 	<!-- 오른쪽 액션 (핀 고정) -->
 	{#if showRightAction}
 		<div
-			class="absolute inset-0 bg-secondary flex items-center justify-start px-6 z-0"
+			class="absolute inset-x-0 top-3 bottom-0 bg-secondary flex items-center justify-start px-6 z-0 rounded-xl"
 			style="opacity: {rightOpacity}"
 		>
 			<Pin class="w-6 h-6 text-white" />

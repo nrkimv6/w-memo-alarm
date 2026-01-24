@@ -1,16 +1,35 @@
-import { Capacitor } from '@capacitor/core';
-import type { LocalNotificationSchema } from '@capacitor/local-notifications';
 import type { Memo } from '$lib/types/memo';
 
-export function isNative(): boolean {
-	return Capacitor.isNativePlatform();
+// 동적 import를 사용하여 Capacitor 모듈을 안전하게 로드
+async function getCapacitor() {
+	try {
+		const { Capacitor } = await import('@capacitor/core');
+		return Capacitor;
+	} catch {
+		return null;
+	}
+}
+
+async function getLocalNotifications() {
+	try {
+		const { LocalNotifications } = await import('@capacitor/local-notifications');
+		return LocalNotifications;
+	} catch {
+		return null;
+	}
+}
+
+export async function isNative(): Promise<boolean> {
+	const Capacitor = await getCapacitor();
+	return Capacitor?.isNativePlatform() ?? false;
 }
 
 export async function requestNotificationPermission(): Promise<boolean> {
-	if (!isNative()) return false;
+	if (!(await isNative())) return false;
 
 	try {
-		const { LocalNotifications } = await import('@capacitor/local-notifications');
+		const LocalNotifications = await getLocalNotifications();
+		if (!LocalNotifications) return false;
 		const result = await LocalNotifications.requestPermissions();
 		return result.display === 'granted';
 	} catch (e) {
@@ -20,10 +39,11 @@ export async function requestNotificationPermission(): Promise<boolean> {
 }
 
 export async function checkNotificationPermission(): Promise<boolean> {
-	if (!isNative()) return false;
+	if (!(await isNative())) return false;
 
 	try {
-		const { LocalNotifications } = await import('@capacitor/local-notifications');
+		const LocalNotifications = await getLocalNotifications();
+		if (!LocalNotifications) return false;
 		const result = await LocalNotifications.checkPermissions();
 		return result.display === 'granted';
 	} catch (e) {
@@ -32,9 +52,10 @@ export async function checkNotificationPermission(): Promise<boolean> {
 }
 
 export async function scheduleNotification(memo: Memo): Promise<void> {
-	if (!isNative() || !memo.reminder?.enabled) return;
+	if (!(await isNative()) || !memo.reminder?.enabled) return;
 
-	const { LocalNotifications } = await import('@capacitor/local-notifications');
+	const LocalNotifications = await getLocalNotifications();
+	if (!LocalNotifications) return;
 
 	const { time, days } = memo.reminder;
 	const [hours, minutes] = time.split(':').map(Number);
@@ -43,7 +64,13 @@ export async function scheduleNotification(memo: Memo): Promise<void> {
 	await cancelNotification(memo.id);
 
 	// Schedule notifications for each day
-	const notifications: LocalNotificationSchema[] = [];
+	const notifications: Array<{
+		id: number;
+		title: string;
+		body: string;
+		schedule: { at: Date; repeats: boolean; every: 'week' };
+		extra: { memoId: string; url?: string; autoOpen?: boolean };
+	}> = [];
 
 	for (const day of days) {
 		const now = new Date();
@@ -61,7 +88,7 @@ export async function scheduleNotification(memo: Memo): Promise<void> {
 			schedule: {
 				at: scheduleDate,
 				repeats: true,
-				every: 'week'
+				every: 'week' as const
 			},
 			extra: {
 				memoId: memo.id,
@@ -77,10 +104,11 @@ export async function scheduleNotification(memo: Memo): Promise<void> {
 }
 
 export async function cancelNotification(memoId: string): Promise<void> {
-	if (!isNative()) return;
+	if (!(await isNative())) return;
 
 	try {
-		const { LocalNotifications } = await import('@capacitor/local-notifications');
+		const LocalNotifications = await getLocalNotifications();
+		if (!LocalNotifications) return;
 		const pending = await LocalNotifications.getPending();
 		const toCancel = pending.notifications
 			.filter((n) => n.extra?.memoId === memoId)
@@ -95,10 +123,11 @@ export async function cancelNotification(memoId: string): Promise<void> {
 }
 
 export async function cancelAllNotifications(): Promise<void> {
-	if (!isNative()) return;
+	if (!(await isNative())) return;
 
 	try {
-		const { LocalNotifications } = await import('@capacitor/local-notifications');
+		const LocalNotifications = await getLocalNotifications();
+		if (!LocalNotifications) return;
 		const pending = await LocalNotifications.getPending();
 		if (pending.notifications.length > 0) {
 			await LocalNotifications.cancel({
@@ -111,9 +140,10 @@ export async function cancelAllNotifications(): Promise<void> {
 }
 
 export async function setupNotificationListeners(onNotificationClick: (memoId: string, url?: string) => void): Promise<void> {
-	if (!isNative()) return;
+	if (!(await isNative())) return;
 
-	const { LocalNotifications } = await import('@capacitor/local-notifications');
+	const LocalNotifications = await getLocalNotifications();
+	if (!LocalNotifications) return;
 
 	LocalNotifications.addListener('localNotificationActionPerformed', (action) => {
 		const { memoId, url, autoOpen } = action.notification.extra || {};

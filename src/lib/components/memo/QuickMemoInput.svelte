@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Plus, Bell, BellOff } from 'lucide-svelte';
+	import { Bell, BellOff } from 'lucide-svelte';
 	import { memosStore } from '$lib/stores/memos.svelte';
 	import { settingsStore } from '$lib/stores/settings.svelte';
 	import { toastStore } from '$lib/stores/toast.svelte';
@@ -42,47 +42,31 @@
 	}
 </script>
 
-<div class="flex items-center gap-2 w-full">
-	<div class="relative flex-1">
-		<input
-			bind:this={inputRef}
-			type="text"
-			placeholder="빠른 메모 추가... (Enter로 저장)"
-			bind:value={inputValue}
-			onkeydown={handleKeydown}
-			data-quick-memo-input
-			class="w-full pl-4 pr-10 py-2.5 rounded-lg border border-input bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring sketchy-input"
-		/>
-		<button
-			type="button"
-			onclick={toggleAutoReminder}
-			class={cn(
-				'absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md transition-colors',
-				useAutoReminder
-					? 'text-primary bg-primary/10'
-					: 'text-muted-foreground hover:text-foreground hover:bg-muted'
-			)}
-			title={useAutoReminder ? '자동 알림 켜짐' : '자동 알림 꺼짐'}
-		>
-			{#if useAutoReminder}
-				<Bell class="w-4 h-4" />
-			{:else}
-				<BellOff class="w-4 h-4" />
-			{/if}
-		</button>
-	</div>
+<div class="relative w-full">
+	<input
+		bind:this={inputRef}
+		type="text"
+		placeholder="빠른 메모 추가... (Enter로 저장)"
+		bind:value={inputValue}
+		onkeydown={handleKeydown}
+		data-quick-memo-input
+		class="w-full pl-4 pr-10 py-2.5 rounded-lg border border-input bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring sketchy-input"
+	/>
 	<button
 		type="button"
-		onclick={handleSubmit}
-		disabled={!inputValue.trim()}
+		onclick={toggleAutoReminder}
 		class={cn(
-			'p-2.5 rounded-lg transition-colors',
-			inputValue.trim()
-				? 'bg-primary text-primary-foreground hover:bg-primary/90'
-				: 'bg-muted text-muted-foreground cursor-not-allowed'
+			'absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md transition-colors',
+			useAutoReminder
+				? 'text-primary bg-primary/10'
+				: 'text-muted-foreground hover:text-foreground hover:bg-muted'
 		)}
-		title="추가"
+		title={useAutoReminder ? '자동 알림 켜짐' : '자동 알림 꺼짐'}
 	>
-		<Plus class="w-5 h-5" />
+		{#if useAutoReminder}
+			<Bell class="w-4 h-4" />
+		{:else}
+			<BellOff class="w-4 h-4" />
+		{/if}
 	</button>
 </div>

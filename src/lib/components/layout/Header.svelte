@@ -72,6 +72,7 @@
 
 <header
 	class="sticky top-0 z-40 w-full border-b border-border/40 bg-background/80 backdrop-blur-md"
+	style="view-transition-name: header;"
 >
 	<div class="container flex h-14 items-center gap-4 px-4 mx-auto max-w-7xl">
 		<div class="mr-4 flex items-center gap-2">
