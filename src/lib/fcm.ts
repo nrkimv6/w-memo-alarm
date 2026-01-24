@@ -33,6 +33,16 @@ if (browser) {
 	});
 }
 
+// FCM 환경 상태 조회 (개발자 모드용)
+export function getFCMConfigStatus() {
+	return {
+		hasApiKey: !!PUBLIC_FIREBASE_API_KEY,
+		hasVapidKey: !!PUBLIC_FIREBASE_VAPID_KEY,
+		projectId: PUBLIC_FIREBASE_PROJECT_ID || null,
+		isConfigured: !!PUBLIC_FIREBASE_API_KEY && !!PUBLIC_FIREBASE_VAPID_KEY && !!PUBLIC_FIREBASE_PROJECT_ID
+	};
+}
+
 // Firebase 초기화
 const app = browser && firebaseConfig.apiKey ? initializeApp(firebaseConfig) : null;
 const messaging = app ? getMessaging(app) : null;

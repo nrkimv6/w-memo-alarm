@@ -1,6 +1,6 @@
 <script lang="ts">
 
-	import { Download, Upload, Trash2, Sun, Moon, Monitor, Bell, Cloud, LogIn, LogOut, Info, RefreshCw, Bug, BellRing, CheckCircle, XCircle, Smartphone } from 'lucide-svelte';
+	import { Download, Upload, Trash2, Sun, Moon, Monitor, Bell, Cloud, LogIn, LogOut, Info, RefreshCw, Bug, BellRing, CheckCircle, XCircle, Smartphone, Radio } from 'lucide-svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import { Header } from '$lib/components/layout';
 	import Footer from "$lib/components/Footer.svelte";
@@ -20,6 +20,8 @@
 		scheduleNotification,
 		cancelAllNotifications
 	} from '$lib/utils/capacitor';
+	import { supabase } from '$lib/services/supabase';
+	import { registerFCMToken, getFCMConfigStatus } from '$lib/fcm';
 
 	let fileInput: HTMLInputElement;
 	let importing = $state(false);
@@ -39,6 +41,30 @@
 	let pendingNotifications = $state<string[]>([]);
 	let capacitorTestScheduled = $state(false);
 
+	// FCM 상태 (개발자 모드용)
+	let fcmStatus = $state<{
+		envConfigured: boolean;
+		hasApiKey: boolean;
+		hasVapidKey: boolean;
+		projectId: string | null;
+		fcmToken: string | null;
+		userDevices: Array<{fcm_token: string; is_active: boolean; updated_at: string}>;
+		alarmSchedules: Array<{id: string; alarm_time: string; notification_title: string; is_enabled: boolean}>;
+		loading: boolean;
+		error: string | null;
+	}>({
+		envConfigured: false,
+		hasApiKey: false,
+		hasVapidKey: false,
+		projectId: null,
+		fcmToken: null,
+		userDevices: [],
+		alarmSchedules: [],
+		loading: false,
+		error: null
+	});
+	let fcmRegistering = $state(false);
+
 	// 초기화 - 페이지 로드 시 네이티브 체크
 	$effect(() => {
 		isNative().then(native => {
@@ -50,6 +76,7 @@
 	$effect(() => {
 		if (devMode) {
 			checkCapacitorStatus();
+			checkFCMStatus();
 		}
 	});
 
@@ -61,6 +88,82 @@
 			await loadPendingNotifications();
 		} else {
 			nativePermission = 'N/A (웹 환경)';
+		}
+	}
+
+	async function checkFCMStatus() {
+		fcmStatus.loading = true;
+		fcmStatus.error = null;
+
+		try {
+			// 1. 환경 변수 확인
+			const configStatus = getFCMConfigStatus();
+			fcmStatus.hasApiKey = configStatus.hasApiKey;
+			fcmStatus.hasVapidKey = configStatus.hasVapidKey;
+			fcmStatus.projectId = configStatus.projectId;
+			fcmStatus.envConfigured = configStatus.isConfigured;
+
+			// 2. 로그인 확인 및 Supabase 데이터 조회
+			if (authStore.isAuthenticated && authStore.user?.id && supabase) {
+				// user_devices 조회
+				const { data: devices, error: devicesError } = await supabase
+					.from('user_devices')
+					.select('fcm_token, is_active, updated_at')
+					.eq('user_id', authStore.user.id)
+					.eq('app_name', 'memo-alarm')
+					.order('updated_at', { ascending: false });
+
+				if (devicesError) {
+					console.error('Failed to fetch user_devices:', devicesError);
+				} else {
+					fcmStatus.userDevices = devices || [];
+					// 활성 토큰이 있으면 저장
+					const activeDevice = devices?.find(d => d.is_active);
+					fcmStatus.fcmToken = activeDevice?.fcm_token?.substring(0, 20) + '...' || null;
+				}
+
+				// alarm_schedules 조회
+				const { data: schedules, error: schedulesError } = await supabase
+					.from('alarm_schedules')
+					.select('id, alarm_time, notification_title, is_enabled')
+					.eq('user_id', authStore.user.id)
+					.eq('app_name', 'memo-alarm')
+					.order('created_at', { ascending: false })
+					.limit(10);
+
+				if (schedulesError) {
+					console.error('Failed to fetch alarm_schedules:', schedulesError);
+				} else {
+					fcmStatus.alarmSchedules = schedules || [];
+				}
+			}
+		} catch (error) {
+			fcmStatus.error = (error as Error).message;
+			console.error('FCM status check failed:', error);
+		} finally {
+			fcmStatus.loading = false;
+		}
+	}
+
+	async function manualRegisterFCM() {
+		if (!authStore.isAuthenticated || !authStore.user?.id) {
+			alert('로그인이 필요합니다.');
+			return;
+		}
+
+		fcmRegistering = true;
+		try {
+			const result = await registerFCMToken(authStore.user.id);
+			if (result) {
+				alert(`FCM 토큰 등록 성공!\n플랫폼: ${result.platform}\n토큰: ${result.token.substring(0, 30)}...`);
+				await checkFCMStatus(); // 상태 새로고침
+			} else {
+				alert('FCM 토큰 등록 실패. 콘솔을 확인하세요.');
+			}
+		} catch (error) {
+			alert('FCM 등록 오류: ' + (error as Error).message);
+		} finally {
+			fcmRegistering = false;
 		}
 	}
 
@@ -744,6 +847,132 @@
 							백그라운드 알림은 안드로이드 앱에서만 작동합니다.
 							웹에서는 브라우저가 열려 있을 때만 알림이 가능합니다.
 						</p>
+					{/if}
+				</div>
+
+				<!-- FCM 상태 체크 (웹 푸시) -->
+				<div class="space-y-2 pt-2 border-t border-border">
+					<h3 class="text-sm font-semibold flex items-center gap-2">
+						<Radio class="w-4 h-4" />
+						FCM 웹 푸시 상태
+						<button
+							onclick={checkFCMStatus}
+							class="ml-auto text-xs text-primary hover:underline"
+						>
+							새로고침
+						</button>
+					</h3>
+
+					{#if fcmStatus.loading}
+						<p class="text-xs text-muted-foreground">로딩 중...</p>
+					{:else}
+						<!-- 환경 변수 상태 -->
+						<div class="text-xs space-y-1 p-2 rounded bg-muted">
+							<p class="font-semibold mb-1">환경 변수:</p>
+							<p class="flex items-center gap-1">
+								Firebase API Key:
+								{#if fcmStatus.hasApiKey}
+									<CheckCircle class="w-3 h-3 text-green-500" />
+									<span class="text-green-500">설정됨</span>
+								{:else}
+									<XCircle class="w-3 h-3 text-red-500" />
+									<span class="text-red-500">미설정</span>
+								{/if}
+							</p>
+							<p class="flex items-center gap-1">
+								VAPID Key:
+								{#if fcmStatus.hasVapidKey}
+									<CheckCircle class="w-3 h-3 text-green-500" />
+									<span class="text-green-500">설정됨</span>
+								{:else}
+									<XCircle class="w-3 h-3 text-red-500" />
+									<span class="text-red-500">미설정</span>
+								{/if}
+							</p>
+							<p>Project ID: <span class="font-mono">{fcmStatus.projectId || 'N/A'}</span></p>
+						</div>
+
+						<!-- 로그인 상태 -->
+						<div class="text-xs space-y-1 p-2 rounded bg-muted">
+							<p class="font-semibold mb-1">인증 상태:</p>
+							<p class="flex items-center gap-1">
+								로그인:
+								{#if authStore.isAuthenticated}
+									<CheckCircle class="w-3 h-3 text-green-500" />
+									<span class="text-green-500">{authStore.user?.email || authStore.user?.id?.substring(0, 8)}</span>
+								{:else}
+									<XCircle class="w-3 h-3 text-yellow-500" />
+									<span class="text-yellow-500">미로그인</span>
+								{/if}
+							</p>
+						</div>
+
+						<!-- user_devices 상태 -->
+						<div class="text-xs space-y-1 p-2 rounded bg-muted">
+							<p class="font-semibold mb-1">user_devices (FCM 토큰):</p>
+							{#if fcmStatus.userDevices.length > 0}
+								{#each fcmStatus.userDevices as device}
+									<p class="flex items-center gap-1 truncate">
+										{#if device.is_active}
+											<CheckCircle class="w-3 h-3 text-green-500 flex-shrink-0" />
+										{:else}
+											<XCircle class="w-3 h-3 text-gray-400 flex-shrink-0" />
+										{/if}
+										<span class="font-mono truncate">{device.fcm_token?.substring(0, 25)}...</span>
+										<span class="text-muted-foreground">({device.is_active ? '활성' : '비활성'})</span>
+									</p>
+								{/each}
+							{:else if authStore.isAuthenticated}
+								<p class="text-yellow-500">등록된 FCM 토큰 없음</p>
+							{:else}
+								<p class="text-muted-foreground">로그인 필요</p>
+							{/if}
+						</div>
+
+						<!-- alarm_schedules 상태 -->
+						<div class="text-xs space-y-1 p-2 rounded bg-muted">
+							<p class="font-semibold mb-1">alarm_schedules ({fcmStatus.alarmSchedules.length}개):</p>
+							{#if fcmStatus.alarmSchedules.length > 0}
+								<div class="max-h-24 overflow-y-auto space-y-1">
+									{#each fcmStatus.alarmSchedules as schedule}
+										<p class="flex items-center gap-1">
+											{#if schedule.is_enabled}
+												<CheckCircle class="w-3 h-3 text-green-500 flex-shrink-0" />
+											{:else}
+												<XCircle class="w-3 h-3 text-gray-400 flex-shrink-0" />
+											{/if}
+											<span class="font-mono">{schedule.alarm_time}</span>
+											<span class="truncate">{schedule.notification_title}</span>
+										</p>
+									{/each}
+								</div>
+							{:else if authStore.isAuthenticated}
+								<p class="text-yellow-500">등록된 알림 스케줄 없음</p>
+							{:else}
+								<p class="text-muted-foreground">로그인 필요</p>
+							{/if}
+						</div>
+
+						<!-- FCM 토큰 수동 등록 -->
+						{#if authStore.isAuthenticated}
+							<Button
+								variant="default"
+								size="sm"
+								onclick={manualRegisterFCM}
+								disabled={fcmRegistering}
+								class="w-full"
+							>
+								{#if fcmRegistering}
+									FCM 토큰 등록 중...
+								{:else}
+									FCM 토큰 수동 등록
+								{/if}
+							</Button>
+						{/if}
+
+						{#if fcmStatus.error}
+							<p class="text-xs text-red-500">{fcmStatus.error}</p>
+						{/if}
 					{/if}
 				</div>
 

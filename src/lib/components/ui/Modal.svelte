@@ -9,8 +9,15 @@
 		title,
 		children,
 		footer,
-		class: className,
+		class: className = '',
 		useHistory = true
+	}: {
+		open?: boolean;
+		title?: string;
+		children?: any;
+		footer?: any;
+		class?: string;
+		useHistory?: boolean;
 	} = $props();
 
 	let hasAddedHistory = $state(false);
