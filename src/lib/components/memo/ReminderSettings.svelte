@@ -44,13 +44,13 @@
 	}
 
 	$effect(() => {
-		if (showSettings && enabled) {
+		if (showSettings) {
 			if (reminderType === 'once') {
 				onReminderChange({ enabled, time, days: [], autoOpen, type: 'once', date: reminderDate });
 			} else {
 				onReminderChange({ enabled, time, days, autoOpen, type: 'repeat' });
 			}
-		} else if (!showSettings) {
+		} else {
 			onReminderChange(undefined);
 		}
 	});
