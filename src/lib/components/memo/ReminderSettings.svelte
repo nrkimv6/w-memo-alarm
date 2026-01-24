@@ -1,18 +1,9 @@
 <script lang="ts">
-	import { Bell, X, Calendar, Repeat, Smartphone } from 'lucide-svelte';
+	import { Bell, X, Calendar, Repeat } from 'lucide-svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Toggle from '$lib/components/ui/Toggle.svelte';
 	import { cn } from '$lib/utils';
 	import { settingsStore } from '$lib/stores/settings.svelte';
-	import { isNative } from '$lib/utils/capacitor';
-
-	// 네이티브 앱 체크
-	let isNativeApp = $state(false);
-	$effect(() => {
-		isNative().then(native => {
-			isNativeApp = native;
-		});
-	});
 
 	interface Reminder {
 		enabled: boolean;
@@ -182,24 +173,13 @@
 			{/if}
 		</div>
 	{:else}
-		{#if isNativeApp}
-			<button
-				type="button"
-				onclick={() => showSettings = true}
-				class="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-			>
-				<Bell class="w-4 h-4" />
-				알림 추가
-			</button>
-		{:else}
-			<div class="flex items-center gap-2 text-sm text-muted-foreground/50 cursor-not-allowed">
-				<Bell class="w-4 h-4" />
-				<span>알림 추가</span>
-				<span class="text-xs bg-muted px-2 py-0.5 rounded flex items-center gap-1">
-					<Smartphone class="w-3 h-3" />
-					앱 전용
-				</span>
-			</div>
-		{/if}
+		<button
+			type="button"
+			onclick={() => showSettings = true}
+			class="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+		>
+			<Bell class="w-4 h-4" />
+			알림 추가
+		</button>
 	{/if}
 </div>

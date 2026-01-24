@@ -45,6 +45,7 @@
 	let webPushTestSent = $state(false);
 	let webPushDelayedSent = $state(false);
 	let swRegistration = $state<ServiceWorkerRegistration | null>(null);
+	let testDelaySeconds = $state(5); // 테스트 알림 지연 시간 (초)
 
 	// FCM 상태 (개발자 모드용)
 	let fcmStatus = $state<{
@@ -143,12 +144,12 @@
 			const registration = await navigator.serviceWorker.ready;
 			registration.active?.postMessage({
 				type: 'DELAYED_NOTIFICATION',
-				delay: 5000,
+				delay: testDelaySeconds * 1000,
 				title: '백그라운드 알림 테스트',
-				body: '5초 후 알림! 앱을 백그라운드로 보내도 이 알림이 표시되어야 합니다.'
+				body: `${testDelaySeconds}초 후 알림! 앱을 백그라운드로 보내도 이 알림이 표시되어야 합니다.`
 			});
 			webPushDelayedSent = true;
-			alert('5초 후 알림이 예약되었습니다.\n\n지금 탭을 최소화하거나 다른 앱으로 전환해보세요!');
+			alert(`${testDelaySeconds}초 후 알림이 예약되었습니다.\n\n지금 탭을 최소화하거나 다른 앱으로 전환해보세요!`);
 		} catch (e) {
 			alert('테스트 실패: ' + (e as Error).message);
 		}
@@ -281,14 +282,14 @@
 				}
 			}
 
-			// 5초 후 테스트 알림 스케줄링
-			const scheduleTime = new Date(Date.now() + 5000);
+			// 테스트 알림 스케줄링
+			const scheduleTime = new Date(Date.now() + testDelaySeconds * 1000);
 
 			await LocalNotifications.schedule({
 				notifications: [{
 					id: 99999,
 					title: '테스트 백그라운드 알림',
-					body: '5초 후 알림이 정상 작동합니다! 앱을 닫아도 이 알림이 표시되어야 합니다.',
+					body: `${testDelaySeconds}초 후 알림이 정상 작동합니다! 앱을 닫아도 이 알림이 표시되어야 합니다.`,
 					schedule: { at: scheduleTime },
 					extra: { memoId: 'test', isTest: true }
 				}]
@@ -871,18 +872,30 @@
 							</Button>
 						{/if}
 
-						<Button
-							variant="default"
-							onclick={testCapacitorNotification}
-							class="w-full"
-						>
-							5초 후 백그라운드 알림 테스트
-						</Button>
+						<div class="flex gap-2">
+							<select
+								bind:value={testDelaySeconds}
+								class="flex-shrink-0 px-2 py-1.5 text-sm rounded-md border border-input bg-background"
+							>
+								<option value={5}>5초</option>
+								<option value={10}>10초</option>
+								<option value={30}>30초</option>
+								<option value={60}>1분</option>
+								<option value={120}>2분</option>
+							</select>
+							<Button
+								variant="default"
+								onclick={testCapacitorNotification}
+								class="flex-1"
+							>
+								백그라운드 알림 테스트
+							</Button>
+						</div>
 
 						{#if capacitorTestScheduled}
 							<p class="text-xs text-green-500 flex items-center gap-1">
 								<CheckCircle class="w-3 h-3" />
-								테스트 알림이 예약되었습니다! 앱을 닫아보세요.
+								{testDelaySeconds}초 후 테스트 알림이 예약됨! 앱을 닫아보세요.
 							</p>
 						{/if}
 
@@ -957,18 +970,30 @@
 							</p>
 						{/if}
 
-						<Button
-							variant="secondary"
-							size="sm"
-							onclick={testDelayedWebPushNotification}
-							class="w-full"
-						>
-							5초 후 백그라운드 알림 테스트
-						</Button>
+						<div class="flex gap-2">
+							<select
+								bind:value={testDelaySeconds}
+								class="flex-shrink-0 px-2 py-1.5 text-sm rounded-md border border-input bg-background"
+							>
+								<option value={5}>5초</option>
+								<option value={10}>10초</option>
+								<option value={30}>30초</option>
+								<option value={60}>1분</option>
+								<option value={120}>2분</option>
+							</select>
+							<Button
+								variant="secondary"
+								size="sm"
+								onclick={testDelayedWebPushNotification}
+								class="flex-1"
+							>
+								백그라운드 알림 테스트
+							</Button>
+						</div>
 						{#if webPushDelayedSent}
 							<p class="text-xs text-green-500 flex items-center gap-1">
 								<CheckCircle class="w-3 h-3" />
-								5초 후 알림 예약됨! 탭을 백그라운드로 보내세요.
+								{testDelaySeconds}초 후 알림 예약됨! 탭을 백그라운드로 보내세요.
 							</p>
 						{/if}
 					</div>
@@ -976,9 +1001,9 @@
 					<div class="text-xs text-blue-600 bg-blue-500/10 p-2 rounded space-y-1">
 						<p class="font-semibold">테스트 방법:</p>
 						<ol class="list-decimal list-inside space-y-0.5">
-							<li>"5초 후 백그라운드 알림 테스트" 클릭</li>
+							<li>시간을 선택하고 "백그라운드 알림 테스트" 클릭</li>
 							<li>즉시 탭을 최소화하거나 다른 앱으로 전환</li>
-							<li>5초 후 알림이 오면 성공!</li>
+							<li>설정한 시간 후 알림이 오면 성공!</li>
 						</ol>
 						<p class="mt-2 text-yellow-600">※ 브라우저를 완전히 닫으면 안 됩니다. 탭이 열려있어야 합니다.</p>
 					</div>
