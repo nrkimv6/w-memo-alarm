@@ -112,6 +112,7 @@ function createMemosStore() {
 	let memos = $state<Memo[]>([]);
 	let loading = $state(true);
 	let initialized = $state(false);
+	let syncingFromServer = $state(false);
 	let subscription: RealtimeChannel | null = null;
 
 	async function init() {
@@ -138,8 +139,24 @@ function createMemosStore() {
 			return;
 		}
 
-		// 로그인: Supabase에서 로드
+		// 로그인: 캐시 우선 로딩 (Cache-First)
+		// 1. 즉시 캐시에서 로드하여 UI 표시 (local-only 상태)
+		const cached = loadCacheFromStorage();
+		if (cached.length > 0) {
+			memos = cached.map((m) => ({
+				...m,
+				// 로컬 전용 상태 (pending/failed는 유지, 나머지는 local-only)
+				syncStatus: (m.syncStatus === 'pending' || m.syncStatus === 'failed')
+					? m.syncStatus
+					: 'local-only' as SyncStatus
+			}));
+			loading = false; // 즉시 UI 표시
+		}
+
+		// 2. 백그라운드에서 서버 동기화
+		syncingFromServer = true;
 		await fetchFromSupabase();
+		syncingFromServer = false;
 
 		// Realtime 구독
 		subscribeToRealtime();
@@ -181,18 +198,34 @@ function createMemosStore() {
 			if (error) {
 				console.error('Failed to load memos:', error);
 				toastStore.error('메모 로드 실패');
-				memos = loadCacheFromStorage();
+				// 에러 시 캐시 유지 (이미 local-only로 표시됨)
+				if (memos.length === 0) {
+					memos = loadCacheFromStorage();
+				}
 			} else {
-				memos = (data || []).map((row) => {
+				// 서버 데이터와 로컬 pending/failed 메모 병합
+				const serverMemos = (data || []).map((row) => {
 					const memo = supabaseToMemo(row);
 					memo.syncStatus = 'synced';
 					return memo;
 				});
+
+				// 로컬에만 있는 pending/failed 메모 유지
+				const localOnlyMemos = memos.filter(
+					(m) =>
+						(m.syncStatus === 'pending' || m.syncStatus === 'failed') &&
+						m.id?.startsWith('local_')
+				);
+
+				memos = [...localOnlyMemos, ...serverMemos];
 				saveCacheToStorage(memos);
 			}
 		} catch (e) {
 			console.error('Failed to fetch memos:', e);
-			memos = loadCacheFromStorage();
+			// 에러 시 캐시 유지
+			if (memos.length === 0) {
+				memos = loadCacheFromStorage();
+			}
 		}
 	}
 
@@ -634,6 +667,18 @@ function createMemosStore() {
 		},
 		get initialized() {
 			return initialized;
+		},
+		get syncingFromServer() {
+			return syncingFromServer;
+		},
+		get pendingCount() {
+			return memos.filter((m) => m.syncStatus === 'pending').length;
+		},
+		get failedCount() {
+			return memos.filter((m) => m.syncStatus === 'failed').length;
+		},
+		get localOnlyCount() {
+			return memos.filter((m) => m.syncStatus === 'local-only').length;
 		},
 		init,
 		add,

@@ -1,7 +1,7 @@
 import type { Memo, SyncStatus } from '$lib/types/memo';
 import { supabase } from '$lib/services/supabase';
 import { toastStore } from '$lib/stores/toast.svelte';
-import { networkStatus } from './networkStatus';
+import { networkStatus } from './networkStatus.svelte';
 
 interface QueueItem {
 	memo: Memo;

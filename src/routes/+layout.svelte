@@ -15,6 +15,7 @@
 	import { Toast } from "$lib/components/ui";
 	import GlobalNav from "$lib/components/GlobalNav.svelte";
 	import BottomNav from "$lib/components/BottomNav.svelte";
+	import SyncStatusBanner from "$lib/components/SyncStatusBanner.svelte";
 
 	let { children }: { children: Snippet } = $props();
 
@@ -81,6 +82,7 @@
 <div class="min-h-screen bg-background pb-20">
 	<GlobalNav />
 	{@render children()}
+	<SyncStatusBanner />
 	<BottomNav />
 </div>
 

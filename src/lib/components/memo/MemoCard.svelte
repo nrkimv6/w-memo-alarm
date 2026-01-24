@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Pin, Star, Edit3, Trash2, ExternalLink, Folder, EyeOff, Eye, CheckSquare, Check, MoreVertical, Link2, RefreshCw, AlertTriangle } from 'lucide-svelte';
+	import { Pin, Star, Edit3, Trash2, ExternalLink, Folder, EyeOff, Eye, CheckSquare, Check, MoreVertical, Link2, RefreshCw, AlertTriangle, CloudOff } from 'lucide-svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import KebabMenu from '$lib/components/memo/KebabMenu.svelte';
@@ -33,6 +33,7 @@
 	const checklistComplete = $derived(memo.checklist?.filter((i) => i.completed).length || 0);
 	const checklistTotal = $derived(memo.checklist?.length || 0);
 	const syncStatus = $derived(memo.syncStatus);
+	const isLocalOnly = $derived(syncStatus === 'local-only');
 	const isPending = $derived(syncStatus === 'pending');
 	const isFailed = $derived(syncStatus === 'failed');
 
@@ -102,13 +103,15 @@
 	<!-- Ultra Compact Mode: Single row -->
 	{#if ultraCompact}
 		<div class="flex items-center gap-3">
-			{#if isPending}
-				<RefreshCw class="w-4 h-4 text-muted-foreground animate-spin flex-shrink-0" />
+			{#if isLocalOnly}
+				<CloudOff class="w-4 h-4 text-blue-500 flex-shrink-0" title="로컬에 저장됨 - 동기화 대기" />
+			{:else if isPending}
+				<RefreshCw class="w-4 h-4 text-amber-500 animate-spin flex-shrink-0" title="동기화 중..." />
 			{:else if isFailed}
 				<button
 					onclick={handleRetrySync}
 					class="flex-shrink-0 p-0.5 rounded hover:bg-destructive/10 transition-colors"
-					title="동기화 실패 - 다시 시도"
+					title="동기화 실패 - 탭하여 재시도"
 				>
 					<AlertTriangle class="w-4 h-4 text-destructive" />
 				</button>
@@ -146,13 +149,15 @@
 		<!-- Header -->
 		<header class="flex items-start justify-between gap-3 mb-2">
 			<div class="flex items-center gap-2 flex-1 min-w-0">
-				{#if isPending}
-					<RefreshCw class="w-4 h-4 text-muted-foreground animate-spin flex-shrink-0" />
+				{#if isLocalOnly}
+					<CloudOff class="w-4 h-4 text-blue-500 flex-shrink-0" title="로컬에 저장됨 - 동기화 대기" />
+				{:else if isPending}
+					<RefreshCw class="w-4 h-4 text-amber-500 animate-spin flex-shrink-0" title="동기화 중..." />
 				{:else if isFailed}
 					<button
 						onclick={handleRetrySync}
 						class="flex-shrink-0 p-1 rounded hover:bg-destructive/10 transition-colors"
-						title="동기화 실패 - 다시 시도"
+						title="동기화 실패 - 탭하여 재시도"
 					>
 						<AlertTriangle class="w-4 h-4 text-destructive" />
 					</button>
