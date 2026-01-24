@@ -1,5 +1,63 @@
 # 변경사항 (2026-01-24)
 
+## 0. 메모 삭제/수정 시 UI 즉시 반영 안 되는 문제 해결
+
+### 문제
+메모를 삭제하거나 수정해도 리스트에 바로 반영되지 않고, 새로고침해야 변경사항이 보임.
+
+### 원인 분석
+
+**기존 동작 방식 (문제 있음)**:
+```
+사용자 삭제 클릭 → Supabase 삭제 요청 → 응답 대기 → Realtime 이벤트 수신 → UI 업데이트
+```
+
+- `remove()` 함수가 Supabase 삭제 완료 후 Realtime 이벤트에 의존하여 로컬 리스트 업데이트
+- Realtime 이벤트가 지연되거나 누락되면 UI에 반영되지 않음
+- `update()` 함수도 동일한 문제 존재
+
+**코드 문제점** (`memos.svelte.ts:445-482`):
+```typescript
+// 로그인 상태에서 로컬 배열 제거 없이 Supabase만 삭제
+const { error } = await supabase.from('memos').delete().eq('id', id);
+// 로컬 memos 배열에서 제거하는 코드 없음!
+// Realtime 이벤트(DELETE)에만 의존
+```
+
+### 해결 방법
+
+**낙관적 업데이트(Optimistic Update) 패턴 적용**:
+```
+사용자 삭제 클릭 → 즉시 로컬 리스트에서 제거 → 백그라운드에서 Supabase 삭제 → 실패 시 롤백
+```
+
+**삭제 (`remove`) 수정**:
+1. 즉시 로컬 `memos` 배열에서 제거
+2. `localStorage` 캐시 저장
+3. 백그라운드에서 Supabase 삭제 요청
+4. 실패 시 원본 메모 복원 (롤백)
+
+**수정 (`update`) 수정**:
+1. 즉시 로컬 `memos` 배열 업데이트
+2. `localStorage` 캐시 저장
+3. 백그라운드에서 Supabase 동기화
+4. 버전 충돌 시 서버 데이터로 새로고침
+5. 기타 오류 시 원본으로 롤백
+6. 성공 시 서버 응답(version 등)으로 최종 반영
+
+### 수정 전/후 비교
+
+| 항목 | 수정 전 | 수정 후 |
+|------|---------|---------|
+| UI 반영 시점 | Realtime 이벤트 수신 후 | 즉시 |
+| 실패 처리 | 토스트만 표시 | 롤백 + 토스트 |
+| 사용자 경험 | 지연/누락 가능 | 즉각 반응 |
+
+### 변경 파일
+- `src/lib/stores/memos.svelte.ts` - `update()`, `remove()` 함수 낙관적 업데이트 적용
+
+---
+
 ## 1. 토스트 중복 표시 문제 해결
 
 ### 문제
@@ -85,7 +143,7 @@
 | 파일 | 변경 내용 |
 |------|----------|
 | `src/lib/stores/auth.svelte.ts` | 로그인 토스트 중복 방지 |
-| `src/lib/stores/memos.svelte.ts` | silent 모드 업데이트 지원 |
+| `src/lib/stores/memos.svelte.ts` | silent 모드 업데이트, **낙관적 업데이트 패턴 적용** |
 | `src/lib/components/memo/QuickMemoInput.svelte` | URL 자동 북마크 기능 |
 | `src/lib/components/memo/MemoForm.svelte` | 필수 입력 완화 |
 | `src/lib/components/memo/MemoCard.svelte` | ultraCompact 링크 아이콘, Link2 아이콘 |
