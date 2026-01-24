@@ -41,6 +41,11 @@
 	let pendingNotifications = $state<string[]>([]);
 	let capacitorTestScheduled = $state(false);
 
+	// 웹 푸시 테스트 상태
+	let webPushTestSent = $state(false);
+	let webPushDelayedSent = $state(false);
+	let swRegistration = $state<ServiceWorkerRegistration | null>(null);
+
 	// FCM 상태 (개발자 모드용)
 	let fcmStatus = $state<{
 		envConfigured: boolean;
@@ -77,8 +82,77 @@
 		if (devMode) {
 			checkCapacitorStatus();
 			checkFCMStatus();
+			checkServiceWorker();
 		}
 	});
+
+	async function checkServiceWorker() {
+		if ('serviceWorker' in navigator) {
+			swRegistration = await navigator.serviceWorker.ready;
+		}
+	}
+
+	async function testWebPushNotification() {
+		webPushTestSent = false;
+
+		if (!('serviceWorker' in navigator)) {
+			alert('이 브라우저는 Service Worker를 지원하지 않습니다.');
+			return;
+		}
+
+		// 알림 권한 확인
+		if (Notification.permission !== 'granted') {
+			const result = await Notification.requestPermission();
+			if (result !== 'granted') {
+				alert('알림 권한이 필요합니다.');
+				return;
+			}
+		}
+
+		try {
+			const registration = await navigator.serviceWorker.ready;
+			registration.active?.postMessage({
+				type: 'TEST_NOTIFICATION',
+				title: '웹 푸시 테스트',
+				body: 'Service Worker에서 직접 보낸 알림입니다!'
+			});
+			webPushTestSent = true;
+		} catch (e) {
+			alert('테스트 실패: ' + (e as Error).message);
+		}
+	}
+
+	async function testDelayedWebPushNotification() {
+		webPushDelayedSent = false;
+
+		if (!('serviceWorker' in navigator)) {
+			alert('이 브라우저는 Service Worker를 지원하지 않습니다.');
+			return;
+		}
+
+		// 알림 권한 확인
+		if (Notification.permission !== 'granted') {
+			const result = await Notification.requestPermission();
+			if (result !== 'granted') {
+				alert('알림 권한이 필요합니다.');
+				return;
+			}
+		}
+
+		try {
+			const registration = await navigator.serviceWorker.ready;
+			registration.active?.postMessage({
+				type: 'DELAYED_NOTIFICATION',
+				delay: 5000,
+				title: '백그라운드 알림 테스트',
+				body: '5초 후 알림! 앱을 백그라운드로 보내도 이 알림이 표시되어야 합니다.'
+			});
+			webPushDelayedSent = true;
+			alert('5초 후 알림이 예약되었습니다.\n\n지금 탭을 최소화하거나 다른 앱으로 전환해보세요!');
+		} catch (e) {
+			alert('테스트 실패: ' + (e as Error).message);
+		}
+	}
 
 	async function checkCapacitorStatus() {
 		isNativePlatform = await isNative();
@@ -844,10 +918,70 @@
 						</div>
 					{:else}
 						<p class="text-xs text-yellow-600 bg-yellow-500/10 p-2 rounded">
-							백그라운드 알림은 안드로이드 앱에서만 작동합니다.
-							웹에서는 브라우저가 열려 있을 때만 알림이 가능합니다.
+							Capacitor 백그라운드 알림은 안드로이드 앱에서만 작동합니다.
+							웹 환경에서는 아래 "웹 Service Worker 알림" 테스트를 사용하세요.
 						</p>
 					{/if}
+				</div>
+
+				<!-- 웹 Service Worker 알림 테스트 (핵심!) -->
+				<div class="space-y-2 pt-2 border-t border-border">
+					<h3 class="text-sm font-semibold flex items-center gap-2">
+						<Bell class="w-4 h-4" />
+						웹 Service Worker 알림
+						{#if swRegistration}
+							<span class="text-xs bg-green-500/20 text-green-500 px-2 py-0.5 rounded">SW 활성</span>
+						{:else}
+							<span class="text-xs bg-red-500/20 text-red-500 px-2 py-0.5 rounded">SW 없음</span>
+						{/if}
+					</h3>
+
+					<div class="text-xs text-muted-foreground space-y-1">
+						<p>Service Worker 상태: {swRegistration ? '등록됨' : '미등록'}</p>
+						<p>Notification 권한: <span class="font-mono">{typeof Notification !== 'undefined' ? Notification.permission : 'N/A'}</span></p>
+					</div>
+
+					<div class="space-y-2">
+						<Button
+							variant="default"
+							size="sm"
+							onclick={testWebPushNotification}
+							class="w-full"
+						>
+							즉시 알림 테스트 (Service Worker)
+						</Button>
+						{#if webPushTestSent}
+							<p class="text-xs text-green-500 flex items-center gap-1">
+								<CheckCircle class="w-3 h-3" />
+								테스트 알림이 발송되었습니다!
+							</p>
+						{/if}
+
+						<Button
+							variant="secondary"
+							size="sm"
+							onclick={testDelayedWebPushNotification}
+							class="w-full"
+						>
+							5초 후 백그라운드 알림 테스트
+						</Button>
+						{#if webPushDelayedSent}
+							<p class="text-xs text-green-500 flex items-center gap-1">
+								<CheckCircle class="w-3 h-3" />
+								5초 후 알림 예약됨! 탭을 백그라운드로 보내세요.
+							</p>
+						{/if}
+					</div>
+
+					<div class="text-xs text-blue-600 bg-blue-500/10 p-2 rounded space-y-1">
+						<p class="font-semibold">테스트 방법:</p>
+						<ol class="list-decimal list-inside space-y-0.5">
+							<li>"5초 후 백그라운드 알림 테스트" 클릭</li>
+							<li>즉시 탭을 최소화하거나 다른 앱으로 전환</li>
+							<li>5초 후 알림이 오면 성공!</li>
+						</ol>
+						<p class="mt-2 text-yellow-600">※ 브라우저를 완전히 닫으면 안 됩니다. 탭이 열려있어야 합니다.</p>
+					</div>
 				</div>
 
 				<!-- FCM 상태 체크 (웹 푸시) -->
