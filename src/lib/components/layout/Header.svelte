@@ -7,6 +7,7 @@
 	import { memosStore } from "$lib/stores/memos.svelte";
 	import { networkStatus } from "$lib/services/networkStatus.svelte";
 	import { authStore } from "$lib/stores/auth.svelte";
+	import { cn } from "$lib/utils";
 	let showNotificationBanner = $state(false);
 	let dismissed = $state(false);
 
@@ -60,6 +61,23 @@
 		if (localOnlyCount > 0) return { type: 'local', label: '로컬 캐시' };
 		return { type: 'synced', label: '동기화됨' };
 	});
+
+	// 동기화 상태별 스타일 클래스
+	const syncStateClass = $derived.by(() => {
+		if (!syncState) return '';
+		switch (syncState.type) {
+			case 'failed':
+				return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
+			case 'offline':
+			case 'pending':
+				return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400';
+			case 'syncing':
+			case 'local':
+				return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
+			default:
+				return '';
+		}
+	});
 </script>
 
 <!-- Notification Permission Banner -->
@@ -110,19 +128,10 @@
 			<!-- 동기화 상태 아이콘 -->
 			{#if syncState && syncState.type !== 'synced'}
 				<div
-					class="flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium transition-colors"
-					class:bg-red-100={syncState.type === 'failed'}
-					class:text-red-700={syncState.type === 'failed'}
-					class:dark:bg-red-900/30={syncState.type === 'failed'}
-					class:dark:text-red-400={syncState.type === 'failed'}
-					class:bg-amber-100={syncState.type === 'offline' || syncState.type === 'pending'}
-					class:text-amber-700={syncState.type === 'offline' || syncState.type === 'pending'}
-					class:dark:bg-amber-900/30={syncState.type === 'offline' || syncState.type === 'pending'}
-					class:dark:text-amber-400={syncState.type === 'offline' || syncState.type === 'pending'}
-					class:bg-blue-100={syncState.type === 'syncing' || syncState.type === 'local'}
-					class:text-blue-700={syncState.type === 'syncing' || syncState.type === 'local'}
-					class:dark:bg-blue-900/30={syncState.type === 'syncing' || syncState.type === 'local'}
-					class:dark:text-blue-400={syncState.type === 'syncing' || syncState.type === 'local'}
+					class={cn(
+						"flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium transition-colors",
+						syncStateClass
+					)}
 					title={syncState.label}
 				>
 					{#if syncState.type === 'offline'}
