@@ -2,11 +2,17 @@
 	import { cn } from '$lib/utils';
 
 	let {
-		class: className,
+		class: className = '',
 		variant = 'primary',
 		size = 'md',
 		children,
 		...rest
+	}: {
+		class?: string;
+		variant?: string;
+		size?: string;
+		children: any;
+		[key: string]: any;
 	} = $props();
 
 	const variants: Record<string, string> = {
