@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from "svelte";
-	import { onNavigate } from "$app/navigation";
+	import { onNavigate, goto } from "$app/navigation";
 	import "../app.css";
 	import type { Snippet } from "svelte";
 	import { themeStore } from "$lib/stores/theme.svelte";
@@ -8,6 +8,7 @@
 	import { notificationStore } from "$lib/stores/notifications.svelte";
 	import { authStore } from "$lib/stores/auth.svelte";
 	import { registerFCMToken, setupForegroundMessageListener } from "$lib/fcm";
+	import { setupShareIntentListener, shareIntentToQueryParams, type ShareIntentData } from "$lib/utils/capacitor";
 	import { Toast } from "$lib/components/ui";
 	import GlobalNav from "$lib/components/GlobalNav.svelte";
 	import BottomNav from "$lib/components/BottomNav.svelte";
@@ -41,6 +42,17 @@
 		}
 	}
 
+	// Share Intent 수신 핸들러 (Android Native)
+	function handleShareIntent(data: ShareIntentData) {
+		console.log('[Layout] Share intent received:', data);
+
+		// /share 페이지로 리다이렉트 (쿼리 파라미터로 데이터 전달)
+		const queryString = shareIntentToQueryParams(data);
+		if (queryString) {
+			goto(`/share?${queryString}`);
+		}
+	}
+
 	onMount(async () => {
 		themeStore.init();
 		settingsStore.init();
@@ -49,6 +61,9 @@
 		// authStore 초기화 완료 후 FCM 등록
 		await authStore.initialize();
 		initFCM();
+
+		// Android Share Intent 리스너 설정
+		setupShareIntentListener(handleShareIntent);
 	});
 </script>
 

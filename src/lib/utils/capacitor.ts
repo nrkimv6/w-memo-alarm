@@ -1,10 +1,20 @@
 import type { Memo } from '$lib/types/memo';
+import { extractUrlFromText } from './shareReceiver';
 
 // 동적 import를 사용하여 Capacitor 모듈을 안전하게 로드
 async function getCapacitor() {
 	try {
 		const { Capacitor } = await import('@capacitor/core');
 		return Capacitor;
+	} catch {
+		return null;
+	}
+}
+
+async function getApp() {
+	try {
+		const { App } = await import('@capacitor/app');
+		return App;
 	} catch {
 		return null;
 	}
@@ -163,4 +173,122 @@ function generateNotificationId(memoId: string, day: number): number {
 		hash = hash & hash; // Convert to 32bit integer
 	}
 	return Math.abs(hash);
+}
+
+// ============================================
+// Share Intent 수신 (Android)
+// ============================================
+
+export interface ShareIntentData {
+	title?: string;
+	text?: string;
+	url?: string;
+}
+
+/**
+ * Android Share Intent 리스너 설정
+ * 다른 앱에서 공유된 텍스트/URL을 수신하여 /share 페이지로 리다이렉트
+ */
+export async function setupShareIntentListener(
+	onShareReceived: (data: ShareIntentData) => void
+): Promise<void> {
+	if (!(await isNative())) return;
+
+	const App = await getApp();
+	if (!App) return;
+
+	// appUrlOpen 이벤트 리스너 - Deep Link 및 Share Intent 처리
+	App.addListener('appUrlOpen', (event) => {
+		console.log('[Capacitor] appUrlOpen:', event.url);
+
+		// Share Intent로부터 받은 데이터 처리
+		// Android에서 SEND intent는 특수한 URL scheme으로 전달될 수 있음
+		if (event.url.startsWith('intent://') || event.url.includes('share')) {
+			// 실제 데이터는 getShareIntent로 가져옴
+			checkPendingShareIntent(onShareReceived);
+		}
+	});
+
+	// 앱 상태 변경 리스너 - 앱이 포그라운드로 올 때 share intent 확인
+	App.addListener('appStateChange', (state) => {
+		if (state.isActive) {
+			checkPendingShareIntent(onShareReceived);
+		}
+	});
+
+	// 앱 시작 시 pending share intent 확인
+	checkPendingShareIntent(onShareReceived);
+}
+
+/**
+ * 대기 중인 Share Intent 확인 및 처리
+ * Android에서 앱이 share target으로 열렸을 때 intent extras에서 데이터 추출
+ */
+async function checkPendingShareIntent(
+	onShareReceived: (data: ShareIntentData) => void
+): Promise<void> {
+	if (!(await isNative())) return;
+
+	try {
+		const App = await getApp();
+		if (!App) return;
+
+		// Capacitor App 플러그인의 getLaunchUrl로 앱 시작 URL 확인
+		const launchUrl = await App.getLaunchUrl();
+
+		if (launchUrl?.url) {
+			const parsed = parseShareIntentUrl(launchUrl.url);
+			if (parsed) {
+				onShareReceived(parsed);
+			}
+		}
+	} catch (e) {
+		console.error('[Capacitor] checkPendingShareIntent error:', e);
+	}
+}
+
+/**
+ * Share Intent URL 파싱
+ * Android에서 공유 시 전달되는 데이터 형식 처리
+ */
+function parseShareIntentUrl(url: string): ShareIntentData | null {
+	try {
+		// URL scheme 형태로 전달된 경우
+		if (url.startsWith('com.woory.memoalarm://share')) {
+			const urlObj = new URL(url.replace('com.woory.memoalarm://', 'https://app/'));
+			const params = urlObj.searchParams;
+
+			return {
+				title: params.get('title') || undefined,
+				text: params.get('text') || undefined,
+				url: params.get('url') || undefined
+			};
+		}
+
+		// text/plain 공유의 경우 URL 자체가 공유 텍스트일 수 있음
+		if (url && !url.startsWith('com.woory.memoalarm://')) {
+			const { url: extractedUrl, cleanText } = extractUrlFromText(url);
+			return {
+				text: cleanText || url,
+				url: extractedUrl
+			};
+		}
+
+		return null;
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * Share Intent 데이터를 URL 쿼리 파라미터로 변환
+ */
+export function shareIntentToQueryParams(data: ShareIntentData): string {
+	const params = new URLSearchParams();
+
+	if (data.title) params.set('title', data.title);
+	if (data.text) params.set('text', data.text);
+	if (data.url) params.set('url', data.url);
+
+	return params.toString();
 }
