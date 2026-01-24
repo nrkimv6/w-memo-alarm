@@ -15,6 +15,7 @@ export interface ChecklistItem {
 
 export type MemoType = 'note' | 'bookmark' | 'task';
 export type Priority = 'low' | 'medium' | 'high';
+export type SyncStatus = 'pending' | 'synced' | 'failed';
 
 export interface Reminder {
 	enabled: boolean;
@@ -53,6 +54,9 @@ export interface Memo {
 	priority?: Priority;
 	// Online-First: 버전 관리 (충돌 감지용)
 	version?: number;
+	// Optimistic UI: 동기화 상태
+	syncStatus?: SyncStatus;
+	localId?: string; // 서버 ID 확정 전 로컬 임시 ID
 }
 
 export type MemoCreate = Omit<Memo, 'id' | 'createdAt' | 'updatedAt' | 'isPinned' | 'isFavorite' | 'isActive' | 'openCount' | 'openHistory'>;

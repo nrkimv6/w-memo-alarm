@@ -4,8 +4,18 @@
 
 ---
 
+## In Progress
+
+- [ ] Optimistic UI 패턴 적용 (from: plan/2026-01-23_memo-alarm-optimistic-ui)
+  - [ ] P0: 메모 타입에 `syncStatus` 필드 추가
+  - [ ] P0: `add()` 함수 Optimistic UI 로직 구현
+  - [ ] P0: 메모 카드에 동기화 상태 아이콘 표시
+  - [ ] P0: 동기화 실패 시 토스트 알림
+
+---
+
 ## Phase 7: Auth 통합 ✅
-> **참고**: `common/docs/archive/2026-01-12_memo-alarm-online-first.md`
+> **참고**: `memo-alarm/docs/archive/2026-01-12_memo-alarm-online-first.md`
 > **타입**: 네이티브 앱 (모바일)
 > **상태**: ✅ 완료 (2026-01-12, 2026-01-20 수정 완료)
 > **아키텍처**: D1 + localStorage (offline-first) → Supabase (online-first)

@@ -80,7 +80,7 @@
     - 빌드 성공 (경고만, 에러 없음)
     - Capacitor 모듈 외부화 (vite.config.ts)
     - 접근성 개선 (aria-label)
-  - **참고**: `common/docs/archive/2026-01-12_memo-alarm-online-first.md`
+  - **참고**: `mem-alarm/docs/archive/2026-01-12_memo-alarm-online-first.md`
   - **커밋**: 7개 커밋 (3ad7e09...c956ff2)
 
 - [x] 2026-01-10: TODO 정리 - Phase 1-6 완료 항목 아카이빙

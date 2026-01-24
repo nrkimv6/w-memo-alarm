@@ -7,15 +7,5 @@ main = ".svelte-kit/cloudflare/_worker.js"
 directory = ".svelte-kit/cloudflare"
 binding = "ASSETS"
 
-# Web Push (VAPID) 환경 변수
-# 실제 값은 Cloudflare Dashboard > Settings > Variables에서 설정
-# [vars]
-# VAPID_PUBLIC_KEY = "your-public-key"
-# VAPID_SUBJECT = "mailto:contact@woory.day"
-# CRON_SECRET = "your-secret-key"
-
-# VAPID_PRIVATE_KEY는 시크릿으로 설정 (wrangler secret put VAPID_PRIVATE_KEY)
-
-# Cron Trigger (외부 cron 서비스로 /api/cron/send-push 호출)
-# [triggers]
-# crons = ["* * * * *"]  # 매분 실행
+# 알림은 Supabase Edge Function + FCM으로 처리
+# 참고: docs/ARCHITECTURE_FCM.md

@@ -1,4 +1,4 @@
-import type { Memo, MemoCreate, MemoUpdate } from '$lib/types/memo';
+import type { Memo, MemoCreate, MemoUpdate, SyncStatus } from '$lib/types/memo';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { browser } from '$app/environment';
 import { supabase } from '$lib/services/supabase';
@@ -41,6 +41,10 @@ const SAMPLE_MEMOS: Omit<Memo, 'id' | 'createdAt' | 'updatedAt'>[] = [
 
 function generateId(): string {
 	return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+}
+
+function generateLocalId(): string {
+	return `local_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 }
 
 // localStorage 캐시 (오프라인 폴백용)
@@ -158,7 +162,11 @@ function createMemosStore() {
 				toastStore.error('메모 로드 실패');
 				memos = loadCacheFromStorage();
 			} else {
-				memos = (data || []).map(supabaseToMemo);
+				memos = (data || []).map((row) => {
+					const memo = supabaseToMemo(row);
+					memo.syncStatus = 'synced';
+					return memo;
+				});
 				saveCacheToStorage(memos);
 			}
 		} catch (e) {
@@ -182,7 +190,17 @@ function createMemosStore() {
 				},
 				(payload) => {
 					const newMemo = supabaseToMemo(payload.new);
-					memos = [newMemo, ...memos];
+					// Optimistic UI: 이미 로컬에 있으면 교체, 없으면 추가
+					const existingIndex = memos.findIndex((m) => m.id === newMemo.id || m.localId === newMemo.id);
+					if (existingIndex !== -1) {
+						// 이미 있음 → 서버 데이터로 교체 (syncStatus: synced)
+						newMemo.syncStatus = 'synced';
+						memos = memos.map((m, i) => (i === existingIndex ? newMemo : m));
+					} else {
+						// 다른 기기에서 추가됨 → 목록에 추가
+						newMemo.syncStatus = 'synced';
+						memos = [newMemo, ...memos];
+					}
 					saveCacheToStorage(memos);
 				}
 			)
@@ -196,6 +214,7 @@ function createMemosStore() {
 				},
 				(payload) => {
 					const updated = supabaseToMemo(payload.new);
+					updated.syncStatus = 'synced';
 					memos = memos.map((m) => (m.id === updated.id ? updated : m));
 					saveCacheToStorage(memos);
 				}
@@ -217,9 +236,11 @@ function createMemosStore() {
 	}
 
 	async function add(data: MemoCreate): Promise<Memo | null> {
+		const now = Date.now();
+		const localId = generateLocalId();
+
 		if (!authStore.isAuthenticated) {
 			// 비로그인: 로컬 전용
-			const now = Date.now();
 			const newMemo: Memo = {
 				id: generateId(),
 				title: data.title,
@@ -234,7 +255,8 @@ function createMemosStore() {
 				emoji: data.emoji,
 				reminder: data.reminder,
 				folderId: data.folderId,
-				checklist: data.checklist
+				checklist: data.checklist,
+				syncStatus: 'synced' // 로컬 전용은 항상 synced
 			};
 			memos = [newMemo, ...memos];
 			saveCacheToStorage(memos);
@@ -246,9 +268,33 @@ function createMemosStore() {
 			return newMemo;
 		}
 
-		// 로그인: Supabase에 저장
+		// 로그인: Optimistic UI 패턴
+		// 1. 즉시 로컬에 추가 (pending 상태)
+		const optimisticMemo: Memo = {
+			id: localId, // 임시 로컬 ID
+			localId: localId,
+			title: data.title,
+			content: data.content || '',
+			tags: data.tags || [],
+			isPinned: false,
+			isFavorite: false,
+			isActive: true,
+			createdAt: now,
+			updatedAt: now,
+			url: data.url,
+			emoji: data.emoji,
+			reminder: data.reminder,
+			folderId: data.folderId,
+			checklist: data.checklist,
+			syncStatus: 'pending'
+		};
+		memos = [optimisticMemo, ...memos];
+		saveCacheToStorage(memos);
+
+		// 2. 백그라운드에서 서버 동기화
+		const serverId = generateId();
 		const newMemo = memoToSupabase({
-			id: generateId(),
+			id: serverId,
 			...data,
 			isPinned: false,
 			isFavorite: false,
@@ -264,11 +310,22 @@ function createMemosStore() {
 
 		if (error) {
 			console.error('Failed to add memo:', error);
-			toastStore.error('메모 저장 실패');
-			return null;
+			// 동기화 실패: 상태만 failed로 변경
+			memos = memos.map((m) =>
+				m.localId === localId ? { ...m, syncStatus: 'failed' as SyncStatus } : m
+			);
+			saveCacheToStorage(memos);
+			toastStore.error('메모 동기화 실패. 나중에 다시 시도합니다.');
+			return optimisticMemo;
 		}
 
+		// 3. 동기화 성공: 서버 ID로 교체 + synced 상태
 		const result = supabaseToMemo(inserted);
+		result.syncStatus = 'synced';
+
+		// localId로 찾아서 교체 (Realtime에서 중복 추가 방지)
+		memos = memos.map((m) => (m.localId === localId ? result : m));
+		saveCacheToStorage(memos);
 
 		// 알림 스케줄링 (네이티브: 로컬 알림, 웹: FCM 서버 알림)
 		if (result.reminder?.enabled) {
