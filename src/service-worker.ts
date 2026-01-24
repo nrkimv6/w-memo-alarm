@@ -82,11 +82,43 @@ sw.addEventListener('push', (event) => {
 	);
 });
 
-// 메시지 수신 (캐시 업데이트용)
+// 메시지 수신 (캐시 업데이트 및 테스트용)
 sw.addEventListener('message', (event) => {
 	if (event.data.type === 'SKIP_WAITING') {
 		console.log('[SW] SKIP_WAITING received, activating immediately');
 		sw.skipWaiting();
+	}
+
+	// 테스트 알림 (즉시)
+	if (event.data.type === 'TEST_NOTIFICATION') {
+		console.log('[SW] TEST_NOTIFICATION received');
+		sw.registration.showNotification(event.data.title || '테스트 알림', {
+			body: event.data.body || '서비스 워커에서 보낸 테스트 알림입니다.',
+			icon: '/favicon.png',
+			badge: '/favicon.png',
+			tag: 'test-notification',
+			data: { url: '/', isTest: true },
+			vibrate: [200, 100, 200],
+			requireInteraction: true
+		});
+	}
+
+	// 지연 알림 테스트 (백그라운드 테스트용)
+	if (event.data.type === 'DELAYED_NOTIFICATION') {
+		const delay = event.data.delay || 5000;
+		console.log(`[SW] DELAYED_NOTIFICATION received, will fire in ${delay}ms`);
+
+		setTimeout(() => {
+			sw.registration.showNotification(event.data.title || '백그라운드 알림 테스트', {
+				body: event.data.body || `${delay / 1000}초 후 알림이 도착했습니다! 앱이 백그라운드에 있어도 작동합니다.`,
+				icon: '/favicon.png',
+				badge: '/favicon.png',
+				tag: 'delayed-test-notification',
+				data: { url: '/', isTest: true, delayed: true },
+				vibrate: [200, 100, 200, 100, 200],
+				requireInteraction: true
+			});
+		}, delay);
 	}
 });
 
