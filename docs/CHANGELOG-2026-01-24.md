@@ -520,3 +520,154 @@ View Transitions API 동작:
 | `src/routes/memos/+page.svelte` | 중복 init 호출 제거 |
 | `src/routes/settings/+page.svelte` | sticky 헤더 섹션 추가, 스타일 통일 |
 | `src/lib/components/GlobalNav.svelte` | view-transition-name 추가 |
+
+---
+
+## 6. 메모 알림 설정 저장/조회 버그 수정 (9e5ecd6)
+
+### 증상
+
+PWA 앱에서 발생한 문제:
+1. 메모에서 알림 설정을 해도 "수정되었습니다" 토스트만 표시됨
+2. 다시 메모를 열면 알림 설정이 조회되지 않음
+3. 실제로 알림도 발생하지 않음
+4. (참고: 개발자 모드의 테스트 알림은 정상 동작)
+
+---
+
+### 원인 분석
+
+#### 버그 1: `ReminderSettings.svelte`의 `$effect` 조건 누락
+
+**위치**: `src/lib/components/memo/ReminderSettings.svelte:46-56`
+
+```typescript
+// Before (버그 있는 코드)
+$effect(() => {
+    if (showSettings && enabled) {  // ← 문제: enabled=false일 때 저장 안 됨
+        if (reminderType === 'once') {
+            onReminderChange({ enabled, time, days: [], autoOpen, type: 'once', date: reminderDate });
+        } else {
+            onReminderChange({ enabled, time, days, autoOpen, type: 'repeat' });
+        }
+    } else if (!showSettings) {
+        onReminderChange(undefined);
+    }
+    // ⚠️ showSettings && !enabled 케이스가 누락됨!
+});
+```
+
+**문제점**:
+- `showSettings && enabled` 조건에서만 `onReminderChange()` 호출
+- 사용자가 알림을 비활성화(`enabled=false`)하면 reminder 객체가 업데이트되지 않음
+- 결과: 알림 설정이 저장되지 않음
+
+---
+
+#### 버그 2: `notifications.svelte.ts`의 일회성 알림 미처리
+
+**위치**: `src/lib/stores/notifications.svelte.ts:229-249`
+
+```typescript
+// Before (버그 있는 코드)
+function getTodayReminders(): Memo[] {
+    const today = new Date().getDay();
+    const now = new Date();
+    const currentTime = `...`;
+
+    return memosStore.memos.filter((memo) => {
+        if (!memo.reminder?.enabled) return false;
+        if (!memo.reminder.days.includes(today)) return false;  // ← 문제!
+        return true;
+    })...
+}
+```
+
+**문제점**:
+- `memo.reminder.days.includes(today)` 조건만 체크
+- 일회성 알림(`type: 'once'`)은 `days` 배열이 비어있고 `date` 필드를 사용
+- 결과: 일회성 알림이 오늘의 알림 목록에서 항상 제외됨
+
+---
+
+### 해결 방법
+
+#### 수정 1: `ReminderSettings.svelte`
+
+```typescript
+// After (수정된 코드)
+$effect(() => {
+    if (showSettings) {  // ← enabled 조건 제거
+        if (reminderType === 'once') {
+            onReminderChange({ enabled, time, days: [], autoOpen, type: 'once', date: reminderDate });
+        } else {
+            onReminderChange({ enabled, time, days, autoOpen, type: 'repeat' });
+        }
+    } else {
+        onReminderChange(undefined);
+    }
+});
+```
+
+**변경사항**:
+- `showSettings && enabled` → `showSettings`로 조건 단순화
+- `enabled=true/false` 모두 reminder 객체에 포함되어 저장됨
+
+---
+
+#### 수정 2: `notifications.svelte.ts`
+
+```typescript
+// After (수정된 코드)
+function getTodayReminders(): Memo[] {
+    const today = new Date().getDay();
+    const now = new Date();
+    const todayDate = now.toISOString().split('T')[0];  // ← 오늘 날짜 추가
+
+    return memosStore.memos.filter((memo) => {
+        if (!memo.reminder?.enabled) return false;
+
+        // Check if it's a one-time reminder
+        if (memo.reminder.type === 'once') {
+            return memo.reminder.date === todayDate;  // ← 일회성 알림 처리
+        }
+
+        // Repeating reminder: check day of week
+        if (!memo.reminder.days?.includes(today)) return false;
+        return true;
+    })...
+}
+```
+
+**변경사항**:
+- 일회성 알림(`type: 'once'`)의 경우 `date === todayDate` 조건으로 체크
+- 반복 알림의 경우 기존 `days.includes(today)` 로직 유지
+- `days?.includes()` 옵셔널 체이닝 추가로 안전성 향상
+
+---
+
+### 영향받는 함수
+
+| 함수 | 영향 | 설명 |
+|------|------|------|
+| `getTodayReminders()` | ✅ 수정됨 | 일회성 알림도 오늘 목록에 포함 |
+| `getUpcomingReminders()` | ✅ 자동 해결 | `getTodayReminders()` 호출 |
+| `getPastReminders()` | ✅ 자동 해결 | `getTodayReminders()` 호출 |
+| `checkAndTriggerReminders()` | ⚪ 영향 없음 | 이미 일회성 알림 처리 로직 있음 |
+
+---
+
+### 커밋 정보
+
+| 항목 | 값 |
+|------|-----|
+| 해시 | `9e5ecd6` |
+| 브랜치 | `claude/fix-memo-notifications-JHlzC` |
+| 메시지 | `fix: memo reminder not being saved and displayed correctly` |
+
+### 수정된 파일 요약
+
+| 파일 | 변경 내용 |
+|------|----------|
+| `src/lib/components/memo/ReminderSettings.svelte` | $effect 조건에서 `enabled` 제거, 모든 상태 저장 |
+| `src/lib/stores/notifications.svelte.ts` | `getTodayReminders()`에 일회성 알림 처리 추가 |

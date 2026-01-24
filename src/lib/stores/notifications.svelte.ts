@@ -229,11 +229,18 @@ function createNotificationStore() {
 	function getTodayReminders(): Memo[] {
 		const today = new Date().getDay();
 		const now = new Date();
-		const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+		const todayDate = now.toISOString().split('T')[0];
 
 		return memosStore.memos.filter((memo) => {
 			if (!memo.reminder?.enabled) return false;
-			if (!memo.reminder.days.includes(today)) return false;
+
+			// Check if it's a one-time reminder
+			if (memo.reminder.type === 'once') {
+				return memo.reminder.date === todayDate;
+			}
+
+			// Repeating reminder: check day of week
+			if (!memo.reminder.days?.includes(today)) return false;
 			return true;
 		}).sort((a, b) => {
 			const timeA = a.reminder?.time || '00:00';
