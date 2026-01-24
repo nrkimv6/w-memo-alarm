@@ -9,14 +9,30 @@
 	let inputRef = $state<HTMLInputElement | null>(null);
 	let useAutoReminder = $state(settingsStore.settings.autoReminderOnCreate);
 
+	// URL 패턴 감지
+	const urlPattern = /^(https?:\/\/[^\s]+)$/i;
+
+	function getDomain(url: string): string {
+		try {
+			return new URL(url).hostname.replace('www.', '');
+		} catch {
+			return url;
+		}
+	}
+
 	function handleSubmit() {
-		const title = inputValue.trim();
-		if (!title) return;
+		const value = inputValue.trim();
+		if (!value) return;
+
+		const isUrl = urlPattern.test(value);
 
 		const data: Parameters<typeof memosStore.add>[0] = {
-			title,
+			title: isUrl ? getDomain(value) : value,
 			content: '',
-			tags: []
+			tags: [],
+			// URL인 경우 자동으로 북마크로 추가
+			url: isUrl ? value : undefined,
+			emoji: isUrl ? '🔗' : undefined
 		};
 
 		// Apply auto reminder if enabled
@@ -26,7 +42,10 @@
 		}
 
 		memosStore.add(data);
-		toastStore.success(useAutoReminder ? '메모 저장됨 (알림 설정됨)' : '메모 저장됨');
+		const message = isUrl
+			? '북마크 저장됨'
+			: (useAutoReminder ? '메모 저장됨 (알림 설정됨)' : '메모 저장됨');
+		toastStore.success(message);
 		inputValue = '';
 	}
 

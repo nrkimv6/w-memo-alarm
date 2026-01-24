@@ -58,6 +58,9 @@
 		}
 	}
 
+	// 제목/내용/URL 중 하나라도 있으면 저장 가능
+	const canSave = $derived(title.trim() || content.trim() || url.trim());
+
 	// Ctrl+S 저장 단축키
 	$effect(() => {
 		if (!open) return;
@@ -65,7 +68,7 @@
 		function handleKeydown(e: KeyboardEvent) {
 			if ((e.ctrlKey || e.metaKey) && e.key === 's') {
 				e.preventDefault();
-				if (title.trim()) {
+				if (canSave) {
 					handleSubmit();
 				}
 			}
@@ -127,11 +130,29 @@
 		}
 	}
 
+	function getDomain(urlStr: string): string {
+		try {
+			return new URL(urlStr).hostname.replace('www.', '');
+		} catch {
+			return urlStr;
+		}
+	}
+
 	function handleSubmit() {
-		if (!title.trim()) return;
+		// 제목/내용/URL 중 하나라도 있어야 저장 가능
+		if (!canSave) return;
+
+		// 제목이 비어있고 URL만 있는 경우 도메인을 제목으로 사용
+		let finalTitle = title.trim();
+		if (!finalTitle && url.trim()) {
+			finalTitle = getDomain(url.trim());
+		} else if (!finalTitle && content.trim()) {
+			// 제목이 비어있고 내용만 있는 경우 내용의 첫 줄을 제목으로 사용
+			finalTitle = content.trim().split('\n')[0].slice(0, 50);
+		}
 
 		const data = {
-			title: title.trim(),
+			title: finalTitle,
 			content: content.trim(),
 			tags,
 			url: url.trim() || undefined,
@@ -175,9 +196,8 @@
 			<label for="memo-title" class="text-sm font-medium">제목</label>
 			<Input
 				id="memo-title"
-				placeholder="메모 제목을 입력하세요"
+				placeholder="메모 제목을 입력하세요 (선택)"
 				bind:value={title}
-				required
 			/>
 		</div>
 
@@ -308,7 +328,7 @@
 
 	{#snippet footer()}
 		<Button variant="ghost" onclick={handleClose}>취소</Button>
-		<Button onclick={handleSubmit} disabled={!title.trim()}>
+		<Button onclick={handleSubmit} disabled={!canSave}>
 			{memo ? '수정' : '저장'}
 		</Button>
 	{/snippet}

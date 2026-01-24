@@ -23,6 +23,7 @@ interface AuthState {
 	error: string | null;
 	initialized: boolean;
 	initializing: boolean;
+	hasShownLoginToast: boolean;
 }
 
 function createAuthStore() {
@@ -32,7 +33,8 @@ function createAuthStore() {
 		loading: true,
 		error: null,
 		initialized: false,
-		initializing: false
+		initializing: false,
+		hasShownLoginToast: false
 	});
 
 	// 초기화
@@ -65,6 +67,7 @@ function createAuthStore() {
 		// 인증 상태 변경 리스너
 		supabase.auth.onAuthStateChange(async (event, newSession) => {
 			console.log('[Auth] State changed:', event);
+			const wasLoggedIn = !!state.user;
 			state.session = newSession;
 			state.user = newSession?.user || null;
 
@@ -72,7 +75,12 @@ function createAuthStore() {
 				// Store 초기화 (Realtime 구독 시작)
 				await memosStore.init();
 				await foldersStore.init();
-				toastStore.success('로그인되었습니다');
+				// 실제 로그인(이전에 로그아웃 상태)인 경우에만 토스트 표시
+				// 외부 링크 복귀, 페이지 새로고침 등에서는 토스트 미표시
+				if (!wasLoggedIn && !state.hasShownLoginToast) {
+					state.hasShownLoginToast = true;
+					toastStore.success('로그인되었습니다');
+				}
 			} else if (event === 'SIGNED_OUT') {
 				state.user = null;
 				state.session = null;
