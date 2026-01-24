@@ -26,15 +26,16 @@ export function exportMemos(memos: Memo[]): string {
 }
 
 export function exportAllData(): ExportData {
+	const { defaultReminder, autoReminderOnCreate } = settingsStore.settings;
 	return {
 		version: 1,
 		exportedAt: new Date().toISOString(),
 		memos: memosStore.memos,
 		folders: foldersStore.folders,
 		settings: {
-			defaultReminderTime: settingsStore.defaultReminderTime,
-			defaultReminderDays: settingsStore.defaultReminderDays,
-			autoReminderEnabled: settingsStore.autoReminderEnabled
+			defaultReminderTime: defaultReminder.time,
+			defaultReminderDays: defaultReminder.days,
+			autoReminderEnabled: autoReminderOnCreate
 		}
 	};
 }
@@ -141,7 +142,7 @@ export async function importFullBackup(
 			for (const folder of data.folders) {
 				const existing = foldersStore.getById(folder.id);
 				if (!existing) {
-					foldersStore.add(folder);
+					foldersStore.addFolderWithId(folder);
 					importedFolders++;
 				}
 			}
@@ -151,7 +152,7 @@ export async function importFullBackup(
 		if (data.settings) {
 			settingsStore.setDefaultReminderTime(data.settings.defaultReminderTime);
 			settingsStore.setDefaultReminderDays(data.settings.defaultReminderDays);
-			settingsStore.setAutoReminderEnabled(data.settings.autoReminderEnabled);
+			settingsStore.setAutoReminderOnCreate(data.settings.autoReminderEnabled);
 		}
 
 		const message = `가져오기 완료: 메모 ${importedMemos}개, 폴더 ${importedFolders}개${skippedMemos > 0 ? ` (${skippedMemos}개 건너뜀)` : ''}`;

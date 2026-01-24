@@ -178,6 +178,9 @@ function createFilterStore() {
 		get sort() {
 			return sort;
 		},
+		get search() {
+			return searchQuery;
+		},
 		get searchQuery() {
 			return searchQuery;
 		},

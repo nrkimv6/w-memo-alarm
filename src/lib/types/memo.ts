@@ -16,6 +16,16 @@ export interface ChecklistItem {
 export type MemoType = 'note' | 'bookmark' | 'task';
 export type Priority = 'low' | 'medium' | 'high';
 
+export interface Reminder {
+	enabled: boolean;
+	time: string; // HH:mm
+	days: number[]; // 0-6 (일-토)
+	autoOpen: boolean;
+	type?: 'repeat' | 'once';
+	date?: string; // YYYY-MM-DD for one-time reminders
+	datetime?: string; // ISO datetime string (computed for display)
+}
+
 export interface Memo {
 	id: string;
 	title: string;
@@ -31,15 +41,7 @@ export interface Memo {
 	emoji?: string;
 	openCount?: number;
 	// Phase 4: 알림
-	reminder?: {
-		enabled: boolean;
-		time: string; // HH:mm
-		days: number[]; // 0-6 (일-토)
-		autoOpen: boolean;
-		// Phase 11: One-time reminder
-		type?: 'repeat' | 'once';
-		date?: string; // YYYY-MM-DD for one-time reminders
-	};
+	reminder?: Reminder;
 	// Phase 7: 폴더
 	folderId?: string;
 	// Phase 8: 열람 이력

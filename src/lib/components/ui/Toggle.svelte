@@ -1,7 +1,12 @@
 <script lang="ts">
 	import { cn } from '$lib/utils';
 
-	let { checked = $bindable(false), disabled = false, class: className, ...rest } = $props();
+	let { checked = $bindable(false), disabled = false, class: className = '', ...rest }: {
+		checked?: boolean;
+		disabled?: boolean;
+		class?: string;
+		[key: string]: any;
+	} = $props();
 </script>
 
 <button

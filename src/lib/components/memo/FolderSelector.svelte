@@ -23,10 +23,12 @@
 		showDropdown = false;
 	}
 
-	function handleAddFolder() {
+	async function handleAddFolder() {
 		if (!newFolderName.trim()) return;
-		const folder = foldersStore.add(newFolderName.trim(), newFolderColor);
-		onSelect(folder.id);
+		const folder = await foldersStore.add(newFolderName.trim(), newFolderColor);
+		if (folder) {
+			onSelect(folder.id);
+		}
 		newFolderName = '';
 		showNewFolder = false;
 		showDropdown = false;
