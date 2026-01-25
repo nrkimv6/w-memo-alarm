@@ -15,7 +15,7 @@ export interface ChecklistItem {
 
 export type MemoType = 'note' | 'bookmark' | 'task';
 export type Priority = 'low' | 'medium' | 'high';
-export type SyncStatus = 'pending' | 'synced' | 'failed';
+export type SyncStatus = 'local-only' | 'pending' | 'synced' | 'failed';
 
 export interface Reminder {
 	enabled: boolean;

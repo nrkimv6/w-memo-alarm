@@ -1,9 +1,13 @@
 <script lang="ts">
 	import { onMount } from "svelte";
-	import { Sun, Moon, Bell, X } from "lucide-svelte";
+	import { Sun, Moon, Bell, X, Cloud, CloudOff, RefreshCw, AlertTriangle, WifiOff } from "lucide-svelte";
 	import Button from "$lib/components/ui/Button.svelte";
 	import { themeStore } from "$lib/stores/theme.svelte";
 	import { notificationStore } from "$lib/stores/notifications.svelte";
+	import { memosStore } from "$lib/stores/memos.svelte";
+	import { networkStatus } from "$lib/services/networkStatus.svelte";
+	import { authStore } from "$lib/stores/auth.svelte";
+	import { cn } from "$lib/utils";
 	let showNotificationBanner = $state(false);
 	let dismissed = $state(false);
 
@@ -38,6 +42,42 @@
 			"true",
 		);
 	}
+
+	// 동기화 상태
+	const isOnline = $derived(networkStatus.isOnline);
+	const isAuthenticated = $derived(authStore.isAuthenticated);
+	const syncingFromServer = $derived(memosStore.syncingFromServer);
+	const pendingCount = $derived(memosStore.pendingCount);
+	const failedCount = $derived(memosStore.failedCount);
+	const localOnlyCount = $derived(memosStore.localOnlyCount);
+
+	// 동기화 상태 표시 여부 및 내용
+	const syncState = $derived.by(() => {
+		if (!isAuthenticated) return null;
+		if (!isOnline) return { type: 'offline', label: '오프라인' };
+		if (failedCount > 0) return { type: 'failed', label: `${failedCount}개 동기화 실패` };
+		if (syncingFromServer) return { type: 'syncing', label: '동기화 중...' };
+		if (pendingCount > 0) return { type: 'pending', label: `${pendingCount}개 동기화 중` };
+		if (localOnlyCount > 0) return { type: 'local', label: '로컬 캐시' };
+		return { type: 'synced', label: '동기화됨' };
+	});
+
+	// 동기화 상태별 스타일 클래스
+	const syncStateClass = $derived.by(() => {
+		if (!syncState) return '';
+		switch (syncState.type) {
+			case 'failed':
+				return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
+			case 'offline':
+			case 'pending':
+				return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400';
+			case 'syncing':
+			case 'local':
+				return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
+			default:
+				return '';
+		}
+	});
 </script>
 
 <!-- Notification Permission Banner -->
@@ -85,6 +125,35 @@
 		</div>
 
 		<div class="flex flex-1 items-center justify-end space-x-1">
+			<!-- 동기화 상태 아이콘 -->
+			{#if syncState && syncState.type !== 'synced'}
+				<div
+					class={cn(
+						"flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium transition-colors",
+						syncStateClass
+					)}
+					title={syncState.label}
+				>
+					{#if syncState.type === 'offline'}
+						<WifiOff class="w-3.5 h-3.5" />
+					{:else if syncState.type === 'failed'}
+						<AlertTriangle class="w-3.5 h-3.5" />
+					{:else if syncState.type === 'syncing' || syncState.type === 'pending'}
+						<RefreshCw class="w-3.5 h-3.5 animate-spin" />
+					{:else if syncState.type === 'local'}
+						<CloudOff class="w-3.5 h-3.5" />
+					{/if}
+					<span class="hidden sm:inline">{syncState.label}</span>
+				</div>
+			{:else if syncState?.type === 'synced'}
+				<div
+					class="flex items-center gap-1 px-2 py-1 text-xs text-green-600 dark:text-green-400"
+					title="서버와 동기화됨"
+				>
+					<Cloud class="w-3.5 h-3.5" />
+				</div>
+			{/if}
+
 			<Button
 				variant="ghost"
 				size="icon"
