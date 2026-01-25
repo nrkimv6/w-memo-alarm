@@ -1,5 +1,33 @@
 # DONE (최근 20개)
 
+- [x] 2026-01-25: **Phase 7-12 완료 (누락 기능 추가 완료)** ✅
+  - **Phase 7**: 핵심 누락 기능 (P1)
+    - 폴더/카테고리 시스템 (Folder 타입, folderId, FolderSelector, 사이드바/탭 네비게이션)
+    - 정렬 옵션 UI (SortDropdown, 최신순/오래된순/제목순/수정일순)
+    - 상세 보기 모달 (MemoDetailModal, 전체 내용, 편집/삭제/공유, 메타 정보)
+    - 공유 기능 (네이티브 Share API, 클립보드 복사, MemoCard/MemoDetailModal 버튼)
+    - Toast 알림 시스템 (성공/에러/경고, 메모 저장/삭제 피드백)
+  - **Phase 8**: 사용성 개선 (P2)
+    - 활성/비활성 토글 (isActive 필드, 흐리게 표시, 필터 숨기기)
+    - 컴팩트 뷰 모드 (grid/list/compact, 한 줄 표시)
+    - 열람 이력 (openHistory: Date[], 최근 10개, 마지막 열람 표시)
+    - 키보드 단축키 (N: 새 메모, /: 검색, Esc: 닫기, Ctrl+S: 저장)
+    - 자동 URL 열기 개선 (백그라운드 1분 체크, 알림+URL 동시 열기)
+  - **Phase 9**: 마무리 (P3)
+    - 샘플 데이터/온보딩 (첫 실행 시 예시 메모 3개, 기능 소개 모달 4단계)
+    - 상대 시간 개선 (date-fns v4.1.0, formatDistanceToNow, 한국어 로케일)
+    - 태그 필터 개선 (AND/OR 토글, 태그 색상 지원)
+  - **Phase 10**: 빠른 입력 + 자동 알림
+    - 기본 알림 시간 설정 (설정에서 기본 시간/요일 지정, localStorage 저장)
+    - 빠른 메모 작성 (헤더 인라인 입력, Enter 저장, 자동 알림 적용)
+  - **Phase 11**: 알림 관리 강화
+    - 알림 등록 리스트 (예정 알림 목록, 시간순 정렬, 개별 취소, 일괄 활성화/비활성화)
+    - 알림 개선 (1회성/반복 알림, 스누즈 5분/10분/1시간, 알림 그룹핑)
+  - **Phase 12**: 체크리스트 & 태스크
+    - 체크리스트 기능 (아이템 추가, [ ]/[x] 토글, 진행률, 완료 항목 숨기기, 순서 변경)
+    - 태스크 모드 (메모 타입: note/bookmark/task, 마감일, 우선순위, 오늘 할 일 위젯)
+  - **참고**: `memo-alarm/docs/archive/2026-01-07_memo-alarm-missing-features.md`
+
 - [x] 2026-01-24: **Optimistic UI 패턴 적용** ✅
   - **P0 구현**:
     - `memo.ts`: `SyncStatus` 타입, `syncStatus`, `localId` 필드 추가
@@ -95,7 +123,7 @@
     - 빌드 성공 (경고만, 에러 없음)
     - Capacitor 모듈 외부화 (vite.config.ts)
     - 접근성 개선 (aria-label)
-  - **참고**: `mem-alarm/docs/archive/2026-01-12_memo-alarm-online-first.md`
+  - **참고**: `memo-alarm/docs/archive/2026-01-12_memo-alarm-online-first-refactor.md, 2026-01-09_memo-alarm-login-implementation.md`
   - **커밋**: 7개 커밋 (3ad7e09...c956ff2)
 
 - [x] 2026-01-10: TODO 정리 - Phase 1-6 완료 항목 아카이빙
