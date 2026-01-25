@@ -675,7 +675,99 @@ function getTodayReminders(): Memo[] {
 
 ---
 
-## 7. 오프라인 동기화 상태 표시 기능 (50287d7)
+## 7. 메모 상세 모달 z-index 수정
+
+### 증상
+
+- 메모 상세 모달이 열렸을 때 **GlobalNav("우리공방")와 BottomNav에 가려지는 현상**
+- 모달이 전체 화면을 덮어야 하는데 다른 UI 요소가 위에 표시됨
+
+---
+
+### 원인 분석
+
+| 컴포넌트 | z-index (수정 전) | 위치 |
+|---------|------------------|------|
+| GlobalNav (우리공방) | `z-[100]` | sticky top-0 |
+| Modal (메모상세) | `z-50` | fixed inset-0 |
+| BottomNav | `z-50` | fixed bottom-0 |
+
+**문제점**:
+- Modal의 `z-50`이 GlobalNav의 `z-[100]`보다 **낮음**
+- Modal이 GlobalNav 아래에 렌더링되어 헤더에 가려짐
+- BottomNav와 동일한 z-index로 인해 겹침 현상 발생
+
+---
+
+### 해결 방법
+
+Modal의 z-index를 `z-[200]`으로 상향 조정
+
+---
+
+### 수정된 파일
+
+#### `src/lib/components/ui/Modal.svelte` (라인 73-74, 80-81)
+
+**Before:**
+```html
+<!-- Backdrop -->
+<div
+    class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm transition-opacity"
+    ...
+></div>
+
+<!-- Modal Content -->
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+```
+
+**After:**
+```html
+<!-- Backdrop -->
+<div
+    class="fixed inset-0 z-[200] bg-black/40 backdrop-blur-sm transition-opacity"
+    ...
+></div>
+
+<!-- Modal Content -->
+<div class="fixed inset-0 z-[200] flex items-center justify-center p-4 pointer-events-none">
+```
+
+---
+
+### 수정 후 z-index 계층 구조
+
+```
+z-index 계층도 (수정 후):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+z-[200]  ┌─────────────────────┐
+         │ Modal (Backdrop)    │ ← 최상위로 이동
+         │ Modal (Content)     │
+         └─────────────────────┘
+
+z-[100]  ┌─────────────────────┐
+         │ GlobalNav (우리공방) │
+         └─────────────────────┘
+
+z-50     ┌─────────────────────┐
+         │ BottomNav           │
+         └─────────────────────┘
+
+z-40     ┌─────────────────────┐
+         │ Header              │
+         └─────────────────────┘
+```
+
+---
+
+### 효과
+
+- 모달이 모든 UI 요소(GlobalNav, BottomNav, Header) 위에 표시됨
+- 사용자가 모달에 집중할 수 있는 올바른 오버레이 동작
+- 모달 외부 클릭 시 정상적으로 닫힘
+
+
+## 8. 오프라인 동기화 상태 표시 기능 (50287d7)
 
 ### 배경
 
