@@ -24,26 +24,16 @@
 
 	// Use default settings from store when no reminder is provided
 	const defaultReminder = settingsStore.getDefaultReminder();
-	let showSettings = $state(false);
-	let enabled = $state(true);
-	let isDefault = $state(false);
-	let time = $state(defaultReminder.time);
-	let days = $state<number[]>([...defaultReminder.days]);
-	let autoOpen = $state(defaultReminder.autoOpen);
-	let reminderType = $state<'repeat' | 'once'>('repeat');
-	let reminderDate = $state(getTomorrowDate());
 
-	// reminder prop 변경 시 상태 업데이트
-	$effect(() => {
-		showSettings = !!reminder;
-		enabled = reminder?.enabled ?? true;
-		isDefault = reminder?.isDefault ?? false;
-		time = reminder?.time ?? defaultReminder.time;
-		days = reminder?.days ? [...reminder.days] : [...defaultReminder.days];
-		autoOpen = reminder?.autoOpen ?? defaultReminder.autoOpen;
-		reminderType = reminder?.type ?? 'repeat';
-		reminderDate = reminder?.date ?? getTomorrowDate();
-	});
+	// Props를 초기값으로 사용 (이후 독립적으로 작동)
+	let showSettings = $state(!!reminder);
+	let enabled = $state(reminder?.enabled ?? true);
+	let isDefault = $state(reminder?.isDefault ?? false);
+	let time = $state(reminder?.time ?? defaultReminder.time);
+	let days = $state<number[]>(reminder?.days ?? [...defaultReminder.days]);
+	let autoOpen = $state(reminder?.autoOpen ?? defaultReminder.autoOpen);
+	let reminderType = $state<'repeat' | 'once'>(reminder?.type ?? 'repeat');
+	let reminderDate = $state(reminder?.date ?? getTomorrowDate());
 
 	const dayLabels = ['일', '월', '화', '수', '목', '금', '토'];
 
