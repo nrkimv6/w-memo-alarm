@@ -2,8 +2,7 @@
 	import { onMount } from 'svelte';
 	import { Plus, Search, Pin, Star, Bell, Clock, ChevronRight } from 'lucide-svelte';
 	import Button from '$lib/components/ui/Button.svelte';
-	import { Header } from '$lib/components/layout';
-	import {
+		import {
 		MemoForm,
 		MemoCard,
 		MemoDetailModal,
@@ -199,8 +198,6 @@
 </script>
 
 <div class="min-h-screen">
-	<Header />
-
 	<!-- Header section -->
 	<div class="sticky top-14 z-20 bg-background/95 backdrop-blur-sm border-b border-border/50">
 		<div class="max-w-6xl mx-auto px-4 py-4 space-y-3">
