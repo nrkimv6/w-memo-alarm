@@ -1,5 +1,6 @@
 import type { Memo } from '$lib/types/memo';
 import { memosStore } from './memos.svelte';
+import { createLogger, devLogStore } from './devLogs.svelte';
 
 const STORAGE_KEY = 'memo-alarm:last-notifications';
 const SNOOZE_KEY = 'memo-alarm:snoozed-reminders';
@@ -10,6 +11,9 @@ interface SnoozedReminder {
 	memoId: string;
 	snoozeUntil: number; // timestamp
 }
+
+// 개발자 모드 로그
+const log = createLogger('Notification');
 
 function createNotificationStore() {
 	let permission = $state<NotificationPermission>('default');
@@ -82,27 +86,65 @@ function createNotificationStore() {
 	}
 
 	function init() {
-		if (initialized || typeof window === 'undefined') return;
+		if (initialized || typeof window === 'undefined') {
+			log.debug(`init skipped: initialized=${initialized}`);
+			return;
+		}
+
+		log.info('🚀 Initializing notification store...');
 
 		if ('Notification' in window) {
 			permission = Notification.permission;
+			log.info(`Permission: ${permission}`);
+		} else {
+			log.warn('❌ Notification API not supported');
+		}
+
+		// SW에서 보낸 로그 수신
+		if ('serviceWorker' in navigator) {
+			navigator.serviceWorker.addEventListener('message', (event) => {
+				if (event.data.type === 'SW_LOG') {
+					devLogStore.add(
+						event.data.level || 'info',
+						event.data.source || 'SW',
+						event.data.message,
+						event.data.data
+					);
+				}
+			});
+			log.info('SW message listener registered');
 		}
 
 		loadLastNotified();
 		loadSnoozed();
 		startBackgroundCheck();
 		initialized = true;
+		log.info('✅ Notification store initialized');
+
+		// Service Worker에 알림 스케줄 등록 (약간 지연 후 - 메모 로드 대기)
+		setTimeout(() => {
+			log.info('📤 Registering reminders to Service Worker...');
+			registerRemindersToServiceWorker();
+		}, 2000);
 	}
 
 	function startBackgroundCheck() {
-		if (checkInterval) return;
+		if (checkInterval) {
+			log.debug('Background check already running');
+			return;
+		}
+
+		log.info('Starting background check (interval: 60s)');
+		log.warn('⚠️ setInterval은 백그라운드에서 동작하지 않음!');
 
 		// Check every minute
 		checkInterval = setInterval(() => {
+			log.info(`🔄 Interval triggered at ${new Date().toLocaleTimeString()}`);
 			checkAndTriggerReminders();
 		}, 60000);
 
 		// Initial check
+		log.info('Running initial check...');
 		checkAndTriggerReminders();
 	}
 
@@ -114,7 +156,12 @@ function createNotificationStore() {
 	}
 
 	function checkAndTriggerReminders() {
-		if (permission !== 'granted') return;
+		log.info(`🕐 checkAndTriggerReminders at ${new Date().toLocaleTimeString()}`);
+
+		if (permission !== 'granted') {
+			log.warn(`❌ Permission not granted: ${permission}`);
+			return;
+		}
 
 		const now = new Date();
 		const nowTimestamp = now.getTime();
@@ -122,58 +169,76 @@ function createNotificationStore() {
 		const today = now.getDay();
 		const todayDate = now.toISOString().split('T')[0];
 
+		log.info(`📅 time=${currentTime}, date=${todayDate}, day=${today}`);
+
 		// Check snoozed reminders
+		if (snoozedReminders.length > 0) {
+			log.info(`Snoozed: ${snoozedReminders.length}`);
+		}
 		snoozedReminders.forEach((snoozed) => {
 			if (snoozed.snoozeUntil <= nowTimestamp) {
 				const memo = memosStore.getById(snoozed.memoId);
 				if (memo) {
+					log.info(`⏰ Triggering snoozed: ${memo.title}`);
 					showNotification(memo, true);
-					// Auto-open URL if enabled
 					if (memo.url && memo.reminder?.autoOpen) {
 						window.open(memo.url, '_blank');
 						memosStore.incrementOpenCount(memo.id);
 					}
 				}
-				// Remove from snoozed list
 				cancelSnooze(snoozed.memoId);
 			}
 		});
 
 		// Check regular reminders
+		const activeReminders = memosStore.memos.filter((m) => m.reminder?.enabled);
+		log.info(`📋 Active reminders: ${activeReminders.length}`);
+
 		memosStore.memos.forEach((memo) => {
 			if (!memo.reminder?.enabled) return;
 
 			const reminderTime = memo.reminder.time;
 			if (reminderTime !== currentTime) return;
 
-			// Check if already notified for this time today
+			log.info(`⏱️ Time match: "${memo.title}" (${reminderTime})`);
+
+			// Check if already notified
 			const lastNotified = lastNotifiedMap[memo.id];
 			const notifyKey = `${todayDate}-${reminderTime}`;
-			if (lastNotified === notifyKey) return;
+			if (lastNotified === notifyKey) {
+				log.debug(`⏩ Already notified: ${notifyKey}`);
+				return;
+			}
 
 			// Check day/date conditions
 			const isOnce = memo.reminder.type === 'once';
 			if (isOnce) {
-				// One-time reminder: check date
-				if (memo.reminder.date !== todayDate) return;
+				if (memo.reminder.date !== todayDate) {
+					log.debug(`❌ Date mismatch: ${memo.reminder.date} != ${todayDate}`);
+					return;
+				}
+				log.info(`✅ Date match: ${todayDate}`);
 			} else {
-				// Repeating reminder: check day of week
-				if (!memo.reminder.days?.includes(today)) return;
+				if (!memo.reminder.days?.includes(today)) {
+					log.debug(`❌ Day mismatch: ${JSON.stringify(memo.reminder.days)} !includes ${today}`);
+					return;
+				}
+				log.info(`✅ Day match: ${today}`);
 			}
 
 			// Trigger notification
+			log.info(`🔔 TRIGGERING: "${memo.title}"`);
 			showNotification(memo);
 			lastNotifiedMap[memo.id] = notifyKey;
 			saveLastNotified();
 
-			// Auto-open URL if enabled
 			if (memo.url && memo.reminder.autoOpen) {
 				window.open(memo.url, '_blank');
 				memosStore.incrementOpenCount(memo.id);
 			}
 
-			// Disable one-time reminders after triggering
 			if (isOnce) {
+				log.info(`🔕 Disabling one-time: "${memo.title}"`);
 				memosStore.update(memo.id, {
 					reminder: { ...memo.reminder, enabled: false }
 				});
@@ -198,7 +263,12 @@ function createNotificationStore() {
 	}
 
 	function showNotification(memo: Memo, isSnoozed = false): void {
-		if (permission !== 'granted') return;
+		log.info(`📢 showNotification: "${memo.title}", snoozed=${isSnoozed}`);
+
+		if (permission !== 'granted') {
+			log.warn(`❌ Permission denied: ${permission}`);
+			return;
+		}
 
 		const title = isSnoozed ? `⏰ ${memo.title}` : memo.title;
 		const options: NotificationOptions = {
@@ -210,10 +280,13 @@ function createNotificationStore() {
 		};
 
 		if ('serviceWorker' in navigator) {
-			navigator.serviceWorker.ready.then(registration => {
+			log.info('Using Service Worker');
+			navigator.serviceWorker.ready.then((registration) => {
+				log.info('SW ready, showing...');
 				registration.showNotification(title, options);
 			});
 		} else {
+			log.info('Using native Notification API');
 			const notification = new Notification(title, options);
 			notification.onclick = () => {
 				window.focus();
@@ -270,6 +343,132 @@ function createNotificationStore() {
 		});
 	}
 
+	// Service Worker에 알림 스케줄 등록
+	async function registerRemindersToServiceWorker() {
+		if (!('serviceWorker' in navigator)) {
+			log.warn('❌ Service Worker not supported');
+			return;
+		}
+
+		try {
+			const registration = await navigator.serviceWorker.ready;
+			if (!registration.active) {
+				log.warn('❌ No active Service Worker');
+				return;
+			}
+
+			// 활성화된 알림만 필터링
+			const activeReminders = memosStore.memos
+				.filter((memo) => memo.reminder?.enabled)
+				.map((memo) => ({
+					memoId: memo.id,
+					title: memo.title,
+					body: memo.content || '알림이 도착했습니다',
+					time: memo.reminder!.time,
+					type: memo.reminder!.type,
+					days: memo.reminder!.days,
+					date: memo.reminder!.date,
+					url: memo.url,
+					autoOpen: memo.reminder!.autoOpen
+				}));
+
+			log.info(`📤 Registering ${activeReminders.length} reminders to SW`);
+
+			registration.active.postMessage({
+				type: 'REGISTER_MEMO_REMINDERS',
+				reminders: activeReminders
+			});
+
+			log.info('✅ Reminders registered to SW');
+		} catch (e) {
+			log.error('Failed to register reminders to SW', e);
+		}
+	}
+
+	// Service Worker에 단일 알림 업데이트
+	async function updateReminderInServiceWorker(memo: Memo) {
+		if (!('serviceWorker' in navigator)) return;
+
+		try {
+			const registration = await navigator.serviceWorker.ready;
+			if (!registration.active) return;
+
+			if (memo.reminder?.enabled) {
+				registration.active.postMessage({
+					type: 'UPDATE_MEMO_REMINDER',
+					reminder: {
+						memoId: memo.id,
+						title: memo.title,
+						body: memo.content || '알림이 도착했습니다',
+						time: memo.reminder.time,
+						type: memo.reminder.type,
+						days: memo.reminder.days,
+						date: memo.reminder.date,
+						url: memo.url,
+						autoOpen: memo.reminder.autoOpen
+					}
+				});
+				log.info(`📤 Updated in SW: "${memo.title}"`);
+			} else {
+				registration.active.postMessage({
+					type: 'REMOVE_MEMO_REMINDER',
+					memoId: memo.id
+				});
+				log.info(`🗑️ Removed from SW: "${memo.title}"`);
+			}
+		} catch (e) {
+			log.error('Failed to update reminder in SW', e);
+		}
+	}
+
+	// Service Worker에서 알림 제거
+	async function removeReminderFromServiceWorker(memoId: string) {
+		if (!('serviceWorker' in navigator)) return;
+
+		try {
+			const registration = await navigator.serviceWorker.ready;
+			if (!registration.active) return;
+
+			registration.active.postMessage({
+				type: 'REMOVE_MEMO_REMINDER',
+				memoId
+			});
+			log.info(`🗑️ Removed from SW: ${memoId}`);
+		} catch (e) {
+			log.error('Failed to remove reminder from SW', e);
+		}
+	}
+
+	// Service Worker의 스케줄 상태 조회 (디버그용)
+	async function getServiceWorkerScheduleStatus(): Promise<{
+		reminders: unknown[];
+		intervalRunning: boolean;
+	} | null> {
+		if (!('serviceWorker' in navigator)) return null;
+
+		try {
+			const registration = await navigator.serviceWorker.ready;
+			if (!registration.active) return null;
+
+			return new Promise((resolve) => {
+				const messageChannel = new MessageChannel();
+				messageChannel.port1.onmessage = (event) => {
+					resolve(event.data);
+				};
+
+				registration.active!.postMessage({ type: 'GET_SCHEDULED_REMINDERS' }, [
+					messageChannel.port2
+				]);
+
+				// 타임아웃
+				setTimeout(() => resolve(null), 3000);
+			});
+		} catch (e) {
+			log.error('Failed to get SW schedule status', e);
+			return null;
+		}
+	}
+
 	return {
 		get permission() {
 			return permission;
@@ -291,7 +490,12 @@ function createNotificationStore() {
 		checkAndTriggerReminders,
 		snooze,
 		cancelSnooze,
-		getSnoozedUntil
+		getSnoozedUntil,
+		// SW 관련
+		registerRemindersToServiceWorker,
+		updateReminderInServiceWorker,
+		removeReminderFromServiceWorker,
+		getServiceWorkerScheduleStatus
 	};
 }
 

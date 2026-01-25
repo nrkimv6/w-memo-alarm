@@ -1,6 +1,6 @@
 <script lang="ts">
 
-	import { Download, Upload, Trash2, Sun, Moon, Monitor, Bell, Cloud, LogIn, LogOut, Info, RefreshCw, Bug, BellRing, CheckCircle, XCircle, Smartphone, Radio } from 'lucide-svelte';
+	import { Download, Upload, Trash2, Sun, Moon, Monitor, Bell, Cloud, LogIn, LogOut, Info, RefreshCw, Bug, BellRing, CheckCircle, XCircle, Smartphone, Radio, FileText } from 'lucide-svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 		import Footer from "$lib/components/Footer.svelte";
 	import ConfirmDialog from '$lib/components/ui/ConfirmDialog.svelte';
@@ -9,6 +9,7 @@
 	import { settingsStore } from '$lib/stores/settings.svelte';
 	import { authStore } from '$lib/stores/auth.svelte';
 	import { notificationStore } from '$lib/stores/notifications.svelte';
+	import { devLogStore, type DevLog } from '$lib/stores/devLogs.svelte';
 	import { downloadFullBackup, importFullBackup, clearAllData } from '$lib/utils/data';
 	import { cn } from '$lib/utils';
 	import { getUserDisplayName, getUserEmail } from '$lib/utils/user';
@@ -46,6 +47,30 @@
 	let swRegistration = $state<ServiceWorkerRegistration | null>(null);
 	let testDelaySeconds = $state(5); // 테스트 알림 지연 시간 (초)
 
+	// SW 스케줄 상태 (개발자 모드용)
+	let swScheduleStatus = $state<{
+		reminders: Array<{memoId: string; title: string; time: string; type: string}>;
+		intervalRunning: boolean;
+		loading: boolean;
+		error: string | null;
+	}>({
+		reminders: [],
+		intervalRunning: false,
+		loading: false,
+		error: null
+	});
+
+	// 로그 뷰어 상태
+	let logFilter = $state<'all' | 'Notification' | 'SW'>('all');
+	let showLogViewer = $state(false);
+
+	// 필터링된 로그
+	const filteredLogs = $derived(() => {
+		const logs = devLogStore.logs;
+		if (logFilter === 'all') return logs.slice(-100);
+		return logs.filter(l => l.source === logFilter).slice(-100);
+	});
+
 	// FCM 상태 (개발자 모드용)
 	let fcmStatus = $state<{
 		envConfigured: boolean;
@@ -80,6 +105,7 @@
 	// 개발자 모드 진입 시 상세 상태 체크
 	$effect(() => {
 		if (devMode) {
+			devLogStore.init();
 			checkCapacitorStatus();
 			checkFCMStatus();
 			checkServiceWorker();
@@ -89,7 +115,33 @@
 	async function checkServiceWorker() {
 		if ('serviceWorker' in navigator) {
 			swRegistration = await navigator.serviceWorker.ready;
+			await checkSWScheduleStatus();
 		}
+	}
+
+	async function checkSWScheduleStatus() {
+		swScheduleStatus.loading = true;
+		swScheduleStatus.error = null;
+
+		try {
+			const status = await notificationStore.getServiceWorkerScheduleStatus();
+			if (status) {
+				swScheduleStatus.reminders = status.reminders as any[];
+				swScheduleStatus.intervalRunning = status.intervalRunning;
+			} else {
+				swScheduleStatus.error = 'SW 응답 없음';
+			}
+		} catch (error) {
+			swScheduleStatus.error = (error as Error).message;
+		} finally {
+			swScheduleStatus.loading = false;
+		}
+	}
+
+	async function registerRemindersToSW() {
+		await notificationStore.registerRemindersToServiceWorker();
+		await checkSWScheduleStatus();
+		alert('Service Worker에 알림 스케줄이 등록되었습니다. 콘솔에서 로그를 확인하세요.');
 	}
 
 	async function testWebPushNotification() {
@@ -1011,6 +1063,67 @@
 					</div>
 				</div>
 
+				<!-- SW 메모 알림 스케줄 상태 (핵심!) -->
+				<div class="space-y-2 pt-2 border-t border-border">
+					<h3 class="text-sm font-semibold flex items-center gap-2">
+						<Bell class="w-4 h-4" />
+						SW 메모 알림 스케줄
+						{#if swScheduleStatus.intervalRunning}
+							<span class="text-xs bg-green-500/20 text-green-500 px-2 py-0.5 rounded">체크 중</span>
+						{:else}
+							<span class="text-xs bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded">대기</span>
+						{/if}
+						<button
+							onclick={checkSWScheduleStatus}
+							class="ml-auto text-xs text-primary hover:underline"
+						>
+							새로고침
+						</button>
+					</h3>
+
+					{#if swScheduleStatus.loading}
+						<p class="text-xs text-muted-foreground">로딩 중...</p>
+					{:else if swScheduleStatus.error}
+						<p class="text-xs text-red-500">{swScheduleStatus.error}</p>
+					{:else}
+						<div class="text-xs space-y-1 p-2 rounded bg-muted">
+							<p class="font-semibold">등록된 알림: {swScheduleStatus.reminders.length}개</p>
+							<p>Interval 실행 중: {swScheduleStatus.intervalRunning ? '예' : '아니오'}</p>
+						</div>
+
+						{#if swScheduleStatus.reminders.length > 0}
+							<div class="text-xs font-mono bg-muted p-2 rounded max-h-40 overflow-y-auto space-y-1">
+								{#each swScheduleStatus.reminders as reminder}
+									<p class="truncate border-b border-border/50 pb-1">
+										[{reminder.time}] {reminder.title}
+										<span class="text-muted-foreground">({reminder.type})</span>
+									</p>
+								{/each}
+							</div>
+						{:else}
+							<p class="text-xs text-muted-foreground">Service Worker에 등록된 알림이 없습니다.</p>
+						{/if}
+
+						<Button
+							variant="default"
+							size="sm"
+							onclick={registerRemindersToSW}
+							class="w-full"
+						>
+							SW에 알림 스케줄 등록
+						</Button>
+
+						<div class="text-xs text-orange-600 bg-orange-500/10 p-2 rounded space-y-1">
+							<p class="font-semibold">⚠️ 문제 원인:</p>
+							<p>현재 메모 알림은 메인 스레드의 setInterval로 체크됩니다.</p>
+							<p>앱이 백그라운드로 가면 setInterval이 멈추므로 알림이 안 뜹니다.</p>
+							<p class="mt-1 text-green-600 font-semibold">✅ 해결 방법:</p>
+							<p>위 버튼을 눌러 Service Worker에 알림 스케줄을 등록하면</p>
+							<p>SW에서 매분 체크하여 백그라운드에서도 알림이 작동합니다.</p>
+						</div>
+					{/if}
+				</div>
+
 				<!-- FCM 상태 체크 (웹 푸시) -->
 				<div class="space-y-2 pt-2 border-t border-border">
 					<h3 class="text-sm font-semibold flex items-center gap-2">
@@ -1134,6 +1247,95 @@
 						{#if fcmStatus.error}
 							<p class="text-xs text-red-500">{fcmStatus.error}</p>
 						{/if}
+					{/if}
+				</div>
+
+				<!-- 앱 내 로그 뷰어 (핵심!) -->
+				<div class="space-y-2 pt-2 border-t border-border">
+					<div class="flex items-center justify-between">
+						<h3 class="text-sm font-semibold flex items-center gap-2">
+							<FileText class="w-4 h-4" />
+							알림 로그 뷰어
+							<span class="text-xs bg-blue-500/20 text-blue-500 px-2 py-0.5 rounded">
+								{devLogStore.logs.length}개
+							</span>
+						</h3>
+						<div class="flex gap-2">
+							<button
+								onclick={() => showLogViewer = !showLogViewer}
+								class="text-xs text-primary hover:underline"
+							>
+								{showLogViewer ? '접기' : '펼치기'}
+							</button>
+							<button
+								onclick={() => devLogStore.clear()}
+								class="text-xs text-red-500 hover:underline"
+							>
+								지우기
+							</button>
+						</div>
+					</div>
+
+					{#if showLogViewer}
+						<!-- 필터 버튼 -->
+						<div class="flex gap-1">
+							<button
+								onclick={() => logFilter = 'all'}
+								class={cn(
+									"text-xs px-2 py-1 rounded",
+									logFilter === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+								)}
+							>
+								전체
+							</button>
+							<button
+								onclick={() => logFilter = 'Notification'}
+								class={cn(
+									"text-xs px-2 py-1 rounded",
+									logFilter === 'Notification' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+								)}
+							>
+								Notification
+							</button>
+							<button
+								onclick={() => logFilter = 'SW'}
+								class={cn(
+									"text-xs px-2 py-1 rounded",
+									logFilter === 'SW' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+								)}
+							>
+								SW
+							</button>
+						</div>
+
+						<!-- 로그 목록 -->
+						<div class="text-xs font-mono bg-black text-green-400 p-3 rounded-lg max-h-80 overflow-y-auto space-y-1">
+							{#if filteredLogs().length === 0}
+								<p class="text-gray-500">로그가 없습니다.</p>
+							{:else}
+								{#each filteredLogs().reverse() as log}
+									<div class={cn(
+										"border-b border-gray-800 pb-1",
+										log.level === 'error' && 'text-red-400',
+										log.level === 'warn' && 'text-yellow-400',
+										log.level === 'debug' && 'text-gray-500'
+									)}>
+										<span class="text-gray-600">
+											{new Date(log.timestamp).toLocaleTimeString()}
+										</span>
+										<span class="text-blue-400">[{log.source}]</span>
+										{log.message}
+										{#if log.data}
+											<span class="text-gray-500">{JSON.stringify(log.data)}</span>
+										{/if}
+									</div>
+								{/each}
+							{/if}
+						</div>
+
+						<div class="text-xs text-muted-foreground">
+							* 로그는 앱이 실행 중일 때만 기록됩니다. 백그라운드 SW 로그는 브라우저 개발자 도구에서 확인하세요.
+						</div>
 					{/if}
 				</div>
 
