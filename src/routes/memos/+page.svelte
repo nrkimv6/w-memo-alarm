@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { Plus, FileText, CheckSquare, X, Merge, Trash2 } from 'lucide-svelte';
 	import Button from '$lib/components/ui/Button.svelte';
-	import { Header, FilterTabs } from '$lib/components/layout';
+	import { FilterTabs } from '$lib/components/layout';
 	import {
 		MemoForm,
 		MemoCard,
@@ -175,8 +175,6 @@
 </script>
 
 <div class="min-h-screen">
-	<Header />
-
 	<!-- Filter section -->
 	<div class="sticky top-14 z-20 bg-background/95 backdrop-blur-sm border-b border-border/50">
 		<div class="max-w-6xl mx-auto px-4 py-4 space-y-4">

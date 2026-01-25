@@ -13,7 +13,7 @@
 	import { registerFCMToken, setupForegroundMessageListener } from "$lib/fcm";
 	import { setupShareIntentListener, shareIntentToQueryParams, type ShareIntentData } from "$lib/utils/capacitor";
 	import { Toast } from "$lib/components/ui";
-	import GlobalNav from "$lib/components/GlobalNav.svelte";
+	import UnifiedHeader from "$lib/components/layout/UnifiedHeader.svelte";
 	import BottomNav from "$lib/components/BottomNav.svelte";
 	import SyncStatusBanner from "$lib/components/SyncStatusBanner.svelte";
 
@@ -80,7 +80,7 @@
 </script>
 
 <div class="min-h-screen bg-background pb-20">
-	<GlobalNav />
+	<UnifiedHeader />
 	{@render children()}
 	<SyncStatusBanner />
 	<BottomNav />
