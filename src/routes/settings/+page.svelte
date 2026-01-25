@@ -404,6 +404,11 @@
 	let defaultDays = $state<number[]>([...settingsStore.settings.defaultReminder.days]);
 	let autoReminderOnCreate = $state(settingsStore.settings.autoReminderOnCreate);
 
+	// 기본알림을 사용하는 메모 개수
+	const defaultReminderMemoCount = $derived(
+		memosStore.memos.filter((m) => m.reminder?.isDefault === true).length
+	);
+
 	function toggleDefaultDay(day: number) {
 		if (defaultDays.includes(day)) {
 			defaultDays = defaultDays.filter((d) => d !== day);
@@ -656,6 +661,16 @@
 							{/each}
 						</div>
 					</div>
+
+					<!-- 영향받는 메모 경고 -->
+					{#if defaultReminderMemoCount > 0}
+						<div class="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+							<Info class="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+							<p class="text-xs text-amber-700 dark:text-amber-300">
+								변경 시 기본알림을 사용하는 <strong>{defaultReminderMemoCount}개</strong>의 메모에 자동으로 적용됩니다.
+							</p>
+						</div>
+					{/if}
 				</div>
 			{/if}
 		</div>

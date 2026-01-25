@@ -12,11 +12,11 @@ export default defineConfig({
 	},
 	ssr: {
 		noExternal: [],
-		external: ['@capacitor/browser', '@capacitor/core', '@capacitor/local-notifications']
+		external: ['@capacitor/app', '@capacitor/browser', '@capacitor/core', '@capacitor/local-notifications']
 	},
 	build: {
 		rollupOptions: {
-			external: ['@capacitor/browser', '@capacitor/core', '@capacitor/local-notifications']
+			external: ['@capacitor/app', '@capacitor/browser', '@capacitor/core', '@capacitor/local-notifications']
 		}
 	}
 });

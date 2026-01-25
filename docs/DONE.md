@@ -1,5 +1,19 @@
 # DONE (최근 20개)
 
+- [x] 2026-01-25: **기본알림/사용자 지정알림 구분 기능** ✅
+  - **Phase 1**: 데이터 모델 변경
+    - `types/memo.ts`: Reminder 인터페이스에 `isDefault?: boolean` 추가
+    - `memos.svelte.ts`: 메모 생성 시 `autoReminderOnCreate`가 true이면 `isDefault: true` 자동 설정
+  - **Phase 2**: UI 구현
+    - `ReminderSettings.svelte`: "기본알림 사용" 토글 추가, 기본알림 선택 시 시간/요일 입력 비활성화
+    - `MemoCard.svelte`: 알림 표시에 기본/커스텀 구분 (기본: "기본", 커스텀: 시간 표시)
+  - **Phase 3**: 일괄 업데이트
+    - `memos.svelte.ts`: `updateDefaultReminderMemos()` 함수 추가 (isDefault인 메모들 일괄 업데이트)
+    - `settings.svelte.ts`: 기본알림 시간/요일 변경 시 자동으로 일괄 업데이트 호출
+    - `settings/+page.svelte`: 영향받는 메모 개수 경고 메시지 표시
+  - **효과**: 기본알림 시간 변경 시 해당 메모들의 알림 시간 자동 갱신
+  - **참고**: `common/docs/plan/2026-01-25_memo-alarm-default-custom-reminder.md`
+
 - [x] 2026-01-25: **Phase 7-12 완료 (누락 기능 추가 완료)** ✅
   - **Phase 7**: 핵심 누락 기능 (P1)
     - 폴더/카테고리 시스템 (Folder 타입, folderId, FolderSelector, 사이드바/탭 네비게이션)

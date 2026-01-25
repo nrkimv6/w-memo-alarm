@@ -12,6 +12,7 @@
 		autoOpen: boolean;
 		type?: 'repeat' | 'once';
 		date?: string;
+		isDefault?: boolean;
 	}
 
 	interface Props {
@@ -23,13 +24,26 @@
 
 	// Use default settings from store when no reminder is provided
 	const defaultReminder = settingsStore.getDefaultReminder();
-	let showSettings = $state(!!reminder);
-	let enabled = $state(reminder?.enabled ?? true);
-	let time = $state(reminder?.time ?? defaultReminder.time);
-	let days = $state<number[]>(reminder?.days ?? [...defaultReminder.days]);
-	let autoOpen = $state(reminder?.autoOpen ?? defaultReminder.autoOpen);
-	let reminderType = $state<'repeat' | 'once'>(reminder?.type ?? 'repeat');
-	let reminderDate = $state(reminder?.date ?? getTomorrowDate());
+	let showSettings = $state(false);
+	let enabled = $state(true);
+	let isDefault = $state(false);
+	let time = $state(defaultReminder.time);
+	let days = $state<number[]>([...defaultReminder.days]);
+	let autoOpen = $state(defaultReminder.autoOpen);
+	let reminderType = $state<'repeat' | 'once'>('repeat');
+	let reminderDate = $state(getTomorrowDate());
+
+	// reminder prop 변경 시 상태 업데이트
+	$effect(() => {
+		showSettings = !!reminder;
+		enabled = reminder?.enabled ?? true;
+		isDefault = reminder?.isDefault ?? false;
+		time = reminder?.time ?? defaultReminder.time;
+		days = reminder?.days ? [...reminder.days] : [...defaultReminder.days];
+		autoOpen = reminder?.autoOpen ?? defaultReminder.autoOpen;
+		reminderType = reminder?.type ?? 'repeat';
+		reminderDate = reminder?.date ?? getTomorrowDate();
+	});
 
 	const dayLabels = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -43,12 +57,22 @@
 		return new Date().toISOString().split('T')[0];
 	}
 
+	// 기본알림 사용 시 기본 설정 적용
+	$effect(() => {
+		if (isDefault) {
+			const defaultSettings = settingsStore.getDefaultReminder();
+			time = defaultSettings.time;
+			days = [...defaultSettings.days];
+			autoOpen = defaultSettings.autoOpen;
+		}
+	});
+
 	$effect(() => {
 		if (showSettings) {
 			if (reminderType === 'once') {
-				onReminderChange({ enabled, time, days: [], autoOpen, type: 'once', date: reminderDate });
+				onReminderChange({ enabled, time, days: [], autoOpen, type: 'once', date: reminderDate, isDefault });
 			} else {
-				onReminderChange({ enabled, time, days, autoOpen, type: 'repeat' });
+				onReminderChange({ enabled, time, days, autoOpen, type: 'repeat', isDefault });
 			}
 		} else {
 			onReminderChange(undefined);
@@ -89,6 +113,21 @@
 			</div>
 
 			{#if enabled}
+				<!-- 기본알림 사용 -->
+				<div class="flex items-center justify-between p-2 rounded-lg bg-background/50">
+					<div class="flex flex-col gap-1">
+						<span class="text-sm font-medium">기본알림 사용</span>
+						<span class="text-xs text-muted-foreground">
+							{#if isDefault}
+								{defaultReminder.time}, {dayLabels.filter((_, i) => defaultReminder.days.includes(i)).join('·')}
+							{:else}
+								사용자 지정 시간 설정
+							{/if}
+						</span>
+					</div>
+					<Toggle bind:checked={isDefault} />
+				</div>
+
 				<!-- 알림 타입 선택 -->
 				<div class="flex gap-2">
 					<button
@@ -126,7 +165,8 @@
 						id="reminder-time"
 						type="time"
 						bind:value={time}
-						class="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+						disabled={isDefault}
+						class="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
 					/>
 				</div>
 
@@ -151,11 +191,13 @@
 								<button
 									type="button"
 									onclick={() => toggleDay(i)}
+									disabled={isDefault}
 									class={cn(
 										'w-8 h-8 rounded-full text-xs font-medium transition-colors',
 										days.includes(i)
 											? 'bg-primary text-primary-foreground'
-											: 'bg-background border border-border hover:bg-muted'
+											: 'bg-background border border-border hover:bg-muted',
+										isDefault && 'opacity-50 cursor-not-allowed'
 									)}
 								>
 									{label}

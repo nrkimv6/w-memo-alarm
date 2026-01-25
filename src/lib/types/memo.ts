@@ -25,6 +25,7 @@ export interface Reminder {
 	type?: 'repeat' | 'once';
 	date?: string; // YYYY-MM-DD for one-time reminders
 	datetime?: string; // ISO datetime string (computed for display)
+	isDefault?: boolean; // 기본알림 사용 여부 (true: 기본설정 시간 사용, false/undefined: 사용자 지정)
 }
 
 export interface Memo {

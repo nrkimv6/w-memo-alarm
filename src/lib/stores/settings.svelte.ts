@@ -55,20 +55,42 @@ function createSettingsStore() {
 		initialized = true;
 	}
 
-	function setDefaultReminderTime(time: string) {
+	async function setDefaultReminderTime(time: string) {
+		const oldTime = settings.defaultReminder.time;
 		settings = {
 			...settings,
 			defaultReminder: { ...settings.defaultReminder, time }
 		};
 		saveToStorage(settings);
+
+		// 기본알림을 사용하는 메모들 일괄 업데이트
+		if (typeof window !== 'undefined' && oldTime !== time) {
+			const { memosStore } = await import('./memos.svelte');
+			await memosStore.updateDefaultReminderMemos(
+				settings.defaultReminder.time,
+				settings.defaultReminder.days,
+				settings.defaultReminder.autoOpen
+			);
+		}
 	}
 
-	function setDefaultReminderDays(days: number[]) {
+	async function setDefaultReminderDays(days: number[]) {
+		const oldDays = settings.defaultReminder.days;
 		settings = {
 			...settings,
 			defaultReminder: { ...settings.defaultReminder, days }
 		};
 		saveToStorage(settings);
+
+		// 기본알림을 사용하는 메모들 일괄 업데이트
+		if (typeof window !== 'undefined' && JSON.stringify(oldDays) !== JSON.stringify(days)) {
+			const { memosStore } = await import('./memos.svelte');
+			await memosStore.updateDefaultReminderMemos(
+				settings.defaultReminder.time,
+				settings.defaultReminder.days,
+				settings.defaultReminder.autoOpen
+			);
+		}
 	}
 
 	function setAutoReminderOnCreate(enabled: boolean) {
@@ -76,12 +98,23 @@ function createSettingsStore() {
 		saveToStorage(settings);
 	}
 
-	function setDefaultReminderAutoOpen(autoOpen: boolean) {
+	async function setDefaultReminderAutoOpen(autoOpen: boolean) {
+		const oldAutoOpen = settings.defaultReminder.autoOpen;
 		settings = {
 			...settings,
 			defaultReminder: { ...settings.defaultReminder, autoOpen }
 		};
 		saveToStorage(settings);
+
+		// 기본알림을 사용하는 메모들 일괄 업데이트
+		if (typeof window !== 'undefined' && oldAutoOpen !== autoOpen) {
+			const { memosStore } = await import('./memos.svelte');
+			await memosStore.updateDefaultReminderMemos(
+				settings.defaultReminder.time,
+				settings.defaultReminder.days,
+				settings.defaultReminder.autoOpen
+			);
+		}
 	}
 
 	function getDefaultReminder(): DefaultReminderSettings {

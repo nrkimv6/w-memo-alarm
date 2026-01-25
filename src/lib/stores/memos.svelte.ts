@@ -7,6 +7,7 @@ import { isNative, scheduleNotification, cancelNotification } from '$lib/utils/c
 import { toastStore } from './toast.svelte';
 import { createMemoAlarm, updateMemoAlarm, deleteMemoAlarms } from '$lib/services/alarmSchedules';
 import { syncQueue } from '$lib/services/syncQueue';
+import { settingsStore } from './settings.svelte';
 
 const CACHE_KEY = 'memo-alarm-memos-cache';
 const INITIALIZED_KEY = 'memo-alarm-initialized';
@@ -293,6 +294,19 @@ function createMemosStore() {
 		const now = Date.now();
 		const localId = generateLocalId();
 
+		// 기본 알림 자동 적용 로직
+		let reminder = data.reminder;
+		if (!reminder && settingsStore.settings.autoReminderOnCreate) {
+			const defaultReminder = settingsStore.getDefaultReminder();
+			reminder = {
+				enabled: defaultReminder.enabled,
+				time: defaultReminder.time,
+				days: defaultReminder.days,
+				autoOpen: defaultReminder.autoOpen,
+				isDefault: true // 기본 알림 사용
+			};
+		}
+
 		if (!authStore.isAuthenticated) {
 			// 비로그인: 로컬 전용
 			const newMemo: Memo = {
@@ -307,7 +321,7 @@ function createMemosStore() {
 				updatedAt: now,
 				url: data.url,
 				emoji: data.emoji,
-				reminder: data.reminder,
+				reminder: reminder,
 				folderId: data.folderId,
 				checklist: data.checklist,
 				syncStatus: 'synced' // 로컬 전용은 항상 synced
@@ -337,7 +351,7 @@ function createMemosStore() {
 			updatedAt: now,
 			url: data.url,
 			emoji: data.emoji,
-			reminder: data.reminder,
+			reminder: reminder,
 			folderId: data.folderId,
 			checklist: data.checklist,
 			syncStatus: 'pending'
@@ -642,6 +656,29 @@ function createMemosStore() {
 		return true;
 	}
 
+	async function updateDefaultReminderMemos(newTime: string, newDays: number[], newAutoOpen: boolean): Promise<void> {
+		// isDefault가 true인 메모들을 찾아서 일괄 업데이트
+		const defaultReminderMemos = memos.filter((m) => m.reminder?.isDefault === true);
+
+		if (defaultReminderMemos.length === 0) {
+			return;
+		}
+
+		// 각 메모를 업데이트 (로컬 + 서버)
+		for (const memo of defaultReminderMemos) {
+			const updatedReminder = {
+				...memo.reminder!,
+				time: newTime,
+				days: newDays,
+				autoOpen: newAutoOpen
+			};
+
+			await update(memo.id, { reminder: updatedReminder }, { silent: true });
+		}
+
+		toastStore.success(`${defaultReminderMemos.length}개 메모의 알림 시간이 변경되었습니다.`);
+	}
+
 	function clearAll(): void {
 		if (!authStore.isAuthenticated) {
 			memos = [];
@@ -698,6 +735,7 @@ function createMemosStore() {
 		clearAll,
 		cleanup,
 		retrySync,
+		updateDefaultReminderMemos,
 		// 구 API 호환성 (sync용)
 		deleteMemo: remove,
 		updateMemo: update,

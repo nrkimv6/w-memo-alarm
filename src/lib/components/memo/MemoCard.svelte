@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Pin, Star, Edit3, Trash2, ExternalLink, Folder, EyeOff, Eye, CheckSquare, Check, MoreVertical, Link2, RefreshCw, AlertTriangle, CloudOff } from 'lucide-svelte';
+	import { Pin, Star, Edit3, Trash2, ExternalLink, Folder, EyeOff, Eye, CheckSquare, Check, MoreVertical, Link2, RefreshCw, AlertTriangle, CloudOff, Bell } from 'lucide-svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import KebabMenu from '$lib/components/memo/KebabMenu.svelte';
@@ -8,6 +8,7 @@
 	import { memosStore } from '$lib/stores/memos.svelte';
 	import { foldersStore } from '$lib/stores/folders.svelte';
 	import { selectionStore } from '$lib/stores/selection.svelte';
+	import { settingsStore } from '$lib/stores/settings.svelte';
 	import { cn, formatRelativeTime } from '$lib/utils';
 
 	interface Props {
@@ -254,6 +255,16 @@
 			<time>{formatRelativeTime(memo.updatedAt)}</time>
 			{#if memo.isFavorite && !memo.isPinned}
 				<Star class="w-4 h-4 text-warning fill-warning" />
+			{/if}
+			{#if memo.reminder?.enabled}
+				<div class="flex items-center gap-1 text-xs" title={memo.reminder.isDefault ? '기본알림 사용' : '사용자 지정'}>
+					<Bell class="w-3.5 h-3.5" />
+					{#if memo.reminder.isDefault}
+						<span class="text-primary">기본</span>
+					{:else}
+						<span>{memo.reminder.time}</span>
+					{/if}
+				</div>
 			{/if}
 		</div>
 		{#if folder}
