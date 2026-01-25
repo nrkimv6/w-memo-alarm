@@ -11,6 +11,26 @@ const CACHE_NAME = `memo-alarm-${version}`;
 
 const ASSETS = [...build, ...files];
 
+// 메모 알림 스케줄 저장소 (Service Worker 메모리)
+interface ScheduledReminder {
+	memoId: string;
+	title: string;
+	body: string;
+	time: string; // HH:MM
+	type: 'once' | 'repeat';
+	days?: number[]; // 0-6 (일-토)
+	date?: string; // YYYY-MM-DD
+	url?: string;
+	autoOpen?: boolean;
+	lastNotified?: string; // YYYY-MM-DD-HH:MM
+}
+
+let scheduledReminders: ScheduledReminder[] = [];
+let reminderCheckInterval: ReturnType<typeof setInterval> | null = null;
+
+// 디버그 로그
+const SW_LOG = '[SW-MemoAlarm]';
+
 sw.addEventListener('install', (event) => {
 	event.waitUntil(
 		caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)).then(() => {
@@ -82,6 +102,87 @@ sw.addEventListener('push', (event) => {
 	);
 });
 
+// 메모 알림 체크 함수
+function checkScheduledReminders() {
+	const now = new Date();
+	const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+	const today = now.getDay();
+	const todayDate = now.toISOString().split('T')[0];
+	const notifyKey = `${todayDate}-${currentTime}`;
+
+	console.log(`${SW_LOG} 🕐 Checking reminders at ${currentTime} (${todayDate}, day=${today})`);
+	console.log(`${SW_LOG} 📋 Scheduled reminders: ${scheduledReminders.length}`);
+
+	scheduledReminders.forEach((reminder) => {
+		console.log(`${SW_LOG}   - "${reminder.title}" time=${reminder.time}, type=${reminder.type}`);
+
+		// 시간 체크
+		if (reminder.time !== currentTime) {
+			return;
+		}
+
+		console.log(`${SW_LOG} ⏱️ Time match: "${reminder.title}"`);
+
+		// 이미 발송된 알림인지 체크
+		if (reminder.lastNotified === notifyKey) {
+			console.log(`${SW_LOG} ⏩ Already notified: ${notifyKey}`);
+			return;
+		}
+
+		// 날짜/요일 체크
+		if (reminder.type === 'once') {
+			if (reminder.date !== todayDate) {
+				console.log(`${SW_LOG} ❌ Date mismatch: ${reminder.date} !== ${todayDate}`);
+				return;
+			}
+		} else {
+			if (!reminder.days?.includes(today)) {
+				console.log(`${SW_LOG} ❌ Day mismatch: ${JSON.stringify(reminder.days)} not includes ${today}`);
+				return;
+			}
+		}
+
+		// 알림 발송!
+		console.log(`${SW_LOG} 🔔 TRIGGERING: "${reminder.title}"`);
+		sw.registration.showNotification(reminder.title, {
+			body: reminder.body || '알림이 도착했습니다',
+			icon: '/favicon.png',
+			badge: '/favicon.png',
+			tag: `memo-${reminder.memoId}`,
+			data: { memoId: reminder.memoId, url: reminder.url || '/' },
+			vibrate: [200, 100, 200],
+			requireInteraction: true
+		});
+
+		// 발송 기록
+		reminder.lastNotified = notifyKey;
+
+		// 일회성 알림은 제거
+		if (reminder.type === 'once') {
+			console.log(`${SW_LOG} 🗑️ Removing one-time reminder: "${reminder.title}"`);
+			scheduledReminders = scheduledReminders.filter((r) => r.memoId !== reminder.memoId);
+		}
+	});
+}
+
+// 알림 체크 인터벌 시작
+function startReminderCheck() {
+	if (reminderCheckInterval) {
+		console.log(`${SW_LOG} Reminder check already running`);
+		return;
+	}
+
+	console.log(`${SW_LOG} 🚀 Starting reminder check interval (60s)`);
+
+	// 매분 체크
+	reminderCheckInterval = setInterval(() => {
+		checkScheduledReminders();
+	}, 60000);
+
+	// 즉시 체크
+	checkScheduledReminders();
+}
+
 // 메시지 수신 (캐시 업데이트 및 테스트용)
 sw.addEventListener('message', (event) => {
 	if (event.data.type === 'SKIP_WAITING') {
@@ -119,6 +220,51 @@ sw.addEventListener('message', (event) => {
 				requireInteraction: true
 			});
 		}, delay);
+	}
+
+	// 메모 알림 스케줄 등록
+	if (event.data.type === 'REGISTER_MEMO_REMINDERS') {
+		console.log(`${SW_LOG} 📝 REGISTER_MEMO_REMINDERS received`);
+		const reminders = event.data.reminders as ScheduledReminder[];
+		scheduledReminders = reminders;
+		console.log(`${SW_LOG} Registered ${reminders.length} reminders`);
+		reminders.forEach((r) => {
+			console.log(`${SW_LOG}   - "${r.title}" at ${r.time} (${r.type})`);
+		});
+
+		// 체크 인터벌 시작
+		startReminderCheck();
+	}
+
+	// 단일 알림 추가/갱신
+	if (event.data.type === 'UPDATE_MEMO_REMINDER') {
+		console.log(`${SW_LOG} 📝 UPDATE_MEMO_REMINDER received`);
+		const reminder = event.data.reminder as ScheduledReminder;
+
+		// 기존 알림 제거 후 추가
+		scheduledReminders = scheduledReminders.filter((r) => r.memoId !== reminder.memoId);
+
+		if (reminder.time) {
+			scheduledReminders.push(reminder);
+			console.log(`${SW_LOG} Updated reminder: "${reminder.title}" at ${reminder.time}`);
+		} else {
+			console.log(`${SW_LOG} Removed reminder: memoId=${reminder.memoId}`);
+		}
+	}
+
+	// 알림 제거
+	if (event.data.type === 'REMOVE_MEMO_REMINDER') {
+		console.log(`${SW_LOG} 🗑️ REMOVE_MEMO_REMINDER received: ${event.data.memoId}`);
+		scheduledReminders = scheduledReminders.filter((r) => r.memoId !== event.data.memoId);
+	}
+
+	// 스케줄 상태 조회 (디버그용)
+	if (event.data.type === 'GET_SCHEDULED_REMINDERS') {
+		console.log(`${SW_LOG} 📊 GET_SCHEDULED_REMINDERS`);
+		event.ports[0]?.postMessage({
+			reminders: scheduledReminders,
+			intervalRunning: !!reminderCheckInterval
+		});
 	}
 });
 
