@@ -1,5 +1,6 @@
 import type { Memo } from '$lib/types/memo';
 import { memosStore } from './memos.svelte';
+import { createLogger, devLogStore } from './devLogs.svelte';
 
 const STORAGE_KEY = 'memo-alarm:last-notifications';
 const SNOOZE_KEY = 'memo-alarm:snoozed-reminders';
@@ -11,8 +12,8 @@ interface SnoozedReminder {
 	snoozeUntil: number; // timestamp
 }
 
-// 디버그 로그 prefix
-const LOG_PREFIX = '[NotificationStore]';
+// 개발자 모드 로그
+const log = createLogger('Notification');
 
 function createNotificationStore() {
 	let permission = $state<NotificationPermission>('default');
@@ -86,49 +87,64 @@ function createNotificationStore() {
 
 	function init() {
 		if (initialized || typeof window === 'undefined') {
-			console.log(`${LOG_PREFIX} init skipped: initialized=${initialized}, window=${typeof window}`);
+			log.debug(`init skipped: initialized=${initialized}`);
 			return;
 		}
 
-		console.log(`${LOG_PREFIX} 🚀 Initializing notification store...`);
+		log.info('🚀 Initializing notification store...');
 
 		if ('Notification' in window) {
 			permission = Notification.permission;
-			console.log(`${LOG_PREFIX} Notification permission: ${permission}`);
+			log.info(`Permission: ${permission}`);
 		} else {
-			console.log(`${LOG_PREFIX} ❌ Notification API not supported`);
+			log.warn('❌ Notification API not supported');
+		}
+
+		// SW에서 보낸 로그 수신
+		if ('serviceWorker' in navigator) {
+			navigator.serviceWorker.addEventListener('message', (event) => {
+				if (event.data.type === 'SW_LOG') {
+					devLogStore.add(
+						event.data.level || 'info',
+						event.data.source || 'SW',
+						event.data.message,
+						event.data.data
+					);
+				}
+			});
+			log.info('SW message listener registered');
 		}
 
 		loadLastNotified();
 		loadSnoozed();
 		startBackgroundCheck();
 		initialized = true;
-		console.log(`${LOG_PREFIX} ✅ Notification store initialized`);
+		log.info('✅ Notification store initialized');
 
 		// Service Worker에 알림 스케줄 등록 (약간 지연 후 - 메모 로드 대기)
 		setTimeout(() => {
-			console.log(`${LOG_PREFIX} 📤 Registering reminders to Service Worker...`);
+			log.info('📤 Registering reminders to Service Worker...');
 			registerRemindersToServiceWorker();
 		}, 2000);
 	}
 
 	function startBackgroundCheck() {
 		if (checkInterval) {
-			console.log(`${LOG_PREFIX} Background check already running`);
+			log.debug('Background check already running');
 			return;
 		}
 
-		console.log(`${LOG_PREFIX} Starting background check (interval: 60s)`);
-		console.log(`${LOG_PREFIX} ⚠️ 주의: setInterval은 백그라운드에서 동작하지 않습니다!`);
+		log.info('Starting background check (interval: 60s)');
+		log.warn('⚠️ setInterval은 백그라운드에서 동작하지 않음!');
 
 		// Check every minute
 		checkInterval = setInterval(() => {
-			console.log(`${LOG_PREFIX} 🔄 Interval triggered at ${new Date().toLocaleTimeString()}`);
+			log.info(`🔄 Interval triggered at ${new Date().toLocaleTimeString()}`);
 			checkAndTriggerReminders();
 		}, 60000);
 
 		// Initial check
-		console.log(`${LOG_PREFIX} Running initial check...`);
+		log.info('Running initial check...');
 		checkAndTriggerReminders();
 	}
 
@@ -140,10 +156,10 @@ function createNotificationStore() {
 	}
 
 	function checkAndTriggerReminders() {
-		console.log(`${LOG_PREFIX} 🕐 checkAndTriggerReminders called at ${new Date().toISOString()}`);
+		log.info(`🕐 checkAndTriggerReminders at ${new Date().toLocaleTimeString()}`);
 
 		if (permission !== 'granted') {
-			console.log(`${LOG_PREFIX} ❌ Permission not granted: ${permission}`);
+			log.warn(`❌ Permission not granted: ${permission}`);
 			return;
 		}
 
@@ -153,88 +169,76 @@ function createNotificationStore() {
 		const today = now.getDay();
 		const todayDate = now.toISOString().split('T')[0];
 
-		console.log(`${LOG_PREFIX} 📅 Current: time=${currentTime}, date=${todayDate}, day=${today}`);
+		log.info(`📅 time=${currentTime}, date=${todayDate}, day=${today}`);
 
 		// Check snoozed reminders
-		console.log(`${LOG_PREFIX} Snoozed reminders: ${snoozedReminders.length}`);
+		if (snoozedReminders.length > 0) {
+			log.info(`Snoozed: ${snoozedReminders.length}`);
+		}
 		snoozedReminders.forEach((snoozed) => {
 			if (snoozed.snoozeUntil <= nowTimestamp) {
 				const memo = memosStore.getById(snoozed.memoId);
 				if (memo) {
-					console.log(`${LOG_PREFIX} ⏰ Triggering snoozed reminder: ${memo.title}`);
+					log.info(`⏰ Triggering snoozed: ${memo.title}`);
 					showNotification(memo, true);
-					// Auto-open URL if enabled
 					if (memo.url && memo.reminder?.autoOpen) {
 						window.open(memo.url, '_blank');
 						memosStore.incrementOpenCount(memo.id);
 					}
 				}
-				// Remove from snoozed list
 				cancelSnooze(snoozed.memoId);
 			}
 		});
 
 		// Check regular reminders
 		const activeReminders = memosStore.memos.filter((m) => m.reminder?.enabled);
-		console.log(`${LOG_PREFIX} 📋 Active reminders: ${activeReminders.length}`);
-		activeReminders.forEach((m) => {
-			console.log(
-				`${LOG_PREFIX}   - "${m.title}" time=${m.reminder?.time}, type=${m.reminder?.type}, days=${JSON.stringify(m.reminder?.days)}, date=${m.reminder?.date}`
-			);
-		});
+		log.info(`📋 Active reminders: ${activeReminders.length}`);
 
 		memosStore.memos.forEach((memo) => {
 			if (!memo.reminder?.enabled) return;
 
 			const reminderTime = memo.reminder.time;
-			if (reminderTime !== currentTime) {
-				// 시간이 다르면 로그하지 않음 (너무 많은 로그 방지)
-				return;
-			}
+			if (reminderTime !== currentTime) return;
 
-			console.log(`${LOG_PREFIX} ⏱️ Time match! memo="${memo.title}", reminderTime=${reminderTime}, currentTime=${currentTime}`);
+			log.info(`⏱️ Time match: "${memo.title}" (${reminderTime})`);
 
-			// Check if already notified for this time today
+			// Check if already notified
 			const lastNotified = lastNotifiedMap[memo.id];
 			const notifyKey = `${todayDate}-${reminderTime}`;
 			if (lastNotified === notifyKey) {
-				console.log(`${LOG_PREFIX} ⏩ Already notified today: ${notifyKey}`);
+				log.debug(`⏩ Already notified: ${notifyKey}`);
 				return;
 			}
 
 			// Check day/date conditions
 			const isOnce = memo.reminder.type === 'once';
 			if (isOnce) {
-				// One-time reminder: check date
 				if (memo.reminder.date !== todayDate) {
-					console.log(`${LOG_PREFIX} ❌ Date mismatch: reminder=${memo.reminder.date}, today=${todayDate}`);
+					log.debug(`❌ Date mismatch: ${memo.reminder.date} != ${todayDate}`);
 					return;
 				}
-				console.log(`${LOG_PREFIX} ✅ Date match: ${todayDate}`);
+				log.info(`✅ Date match: ${todayDate}`);
 			} else {
-				// Repeating reminder: check day of week
 				if (!memo.reminder.days?.includes(today)) {
-					console.log(`${LOG_PREFIX} ❌ Day mismatch: days=${JSON.stringify(memo.reminder.days)}, today=${today}`);
+					log.debug(`❌ Day mismatch: ${JSON.stringify(memo.reminder.days)} !includes ${today}`);
 					return;
 				}
-				console.log(`${LOG_PREFIX} ✅ Day match: ${today}`);
+				log.info(`✅ Day match: ${today}`);
 			}
 
 			// Trigger notification
-			console.log(`${LOG_PREFIX} 🔔 TRIGGERING NOTIFICATION: "${memo.title}"`);
+			log.info(`🔔 TRIGGERING: "${memo.title}"`);
 			showNotification(memo);
 			lastNotifiedMap[memo.id] = notifyKey;
 			saveLastNotified();
 
-			// Auto-open URL if enabled
 			if (memo.url && memo.reminder.autoOpen) {
 				window.open(memo.url, '_blank');
 				memosStore.incrementOpenCount(memo.id);
 			}
 
-			// Disable one-time reminders after triggering
 			if (isOnce) {
-				console.log(`${LOG_PREFIX} 🔕 Disabling one-time reminder: "${memo.title}"`);
+				log.info(`🔕 Disabling one-time: "${memo.title}"`);
 				memosStore.update(memo.id, {
 					reminder: { ...memo.reminder, enabled: false }
 				});
@@ -259,10 +263,10 @@ function createNotificationStore() {
 	}
 
 	function showNotification(memo: Memo, isSnoozed = false): void {
-		console.log(`${LOG_PREFIX} 📢 showNotification called: "${memo.title}", isSnoozed=${isSnoozed}`);
+		log.info(`📢 showNotification: "${memo.title}", snoozed=${isSnoozed}`);
 
 		if (permission !== 'granted') {
-			console.log(`${LOG_PREFIX} ❌ Cannot show notification: permission=${permission}`);
+			log.warn(`❌ Permission denied: ${permission}`);
 			return;
 		}
 
@@ -275,16 +279,14 @@ function createNotificationStore() {
 			requireInteraction: true
 		};
 
-		console.log(`${LOG_PREFIX} Notification options:`, { title, ...options });
-
 		if ('serviceWorker' in navigator) {
-			console.log(`${LOG_PREFIX} Using Service Worker for notification`);
+			log.info('Using Service Worker');
 			navigator.serviceWorker.ready.then((registration) => {
-				console.log(`${LOG_PREFIX} SW ready, showing notification...`);
+				log.info('SW ready, showing...');
 				registration.showNotification(title, options);
 			});
 		} else {
-			console.log(`${LOG_PREFIX} Using native Notification API`);
+			log.info('Using native Notification API');
 			const notification = new Notification(title, options);
 			notification.onclick = () => {
 				window.focus();
@@ -344,14 +346,14 @@ function createNotificationStore() {
 	// Service Worker에 알림 스케줄 등록
 	async function registerRemindersToServiceWorker() {
 		if (!('serviceWorker' in navigator)) {
-			console.log(`${LOG_PREFIX} ❌ Service Worker not supported`);
+			log.warn('❌ Service Worker not supported');
 			return;
 		}
 
 		try {
 			const registration = await navigator.serviceWorker.ready;
 			if (!registration.active) {
-				console.log(`${LOG_PREFIX} ❌ No active Service Worker`);
+				log.warn('❌ No active Service Worker');
 				return;
 			}
 
@@ -370,16 +372,16 @@ function createNotificationStore() {
 					autoOpen: memo.reminder!.autoOpen
 				}));
 
-			console.log(`${LOG_PREFIX} 📤 Registering ${activeReminders.length} reminders to SW`);
+			log.info(`📤 Registering ${activeReminders.length} reminders to SW`);
 
 			registration.active.postMessage({
 				type: 'REGISTER_MEMO_REMINDERS',
 				reminders: activeReminders
 			});
 
-			console.log(`${LOG_PREFIX} ✅ Reminders registered to Service Worker`);
+			log.info('✅ Reminders registered to SW');
 		} catch (e) {
-			console.error(`${LOG_PREFIX} Failed to register reminders to SW:`, e);
+			log.error('Failed to register reminders to SW', e);
 		}
 	}
 
@@ -406,16 +408,16 @@ function createNotificationStore() {
 						autoOpen: memo.reminder.autoOpen
 					}
 				});
-				console.log(`${LOG_PREFIX} 📤 Updated reminder in SW: "${memo.title}"`);
+				log.info(`📤 Updated in SW: "${memo.title}"`);
 			} else {
 				registration.active.postMessage({
 					type: 'REMOVE_MEMO_REMINDER',
 					memoId: memo.id
 				});
-				console.log(`${LOG_PREFIX} 🗑️ Removed reminder from SW: "${memo.title}"`);
+				log.info(`🗑️ Removed from SW: "${memo.title}"`);
 			}
 		} catch (e) {
-			console.error(`${LOG_PREFIX} Failed to update reminder in SW:`, e);
+			log.error('Failed to update reminder in SW', e);
 		}
 	}
 
@@ -431,9 +433,9 @@ function createNotificationStore() {
 				type: 'REMOVE_MEMO_REMINDER',
 				memoId
 			});
-			console.log(`${LOG_PREFIX} 🗑️ Removed reminder from SW: memoId=${memoId}`);
+			log.info(`🗑️ Removed from SW: ${memoId}`);
 		} catch (e) {
-			console.error(`${LOG_PREFIX} Failed to remove reminder from SW:`, e);
+			log.error('Failed to remove reminder from SW', e);
 		}
 	}
 
@@ -462,7 +464,7 @@ function createNotificationStore() {
 				setTimeout(() => resolve(null), 3000);
 			});
 		} catch (e) {
-			console.error(`${LOG_PREFIX} Failed to get SW schedule status:`, e);
+			log.error('Failed to get SW schedule status', e);
 			return null;
 		}
 	}

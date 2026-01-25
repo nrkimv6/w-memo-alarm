@@ -28,8 +28,31 @@ interface ScheduledReminder {
 let scheduledReminders: ScheduledReminder[] = [];
 let reminderCheckInterval: ReturnType<typeof setInterval> | null = null;
 
-// 디버그 로그
-const SW_LOG = '[SW-MemoAlarm]';
+// 메인 스레드로 로그 전달 함수
+function swLog(level: 'info' | 'warn' | 'error', message: string, data?: unknown) {
+	const logMsg = `[SW] ${message}`;
+	if (level === 'error') {
+		console.error(logMsg, data ?? '');
+	} else if (level === 'warn') {
+		console.warn(logMsg, data ?? '');
+	} else {
+		console.log(logMsg, data ?? '');
+	}
+
+	// 메인 스레드의 모든 클라이언트에 로그 전달
+	sw.clients.matchAll().then((clients) => {
+		clients.forEach((client) => {
+			client.postMessage({
+				type: 'SW_LOG',
+				level,
+				source: 'SW',
+				message,
+				data,
+				timestamp: Date.now()
+			});
+		});
+	});
+}
 
 sw.addEventListener('install', (event) => {
 	event.waitUntil(
@@ -110,40 +133,38 @@ function checkScheduledReminders() {
 	const todayDate = now.toISOString().split('T')[0];
 	const notifyKey = `${todayDate}-${currentTime}`;
 
-	console.log(`${SW_LOG} 🕐 Checking reminders at ${currentTime} (${todayDate}, day=${today})`);
-	console.log(`${SW_LOG} 📋 Scheduled reminders: ${scheduledReminders.length}`);
+	swLog('info', `🕐 Checking at ${currentTime} (${todayDate}, day=${today})`);
+	swLog('info', `📋 Reminders: ${scheduledReminders.length}`);
 
 	scheduledReminders.forEach((reminder) => {
-		console.log(`${SW_LOG}   - "${reminder.title}" time=${reminder.time}, type=${reminder.type}`);
-
 		// 시간 체크
 		if (reminder.time !== currentTime) {
 			return;
 		}
 
-		console.log(`${SW_LOG} ⏱️ Time match: "${reminder.title}"`);
+		swLog('info', `⏱️ Time match: "${reminder.title}"`);
 
 		// 이미 발송된 알림인지 체크
 		if (reminder.lastNotified === notifyKey) {
-			console.log(`${SW_LOG} ⏩ Already notified: ${notifyKey}`);
+			swLog('info', `⏩ Already notified: ${notifyKey}`);
 			return;
 		}
 
 		// 날짜/요일 체크
 		if (reminder.type === 'once') {
 			if (reminder.date !== todayDate) {
-				console.log(`${SW_LOG} ❌ Date mismatch: ${reminder.date} !== ${todayDate}`);
+				swLog('info', `❌ Date mismatch: ${reminder.date} != ${todayDate}`);
 				return;
 			}
 		} else {
 			if (!reminder.days?.includes(today)) {
-				console.log(`${SW_LOG} ❌ Day mismatch: ${JSON.stringify(reminder.days)} not includes ${today}`);
+				swLog('info', `❌ Day mismatch: ${JSON.stringify(reminder.days)} !includes ${today}`);
 				return;
 			}
 		}
 
 		// 알림 발송!
-		console.log(`${SW_LOG} 🔔 TRIGGERING: "${reminder.title}"`);
+		swLog('info', `🔔 TRIGGERING: "${reminder.title}"`);
 		sw.registration.showNotification(reminder.title, {
 			body: reminder.body || '알림이 도착했습니다',
 			icon: '/favicon.png',
@@ -159,7 +180,7 @@ function checkScheduledReminders() {
 
 		// 일회성 알림은 제거
 		if (reminder.type === 'once') {
-			console.log(`${SW_LOG} 🗑️ Removing one-time reminder: "${reminder.title}"`);
+			swLog('info', `🗑️ Removing one-time: "${reminder.title}"`);
 			scheduledReminders = scheduledReminders.filter((r) => r.memoId !== reminder.memoId);
 		}
 	});
@@ -168,11 +189,11 @@ function checkScheduledReminders() {
 // 알림 체크 인터벌 시작
 function startReminderCheck() {
 	if (reminderCheckInterval) {
-		console.log(`${SW_LOG} Reminder check already running`);
+		swLog('info', 'Reminder check already running');
 		return;
 	}
 
-	console.log(`${SW_LOG} 🚀 Starting reminder check interval (60s)`);
+	swLog('info', '🚀 Starting reminder check (60s interval)');
 
 	// 매분 체크
 	reminderCheckInterval = setInterval(() => {
@@ -186,13 +207,13 @@ function startReminderCheck() {
 // 메시지 수신 (캐시 업데이트 및 테스트용)
 sw.addEventListener('message', (event) => {
 	if (event.data.type === 'SKIP_WAITING') {
-		console.log('[SW] SKIP_WAITING received, activating immediately');
+		swLog('info', 'SKIP_WAITING received');
 		sw.skipWaiting();
 	}
 
 	// 테스트 알림 (즉시)
 	if (event.data.type === 'TEST_NOTIFICATION') {
-		console.log('[SW] TEST_NOTIFICATION received');
+		swLog('info', 'TEST_NOTIFICATION received');
 		sw.registration.showNotification(event.data.title || '테스트 알림', {
 			body: event.data.body || '서비스 워커에서 보낸 테스트 알림입니다.',
 			icon: '/favicon.png',
@@ -207,9 +228,10 @@ sw.addEventListener('message', (event) => {
 	// 지연 알림 테스트 (백그라운드 테스트용)
 	if (event.data.type === 'DELAYED_NOTIFICATION') {
 		const delay = event.data.delay || 5000;
-		console.log(`[SW] DELAYED_NOTIFICATION received, will fire in ${delay}ms`);
+		swLog('info', `DELAYED_NOTIFICATION: ${delay}ms`);
 
 		setTimeout(() => {
+			swLog('info', `DELAYED firing after ${delay}ms`);
 			sw.registration.showNotification(event.data.title || '백그라운드 알림 테스트', {
 				body: event.data.body || `${delay / 1000}초 후 알림이 도착했습니다! 앱이 백그라운드에 있어도 작동합니다.`,
 				icon: '/favicon.png',
@@ -224,13 +246,10 @@ sw.addEventListener('message', (event) => {
 
 	// 메모 알림 스케줄 등록
 	if (event.data.type === 'REGISTER_MEMO_REMINDERS') {
-		console.log(`${SW_LOG} 📝 REGISTER_MEMO_REMINDERS received`);
+		swLog('info', '📝 REGISTER_MEMO_REMINDERS received');
 		const reminders = event.data.reminders as ScheduledReminder[];
 		scheduledReminders = reminders;
-		console.log(`${SW_LOG} Registered ${reminders.length} reminders`);
-		reminders.forEach((r) => {
-			console.log(`${SW_LOG}   - "${r.title}" at ${r.time} (${r.type})`);
-		});
+		swLog('info', `Registered ${reminders.length} reminders`);
 
 		// 체크 인터벌 시작
 		startReminderCheck();
@@ -238,7 +257,7 @@ sw.addEventListener('message', (event) => {
 
 	// 단일 알림 추가/갱신
 	if (event.data.type === 'UPDATE_MEMO_REMINDER') {
-		console.log(`${SW_LOG} 📝 UPDATE_MEMO_REMINDER received`);
+		swLog('info', '📝 UPDATE_MEMO_REMINDER');
 		const reminder = event.data.reminder as ScheduledReminder;
 
 		// 기존 알림 제거 후 추가
@@ -246,21 +265,21 @@ sw.addEventListener('message', (event) => {
 
 		if (reminder.time) {
 			scheduledReminders.push(reminder);
-			console.log(`${SW_LOG} Updated reminder: "${reminder.title}" at ${reminder.time}`);
+			swLog('info', `Updated: "${reminder.title}" at ${reminder.time}`);
 		} else {
-			console.log(`${SW_LOG} Removed reminder: memoId=${reminder.memoId}`);
+			swLog('info', `Removed: memoId=${reminder.memoId}`);
 		}
 	}
 
 	// 알림 제거
 	if (event.data.type === 'REMOVE_MEMO_REMINDER') {
-		console.log(`${SW_LOG} 🗑️ REMOVE_MEMO_REMINDER received: ${event.data.memoId}`);
+		swLog('info', `🗑️ REMOVE: ${event.data.memoId}`);
 		scheduledReminders = scheduledReminders.filter((r) => r.memoId !== event.data.memoId);
 	}
 
 	// 스케줄 상태 조회 (디버그용)
 	if (event.data.type === 'GET_SCHEDULED_REMINDERS') {
-		console.log(`${SW_LOG} 📊 GET_SCHEDULED_REMINDERS`);
+		swLog('info', '📊 GET_SCHEDULED_REMINDERS');
 		event.ports[0]?.postMessage({
 			reminders: scheduledReminders,
 			intervalRunning: !!reminderCheckInterval

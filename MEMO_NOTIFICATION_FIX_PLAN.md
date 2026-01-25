@@ -146,20 +146,37 @@ async function removeReminderFromServiceWorker(memoId: string) { /* ... */ }
 2. 등록된 알림 수와 Interval 실행 상태 확인
 3. "SW에 알림 스케줄 등록" 버튼 클릭
 
-### 3. 콘솔 로그 확인 (브라우저 개발자 도구)
-```
-[NotificationStore] 🚀 Initializing notification store...
-[NotificationStore] 📤 Registering X reminders to SW
-[SW-MemoAlarm] 📝 REGISTER_MEMO_REMINDERS received
-[SW-MemoAlarm] 🚀 Starting reminder check interval (60s)
-[SW-MemoAlarm] 🕐 Checking reminders at HH:MM
-```
+### 3. 앱 내 로그 뷰어 확인 (개발자 모드)
+1. "알림 로그 뷰어" 섹션에서 "펼치기" 클릭
+2. 필터 버튼으로 Notification/SW 로그 필터링
+3. 실시간 로그 확인:
+   - `[Notification] 🚀 Initializing...`
+   - `[SW] 📝 REGISTER_MEMO_REMINDERS`
+   - `[SW] 🕐 Checking at HH:MM`
+   - `[SW] 🔔 TRIGGERING: "메모 제목"`
 
 ### 4. 백그라운드 알림 테스트
 1. 메모에 1분 후 알림 설정 (예: 현재 시간 + 1분)
 2. "SW에 알림 스케줄 등록" 버튼 클릭
 3. 앱을 백그라운드로 전환 (탭 최소화 또는 다른 앱으로 전환)
 4. 1분 후 알림이 오면 성공!
+
+---
+
+## 현재 구현의 한계점
+
+### Service Worker setInterval의 한계
+현재 구현은 SW에서 `setInterval`을 사용하여 매분 알림을 체크합니다. 그러나:
+
+1. **SW Idle 종료**: 브라우저는 유휴 상태의 SW를 종료할 수 있음 (보통 30초~몇 분)
+2. **setInterval 중지**: SW가 종료되면 setInterval도 함께 중지됨
+3. **재시작 필요**: 사용자가 앱을 다시 열어야 SW가 재시작됨
+
+**현재 완화 방법**:
+- 앱 초기화 시 SW에 알림 스케줄 자동 등록
+- 개발자 모드에서 수동 등록 버튼 제공
+
+**완전한 해결을 위해서는 서버 측 FCM 푸시 구현 필요**
 
 ---
 
@@ -189,10 +206,11 @@ async function removeReminderFromServiceWorker(memoId: string) { /* ... */ }
 
 | 파일 | 변경 내용 |
 |------|----------|
-| `src/service-worker.ts` | 메모 알림 스케줄 저장/체크/발송 로직 추가 |
-| `src/lib/stores/notifications.svelte.ts` | SW 연동 함수 및 디버그 로그 추가 |
+| `src/service-worker.ts` | 메모 알림 스케줄 저장/체크/발송 로직 추가, 메인 스레드로 로그 전달 |
+| `src/lib/stores/notifications.svelte.ts` | SW 연동 함수 및 devLogStore 사용 |
 | `src/lib/stores/memos.svelte.ts` | 메모 CRUD 시 SW 동기화 호출 추가 |
-| `src/routes/settings/+page.svelte` | SW 스케줄 상태 확인 UI 추가 |
+| `src/lib/stores/devLogs.svelte.ts` | 개발자 모드 로그 저장소 (신규) |
+| `src/routes/settings/+page.svelte` | SW 스케줄 상태 + 앱 내 로그 뷰어 UI 추가 |
 
 ---
 
