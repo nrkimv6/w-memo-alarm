@@ -147,6 +147,31 @@
 
 ---
 
+## 버전 관리 (P0)
+> **참고**: `common/docs/plan/versioning-implementation.md`, `docs/VERSIONING.md`
+> **상태**: 대기 (공통 스크립트 완료 후 진행)
+> **초기 버전**: 0.1.0
+
+- [ ] **1. 공통 스크립트 복사**
+  - [ ] `common/scripts/bump-version.ps1` → 프로젝트 루트 복사
+
+- [ ] **2. config.ts 생성**
+  - [ ] `src/lib/config.ts` 생성
+    ```typescript
+    export const APP_VERSION = '0.1.0';
+    export const CACHE_VERSION = `memo-alarm-v${APP_VERSION}`;
+    ```
+
+- [ ] **3. 버전 파일 업데이트**
+  - [ ] `package.json` version → `0.1.0`
+  - [ ] `android/app/build.gradle` versionName → `"0.1.0"`, versionCode → `1`
+
+- [ ] **4. CHANGELOG.md 생성**
+  - [ ] 초기 버전 기록
+
+- [ ] **5. 설정 페이지에 버전 표시**
+  - [ ] `/settings` 페이지에 `v{APP_VERSION}` 표시
+
 ---
 
 ## 빌드 결과
