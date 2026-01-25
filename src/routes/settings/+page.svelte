@@ -2,8 +2,7 @@
 
 	import { Download, Upload, Trash2, Sun, Moon, Monitor, Bell, Cloud, LogIn, LogOut, Info, RefreshCw, Bug, BellRing, CheckCircle, XCircle, Smartphone, Radio } from 'lucide-svelte';
 	import Button from '$lib/components/ui/Button.svelte';
-	import { Header } from '$lib/components/layout';
-	import Footer from "$lib/components/Footer.svelte";
+		import Footer from "$lib/components/Footer.svelte";
 	import ConfirmDialog from '$lib/components/ui/ConfirmDialog.svelte';
 	import { memosStore } from '$lib/stores/memos.svelte';
 	import { themeStore } from '$lib/stores/theme.svelte';
@@ -467,8 +466,6 @@
 </script>
 
 <div class="min-h-screen">
-	<Header />
-
 	<!-- Header section -->
 	<div class="sticky top-14 z-20 bg-background/95 backdrop-blur-sm border-b border-border/50">
 		<div class="max-w-6xl mx-auto px-4 py-4">
