@@ -8,6 +8,7 @@ import { toastStore } from './toast.svelte';
 import { createMemoAlarm, updateMemoAlarm, deleteMemoAlarms } from '$lib/services/alarmSchedules';
 import { syncQueue } from '$lib/services/syncQueue';
 import { settingsStore } from './settings.svelte';
+import { notificationStore } from './notifications.svelte';
 
 const CACHE_KEY = 'memo-alarm-memos-cache';
 const INITIALIZED_KEY = 'memo-alarm-initialized';
@@ -392,7 +393,7 @@ function createMemosStore() {
 		memos = memos.map((m) => (m.localId === localId ? result : m));
 		saveCacheToStorage(memos);
 
-		// 알림 스케줄링 (네이티브: 로컬 알림, 웹: FCM 서버 알림)
+		// 알림 스케줄링 (네이티브: 로컬 알림, 웹: FCM 서버 알림 + SW)
 		if (result.reminder?.enabled) {
 			if (await isNative()) {
 				scheduleNotification(result);
@@ -404,6 +405,8 @@ function createMemosStore() {
 				} catch (alarmError) {
 					console.warn('[Alarms] Failed to create alarm:', alarmError);
 				}
+				// Service Worker에 알림 등록 (백그라운드 알림용)
+				notificationStore.updateReminderInServiceWorker(result);
 			}
 		}
 
@@ -484,6 +487,8 @@ function createMemosStore() {
 				updateMemoAlarm(authStore.user!.id, id, result.title, result.reminder).catch((alarmError) => {
 					console.warn('[Alarms] Failed to update alarm:', alarmError);
 				});
+				// Service Worker에 알림 갱신 (백그라운드 알림용)
+				notificationStore.updateReminderInServiceWorker(result);
 			}
 		}
 
@@ -500,11 +505,16 @@ function createMemosStore() {
 		// 알림 취소 (먼저 실행)
 		if (await isNative()) {
 			cancelNotification(id);
-		} else if (authStore.isAuthenticated) {
-			// FCM 서버 알림 삭제 (백그라운드)
-			deleteMemoAlarms(id).catch((alarmError) => {
-				console.warn('[Alarms] Failed to delete alarms:', alarmError);
-			});
+		} else {
+			// Service Worker에서 알림 제거
+			notificationStore.removeReminderFromServiceWorker(id);
+
+			if (authStore.isAuthenticated) {
+				// FCM 서버 알림 삭제 (백그라운드)
+				deleteMemoAlarms(id).catch((alarmError) => {
+					console.warn('[Alarms] Failed to delete alarms:', alarmError);
+				});
+			}
 		}
 
 		// 1. 즉시 로컬에서 제거 (낙관적 업데이트)
