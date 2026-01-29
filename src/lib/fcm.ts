@@ -95,7 +95,7 @@ export async function registerFCMToken(userId: string): Promise<FCMToken | null>
 		console.log('FCM token received:', fcmToken);
 
 		// 4. Supabase에 저장
-		const { error } = await supabase.from('user_devices').upsert(
+		const { error } = await supabase.from('ma_user_devices').upsert(
 			{
 				user_id: userId,
 				app_name: 'memo-alarm',
@@ -157,7 +157,7 @@ export async function deactivateFCMToken(userId: string, token: string): Promise
 
 	try {
 		const { error } = await supabase
-			.from('user_devices')
+			.from('ma_user_devices')
 			.update({ is_active: false, updated_at: new Date().toISOString() })
 			.eq('user_id', userId)
 			.eq('fcm_token', token);
@@ -184,7 +184,7 @@ export async function deactivateAllFCMTokens(userId: string): Promise<void> {
 
 	try {
 		const { error } = await supabase
-			.from('user_devices')
+			.from('ma_user_devices')
 			.update({ is_active: false, updated_at: new Date().toISOString() })
 			.eq('user_id', userId)
 			.eq('app_name', 'memo-alarm');

@@ -51,7 +51,7 @@ export async function createMemoAlarm(
 	};
 
 	const { data, error } = await supabase
-		.from('alarm_schedules')
+		.from('ma_alarm_schedules')
 		.insert(schedule)
 		.select()
 		.single();
@@ -94,7 +94,7 @@ export async function deleteMemoAlarms(memoId: string): Promise<void> {
 
 	// metadata에 memo_id가 포함된 알림 삭제
 	const { error } = await supabase
-		.from('alarm_schedules')
+		.from('ma_alarm_schedules')
 		.delete()
 		.eq('app_name', 'memo-alarm')
 		.contains('metadata', { memo_id: memoId });
@@ -114,7 +114,7 @@ export async function updateUserAlarmTime(userId: string, newAlarmTime: string):
 	}
 
 	const { error } = await supabase
-		.from('alarm_schedules')
+		.from('ma_alarm_schedules')
 		.update({
 			alarm_time: newAlarmTime,
 			updated_at: new Date().toISOString()

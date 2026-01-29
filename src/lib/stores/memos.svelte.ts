@@ -191,7 +191,7 @@ function createMemosStore() {
 
 		try {
 			const { data, error } = await supabase
-				.from('memos')
+				.from('ma_memos')
 				.select('*')
 				.eq('user_id', authStore.user.id)
 				.order('created_at', { ascending: false });
@@ -240,7 +240,7 @@ function createMemosStore() {
 				{
 					event: 'INSERT',
 					schema: 'public',
-					table: 'memos',
+					table: 'ma_memos',
 					filter: `user_id=eq.${authStore.user.id}`
 				},
 				(payload) => {
@@ -264,7 +264,7 @@ function createMemosStore() {
 				{
 					event: 'UPDATE',
 					schema: 'public',
-					table: 'memos',
+					table: 'ma_memos',
 					filter: `user_id=eq.${authStore.user.id}`
 				},
 				(payload) => {
@@ -279,7 +279,7 @@ function createMemosStore() {
 				{
 					event: 'DELETE',
 					schema: 'public',
-					table: 'memos',
+					table: 'ma_memos',
 					filter: `user_id=eq.${authStore.user.id}`
 				},
 				(payload) => {
@@ -371,7 +371,7 @@ function createMemosStore() {
 		newMemo.user_id = authStore.user!.id;
 
 		const { data: inserted, error } = await supabase
-			.from('memos')
+			.from('ma_memos')
 			.insert(newMemo)
 			.select()
 			.single();
@@ -443,7 +443,7 @@ function createMemosStore() {
 		const updateData = memoToSupabase(changes);
 
 		const { data, error } = await supabase
-			.from('memos')
+			.from('ma_memos')
 			.update(updateData)
 			.eq('id', id)
 			.eq('version', originalMemo.version) // 버전 기반 충돌 감지
@@ -517,7 +517,7 @@ function createMemosStore() {
 		}
 
 		// 2. 백그라운드에서 서버 삭제
-		const { error } = await supabase.from('memos').delete().eq('id', id);
+		const { error } = await supabase.from('ma_memos').delete().eq('id', id);
 
 		if (error) {
 			console.error('Failed to delete memo:', error);
@@ -618,7 +618,7 @@ function createMemosStore() {
 			user_id: authStore.user!.id
 		}));
 
-		const { error } = await supabase.from('memos').insert(memosToInsert);
+		const { error } = await supabase.from('ma_memos').insert(memosToInsert);
 
 		if (error) {
 			console.error('Failed to import memos:', error);

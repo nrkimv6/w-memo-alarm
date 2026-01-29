@@ -89,7 +89,7 @@ function createFoldersStore() {
 
 		try {
 			const { data, error } = await supabase
-				.from('folders')
+				.from('ma_folders')
 				.select('*')
 				.eq('user_id', authStore.user.id)
 				.order('order', { ascending: true });
@@ -118,7 +118,7 @@ function createFoldersStore() {
 				{
 					event: 'INSERT',
 					schema: 'public',
-					table: 'folders',
+					table: 'ma_folders',
 					filter: `user_id=eq.${authStore.user.id}`
 				},
 				(payload) => {
@@ -132,7 +132,7 @@ function createFoldersStore() {
 				{
 					event: 'UPDATE',
 					schema: 'public',
-					table: 'folders',
+					table: 'ma_folders',
 					filter: `user_id=eq.${authStore.user.id}`
 				},
 				(payload) => {
@@ -146,7 +146,7 @@ function createFoldersStore() {
 				{
 					event: 'DELETE',
 					schema: 'public',
-					table: 'folders',
+					table: 'ma_folders',
 					filter: `user_id=eq.${authStore.user.id}`
 				},
 				(payload) => {
@@ -180,7 +180,7 @@ function createFoldersStore() {
 		newFolder.user_id = authStore.user!.id;
 
 		const { data: inserted, error } = await supabase
-			.from('folders')
+			.from('ma_folders')
 			.insert(newFolder)
 			.select()
 			.single();
@@ -214,7 +214,7 @@ function createFoldersStore() {
 		const updateData = folderToSupabase(data);
 
 		const { data: result, error } = await supabase
-			.from('folders')
+			.from('ma_folders')
 			.update(updateData)
 			.eq('id', id)
 			.select()
@@ -239,7 +239,7 @@ function createFoldersStore() {
 			return true;
 		}
 
-		const { error } = await supabase.from('folders').delete().eq('id', id);
+		const { error } = await supabase.from('ma_folders').delete().eq('id', id);
 
 		if (error) {
 			console.error('Failed to delete folder:', error);
@@ -270,7 +270,7 @@ function createFoldersStore() {
 		}));
 
 		for (const { id, order } of updates) {
-			await supabase.from('folders').update({ order }).eq('id', id);
+			await supabase.from('ma_folders').update({ order }).eq('id', id);
 		}
 	}
 
