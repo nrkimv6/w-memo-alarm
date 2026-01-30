@@ -1,6 +1,7 @@
 <script lang="ts">
 
 	import { Download, Upload, Trash2, Sun, Moon, Monitor, Bell, Cloud, LogIn, LogOut, Info, RefreshCw, Bug, BellRing, CheckCircle, XCircle, Smartphone, Radio, FileText } from 'lucide-svelte';
+	import { APP_VERSION } from '$lib/config';
 	import Button from '$lib/components/ui/Button.svelte';
 		import Footer from "$lib/components/Footer.svelte";
 	import ConfirmDialog from '$lib/components/ui/ConfirmDialog.svelte';
@@ -790,15 +791,11 @@
 					class="font-medium select-none cursor-pointer hover:text-primary transition-colors"
 					title={versionTapCount > 0 ? `${10 - versionTapCount}번 더 탭하세요` : ''}
 				>
-					1.0.0
+					v{APP_VERSION}
 					{#if versionTapCount > 0 && versionTapCount < 10}
 						<span class="text-xs text-muted-foreground ml-1">({versionTapCount}/10)</span>
 					{/if}
 				</button>
-			</div>
-			<div class="flex justify-between items-center text-sm">
-				<span class="text-muted-foreground">빌드</span>
-				<span class="font-medium">2026.01.09</span>
 			</div>
 
 			<!-- 앱 업데이트 확인 -->
