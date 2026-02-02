@@ -363,19 +363,24 @@ function createNotificationStore() {
 			}
 
 			// 활성화된 알림만 필터링
+			// NOTE: Svelte 5의 $state는 Proxy 객체를 사용하므로 postMessage 전송 전 plain object로 변환 필요
 			const activeReminders = memosStore.memos
 				.filter((memo) => memo.reminder?.enabled)
-				.map((memo) => ({
-					memoId: memo.id,
-					title: memo.title,
-					body: memo.content || '알림이 도착했습니다',
-					time: memo.reminder!.time,
-					type: memo.reminder!.type,
-					days: memo.reminder!.days,
-					date: memo.reminder!.date,
-					url: memo.url,
-					autoOpen: memo.reminder!.autoOpen
-				}));
+				.map((memo) => {
+					const reminder = {
+						memoId: memo.id,
+						title: memo.title,
+						body: memo.content || '알림이 도착했습니다',
+						time: memo.reminder!.time,
+						type: memo.reminder!.type,
+						days: memo.reminder!.days,
+						date: memo.reminder!.date,
+						url: memo.url,
+						autoOpen: memo.reminder!.autoOpen
+					};
+					// Proxy 객체를 plain object로 변환 (DataCloneError 방지)
+					return JSON.parse(JSON.stringify(reminder));
+				});
 
 			log.info(`📤 Registering ${activeReminders.length} reminders to SW`);
 			if (activeReminders.length > 0) {
@@ -406,19 +411,21 @@ function createNotificationStore() {
 			if (!registration.active) return;
 
 			if (memo.reminder?.enabled) {
+				// Proxy 객체를 plain object로 변환 (DataCloneError 방지)
+				const reminderData = JSON.parse(JSON.stringify({
+					memoId: memo.id,
+					title: memo.title,
+					body: memo.content || '알림이 도착했습니다',
+					time: memo.reminder.time,
+					type: memo.reminder.type,
+					days: memo.reminder.days,
+					date: memo.reminder.date,
+					url: memo.url,
+					autoOpen: memo.reminder.autoOpen
+				}));
 				registration.active.postMessage({
 					type: 'UPDATE_MEMO_REMINDER',
-					reminder: {
-						memoId: memo.id,
-						title: memo.title,
-						body: memo.content || '알림이 도착했습니다',
-						time: memo.reminder.time,
-						type: memo.reminder.type,
-						days: memo.reminder.days,
-						date: memo.reminder.date,
-						url: memo.url,
-						autoOpen: memo.reminder.autoOpen
-					}
+					reminder: reminderData
 				});
 				log.info(`📤 Updated in SW: "${memo.title}"`);
 			} else {
