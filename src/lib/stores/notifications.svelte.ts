@@ -120,12 +120,7 @@ function createNotificationStore() {
 		startBackgroundCheck();
 		initialized = true;
 		log.info('✅ Notification store initialized');
-
-		// Service Worker에 알림 스케줄 등록 (약간 지연 후 - 메모 로드 대기)
-		setTimeout(() => {
-			log.info('📤 Registering reminders to Service Worker...');
-			registerRemindersToServiceWorker();
-		}, 2000);
+		// NOTE: SW registration is now called explicitly from +layout.svelte after memosStore.init() completes
 	}
 
 	function startBackgroundCheck() {

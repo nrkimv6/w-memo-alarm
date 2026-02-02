@@ -71,6 +71,9 @@
 		filterStore.init();
 		foldersStore.init();
 
+		// 메모 로드 완료 후 Service Worker에 알림 스케줄 등록
+		notificationStore.registerRemindersToServiceWorker();
+
 		// FCM 등록
 		initFCM();
 
