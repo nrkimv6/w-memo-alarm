@@ -120,12 +120,7 @@ function createNotificationStore() {
 		startBackgroundCheck();
 		initialized = true;
 		log.info('✅ Notification store initialized');
-
-		// Service Worker에 알림 스케줄 등록 (약간 지연 후 - 메모 로드 대기)
-		setTimeout(() => {
-			log.info('📤 Registering reminders to Service Worker...');
-			registerRemindersToServiceWorker();
-		}, 2000);
+		// NOTE: SW registration is now called explicitly from +layout.svelte after memosStore.init() completes
 	}
 
 	function startBackgroundCheck() {
@@ -345,43 +340,65 @@ function createNotificationStore() {
 
 	// Service Worker에 알림 스케줄 등록
 	async function registerRemindersToServiceWorker() {
+		log.info('🔄 registerRemindersToServiceWorker() called');
+
 		if (!('serviceWorker' in navigator)) {
 			log.warn('❌ Service Worker not supported');
 			return;
 		}
 
+		// 디버그: 현재 memos 상태 체크
+		log.info(`📊 memosStore.memos.length = ${memosStore.memos.length}`);
+		log.info(`📊 memosStore.initialized = ${memosStore.initialized}`);
+		log.info(`📊 memosStore.loading = ${memosStore.loading}`);
+
 		try {
+			log.info('⏳ Waiting for SW ready...');
 			const registration = await navigator.serviceWorker.ready;
+			log.info(`✅ SW ready, state: ${registration.active?.state}`);
+
 			if (!registration.active) {
 				log.warn('❌ No active Service Worker');
 				return;
 			}
 
 			// 활성화된 알림만 필터링
+			// NOTE: Svelte 5의 $state는 Proxy 객체를 사용하므로 postMessage 전송 전 plain object로 변환 필요
 			const activeReminders = memosStore.memos
 				.filter((memo) => memo.reminder?.enabled)
-				.map((memo) => ({
-					memoId: memo.id,
-					title: memo.title,
-					body: memo.content || '알림이 도착했습니다',
-					time: memo.reminder!.time,
-					type: memo.reminder!.type,
-					days: memo.reminder!.days,
-					date: memo.reminder!.date,
-					url: memo.url,
-					autoOpen: memo.reminder!.autoOpen
-				}));
+				.map((memo) => {
+					const reminder = {
+						memoId: memo.id,
+						title: memo.title,
+						body: memo.content || '알림이 도착했습니다',
+						time: memo.reminder!.time,
+						type: memo.reminder!.type,
+						days: memo.reminder!.days,
+						date: memo.reminder!.date,
+						url: memo.url,
+						autoOpen: memo.reminder!.autoOpen
+					};
+					// Proxy 객체를 plain object로 변환 (DataCloneError 방지)
+					return JSON.parse(JSON.stringify(reminder));
+				});
 
 			log.info(`📤 Registering ${activeReminders.length} reminders to SW`);
+			if (activeReminders.length > 0) {
+				log.info(`📋 First reminder: ${activeReminders[0].title} at ${activeReminders[0].time}`);
+			}
 
 			registration.active.postMessage({
 				type: 'REGISTER_MEMO_REMINDERS',
 				reminders: activeReminders
 			});
 
-			log.info('✅ Reminders registered to SW');
+			log.info('✅ postMessage sent to SW');
 		} catch (e) {
-			log.error('Failed to register reminders to SW', e);
+			// 에러 상세 출력
+			const errorMsg = e instanceof Error ? e.message : JSON.stringify(e);
+			const errorStack = e instanceof Error ? e.stack : 'no stack';
+			log.error(`Failed to register reminders to SW: ${errorMsg}`);
+			log.error(`Stack: ${errorStack}`);
 		}
 	}
 
@@ -394,19 +411,21 @@ function createNotificationStore() {
 			if (!registration.active) return;
 
 			if (memo.reminder?.enabled) {
+				// Proxy 객체를 plain object로 변환 (DataCloneError 방지)
+				const reminderData = JSON.parse(JSON.stringify({
+					memoId: memo.id,
+					title: memo.title,
+					body: memo.content || '알림이 도착했습니다',
+					time: memo.reminder.time,
+					type: memo.reminder.type,
+					days: memo.reminder.days,
+					date: memo.reminder.date,
+					url: memo.url,
+					autoOpen: memo.reminder.autoOpen
+				}));
 				registration.active.postMessage({
 					type: 'UPDATE_MEMO_REMINDER',
-					reminder: {
-						memoId: memo.id,
-						title: memo.title,
-						body: memo.content || '알림이 도착했습니다',
-						time: memo.reminder.time,
-						type: memo.reminder.type,
-						days: memo.reminder.days,
-						date: memo.reminder.date,
-						url: memo.url,
-						autoOpen: memo.reminder.autoOpen
-					}
+					reminder: reminderData
 				});
 				log.info(`📤 Updated in SW: "${memo.title}"`);
 			} else {
