@@ -71,6 +71,15 @@
 		filterStore.init();
 		foldersStore.init();
 
+		// 디버그: memosStore.init() 완료 후 상태 확인
+		console.log('[Layout] memosStore.init() completed');
+		console.log('[Layout] memos count:', memosStore.memos.length);
+		console.log('[Layout] memos with reminders:', memosStore.memos.filter(m => m.reminder?.enabled).length);
+
+		// 메모 로드 완료 후 Service Worker에 알림 스케줄 등록
+		console.log('[Layout] Calling registerRemindersToServiceWorker...');
+		notificationStore.registerRemindersToServiceWorker();
+
 		// FCM 등록
 		initFCM();
 

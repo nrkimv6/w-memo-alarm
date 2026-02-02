@@ -120,12 +120,7 @@ function createNotificationStore() {
 		startBackgroundCheck();
 		initialized = true;
 		log.info('✅ Notification store initialized');
-
-		// Service Worker에 알림 스케줄 등록 (약간 지연 후 - 메모 로드 대기)
-		setTimeout(() => {
-			log.info('📤 Registering reminders to Service Worker...');
-			registerRemindersToServiceWorker();
-		}, 2000);
+		// NOTE: SW registration is now called explicitly from +layout.svelte after memosStore.init() completes
 	}
 
 	function startBackgroundCheck() {
@@ -345,13 +340,23 @@ function createNotificationStore() {
 
 	// Service Worker에 알림 스케줄 등록
 	async function registerRemindersToServiceWorker() {
+		log.info('🔄 registerRemindersToServiceWorker() called');
+
 		if (!('serviceWorker' in navigator)) {
 			log.warn('❌ Service Worker not supported');
 			return;
 		}
 
+		// 디버그: 현재 memos 상태 체크
+		log.info(`📊 memosStore.memos.length = ${memosStore.memos.length}`);
+		log.info(`📊 memosStore.initialized = ${memosStore.initialized}`);
+		log.info(`📊 memosStore.loading = ${memosStore.loading}`);
+
 		try {
+			log.info('⏳ Waiting for SW ready...');
 			const registration = await navigator.serviceWorker.ready;
+			log.info(`✅ SW ready, state: ${registration.active?.state}`);
+
 			if (!registration.active) {
 				log.warn('❌ No active Service Worker');
 				return;
@@ -373,15 +378,22 @@ function createNotificationStore() {
 				}));
 
 			log.info(`📤 Registering ${activeReminders.length} reminders to SW`);
+			if (activeReminders.length > 0) {
+				log.info(`📋 First reminder: ${activeReminders[0].title} at ${activeReminders[0].time}`);
+			}
 
 			registration.active.postMessage({
 				type: 'REGISTER_MEMO_REMINDERS',
 				reminders: activeReminders
 			});
 
-			log.info('✅ Reminders registered to SW');
+			log.info('✅ postMessage sent to SW');
 		} catch (e) {
-			log.error('Failed to register reminders to SW', e);
+			// 에러 상세 출력
+			const errorMsg = e instanceof Error ? e.message : JSON.stringify(e);
+			const errorStack = e instanceof Error ? e.stack : 'no stack';
+			log.error(`Failed to register reminders to SW: ${errorMsg}`);
+			log.error(`Stack: ${errorStack}`);
 		}
 	}
 
