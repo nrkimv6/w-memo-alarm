@@ -199,3 +199,63 @@ export async function deactivateAllFCMTokens(userId: string): Promise<void> {
 		console.error('FCM tokens deactivation failed:', error);
 	}
 }
+
+/**
+ * 비활성화된 토큰이 있는지 확인
+ * 서버에서 NotRegistered 에러로 비활성화된 토큰이 있으면 true 반환
+ */
+export async function hasDeactivatedToken(userId: string): Promise<boolean> {
+	if (!supabase) {
+		return false;
+	}
+
+	try {
+		const { data, error } = await supabase
+			.from('user_devices')
+			.select('id, is_active, updated_at')
+			.eq('user_id', userId)
+			.eq('app_name', 'memo-alarm')
+			.eq('is_active', false);
+
+		if (error) {
+			console.error('Failed to check deactivated tokens:', error);
+			return false;
+		}
+
+		// 비활성화된 토큰이 있으면 true
+		return data && data.length > 0;
+	} catch (error) {
+		console.error('Error checking deactivated tokens:', error);
+		return false;
+	}
+}
+
+/**
+ * 비활성화된 토큰 삭제 후 새 토큰 등록
+ * 사용자가 "알림 재설정"을 선택했을 때 호출
+ */
+export async function resetFCMToken(userId: string): Promise<FCMToken | null> {
+	if (!supabase) {
+		return null;
+	}
+
+	try {
+		// 1. 기존 비활성화된 토큰 삭제
+		const { error: deleteError } = await supabase
+			.from('user_devices')
+			.delete()
+			.eq('user_id', userId)
+			.eq('app_name', 'memo-alarm')
+			.eq('is_active', false);
+
+		if (deleteError) {
+			console.error('Failed to delete deactivated tokens:', deleteError);
+		}
+
+		// 2. 새 토큰 등록
+		return await registerFCMToken(userId);
+	} catch (error) {
+		console.error('Failed to reset FCM token:', error);
+		return null;
+	}
+}
