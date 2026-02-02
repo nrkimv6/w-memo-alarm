@@ -14,6 +14,7 @@ const ASSETS = [...build, ...files];
 // 메모 알림 스케줄 저장소 (Service Worker 메모리)
 interface ScheduledReminder {
 	memoId: string;
+	reminderId?: string; // 다중 알림 지원용
 	title: string;
 	body: string;
 	time: string; // HH:MM
@@ -125,6 +126,44 @@ sw.addEventListener('push', (event) => {
 	);
 });
 
+// 단일 알림 표시
+function showSingleNotification(reminder: ScheduledReminder) {
+	sw.registration.showNotification(reminder.title, {
+		body: reminder.body || '알림이 도착했습니다',
+		icon: '/favicon.png',
+		badge: '/favicon.png',
+		tag: `memo-${reminder.memoId}`,
+		data: {
+			memoId: reminder.memoId,
+			url: reminder.url || '/',
+			type: 'single'
+		},
+		vibrate: [200, 100, 200],
+		requireInteraction: true
+	});
+}
+
+// 병합 알림 표시 (같은 시간에 여러 알림이 있을 때)
+function showMergedNotification(reminders: ScheduledReminder[], time: string) {
+	const titles = reminders.map(r => `• ${r.title}`).join('\n');
+	const memoIds = reminders.map(r => r.memoId);
+
+	sw.registration.showNotification(`${reminders.length}개의 메모 알림`, {
+		body: titles,
+		icon: '/favicon.png',
+		badge: '/favicon.png',
+		tag: `memo-batch-${time}`,
+		data: {
+			memoIds,
+			url: '/',
+			type: 'merged',
+			time
+		},
+		vibrate: [200, 100, 200],
+		requireInteraction: true
+	});
+}
+
 // 메모 알림 체크 함수
 function checkScheduledReminders() {
 	const now = new Date();
@@ -135,6 +174,9 @@ function checkScheduledReminders() {
 
 	swLog('info', `🕐 Checking at ${currentTime} (${todayDate}, day=${today})`);
 	swLog('info', `📋 Reminders: ${scheduledReminders.length}`);
+
+	// 발송할 알림 수집
+	const remindersToNotify: ScheduledReminder[] = [];
 
 	scheduledReminders.forEach((reminder) => {
 		// 시간 체크
@@ -163,17 +205,8 @@ function checkScheduledReminders() {
 			}
 		}
 
-		// 알림 발송!
-		swLog('info', `🔔 TRIGGERING: "${reminder.title}"`);
-		sw.registration.showNotification(reminder.title, {
-			body: reminder.body || '알림이 도착했습니다',
-			icon: '/favicon.png',
-			badge: '/favicon.png',
-			tag: `memo-${reminder.memoId}`,
-			data: { memoId: reminder.memoId, url: reminder.url || '/' },
-			vibrate: [200, 100, 200],
-			requireInteraction: true
-		});
+		// 발송 목록에 추가
+		remindersToNotify.push(reminder);
 
 		// 발송 기록
 		reminder.lastNotified = notifyKey;
@@ -181,9 +214,29 @@ function checkScheduledReminders() {
 		// 일회성 알림은 제거
 		if (reminder.type === 'once') {
 			swLog('info', `🗑️ Removing one-time: "${reminder.title}"`);
-			scheduledReminders = scheduledReminders.filter((r) => r.memoId !== reminder.memoId);
+			scheduledReminders = scheduledReminders.filter((r) => {
+				if (r.reminderId && reminder.reminderId) {
+					return r.reminderId !== reminder.reminderId;
+				}
+				return r.memoId !== reminder.memoId;
+			});
 		}
 	});
+
+	// 알림 발송 (병합 처리)
+	if (remindersToNotify.length === 0) {
+		return;
+	}
+
+	if (remindersToNotify.length === 1) {
+		// 단일 알림
+		swLog('info', `🔔 TRIGGERING single: "${remindersToNotify[0].title}"`);
+		showSingleNotification(remindersToNotify[0]);
+	} else {
+		// 병합 알림
+		swLog('info', `🔔 TRIGGERING merged: ${remindersToNotify.length} reminders`);
+		showMergedNotification(remindersToNotify, currentTime);
+	}
 }
 
 // 알림 체크 인터벌 시작
@@ -291,7 +344,18 @@ sw.addEventListener('message', (event) => {
 sw.addEventListener('notificationclick', (event) => {
 	event.notification.close();
 
-	const url = event.notification.data?.url || '/';
+	const data = event.notification.data;
+	let url = '/';
+
+	if (data?.type === 'merged') {
+		// 병합 알림: 홈으로 이동
+		url = '/';
+		swLog('info', `📱 Merged notification clicked, navigating to home`);
+	} else {
+		// 단일 알림: 해당 URL로 이동
+		url = data?.url || '/';
+		swLog('info', `📱 Single notification clicked: ${url}`);
+	}
 
 	event.waitUntil(
 		sw.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {

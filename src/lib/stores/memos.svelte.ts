@@ -1,4 +1,4 @@
-import type { Memo, MemoCreate, MemoUpdate, SyncStatus } from '$lib/types/memo';
+import type { Memo, MemoCreate, MemoUpdate, SyncStatus, Reminder } from '$lib/types/memo';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { browser } from '$app/environment';
 import { supabase } from '$lib/services/supabase';
@@ -50,6 +50,59 @@ function generateLocalId(): string {
 	return `local_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 }
 
+function generateReminderId(): string {
+	return `rem_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+}
+
+// 기존 단일 reminder를 reminders 배열로 마이그레이션
+function migrateToMultipleReminders(memo: Memo): Memo {
+	// 이미 reminders가 있으면 스킵
+	if (memo.reminders && memo.reminders.length > 0) {
+		return memo;
+	}
+
+	// reminder가 있으면 reminders로 변환
+	if (memo.reminder) {
+		return {
+			...memo,
+			reminders: [{
+				...memo.reminder,
+				id: memo.reminder.id || generateReminderId(),
+				isDefault: memo.reminder.isDefault ?? true
+			}],
+			reminder: undefined // 기존 필드 제거
+		};
+	}
+
+	return memo;
+}
+
+// 메모의 알림 목록 가져오기 (하위 호환성 지원)
+function getRemindersFromMemo(memo: Memo): Reminder[] {
+	if (memo.reminders && memo.reminders.length > 0) {
+		return memo.reminders;
+	}
+	if (memo.reminder) {
+		return [{
+			...memo.reminder,
+			id: memo.reminder.id || generateReminderId()
+		}];
+	}
+	return [];
+}
+
+// 기본 알림 가져오기
+function getDefaultReminderFromMemo(memo: Memo): Reminder | undefined {
+	const reminders = getRemindersFromMemo(memo);
+	return reminders.find(r => r.isDefault);
+}
+
+// 추가 알림 목록 가져오기
+function getAdditionalRemindersFromMemo(memo: Memo): Reminder[] {
+	const reminders = getRemindersFromMemo(memo);
+	return reminders.filter(r => !r.isDefault);
+}
+
 // localStorage 캐시 (오프라인 폴백용)
 function loadCacheFromStorage(): Memo[] {
 	if (!browser) return [];
@@ -72,7 +125,7 @@ function saveCacheToStorage(memos: Memo[]): void {
 
 // Supabase 타입 변환 함수
 function supabaseToMemo(row: any): Memo {
-	return {
+	const memo: Memo = {
 		id: row.id,
 		title: row.title,
 		content: row.content || '',
@@ -86,10 +139,13 @@ function supabaseToMemo(row: any): Memo {
 		emoji: row.emoji,
 		openCount: row.open_count || 0,
 		reminder: row.reminder,
+		reminders: row.reminders,
 		folderId: row.folder_id,
 		checklist: row.checklist,
 		version: row.version || 1
 	};
+	// 자동 마이그레이션: reminder → reminders
+	return migrateToMultipleReminders(memo);
 }
 
 function memoToSupabase(memo: Partial<Memo>): any {
@@ -105,6 +161,7 @@ function memoToSupabase(memo: Partial<Memo>): any {
 	if (memo.emoji !== undefined) result.emoji = memo.emoji;
 	if (memo.openCount !== undefined) result.open_count = memo.openCount;
 	if (memo.reminder !== undefined) result.reminder = memo.reminder;
+	if (memo.reminders !== undefined) result.reminders = memo.reminders;
 	if (memo.folderId !== undefined) result.folder_id = memo.folderId;
 	if (memo.checklist !== undefined) result.checklist = memo.checklist;
 	return result;
@@ -300,10 +357,12 @@ function createMemosStore() {
 		if (!reminder && settingsStore.settings.autoReminderOnCreate) {
 			const defaultReminder = settingsStore.getDefaultReminder();
 			reminder = {
+				id: generateReminderId(),
 				enabled: defaultReminder.enabled,
 				time: defaultReminder.time,
 				days: defaultReminder.days,
 				autoOpen: defaultReminder.autoOpen,
+				type: 'repeat',
 				isDefault: true // 기본 알림 사용
 			};
 		}
@@ -667,26 +726,99 @@ function createMemosStore() {
 	}
 
 	async function updateDefaultReminderMemos(newTime: string, newDays: number[], newAutoOpen: boolean): Promise<void> {
-		// isDefault가 true인 메모들을 찾아서 일괄 업데이트
-		const defaultReminderMemos = memos.filter((m) => m.reminder?.isDefault === true);
+		// isDefault가 true인 알림이 있는 메모들을 찾아서 일괄 업데이트
+		const memosWithDefaultReminder = memos.filter((m) => {
+			const reminders = getRemindersFromMemo(m);
+			return reminders.some(r => r.isDefault === true);
+		});
 
-		if (defaultReminderMemos.length === 0) {
+		if (memosWithDefaultReminder.length === 0) {
 			return;
 		}
 
 		// 각 메모를 업데이트 (로컬 + 서버)
-		for (const memo of defaultReminderMemos) {
-			const updatedReminder = {
-				...memo.reminder!,
-				time: newTime,
-				days: newDays,
-				autoOpen: newAutoOpen
-			};
+		for (const memo of memosWithDefaultReminder) {
+			const reminders = getRemindersFromMemo(memo);
+			const updatedReminders = reminders.map(r => {
+				if (r.isDefault) {
+					return {
+						...r,
+						time: newTime,
+						days: newDays,
+						autoOpen: newAutoOpen
+					};
+				}
+				return r;
+			});
 
-			await update(memo.id, { reminder: updatedReminder }, { silent: true });
+			await update(memo.id, { reminders: updatedReminders }, { silent: true });
 		}
 
-		toastStore.success(`${defaultReminderMemos.length}개 메모의 알림 시간이 변경되었습니다.`);
+		toastStore.success(`${memosWithDefaultReminder.length}개 메모의 알림 시간이 변경되었습니다.`);
+	}
+
+	// 알림 추가
+	async function addReminder(memoId: string, reminder: Omit<Reminder, 'id'>): Promise<boolean> {
+		const memo = memos.find(m => m.id === memoId);
+		if (!memo) return false;
+
+		const newReminder: Reminder = {
+			...reminder,
+			id: generateReminderId()
+		};
+
+		const currentReminders = getRemindersFromMemo(memo);
+		const result = await update(memoId, {
+			reminders: [...currentReminders, newReminder]
+		});
+
+		return !!result;
+	}
+
+	// 알림 수정
+	async function updateReminder(
+		memoId: string,
+		reminderId: string,
+		changes: Partial<Reminder>
+	): Promise<boolean> {
+		const memo = memos.find(m => m.id === memoId);
+		if (!memo) return false;
+
+		const reminders = getRemindersFromMemo(memo);
+		const updatedReminders = reminders.map(r =>
+			r.id === reminderId ? { ...r, ...changes } : r
+		);
+
+		const result = await update(memoId, { reminders: updatedReminders });
+		return !!result;
+	}
+
+	// 알림 삭제
+	async function removeReminder(memoId: string, reminderId: string): Promise<boolean> {
+		const memo = memos.find(m => m.id === memoId);
+		if (!memo) return false;
+
+		const reminders = getRemindersFromMemo(memo);
+		const filteredReminders = reminders.filter(r => r.id !== reminderId);
+
+		const result = await update(memoId, { reminders: filteredReminders });
+		return !!result;
+	}
+
+	// 알림 활성화 상태 변경
+	async function updateReminderEnabled(
+		memoId: string,
+		reminderId: string,
+		enabled: boolean
+	): Promise<boolean> {
+		return updateReminder(memoId, reminderId, { enabled });
+	}
+
+	// 메모의 알림 목록 가져오기
+	function getReminders(memoId: string): Reminder[] {
+		const memo = memos.find(m => m.id === memoId);
+		if (!memo) return [];
+		return getRemindersFromMemo(memo);
 	}
 
 	function clearAll(): void {
@@ -746,6 +878,12 @@ function createMemosStore() {
 		cleanup,
 		retrySync,
 		updateDefaultReminderMemos,
+		// 알림 관련 메서드
+		addReminder,
+		updateReminder,
+		removeReminder,
+		updateReminderEnabled,
+		getReminders,
 		// 구 API 호환성 (sync용)
 		deleteMemo: remove,
 		updateMemo: update,

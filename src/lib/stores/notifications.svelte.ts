@@ -1,6 +1,17 @@
-import type { Memo } from '$lib/types/memo';
+import type { Memo, Reminder } from '$lib/types/memo';
 import { memosStore } from './memos.svelte';
 import { createLogger, devLogStore } from './devLogs.svelte';
+
+// 메모에서 알림 목록 가져오기 (하위 호환성)
+function getRemindersFromMemo(memo: Memo): Reminder[] {
+	if (memo.reminders && memo.reminders.length > 0) {
+		return memo.reminders;
+	}
+	if (memo.reminder) {
+		return [memo.reminder];
+	}
+	return [];
+}
 
 const STORAGE_KEY = 'memo-alarm:last-notifications';
 const SNOOZE_KEY = 'memo-alarm:snoozed-reminders';
@@ -362,29 +373,34 @@ function createNotificationStore() {
 				return;
 			}
 
-			// 활성화된 알림만 필터링
+			// 활성화된 알림만 필터링 (reminders 배열 지원)
 			// NOTE: Svelte 5의 $state는 Proxy 객체를 사용하므로 postMessage 전송 전 plain object로 변환 필요
-			const activeReminders = memosStore.memos
-				.filter((memo) => memo.reminder?.enabled)
-				.map((memo) => {
+			const activeReminders: unknown[] = [];
+
+			memosStore.memos.forEach((memo) => {
+				const reminders = getRemindersFromMemo(memo);
+				reminders.filter(r => r.enabled).forEach(r => {
 					const reminder = {
 						memoId: memo.id,
+						reminderId: r.id,
 						title: memo.title,
 						body: memo.content || '알림이 도착했습니다',
-						time: memo.reminder!.time,
-						type: memo.reminder!.type,
-						days: memo.reminder!.days,
-						date: memo.reminder!.date,
+						time: r.time,
+						type: r.type,
+						days: r.days,
+						date: r.date,
 						url: memo.url,
-						autoOpen: memo.reminder!.autoOpen
+						autoOpen: r.autoOpen
 					};
 					// Proxy 객체를 plain object로 변환 (DataCloneError 방지)
-					return JSON.parse(JSON.stringify(reminder));
+					activeReminders.push(JSON.parse(JSON.stringify(reminder)));
 				});
+			});
 
 			log.info(`📤 Registering ${activeReminders.length} reminders to SW`);
 			if (activeReminders.length > 0) {
-				log.info(`📋 First reminder: ${activeReminders[0].title} at ${activeReminders[0].time}`);
+				const first = activeReminders[0] as { title: string; time: string };
+				log.info(`📋 First reminder: ${first.title} at ${first.time}`);
 			}
 
 			registration.active.postMessage({
@@ -402,7 +418,12 @@ function createNotificationStore() {
 		}
 	}
 
-	// Service Worker에 단일 알림 업데이트
+	// Service Worker와 알림 상태 동기화 (AlarmManager에서 사용)
+	function syncRemindersToServiceWorker() {
+		registerRemindersToServiceWorker();
+	}
+
+	// Service Worker에 단일 알림 업데이트 (reminders 배열 지원)
 	async function updateReminderInServiceWorker(memo: Memo) {
 		if (!('serviceWorker' in navigator)) return;
 
@@ -410,24 +431,30 @@ function createNotificationStore() {
 			const registration = await navigator.serviceWorker.ready;
 			if (!registration.active) return;
 
-			if (memo.reminder?.enabled) {
-				// Proxy 객체를 plain object로 변환 (DataCloneError 방지)
-				const reminderData = JSON.parse(JSON.stringify({
-					memoId: memo.id,
-					title: memo.title,
-					body: memo.content || '알림이 도착했습니다',
-					time: memo.reminder.time,
-					type: memo.reminder.type,
-					days: memo.reminder.days,
-					date: memo.reminder.date,
-					url: memo.url,
-					autoOpen: memo.reminder.autoOpen
-				}));
-				registration.active.postMessage({
-					type: 'UPDATE_MEMO_REMINDER',
-					reminder: reminderData
+			const reminders = getRemindersFromMemo(memo);
+			const enabledReminders = reminders.filter(r => r.enabled);
+
+			if (enabledReminders.length > 0) {
+				// 활성화된 모든 알림 등록
+				enabledReminders.forEach(r => {
+					const reminderData = JSON.parse(JSON.stringify({
+						memoId: memo.id,
+						reminderId: r.id,
+						title: memo.title,
+						body: memo.content || '알림이 도착했습니다',
+						time: r.time,
+						type: r.type,
+						days: r.days,
+						date: r.date,
+						url: memo.url,
+						autoOpen: r.autoOpen
+					}));
+					registration.active!.postMessage({
+						type: 'UPDATE_MEMO_REMINDER',
+						reminder: reminderData
+					});
 				});
-				log.info(`📤 Updated in SW: "${memo.title}"`);
+				log.info(`📤 Updated ${enabledReminders.length} reminders in SW: "${memo.title}"`);
 			} else {
 				registration.active.postMessage({
 					type: 'REMOVE_MEMO_REMINDER',
@@ -512,6 +539,7 @@ function createNotificationStore() {
 		getSnoozedUntil,
 		// SW 관련
 		registerRemindersToServiceWorker,
+		syncRemindersToServiceWorker,
 		updateReminderInServiceWorker,
 		removeReminderFromServiceWorker,
 		getServiceWorkerScheduleStatus

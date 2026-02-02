@@ -11,13 +11,11 @@
 	import ReminderSettings from '$lib/components/memo/ReminderSettings.svelte';
 	import FolderSelector from '$lib/components/memo/FolderSelector.svelte';
 	import ChecklistEditor from '$lib/components/memo/ChecklistEditor.svelte';
-	import type { Memo, ChecklistItem } from '$lib/types/memo';
+	import type { Memo, ChecklistItem, Reminder } from '$lib/types/memo';
 	import { memosStore } from '$lib/stores/memos.svelte';
 	import { foldersStore } from '$lib/stores/folders.svelte';
 	import { toastStore } from '$lib/stores/toast.svelte';
 	import { suggestTags } from '$lib/utils/ai';
-
-	type Reminder = NonNullable<Memo['reminder']>;
 
 	let { data } = $props();
 
@@ -28,7 +26,7 @@
 	let url = $state('');
 	let emoji = $state('🔗');
 	let showUrlInput = $state(false);
-	let reminder = $state<Reminder | undefined>(undefined);
+	let reminders = $state<Reminder[]>([]);
 	let folderId = $state<string | undefined>(undefined);
 	let checklist = $state<ChecklistItem[]>([]);
 	let showChecklist = $state(false);
@@ -134,7 +132,7 @@
 			tags,
 			url: url.trim() || undefined,
 			emoji: url.trim() ? emoji : undefined,
-			reminder,
+			reminders: reminders.length > 0 ? reminders : undefined,
 			folderId,
 			checklist: checklist.length > 0 ? checklist : undefined,
 			memoType: url.trim() ? 'bookmark' as const : 'note' as const
@@ -342,7 +340,7 @@
 				{/if}
 
 				<!-- 알림 설정 -->
-				<ReminderSettings {reminder} onReminderChange={(r) => (reminder = r)} />
+				<ReminderSettings {reminders} onRemindersChange={(r) => (reminders = r)} />
 
 				<!-- 하단 버튼 -->
 				<div class="flex gap-3 pt-4 border-t border-border">

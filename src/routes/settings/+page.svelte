@@ -1,6 +1,7 @@
 <script lang="ts">
 
-	import { Download, Upload, Trash2, Sun, Moon, Monitor, Bell, Cloud, LogIn, LogOut, Info, RefreshCw, Bug, BellRing, CheckCircle, XCircle, Smartphone, Radio, FileText } from 'lucide-svelte';
+	import { Download, Upload, Trash2, Sun, Moon, Monitor, Bell, Cloud, LogIn, LogOut, Info, RefreshCw, Bug, BellRing, CheckCircle, XCircle, Smartphone, Radio, FileText, Settings2 } from 'lucide-svelte';
+	import AlarmManager from '$lib/components/settings/AlarmManager.svelte';
 	import { APP_VERSION } from '$lib/config';
 	import Button from '$lib/components/ui/Button.svelte';
 		import Footer from "$lib/components/Footer.svelte";
@@ -723,6 +724,18 @@
 					{/if}
 				</div>
 			{/if}
+		</div>
+	</section>
+
+	<!-- 알림 관리 -->
+	<section class="space-y-4">
+		<div class="flex items-center gap-2 text-primary">
+			<Settings2 class="w-5 h-5" />
+			<h2 class="font-semibold">알림 관리</h2>
+		</div>
+
+		<div class="bg-card rounded-xl border border-border overflow-hidden">
+			<AlarmManager />
 		</div>
 	</section>
 

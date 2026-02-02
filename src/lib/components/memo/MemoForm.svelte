@@ -10,14 +10,16 @@
 	import ReminderSettings from './ReminderSettings.svelte';
 	import FolderSelector from './FolderSelector.svelte';
 	import ChecklistEditor from './ChecklistEditor.svelte';
-	import type { Memo, ChecklistItem } from '$lib/types/memo';
+	import type { Memo, ChecklistItem, Reminder } from '$lib/types/memo';
 	import { memosStore } from '$lib/stores/memos.svelte';
 	import { foldersStore } from '$lib/stores/folders.svelte';
 	import { toastStore } from '$lib/stores/toast.svelte';
 	import { settingsStore } from '$lib/stores/settings.svelte';
 	import { suggestTags } from '$lib/utils/ai';
 
-	type Reminder = NonNullable<Memo['reminder']>;
+	function generateReminderId(): string {
+		return `rem_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+	}
 
 	interface Props {
 		open: boolean;
@@ -34,7 +36,7 @@
 	let url = $state('');
 	let emoji = $state('🔗');
 	let showUrlInput = $state(false);
-	let reminder = $state<Reminder | undefined>(undefined);
+	let reminders = $state<Reminder[]>([]);
 	let folderId = $state<string | undefined>(undefined);
 	let checklist = $state<ChecklistItem[]>([]);
 	let showChecklist = $state(false);
@@ -78,6 +80,20 @@
 		return () => window.removeEventListener('keydown', handleKeydown);
 	});
 
+	// 메모에서 알림 목록 가져오기 (하위 호환성)
+	function getRemindersFromMemo(m: Memo): Reminder[] {
+		if (m.reminders && m.reminders.length > 0) {
+			return m.reminders.map(r => ({ ...r }));
+		}
+		if (m.reminder) {
+			return [{
+				...m.reminder,
+				id: m.reminder.id || generateReminderId()
+			}];
+		}
+		return [];
+	}
+
 	// 편집 모드일 때 기존 데이터 로드
 	$effect(() => {
 		if (open && memo) {
@@ -87,7 +103,7 @@
 			url = memo.url || '';
 			emoji = memo.emoji || '🔗';
 			showUrlInput = !!memo.url;
-			reminder = memo.reminder ? { ...memo.reminder } : undefined;
+			reminders = getRemindersFromMemo(memo);
 			folderId = memo.folderId;
 			checklist = memo.checklist ? [...memo.checklist] : [];
 			showChecklist = (memo.checklist?.length || 0) > 0;
@@ -103,10 +119,18 @@
 			showChecklist = false;
 			// Apply default reminder settings if autoReminderOnCreate is enabled
 			if (settingsStore.settings.autoReminderOnCreate) {
-				const defaultReminder = settingsStore.getDefaultReminder();
-				reminder = { ...defaultReminder };
+				const defaultReminderSettings = settingsStore.getDefaultReminder();
+				reminders = [{
+					id: generateReminderId(),
+					enabled: defaultReminderSettings.enabled,
+					time: defaultReminderSettings.time,
+					days: [...defaultReminderSettings.days],
+					autoOpen: defaultReminderSettings.autoOpen,
+					type: 'repeat',
+					isDefault: true
+				}];
 			} else {
-				reminder = undefined;
+				reminders = [];
 			}
 		}
 	});
@@ -157,7 +181,7 @@
 			tags,
 			url: url.trim() || undefined,
 			emoji: url.trim() ? emoji : undefined,
-			reminder,
+			reminders: reminders.length > 0 ? reminders : undefined,
 			folderId,
 			checklist: checklist.length > 0 ? checklist : undefined
 		};
@@ -182,7 +206,7 @@
 		url = '';
 		emoji = '🔗';
 		showUrlInput = false;
-		reminder = undefined;
+		reminders = [];
 		folderId = undefined;
 		checklist = [];
 		showChecklist = false;
@@ -323,7 +347,7 @@
 		{/if}
 
 		<!-- 알림 설정 -->
-		<ReminderSettings {reminder} onReminderChange={(r) => reminder = r} />
+		<ReminderSettings {reminders} onRemindersChange={(r) => reminders = r} />
 	</form>
 
 	{#snippet footer()}
