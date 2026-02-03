@@ -251,12 +251,12 @@
 
 ### 타입 & 스토어
 - `src/lib/types/memo.ts`
-- `src/lib/types/sync.ts` (Phase 14)
+- ~~`src/lib/types/sync.ts` (Phase 14)~~ — D1 제거 시 삭제됨
 - `src/lib/stores/memos.svelte.ts`
 - `src/lib/stores/filter.svelte.ts`
 - `src/lib/stores/notifications.svelte.ts`
 - `src/lib/stores/theme.svelte.ts`
-- `src/lib/stores/sync.svelte.ts` (Phase 14)
+- ~~`src/lib/stores/sync.svelte.ts` (Phase 14)~~ — D1 제거 시 삭제됨
 
 ### 컴포넌트 (memo)
 - `src/lib/components/memo/MemoForm.svelte`
@@ -282,10 +282,10 @@
 - `src/lib/utils/ai.ts` (Phase 15)
 
 ### API 라우트
-- `src/routes/api/sync/+server.ts` (Phase 14)
+- ~~`src/routes/api/sync/+server.ts` (Phase 14)~~ — D1 제거 시 삭제됨
 
 ### D1 마이그레이션
-- `data/migrations/001_init.sql` (Phase 14)
+- ~~`data/migrations/001_init.sql` (Phase 14)~~ — Supabase 전환 후 미사용
 
 ### PWA & Capacitor
 - `static/manifest.json`

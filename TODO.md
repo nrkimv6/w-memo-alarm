@@ -1,6 +1,6 @@
 # Memo Alarm - TODO
 
-> 현재 Phase: **Phase 1-7 완료 ✅, Phase 8 (Supabase 마이그레이션) 진행 중**
+> 현재 Phase: **Phase 1-8 완료 ✅**
 
 ---
 
@@ -65,8 +65,17 @@
 
 ---
 
-## Phase 8: Supabase 마이그레이션 + 백그라운드 알림
-> 수동 작업 필요 → `common/docs/guide/manual-tasks.md` 참조
+## Phase 8: Supabase 마이그레이션 + 백그라운드 알림 ✅
+> **상태**: ✅ 완료 (2026-02-03)
+
+### 완료된 작업
+- [x] FCM (Firebase Cloud Messaging) 통합 — `src/lib/fcm.ts`, `static/firebase-messaging-sw.js`
+- [x] alarm_schedules 테이블 연동 — `src/lib/services/alarmSchedules.ts`
+- [x] Service Worker 기반 메모 알림 스케줄 — `src/service-worker.ts`
+- [x] 개발자 모드 알림 디버그 UI — `src/routes/settings/+page.svelte`
+- [x] Safe Area / Android 네비바 겹침 수정 — `src/app.css`, `BottomNav.svelte` 등
+- [x] 코드 품질 개선 — console 정리, SW 메시지 상수화, 시간 포맷 유틸리티
+- [x] 참고: `docs/ARCHITECTURE_FCM.md`, `docs/archive/2026-02-02_memo-notification-fix-plan.md`
 
 ---
 

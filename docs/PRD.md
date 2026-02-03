@@ -321,40 +321,40 @@ interface Memo {
 
 ## 7. 개발 단계
 
-### Phase 1: 기반 구축
-- [ ] SvelteKit + Tailwind + PWA 설정
-- [ ] 공통 컴포넌트 (Button, Input, Modal, Card)
-- [ ] 데이터 스토어 (Svelte stores + localStorage)
-- [ ] 기본 레이아웃
+### Phase 1: 기반 구축 ✅
+- [x] SvelteKit + Tailwind + PWA 설정
+- [x] 공통 컴포넌트 (Button, Input, Modal, Card)
+- [x] 데이터 스토어 (Svelte stores + localStorage)
+- [x] 기본 레이아웃
 
-### Phase 2: 메모 핵심
-- [ ] 메모 CRUD
-- [ ] 태그 시스템
-- [ ] 핀/즐겨찾기
-- [ ] 검색/필터
-- [ ] 그리드/리스트 뷰
+### Phase 2: 메모 핵심 ✅
+- [x] 메모 CRUD
+- [x] 태그 시스템
+- [x] 핀/즐겨찾기
+- [x] 검색/필터
+- [x] 그리드/리스트 뷰
 
-### Phase 3: 북마크 속성
-- [ ] URL 입력 UI
-- [ ] 이모지 선택
-- [ ] 열람 추적
-- [ ] 링크 열기 동작
+### Phase 3: 북마크 속성 ✅
+- [x] URL 입력 UI
+- [x] 이모지 선택
+- [x] 열람 추적
+- [x] 링크 열기 동작
 
-### Phase 4: 알림 시스템
-- [ ] 알림 설정 UI
-- [ ] 알림 스케줄러
-- [ ] PWA 푸시 알림
-- [ ] 자동 URL 열기
+### Phase 4: 알림 시스템 ✅
+- [x] 알림 설정 UI
+- [x] 알림 스케줄러
+- [x] PWA 푸시 알림
+- [x] 자동 URL 열기
 
-### Phase 5: Capacitor
-- [ ] Capacitor 설정
-- [ ] 네이티브 알림
-- [ ] Android/iOS 빌드
+### Phase 5: Capacitor ✅
+- [x] Capacitor 설정
+- [x] 네이티브 알림
+- [x] Android/iOS 빌드
 
-### Phase 6: 마무리
-- [ ] 다크모드
-- [ ] 데이터 내보내기/가져오기
-- [ ] 온보딩
+### Phase 6: 마무리 ✅
+- [x] 다크모드
+- [x] 데이터 내보내기/가져오기
+- [x] 온보딩
 
 ---
 
