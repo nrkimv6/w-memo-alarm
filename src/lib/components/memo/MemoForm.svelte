@@ -162,7 +162,7 @@
 		}
 	}
 
-	function handleSubmit() {
+	async function handleSubmit() {
 		// 제목/내용/URL 중 하나라도 있어야 저장 가능
 		if (!canSave) return;
 
@@ -187,15 +187,21 @@
 		};
 
 		const isEdit = !!memo;
-		if (isEdit) {
-			memosStore.update(memo.id, data);
-			toastStore.success('메모가 수정되었습니다');
-		} else {
-			memosStore.add(data);
-			toastStore.success('메모가 저장되었습니다');
-		}
-
+		// 먼저 모달 닫기 (낙관적 UI)
 		handleClose();
+
+		if (isEdit) {
+			const result = await memosStore.update(memo.id, data);
+			if (result) {
+				toastStore.success('메모가 수정되었습니다');
+			}
+			// 실패 시 토스트는 memosStore.update() 내부에서 처리
+		} else {
+			const result = await memosStore.add(data);
+			if (result) {
+				toastStore.success('메모가 저장되었습니다');
+			}
+		}
 	}
 
 	function handleClose() {
