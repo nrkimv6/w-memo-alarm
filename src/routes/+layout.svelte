@@ -121,7 +121,7 @@
 	});
 </script>
 
-<div class="min-h-screen bg-background pb-20">
+<div class="min-h-screen bg-background" style="padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));">
 	<UnifiedHeader />
 	{@render children()}
 	<SyncStatusBanner />
