@@ -18,7 +18,7 @@
 </script>
 
 {#if showBanner}
-	<div class="fixed bottom-20 left-0 right-0 z-40 px-4 pb-2 pointer-events-none">
+	<div class="fixed left-0 right-0 z-40 px-4 pb-2 pointer-events-none" style="bottom: calc(5rem + env(safe-area-inset-bottom, 0px));">
 		<div class="max-w-md mx-auto pointer-events-auto">
 			{#if !isOnline}
 				<!-- 오프라인 상태 -->

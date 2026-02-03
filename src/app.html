@@ -41,7 +41,17 @@
 	%sveltekit.head%
 </head>
 
-<body data-sveltekit-preload-data="hover">
+<body data-sveltekit-preload-data="hover" style="background-color: #faf8f5;">
+	<script>
+		// CSS 로딩 전 다크모드 flash 방지: localStorage에서 테마를 먼저 적용
+		(function() {
+			var t = localStorage.getItem('memo-alarm-theme');
+			if (t === 'dark' || (t !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+				document.documentElement.classList.add('dark');
+				document.body.style.backgroundColor = '#1c1714';
+			}
+		})();
+	</script>
 	<div style="display: contents">%sveltekit.body%</div>
 </body>
 

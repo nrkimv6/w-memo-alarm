@@ -532,7 +532,7 @@
 		</div>
 	</div>
 
-<div class="max-w-2xl mx-auto px-4 py-6 space-y-8 pb-24">
+<div class="max-w-2xl mx-auto px-4 py-6 space-y-8">
 
 	<!-- 테마 -->
 	<section class="space-y-4">
