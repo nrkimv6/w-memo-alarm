@@ -28,7 +28,7 @@
 </script>
 
 {#if toasts.length > 0}
-	<div class="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 max-w-sm">
+	<div class="fixed right-4 z-[100] flex flex-col gap-2 max-w-sm" style="bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));">
 		{#each toasts as toast (toast.id)}
 			{@const Icon = icons[toast.type]}
 			<div

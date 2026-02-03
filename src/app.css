@@ -244,7 +244,8 @@
 
 	/* FAB (플로팅 액션 버튼) */
 	.fab {
-		@apply fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg;
+		@apply fixed right-6 w-14 h-14 rounded-full shadow-lg;
+		bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
 		@apply bg-primary text-primary-foreground;
 		@apply flex items-center justify-center;
 		@apply hover:shadow-xl hover:scale-105 transition-all duration-200;
@@ -252,6 +253,15 @@
 }
 
 @layer utilities {
+	/* Safe area insets - Android/iOS 시스템 바 영역 보정 */
+	.safe-bottom {
+		padding-bottom: env(safe-area-inset-bottom, 0px);
+	}
+
+	.safe-top {
+		padding-top: env(safe-area-inset-top, 0px);
+	}
+
 	/* 애니메이션 */
 	.animate-fade-in {
 		animation: fade-in 0.3s ease-out;
