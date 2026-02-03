@@ -484,7 +484,6 @@ function createMemosStore() {
 				// FCM 서버 알림 등록 (1:N reminders 지원)
 				try {
 					await syncMemoAlarms(authStore.user!.id, result.id, result.title, reminders);
-					console.log('[Alarms] Synced memo alarms for:', result.title);
 				} catch (alarmError) {
 					console.warn('[Alarms] Failed to sync alarms:', alarmError);
 				}

@@ -76,6 +76,26 @@
 		return { type: "synced", label: "동기화됨" };
 	});
 
+	// Family Sites 드롭다운 상태 (터치 지원)
+	let familySitesOpen = $state(false);
+	let familySitesRef: HTMLDivElement;
+
+	function toggleFamilySites(e: MouseEvent) {
+		e.stopPropagation();
+		familySitesOpen = !familySitesOpen;
+	}
+
+	function closeFamilySites() {
+		familySitesOpen = false;
+	}
+
+	// 외부 클릭 시 닫기
+	function handleDocumentClick(e: MouseEvent) {
+		if (familySitesOpen && familySitesRef && !familySitesRef.contains(e.target as Node)) {
+			familySitesOpen = false;
+		}
+	}
+
 	const syncStateClass = $derived.by(() => {
 		if (!syncState) return "";
 		switch (syncState.type) {
@@ -92,6 +112,8 @@
 		}
 	});
 </script>
+
+<svelte:document onclick={handleDocumentClick} />
 
 <!-- Notification Permission Banner -->
 {#if showNotificationBanner && !dismissed}
@@ -185,42 +207,46 @@
 			</Button>
 
 			<!-- Family Sites Dropdown -->
-			<div class="relative group">
+			<div class="relative" bind:this={familySitesRef}>
 				<button
 					class="flex items-center justify-center w-9 h-9 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
 					title="Family Sites"
+					onclick={toggleFamilySites}
 				>
 					<Globe class="h-4 w-4" />
 				</button>
 
 				<!-- Dropdown -->
-				<div
-					class="absolute right-0 top-full mt-2 w-56 rounded-lg border bg-popover p-2 text-popover-foreground shadow-lg outline-none animate-in fade-in-0 zoom-in-95 origin-top-right invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all z-50"
-				>
-					<div class="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-						Woory Apps
+				{#if familySitesOpen}
+					<div
+						class="absolute right-0 top-full mt-2 w-56 rounded-lg border bg-popover p-2 text-popover-foreground shadow-lg outline-none animate-in fade-in-0 zoom-in-95 origin-top-right z-50"
+					>
+						<div class="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+							Woory Apps
+						</div>
+						{#each FAMILY_SITES as site}
+							<a
+								href={site.url}
+								onclick={closeFamilySites}
+								class={cn(
+									"flex flex-col gap-0.5 rounded-md px-3 py-2 text-sm transition-colors hover:bg-accent hover:text-accent-foreground outline-none focus:bg-accent focus:text-accent-foreground",
+									site.current && "bg-accent/50"
+								)}
+							>
+								<span class="font-medium">
+									{site.name}
+									{#if site.current}
+										<span class="text-xs text-muted-foreground ml-1">(현재)</span>
+									{/if}
+									{#if site.isPortal}
+										<span class="text-xs text-primary ml-1">Portal</span>
+									{/if}
+								</span>
+								<span class="text-xs text-muted-foreground">{site.description}</span>
+							</a>
+						{/each}
 					</div>
-					{#each FAMILY_SITES as site}
-						<a
-							href={site.url}
-							class={cn(
-								"flex flex-col gap-0.5 rounded-md px-3 py-2 text-sm transition-colors hover:bg-accent hover:text-accent-foreground outline-none focus:bg-accent focus:text-accent-foreground",
-								site.current && "bg-accent/50"
-							)}
-						>
-							<span class="font-medium">
-								{site.name}
-								{#if site.current}
-									<span class="text-xs text-muted-foreground ml-1">(현재)</span>
-								{/if}
-								{#if site.isPortal}
-									<span class="text-xs text-primary ml-1">Portal</span>
-								{/if}
-							</span>
-							<span class="text-xs text-muted-foreground">{site.description}</span>
-						</a>
-					{/each}
-				</div>
+				{/if}
 			</div>
 		</div>
 	</div>

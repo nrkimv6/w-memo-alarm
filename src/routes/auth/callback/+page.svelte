@@ -69,15 +69,6 @@
 		const returnTo = searchParams.get("returnTo");
 		const errorParam = searchParams.get("error");
 
-		console.log("[Auth Callback] URL search params:", {
-			provider,
-			has_id_token: !!id_token,
-			has_access_token: !!access_token,
-			has_supabase_access_token: !!supabase_access_token,
-			has_supabase_refresh_token: !!supabase_refresh_token,
-			returnTo,
-		});
-
 		if (errorParam) {
 			return { error: errorParam };
 		}
@@ -106,9 +97,6 @@
 
 			const tokens = queryTokens || hashTokens;
 
-			console.log("[Auth Callback] Query tokens:", queryTokens ? "present" : "none");
-			console.log("[Auth Callback] Hash tokens:", hashTokens ? "present" : "none");
-
 			// 에러 처리
 			if (tokens?.error) {
 				throw new Error(`인증 오류: ${tokens.error}`);
@@ -121,7 +109,6 @@
 				if (authError) throw authError;
 
 				if (session) {
-					console.log("[Auth Callback] Using existing session");
 					await finishLogin(tokens?.returnTo || "/");
 					return;
 				}
@@ -133,7 +120,6 @@
 
 			// 카카오는 Supabase 토큰 직접 사용 (setSession)
 			if (tokens.supabase_access_token && tokens.supabase_refresh_token) {
-				console.log("[Auth Callback] Using Supabase tokens (Kakao)");
 				const { error: sessionError } = await supabase.auth.setSession({
 					access_token: tokens.supabase_access_token,
 					refresh_token: tokens.supabase_refresh_token,
@@ -144,7 +130,6 @@
 				}
 			} else if (tokens.id_token && tokens.access_token) {
 				// 구글은 기존 방식 (signInWithIdToken)
-				console.log("[Auth Callback] Using signInWithIdToken (Google)");
 				const { data, error: signInError } = await supabase.auth.signInWithIdToken({
 					provider: "google",
 					token: tokens.id_token,
@@ -163,7 +148,6 @@
 				throw new Error("유효한 토큰을 찾을 수 없습니다.");
 			}
 
-			console.log("[Auth Callback] Session created successfully");
 			await finishLogin(tokens.returnTo || "/");
 		} catch (err) {
 			console.error("[Auth Callback] Error:", err);

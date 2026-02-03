@@ -342,6 +342,13 @@
 		@apply bg-muted-foreground/50;
 	}
 
+	/* 터치 디바이스: hover 불가능한 환경에서 숨김 요소 표시 */
+	@media (hover: none) {
+		.group .group-hover\:opacity-100 {
+			opacity: 1;
+		}
+	}
+
 	/* Reduced motion */
 	@media (prefers-reduced-motion: reduce) {
 		.animate-fade-in,

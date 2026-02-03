@@ -22,6 +22,7 @@
 		scheduleNotification,
 		cancelAllNotifications
 	} from '$lib/utils/capacitor';
+	import { SW_MSG } from '$lib/constants/swMessages';
 	import { supabase } from '$lib/services/supabase';
 	import { registerFCMToken, getFCMConfigStatus } from '$lib/fcm';
 
@@ -166,7 +167,7 @@
 		try {
 			const registration = await navigator.serviceWorker.ready;
 			registration.active?.postMessage({
-				type: 'TEST_NOTIFICATION',
+				type: SW_MSG.TEST_NOTIFICATION,
 				title: '웹 푸시 테스트',
 				body: 'Service Worker에서 직접 보낸 알림입니다!'
 			});
@@ -196,7 +197,7 @@
 		try {
 			const registration = await navigator.serviceWorker.ready;
 			registration.active?.postMessage({
-				type: 'DELAYED_NOTIFICATION',
+				type: SW_MSG.DELAYED_NOTIFICATION,
 				delay: testDelaySeconds * 1000,
 				title: '백그라운드 알림 테스트',
 				body: `${testDelaySeconds}초 후 알림! 앱을 백그라운드로 보내도 이 알림이 표시되어야 합니다.`
@@ -435,7 +436,7 @@
 			if (registration) {
 				// 새 SW가 대기 중이면 활성화
 				if (registration.waiting) {
-					registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+					registration.waiting.postMessage({ type: SW_MSG.SKIP_WAITING });
 				}
 				// 업데이트 확인
 				await registration.update();

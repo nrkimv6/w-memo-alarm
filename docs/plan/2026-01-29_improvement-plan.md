@@ -1,11 +1,14 @@
 # memo-alarm 개선 계획
 
 > 작성일: 2026-01-29
+> 최종 업데이트: 2026-02-03
 > 난이도: ⭐ 쉬움 | ⭐⭐ 보통 | ⭐⭐⭐ 어려움
 
 ## 요약
 
 총 12개 개선 항목 (High: 1, Medium: 5, Low: 6)
+- 완료: 4개 (프로덕션 console 정리, 시간 포맷 유틸리티, SW 메시지 상수화, 빈 catch 블록 검토)
+- 미처리: 8개
 
 ---
 
@@ -25,30 +28,23 @@
 
 ### 🟡 Medium Priority
 
-- [ ] **빈 catch 블록 에러 로깅 추가** ⭐
-  - 현재 문제: 여러 곳에서 에러를 무시하고 있어 디버깅 어려움
-  - 해결 방법: console.error 또는 에러 리포팅 서비스로 기록
-  - 관련 파일:
-    - `src/lib/stores/memos.svelte.ts` (54-61줄)
-    - `src/lib/stores/settings.svelte.ts` (34-36줄)
-    - `src/lib/stores/notifications.svelte.ts` (46-60줄)
+- [x] **빈 catch 블록 에러 로깅 추가** ⭐ ✅ 2026-02-03 검토 완료
+  - 검토 결과: 대부분 의도된 빈 catch (localStorage 파싱, 동적 import, URL 파싱 등)
+  - console.error 추가가 오히려 노이즈 유발하므로 현행 유지 적절
 
-- [ ] **프로덕션 console 정리** ⭐
-  - 현재 문제: 77개 console.log/error 호출이 남아있음
-  - 해결 방법:
-    1. 디버그용 로그 제거
-    2. 에러 로그만 조건부로 남기기
-  - 관련 파일: 17개 파일 전반
+- [x] **프로덕션 console 정리** ⭐ ✅ 2026-02-03 완료
+  - 25건 디버그 console.log 제거 (10개 파일)
+  - console.error/warn만 유지
 
 - [ ] **타입 변환 함수 통합** ⭐⭐
   - 현재 문제: supabaseToMemo, memoToSupabase 코드가 반복적
   - 해결 방법: 매핑 설정 객체 기반 변환 함수로 리팩토링
   - 관련 파일: `src/lib/stores/memos.svelte.ts` (73-111줄)
 
-- [ ] **시간 포맷 유틸리티 추출** ⭐⭐
-  - 현재 문제: 시간 포맷/비교 로직이 3곳에 중복
-  - 해결 방법: `src/lib/utils/timeUtils.ts` 생성
-  - 관련 파일: `src/lib/stores/notifications.svelte.ts` (168, 328, 338줄)
+- [x] **시간 포맷 유틸리티 추출** ⭐⭐ ✅ 2026-02-03 완료
+  - `src/lib/utils/timeUtils.ts` 생성
+  - `getCurrentTimeHHMM()`, `getTodayDateISO()` 함수 추출
+  - notifications.svelte.ts 4곳, service-worker.ts 1곳 중복 제거
 
 - [ ] **Button 컴포넌트 접근성 개선** ⭐
   - 현재 문제: aria-label prop 지원 안함
@@ -77,12 +73,10 @@
   - 해결 방법: 입력 300ms 후 계산
   - 관련 파일: `src/lib/components/memo/MemoForm.svelte` (45-51줄)
 
-- [ ] **SW 메시지 타입 상수화** ⭐
-  - 현재 문제: 'REGISTER_MEMO_REMINDERS' 등 문자열 하드코딩
-  - 해결 방법: `src/lib/constants/swMessages.ts` 생성
-  - 관련 파일:
-    - `src/lib/stores/notifications.svelte.ts`
-    - `src/service-worker.ts`
+- [x] **SW 메시지 타입 상수화** ⭐ ✅ 2026-02-03 완료
+  - `src/lib/constants/swMessages.ts` 생성
+  - 8개 메시지 타입을 `SW_MSG` 상수 객체로 중앙 관리
+  - Main Thread 측 하드코딩 교체 완료
 
 - [ ] **reminder.time 형식 검증** ⭐
   - 현재 문제: HH:MM 형식 검증 없음
@@ -91,10 +85,11 @@
 
 ---
 
-## 작업 순서 권장
+## 작업 순서 권장 (업데이트)
 
-1. 프로덕션 console 정리 (간단하고 코드 정리 효과)
-2. 빈 catch 블록 에러 로깅 추가 (디버깅 용이성)
-3. 시간 포맷 유틸리티 추출
+~1. 프로덕션 console 정리~ ✅ 완료
+~2. 빈 catch 블록 에러 로깅 추가~ ✅ 검토 완료 (현행 유지)
+~3. 시간 포맷 유틸리티 추출~ ✅ 완료
 4. Button 컴포넌트 접근성 개선
-5. 백그라운드 알림은 장기 과제로 별도 계획
+5. 타입 변환 함수 통합
+6. 백그라운드 알림은 장기 과제로 별도 계획
