@@ -1,6 +1,6 @@
 # Android Safe Area 및 모바일 UI 감사 보고서
 
-> 최종 업데이트: 2026-02-03
+> 최종 업데이트: 2026-02-03 (2차 업데이트: 항목 3,4,5,6 처리 완료)
 
 ## 개요
 
@@ -67,51 +67,31 @@
 
 ---
 
-### [HIGH] 3. UnifiedHeader Family Sites 드롭다운 터치 미작동
+### ~~[HIGH] 3. UnifiedHeader Family Sites 드롭다운 터치 미작동~~ ✅ 2026-02-03 해결
 
-**파일:** `src/lib/components/layout/UnifiedHeader.svelte:188-224`
+**파일:** `src/lib/components/layout/UnifiedHeader.svelte`
 
-**현상:** `group-hover`를 사용하여 마우스 호버로만 드롭다운이 표시됩니다. 터치 디바이스에서는 호버 이벤트가 없으므로 접근 불가.
-
-**권장 대응:** `group-hover`를 click/focus 핸들러로 교체하거나 `group-focus-within`을 추가.
+**수정 내용:** `group-hover` 패턴을 클릭 토글로 전환. `familySitesOpen` 상태 + `<svelte:document>` 외부 클릭 닫기 + 링크 클릭 시 자동 닫기.
 
 ---
 
-### [MEDIUM] 4. group-hover 기반 인터랙션 터치 미작동
+### ~~[MEDIUM] 4. group-hover 기반 인터랙션 터치 미작동~~ ✅ 2026-02-03 해결
 
-**관련 파일:**
-| 파일 | 라인 | 대상 |
-|------|------|------|
-| `src/lib/components/memo/MemoCard.svelte` | :172 | 숨겨진 컨트롤 |
-| `src/lib/components/memo/ChecklistEditor.svelte` | :132, :180 | 숨겨진 컨트롤 |
+**수정 내용:** `app.css`에 `@media (hover: none)` 글로벌 규칙 추가. 터치 디바이스에서 `group-hover:opacity-100` 요소가 항상 표시됨.
 
-**현상:** `group-hover:opacity-100`으로 마우스 호버 시에만 표시되는 버튼들이 터치 디바이스에서 접근 불가.
-
-**권장 대응:** 모바일에서는 항상 표시하거나, `@media (hover: none)` 미디어 쿼리로 터치 디바이스 분기.
+**적용 범위:** MemoCard (핀/메뉴), ChecklistEditor (이동/삭제 버튼) 3곳 모두 커버.
 
 ---
 
-### [MEDIUM] 5. 모달 max-h-[90vh]와 가상 키보드 충돌
+### ~~[MEDIUM] 5. 모달 max-h-[90vh]와 가상 키보드 충돌~~ ✅ 2026-02-03 해결
 
-**관련 파일:**
-| 파일 | 라인 | 값 |
-|------|------|-----|
-| `src/lib/components/ui/Modal.svelte` | :85 | `max-h-[90vh]` |
-| `src/lib/components/memo/ScheduledRemindersModal.svelte` | :102 | `max-h-[400px]` |
-
-**현상:** `vh` 단위는 가상 키보드가 열려도 변하지 않으므로, 키보드가 올라오면 모달 내용이 키보드에 가려질 수 있습니다.
-
-**권장 대응:** `90vh` → `90dvh` (Dynamic Viewport Height) 변경. `dvh`는 가상 키보드 영역을 제외한 실제 보이는 높이를 반영합니다.
+**수정 내용:** `Modal.svelte`에서 `max-h-[90vh]` → `max-h-[90dvh]` 변경. Dynamic Viewport Height로 가상 키보드 영역 자동 반영.
 
 ---
 
-### [MEDIUM] 6. OnboardingModal h-screen/w-screen 문제
+### ~~[MEDIUM] 6. OnboardingModal h-screen/w-screen 문제~~ ✅ 2026-02-03 해결
 
-**파일:** `src/lib/components/OnboardingModal.svelte:85`
-
-**현상:** `h-screen w-screen max-h-screen`은 가상 키보드/안전 영역 변화에 반응하지 않습니다.
-
-**권장 대응:** `h-dvh w-dvw` 사용 또는 `fixed inset-0`으로 대체.
+**수정 내용:** `OnboardingModal.svelte`에서 `h-screen w-screen max-h-screen` → `h-dvh w-dvw max-h-dvh` 변경.
 
 ---
 
