@@ -18,6 +18,7 @@ export type Priority = 'low' | 'medium' | 'high';
 export type SyncStatus = 'local-only' | 'pending' | 'synced' | 'failed';
 
 export interface Reminder {
+	id: string; // 알림 고유 ID
 	enabled: boolean;
 	time: string; // HH:mm
 	days: number[]; // 0-6 (일-토)
@@ -43,7 +44,8 @@ export interface Memo {
 	emoji?: string;
 	openCount?: number;
 	// Phase 4: 알림
-	reminder?: Reminder;
+	reminder?: Reminder; // deprecated: reminders 배열 사용 권장
+	reminders?: Reminder[]; // 다중 알림 지원
 	// Phase 7: 폴더
 	folderId?: string;
 	// Phase 8: 열람 이력

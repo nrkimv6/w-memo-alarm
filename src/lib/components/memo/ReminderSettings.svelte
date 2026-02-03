@@ -1,41 +1,32 @@
 <script lang="ts">
-	import { Bell, X, Calendar, Repeat } from 'lucide-svelte';
+	import { Bell, Plus, X } from 'lucide-svelte';
 	import Button from '$lib/components/ui/Button.svelte';
-	import Toggle from '$lib/components/ui/Toggle.svelte';
+	import ReminderCard from './ReminderCard.svelte';
 	import { cn } from '$lib/utils';
 	import { settingsStore } from '$lib/stores/settings.svelte';
-
-	interface Reminder {
-		enabled: boolean;
-		time: string;
-		days: number[];
-		autoOpen: boolean;
-		type?: 'repeat' | 'once';
-		date?: string;
-		isDefault?: boolean;
-	}
+	import type { Reminder } from '$lib/types/memo';
 
 	interface Props {
-		reminder: Reminder | undefined;
-		onReminderChange: (reminder: Reminder | undefined) => void;
+		reminders: Reminder[];
+		onRemindersChange: (reminders: Reminder[]) => void;
 	}
 
-	let { reminder, onReminderChange }: Props = $props();
+	let { reminders = [], onRemindersChange }: Props = $props();
 
-	// Use default settings from store when no reminder is provided
-	const defaultReminder = settingsStore.getDefaultReminder();
+	const defaultSettings = settingsStore.getDefaultReminder();
 
-	// Props를 초기값으로 사용 (이후 독립적으로 작동)
-	let showSettings = $state(!!reminder);
-	let enabled = $state(reminder?.enabled ?? true);
-	let isDefault = $state(reminder?.isDefault ?? false);
-	let time = $state(reminder?.time ?? defaultReminder.time);
-	let days = $state<number[]>(reminder?.days ?? [...defaultReminder.days]);
-	let autoOpen = $state(reminder?.autoOpen ?? defaultReminder.autoOpen);
-	let reminderType = $state<'repeat' | 'once'>(reminder?.type ?? 'repeat');
-	let reminderDate = $state(reminder?.date ?? getTomorrowDate());
+	// 기본 알림
+	let defaultReminder = $derived(reminders.find(r => r.isDefault));
 
-	const dayLabels = ['일', '월', '화', '수', '목', '금', '토'];
+	// 추가 알림
+	let additionalReminders = $derived(reminders.filter(r => !r.isDefault));
+
+	// 알림이 하나도 없을 때 표시할 버튼
+	let showAddButton = $derived(reminders.length === 0);
+
+	function generateReminderId(): string {
+		return `rem_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+	}
 
 	function getTomorrowDate(): string {
 		const tomorrow = new Date();
@@ -43,175 +34,124 @@
 		return tomorrow.toISOString().split('T')[0];
 	}
 
-	function getTodayDate(): string {
-		return new Date().toISOString().split('T')[0];
+	// 기본 알림 추가
+	function addDefaultReminder() {
+		const newReminder: Reminder = {
+			id: generateReminderId(),
+			enabled: true,
+			time: defaultSettings.time,
+			days: [...defaultSettings.days],
+			autoOpen: defaultSettings.autoOpen,
+			type: 'repeat',
+			isDefault: true
+		};
+		onRemindersChange([newReminder, ...reminders]);
 	}
 
-	// 기본알림 사용 시 기본 설정 적용
-	$effect(() => {
-		if (isDefault) {
-			const defaultSettings = settingsStore.getDefaultReminder();
-			time = defaultSettings.time;
-			days = [...defaultSettings.days];
-			autoOpen = defaultSettings.autoOpen;
-		}
-	});
-
-	$effect(() => {
-		if (showSettings) {
-			if (reminderType === 'once') {
-				onReminderChange({ enabled, time, days: [], autoOpen, type: 'once', date: reminderDate, isDefault });
-			} else {
-				onReminderChange({ enabled, time, days, autoOpen, type: 'repeat', isDefault });
-			}
-		} else {
-			onReminderChange(undefined);
-		}
-	});
-
-	function toggleDay(day: number) {
-		if (days.includes(day)) {
-			days = days.filter((d) => d !== day);
-		} else {
-			days = [...days, day].sort();
-		}
+	// 추가 알림 추가
+	function addReminder() {
+		const newReminder: Reminder = {
+			id: generateReminderId(),
+			enabled: true,
+			time: '09:00',
+			days: [1, 2, 3, 4, 5],
+			autoOpen: false,
+			type: 'repeat',
+			isDefault: false
+		};
+		onRemindersChange([...reminders, newReminder]);
 	}
 
-	function handleClose() {
-		showSettings = false;
-		onReminderChange(undefined);
+	// 알림 수정
+	function updateReminder(id: string, changes: Partial<Reminder>) {
+		const updated = reminders.map(r =>
+			r.id === id ? { ...r, ...changes } : r
+		);
+		onRemindersChange(updated);
+	}
+
+	// 알림 삭제
+	function removeReminder(id: string) {
+		const filtered = reminders.filter(r => r.id !== id);
+		onRemindersChange(filtered);
+	}
+
+	// 모든 알림 제거
+	function removeAllReminders() {
+		onRemindersChange([]);
 	}
 </script>
 
 <div class="space-y-3">
-	{#if showSettings}
-		<div class="flex items-center justify-between">
-			<span class="text-sm font-medium flex items-center gap-2">
-				<Bell class="w-4 h-4" />
-				알림 설정
-			</span>
-			<Button type="button" variant="ghost" size="sm" onclick={handleClose}>
-				<X class="w-4 h-4" />
-			</Button>
-		</div>
-
-		<div class="space-y-4 p-3 rounded-lg bg-muted/50 border border-border">
-			<!-- 활성화 토글 -->
-			<div class="flex items-center justify-between">
-				<span class="text-sm">알림 활성화</span>
-				<Toggle bind:checked={enabled} />
-			</div>
-
-			{#if enabled}
-				<!-- 기본알림 사용 -->
-				<div class="flex items-center justify-between p-2 rounded-lg bg-background/50">
-					<div class="flex flex-col gap-1">
-						<span class="text-sm font-medium">기본알림 사용</span>
-						<span class="text-xs text-muted-foreground">
-							{#if isDefault}
-								{defaultReminder.time}, {dayLabels.filter((_, i) => defaultReminder.days.includes(i)).join('·')}
-							{:else}
-								사용자 지정 시간 설정
-							{/if}
-						</span>
-					</div>
-					<Toggle bind:checked={isDefault} />
-				</div>
-
-				<!-- 알림 타입 선택 -->
-				<div class="flex gap-2">
-					<button
-						type="button"
-						onclick={() => reminderType = 'repeat'}
-						class={cn(
-							'flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-medium transition-colors',
-							reminderType === 'repeat'
-								? 'bg-primary text-primary-foreground'
-								: 'bg-background border border-border hover:bg-muted'
-						)}
-					>
-						<Repeat class="w-4 h-4" />
-						반복
-					</button>
-					<button
-						type="button"
-						onclick={() => reminderType = 'once'}
-						class={cn(
-							'flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-medium transition-colors',
-							reminderType === 'once'
-								? 'bg-primary text-primary-foreground'
-								: 'bg-background border border-border hover:bg-muted'
-						)}
-					>
-						<Calendar class="w-4 h-4" />
-						1회
-					</button>
-				</div>
-
-				<!-- 시간 설정 -->
-				<div class="space-y-2">
-					<label for="reminder-time" class="text-sm">알림 시간</label>
-					<input
-						id="reminder-time"
-						type="time"
-						bind:value={time}
-						disabled={isDefault}
-						class="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
-					/>
-				</div>
-
-				{#if reminderType === 'once'}
-					<!-- 날짜 선택 (1회성) -->
-					<div class="space-y-2">
-						<label for="reminder-date" class="text-sm">알림 날짜</label>
-						<input
-							id="reminder-date"
-							type="date"
-							bind:value={reminderDate}
-							min={getTodayDate()}
-							class="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-						/>
-					</div>
-				{:else}
-					<!-- 요일 선택 (반복) -->
-					<div class="space-y-2">
-						<span class="text-sm">반복 요일</span>
-						<div class="flex gap-1">
-							{#each dayLabels as label, i}
-								<button
-									type="button"
-									onclick={() => toggleDay(i)}
-									disabled={isDefault}
-									class={cn(
-										'w-8 h-8 rounded-full text-xs font-medium transition-colors',
-										days.includes(i)
-											? 'bg-primary text-primary-foreground'
-											: 'bg-background border border-border hover:bg-muted',
-										isDefault && 'opacity-50 cursor-not-allowed'
-									)}
-								>
-									{label}
-								</button>
-							{/each}
-						</div>
-					</div>
-				{/if}
-
-				<!-- URL 자동 열기 -->
-				<div class="flex items-center justify-between">
-					<span class="text-sm">URL 자동 열기</span>
-					<Toggle bind:checked={autoOpen} />
-				</div>
-			{/if}
-		</div>
-	{:else}
+	{#if showAddButton}
+		<!-- 알림이 없을 때 -->
 		<button
 			type="button"
-			onclick={() => showSettings = true}
+			onclick={addDefaultReminder}
 			class="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
 		>
 			<Bell class="w-4 h-4" />
 			알림 추가
 		</button>
+	{:else}
+		<!-- 알림 설정 헤더 -->
+		<div class="flex items-center justify-between">
+			<span class="text-sm font-medium flex items-center gap-2">
+				<Bell class="w-4 h-4" />
+				알림 설정 ({reminders.length})
+			</span>
+			<Button type="button" variant="ghost" size="sm" onclick={removeAllReminders}>
+				<X class="w-4 h-4" />
+			</Button>
+		</div>
+
+		<div class="space-y-3">
+			<!-- 기본 알림 섹션 -->
+			{#if defaultReminder}
+				<div class="space-y-2">
+					<span class="text-xs text-muted-foreground font-medium">기본 알림</span>
+					<ReminderCard
+						reminder={defaultReminder}
+						isDefault={true}
+						onUpdate={(changes) => updateReminder(defaultReminder!.id, changes)}
+						onDelete={() => removeReminder(defaultReminder!.id)}
+					/>
+				</div>
+			{:else}
+				<button
+					type="button"
+					onclick={addDefaultReminder}
+					class="w-full py-2 px-3 border border-dashed border-primary/50 rounded-lg text-sm text-primary hover:bg-primary/5 transition-colors flex items-center justify-center gap-2"
+				>
+					<Plus class="w-4 h-4" />
+					기본 알림 추가
+				</button>
+			{/if}
+
+			<!-- 추가 알림 섹션 -->
+			{#if additionalReminders.length > 0}
+				<div class="space-y-2">
+					<span class="text-xs text-muted-foreground font-medium">추가 알림 ({additionalReminders.length})</span>
+					{#each additionalReminders as reminder (reminder.id)}
+						<ReminderCard
+							{reminder}
+							isDefault={false}
+							onUpdate={(changes) => updateReminder(reminder.id, changes)}
+							onDelete={() => removeReminder(reminder.id)}
+						/>
+					{/each}
+				</div>
+			{/if}
+
+			<!-- 알림 추가 버튼 -->
+			<button
+				type="button"
+				onclick={addReminder}
+				class="w-full py-2 px-3 border border-dashed border-border rounded-lg text-sm text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors flex items-center justify-center gap-2"
+			>
+				<Plus class="w-4 h-4" />
+				알림 추가
+			</button>
+		</div>
 	{/if}
 </div>

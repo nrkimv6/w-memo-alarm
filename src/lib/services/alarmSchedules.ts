@@ -85,6 +85,26 @@ export async function updateMemoAlarm(
 }
 
 /**
+ * 메모의 모든 알림 동기화 (reminders 배열 지원)
+ */
+export async function syncMemoAlarms(
+	userId: string,
+	memoId: string,
+	memoTitle: string,
+	reminders: Reminder[]
+): Promise<void> {
+	// 기존 알림 모두 삭제
+	await deleteMemoAlarms(memoId);
+
+	// 활성화된 알림만 생성
+	const enabledReminders = reminders.filter(r => r.enabled);
+
+	for (const reminder of enabledReminders) {
+		await createMemoAlarm(userId, memoId, memoTitle, reminder);
+	}
+}
+
+/**
  * 메모 삭제 시 관련 알림 삭제
  */
 export async function deleteMemoAlarms(memoId: string): Promise<void> {
