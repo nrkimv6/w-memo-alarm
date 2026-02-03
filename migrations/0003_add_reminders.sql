@@ -14,7 +14,7 @@ SET reminders = jsonb_build_array(
 )
 WHERE reminder IS NOT NULL
   AND reminder != 'null'
-  AND reminder != ''
+  AND reminder::text != ''
   AND reminders IS NULL;
 
 -- 3. 마이그레이션 후 기존 reminder 컬럼은 유지 (하위 호환성)
