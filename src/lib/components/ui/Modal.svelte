@@ -82,7 +82,7 @@
 		<div
 			class={cn(
 				'bg-card w-full max-w-lg rounded-xl border border-border shadow-lg pointer-events-auto',
-				'modal-appear flex flex-col max-h-[90vh]',
+				'modal-appear flex flex-col max-h-[90dvh]',
 				className
 			)}
 			role="dialog"

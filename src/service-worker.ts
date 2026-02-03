@@ -29,6 +29,15 @@ interface ScheduledReminder {
 let scheduledReminders: ScheduledReminder[] = [];
 let reminderCheckInterval: ReturnType<typeof setInterval> | null = null;
 
+// 시간/날짜 유틸리티 (Service Worker 스코프에서는 $lib import 불가)
+function getCurrentTimeHHMM(date: Date = new Date()): string {
+	return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
+function getTodayDateISO(date: Date = new Date()): string {
+	return date.toISOString().split('T')[0];
+}
+
 // 메인 스레드로 로그 전달 함수
 function swLog(level: 'info' | 'warn' | 'error', message: string, data?: unknown) {
 	const logMsg = `[SW] ${message}`;
@@ -167,9 +176,9 @@ function showMergedNotification(reminders: ScheduledReminder[], time: string) {
 // 메모 알림 체크 함수
 function checkScheduledReminders() {
 	const now = new Date();
-	const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+	const currentTime = getCurrentTimeHHMM(now);
 	const today = now.getDay();
-	const todayDate = now.toISOString().split('T')[0];
+	const todayDate = getTodayDateISO(now);
 	const notifyKey = `${todayDate}-${currentTime}`;
 
 	swLog('info', `🕐 Checking at ${currentTime} (${todayDate}, day=${today})`);

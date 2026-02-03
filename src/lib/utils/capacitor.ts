@@ -199,8 +199,6 @@ export async function setupShareIntentListener(
 
 	// appUrlOpen 이벤트 리스너 - Deep Link 및 Share Intent 처리
 	App.addListener('appUrlOpen', (event) => {
-		console.log('[Capacitor] appUrlOpen:', event.url);
-
 		// Share Intent로부터 받은 데이터 처리
 		// Android에서 SEND intent는 특수한 URL scheme으로 전달될 수 있음
 		if (event.url.startsWith('intent://') || event.url.includes('share')) {

@@ -31,7 +31,6 @@ class SyncQueue {
 		// 네트워크 상태 변화 감지
 		this.networkUnsubscribe = networkStatus.onStatusChange((isOnline) => {
 			if (isOnline && this.queue.length > 0) {
-				console.log('[SyncQueue] Online - resuming sync');
 				toastStore.info('온라인 복구 - 동기화 재개');
 				// 모든 대기 항목의 nextRetryAt을 즉시로 변경
 				this.queue = this.queue.map((item) => ({
@@ -73,7 +72,6 @@ class SyncQueue {
 
 		// 오프라인이면 대기
 		if (!networkStatus.isOnline) {
-			console.log('[SyncQueue] Offline - waiting for connection');
 			return;
 		}
 
@@ -106,7 +104,6 @@ class SyncQueue {
 					item.retryCount++;
 					item.nextRetryAt = Date.now() + getRetryDelay(item.retryCount);
 					this.queue.push(item);
-					console.log(`[SyncQueue] Scheduled retry ${item.retryCount}/${MAX_RETRIES} for ${item.memo.localId}`);
 				} else {
 					// 최대 재시도 초과 → 실패 상태로 남김
 					console.error(`[SyncQueue] Max retries exceeded for ${item.memo.localId}`);
@@ -152,7 +149,6 @@ class SyncQueue {
 			}
 
 			// 성공
-			console.log(`[SyncQueue] Synced ${memo.localId} → ${serverId}`);
 			this.onStatusChange?.(memo.localId, 'synced', data.id);
 			return true;
 		} catch (e) {

@@ -1,6 +1,8 @@
 import type { Memo, Reminder } from '$lib/types/memo';
 import { memosStore } from './memos.svelte';
 import { createLogger, devLogStore } from './devLogs.svelte';
+import { getCurrentTimeHHMM, getTodayDateISO } from '$lib/utils/timeUtils';
+import { SW_MSG } from '$lib/constants/swMessages';
 
 // 메모에서 알림 목록 가져오기 (하위 호환성)
 function getRemindersFromMemo(memo: Memo): Reminder[] {
@@ -114,7 +116,7 @@ function createNotificationStore() {
 		// SW에서 보낸 로그 수신
 		if ('serviceWorker' in navigator) {
 			navigator.serviceWorker.addEventListener('message', (event) => {
-				if (event.data.type === 'SW_LOG') {
+				if (event.data.type === SW_MSG.SW_LOG) {
 					devLogStore.add(
 						event.data.level || 'info',
 						event.data.source || 'SW',
@@ -171,9 +173,9 @@ function createNotificationStore() {
 
 		const now = new Date();
 		const nowTimestamp = now.getTime();
-		const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+		const currentTime = getCurrentTimeHHMM(now);
 		const today = now.getDay();
-		const todayDate = now.toISOString().split('T')[0];
+		const todayDate = getTodayDateISO(now);
 
 		log.info(`📅 time=${currentTime}, date=${todayDate}, day=${today}`);
 
@@ -306,9 +308,9 @@ function createNotificationStore() {
 	}
 
 	function getTodayReminders(): Memo[] {
-		const today = new Date().getDay();
 		const now = new Date();
-		const todayDate = now.toISOString().split('T')[0];
+		const today = now.getDay();
+		const todayDate = getTodayDateISO(now);
 
 		return memosStore.memos.filter((memo) => {
 			if (!memo.reminder?.enabled) return false;
@@ -329,9 +331,8 @@ function createNotificationStore() {
 	}
 
 	function getUpcomingReminders(): Memo[] {
-		const today = new Date().getDay();
 		const now = new Date();
-		const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+		const currentTime = getCurrentTimeHHMM(now);
 
 		return getTodayReminders().filter((memo) => {
 			const reminderTime = memo.reminder?.time || '00:00';
@@ -341,7 +342,7 @@ function createNotificationStore() {
 
 	function getPastReminders(): Memo[] {
 		const now = new Date();
-		const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+		const currentTime = getCurrentTimeHHMM(now);
 
 		return getTodayReminders().filter((memo) => {
 			const reminderTime = memo.reminder?.time || '00:00';
@@ -404,7 +405,7 @@ function createNotificationStore() {
 			}
 
 			registration.active.postMessage({
-				type: 'REGISTER_MEMO_REMINDERS',
+				type: SW_MSG.REGISTER_MEMO_REMINDERS,
 				reminders: activeReminders
 			});
 
@@ -450,14 +451,14 @@ function createNotificationStore() {
 						autoOpen: r.autoOpen
 					}));
 					registration.active!.postMessage({
-						type: 'UPDATE_MEMO_REMINDER',
+						type: SW_MSG.UPDATE_MEMO_REMINDER,
 						reminder: reminderData
 					});
 				});
 				log.info(`📤 Updated ${enabledReminders.length} reminders in SW: "${memo.title}"`);
 			} else {
 				registration.active.postMessage({
-					type: 'REMOVE_MEMO_REMINDER',
+					type: SW_MSG.REMOVE_MEMO_REMINDER,
 					memoId: memo.id
 				});
 				log.info(`🗑️ Removed from SW: "${memo.title}"`);
@@ -476,7 +477,7 @@ function createNotificationStore() {
 			if (!registration.active) return;
 
 			registration.active.postMessage({
-				type: 'REMOVE_MEMO_REMINDER',
+				type: SW_MSG.REMOVE_MEMO_REMINDER,
 				memoId
 			});
 			log.info(`🗑️ Removed from SW: ${memoId}`);
@@ -502,7 +503,7 @@ function createNotificationStore() {
 					resolve(event.data);
 				};
 
-				registration.active!.postMessage({ type: 'GET_SCHEDULED_REMINDERS' }, [
+				registration.active!.postMessage({ type: SW_MSG.GET_SCHEDULED_REMINDERS }, [
 					messageChannel.port2
 				]);
 

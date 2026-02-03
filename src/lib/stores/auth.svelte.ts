@@ -66,7 +66,6 @@ function createAuthStore() {
 
 		// 인증 상태 변경 리스너
 		supabase.auth.onAuthStateChange(async (event, newSession) => {
-			console.log('[Auth] State changed:', event);
 			const wasLoggedIn = !!state.user;
 			state.session = newSession;
 			state.user = newSession?.user || null;

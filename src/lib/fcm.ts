@@ -25,12 +25,9 @@ const firebaseConfig = {
 	appId: PUBLIC_FIREBASE_APP_ID
 };
 
-// 디버그: 환경 변수 확인
-if (browser) {
-	console.log('[FCM] Firebase config loaded:', {
-		hasApiKey: !!firebaseConfig.apiKey,
-		projectId: firebaseConfig.projectId
-	});
+// Firebase 설정 검증 (환경 변수 누락 시 경고)
+if (browser && !firebaseConfig.apiKey) {
+	console.warn('[FCM] Firebase API key not configured - check .env file');
 }
 
 // FCM 환경 상태 조회 (개발자 모드용)
@@ -76,7 +73,6 @@ export async function registerFCMToken(userId: string): Promise<FCMToken | null>
 
 		// 2. Service Worker 등록 확인
 		const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-		console.log('Service Worker registered:', registration);
 
 		// 3. FCM 토큰 발급 (VAPID 키 사용)
 		if (!PUBLIC_FIREBASE_VAPID_KEY) {
@@ -91,8 +87,6 @@ export async function registerFCMToken(userId: string): Promise<FCMToken | null>
 		if (!fcmToken) {
 			throw new Error('Failed to get FCM token');
 		}
-
-		console.log('FCM token received:', fcmToken);
 
 		// 4. Supabase에 저장
 		const { error } = await supabase.from('user_devices').upsert(
@@ -114,8 +108,6 @@ export async function registerFCMToken(userId: string): Promise<FCMToken | null>
 			throw error;
 		}
 
-		console.log('FCM token saved to Supabase');
-
 		return { token: fcmToken, platform: 'web' };
 	} catch (error) {
 		console.error('FCM token registration failed:', error);
@@ -132,8 +124,6 @@ export function setupForegroundMessageListener() {
 	}
 
 	onMessage(messaging, (payload) => {
-		console.log('Foreground message received:', payload);
-
 		// 포그라운드에서 알림 표시
 		if (Notification.permission === 'granted' && payload.notification) {
 			new Notification(payload.notification.title || 'Notification', {
@@ -167,7 +157,6 @@ export async function deactivateFCMToken(userId: string, token: string): Promise
 			throw error;
 		}
 
-		console.log('FCM token deactivated');
 	} catch (error) {
 		console.error('FCM token deactivation failed:', error);
 	}
@@ -194,7 +183,6 @@ export async function deactivateAllFCMTokens(userId: string): Promise<void> {
 			throw error;
 		}
 
-		console.log('All FCM tokens deactivated for user:', userId);
 	} catch (error) {
 		console.error('FCM tokens deactivation failed:', error);
 	}

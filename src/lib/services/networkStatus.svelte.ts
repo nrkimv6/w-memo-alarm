@@ -11,13 +11,11 @@ function createNetworkStatus() {
 
 		window.addEventListener('online', () => {
 			isOnline = true;
-			console.log('[Network] Online');
 			callbacks.forEach((cb) => cb(true));
 		});
 
 		window.addEventListener('offline', () => {
 			isOnline = false;
-			console.log('[Network] Offline');
 			callbacks.forEach((cb) => cb(false));
 		});
 	}

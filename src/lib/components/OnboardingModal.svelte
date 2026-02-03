@@ -82,7 +82,7 @@
 
 <dialog
 	bind:this={dialogRef}
-	class="fixed inset-0 z-50 m-0 h-screen w-screen max-h-screen max-w-full bg-black/60 backdrop-blur-sm p-0"
+	class="fixed inset-0 z-50 m-0 h-dvh w-dvw max-h-dvh max-w-full bg-black/60 backdrop-blur-sm p-0"
 	onclick={(e) => {
 		if (e.target === dialogRef) skip();
 	}}

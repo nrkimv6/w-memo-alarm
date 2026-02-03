@@ -41,14 +41,12 @@
 				// 비활성화된 토큰이 있는지 확인 (서버에서 NotRegistered로 비활성화됨)
 				const hasExpiredToken = await hasDeactivatedToken(authStore.user.id);
 				if (hasExpiredToken) {
-					console.log('[Layout] Found deactivated FCM token, showing reset alert');
 					showNotificationResetAlert = true;
 					return; // 사용자가 재설정할 때까지 대기
 				}
 
 				const result = await registerFCMToken(authStore.user.id);
 				if (result) {
-					console.log('[Layout] FCM token registered:', result.platform);
 					setupForegroundMessageListener();
 				}
 			} catch (error) {
@@ -66,7 +64,6 @@
 		try {
 			const result = await resetFCMToken(authStore.user.id);
 			if (result) {
-				console.log('[Layout] FCM token reset successfully');
 				setupForegroundMessageListener();
 			}
 		} catch (error) {
@@ -81,8 +78,6 @@
 
 	// Share Intent 수신 핸들러 (Android Native)
 	function handleShareIntent(data: ShareIntentData) {
-		console.log('[Layout] Share intent received:', data);
-
 		// /share 페이지로 리다이렉트 (쿼리 파라미터로 데이터 전달)
 		const queryString = shareIntentToQueryParams(data);
 		if (queryString) {
@@ -104,13 +99,7 @@
 		filterStore.init();
 		foldersStore.init();
 
-		// 디버그: memosStore.init() 완료 후 상태 확인
-		console.log('[Layout] memosStore.init() completed');
-		console.log('[Layout] memos count:', memosStore.memos.length);
-		console.log('[Layout] memos with reminders:', memosStore.memos.filter(m => m.reminder?.enabled).length);
-
 		// 메모 로드 완료 후 Service Worker에 알림 스케줄 등록
-		console.log('[Layout] Calling registerRemindersToServiceWorker...');
 		notificationStore.registerRemindersToServiceWorker();
 
 		// FCM 등록
