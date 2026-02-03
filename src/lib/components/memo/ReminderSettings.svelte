@@ -21,8 +21,8 @@
 	// 추가 알림
 	let additionalReminders = $derived(reminders.filter(r => !r.isDefault));
 
-	// 알림이 하나도 없을 때 표시할 버튼
-	let showAddButton = $derived(reminders.length === 0);
+	// 알림 섹션 펼침 여부
+	let showSection = $derived(reminders.length > 0);
 
 	function generateReminderId(): string {
 		return `rem_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
@@ -83,16 +83,27 @@
 </script>
 
 <div class="space-y-3">
-	{#if showAddButton}
+	{#if !showSection}
 		<!-- 알림이 없을 때 -->
-		<button
-			type="button"
-			onclick={addDefaultReminder}
-			class="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-		>
-			<Bell class="w-4 h-4" />
-			알림 추가
-		</button>
+		<div class="flex items-center gap-3">
+			<button
+				type="button"
+				onclick={addDefaultReminder}
+				class="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+			>
+				<Bell class="w-4 h-4" />
+				기본 알림 추가
+			</button>
+			<span class="text-muted-foreground/40">|</span>
+			<button
+				type="button"
+				onclick={addReminder}
+				class="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+			>
+				<Plus class="w-4 h-4" />
+				알림 추가
+			</button>
+		</div>
 	{:else}
 		<!-- 알림 설정 헤더 -->
 		<div class="flex items-center justify-between">
