@@ -5,7 +5,7 @@ import { supabase } from '$lib/services/supabase';
 import { authStore } from './auth.svelte';
 import { isNative, scheduleNotification, cancelNotification } from '$lib/utils/capacitor';
 import { toastStore } from './toast.svelte';
-import { createMemoAlarm, updateMemoAlarm, deleteMemoAlarms } from '$lib/services/alarmSchedules';
+import { createMemoAlarm, updateMemoAlarm, deleteMemoAlarms, syncMemoAlarms } from '$lib/services/alarmSchedules';
 import { syncQueue } from '$lib/services/syncQueue';
 import { settingsStore } from './settings.svelte';
 import { notificationStore } from './notifications.svelte';
@@ -101,6 +101,27 @@ function getDefaultReminderFromMemo(memo: Memo): Reminder | undefined {
 function getAdditionalRemindersFromMemo(memo: Memo): Reminder[] {
 	const reminders = getRemindersFromMemo(memo);
 	return reminders.filter(r => !r.isDefault);
+}
+
+// 동기화 실패 로그 (localStorage에 저장, 사용자에게 토스트 표시하지 않음)
+const SYNC_ERROR_LOG_KEY = 'memo-alarm-sync-errors';
+function logSyncError(action: string, entityId: string, error: any): void {
+	if (!browser) return;
+	try {
+		const logs = JSON.parse(localStorage.getItem(SYNC_ERROR_LOG_KEY) || '[]');
+		logs.push({
+			action,
+			entityId,
+			error: error?.message || String(error),
+			code: error?.code,
+			timestamp: Date.now()
+		});
+		// 최근 50건만 유지
+		if (logs.length > 50) logs.splice(0, logs.length - 50);
+		localStorage.setItem(SYNC_ERROR_LOG_KEY, JSON.stringify(logs));
+	} catch {
+		// 로깅 실패는 무시
+	}
 }
 
 // localStorage 캐시 (오프라인 폴백용)
@@ -453,16 +474,19 @@ function createMemosStore() {
 		saveCacheToStorage(memos);
 
 		// 알림 스케줄링 (네이티브: 로컬 알림, 웹: FCM 서버 알림 + SW)
-		if (result.reminder?.enabled) {
+		const reminders = getRemindersFromMemo(result);
+		const hasEnabledReminders = reminders.some(r => r.enabled);
+
+		if (hasEnabledReminders) {
 			if (await isNative()) {
 				scheduleNotification(result);
 			} else {
-				// FCM 서버 알림 등록
+				// FCM 서버 알림 등록 (1:N reminders 지원)
 				try {
-					await createMemoAlarm(authStore.user!.id, result.id, result.title, result.reminder);
-					console.log('[Alarms] Created memo alarm for:', result.title);
+					await syncMemoAlarms(authStore.user!.id, result.id, result.title, reminders);
+					console.log('[Alarms] Synced memo alarms for:', result.title);
 				} catch (alarmError) {
-					console.warn('[Alarms] Failed to create alarm:', alarmError);
+					console.warn('[Alarms] Failed to sync alarms:', alarmError);
 				}
 				// Service Worker에 알림 등록 (백그라운드 알림용)
 				notificationStore.updateReminderInServiceWorker(result);
@@ -521,14 +545,11 @@ function createMemosStore() {
 				await fetchFromSupabase();
 				return null;
 			}
-			// 기타 오류: 롤백
+			// 기타 오류: 로컬 저장은 유지, 동기화 실패는 로그만 남김
 			console.error('Failed to update memo:', error);
-			memos = [...memos.slice(0, index), originalMemo, ...memos.slice(index + 1)];
-			saveCacheToStorage(memos);
-			if (!options?.silent) {
-				toastStore.error('메모 수정 실패 - 복원됨');
-			}
-			return null;
+			logSyncError('update', id, error);
+			// 낙관적 업데이트 유지 (로컬 데이터는 보존) - 사용자에게 에러 토스트 표시하지 않음
+			return optimisticUpdate;
 		}
 
 		// 3. 서버 응답으로 최종 업데이트 (version 등 서버에서 관리하는 필드 반영)
@@ -540,12 +561,19 @@ function createMemosStore() {
 			saveCacheToStorage(memos);
 		}
 
-		// FCM 서버 알림 갱신 (웹)
-		if (changes.reminder !== undefined || changes.title !== undefined) {
+		// FCM 서버 알림 갱신 (웹) - reminders 배열 지원
+		if (changes.reminders !== undefined || changes.reminder !== undefined || changes.title !== undefined) {
 			if (!(await isNative())) {
-				updateMemoAlarm(authStore.user!.id, id, result.title, result.reminder).catch((alarmError) => {
-					console.warn('[Alarms] Failed to update alarm:', alarmError);
-				});
+				const reminders = getRemindersFromMemo(result);
+				if (reminders.length > 0) {
+					syncMemoAlarms(authStore.user!.id, id, result.title, reminders).catch((alarmError) => {
+						console.warn('[Alarms] Failed to sync alarms:', alarmError);
+					});
+				} else {
+					deleteMemoAlarms(id).catch((alarmError) => {
+						console.warn('[Alarms] Failed to delete alarms:', alarmError);
+					});
+				}
 				// Service Worker에 알림 갱신 (백그라운드 알림용)
 				notificationStore.updateReminderInServiceWorker(result);
 			}
