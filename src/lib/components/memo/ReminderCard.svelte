@@ -83,46 +83,55 @@
 				onchange={(e: Event) => onUpdate({ enabled: (e.target as HTMLInputElement).checked })}
 				{disabled}
 			/>
-			<button
-				type="button"
-				onclick={() => expanded = !expanded}
-				class="p-1.5 rounded hover:bg-muted transition-colors"
-				{disabled}
-			>
-				{#if expanded}
-					<ChevronUp class="w-4 h-4" />
-				{:else}
-					<ChevronDown class="w-4 h-4" />
-				{/if}
-			</button>
-			{#if !isDefault && onDelete}
+			{#if !isDefault}
 				<button
 					type="button"
-					onclick={onDelete}
-					class="p-1.5 rounded hover:bg-destructive/10 text-destructive transition-colors"
+					onclick={() => expanded = !expanded}
+					class="p-1.5 rounded hover:bg-muted transition-colors"
 					{disabled}
 				>
-					<Trash2 class="w-4 h-4" />
+					{#if expanded}
+						<ChevronUp class="w-4 h-4" />
+					{:else}
+						<ChevronDown class="w-4 h-4" />
+					{/if}
 				</button>
+				{#if onDelete}
+					<button
+						type="button"
+						onclick={onDelete}
+						class="p-1.5 rounded hover:bg-destructive/10 text-destructive transition-colors"
+						{disabled}
+					>
+						<Trash2 class="w-4 h-4" />
+					</button>
+				{/if}
 			{/if}
 		</div>
 	</div>
 
-	<!-- 확장된 설정 -->
-	{#if expanded}
+	<!-- 기본알림 안내 -->
+	{#if isDefault}
+		<div class="px-3 pb-2 text-xs text-muted-foreground">
+			설정에서 수정 가능
+		</div>
+	{/if}
+
+	<!-- 확장된 설정 (추가 알림만) -->
+	{#if !isDefault && expanded}
 		<div class="p-3 space-y-4 border-t border-border">
 			<!-- 알림 타입 선택 -->
 			<div class="flex gap-2">
 				<button
 					type="button"
 					onclick={() => onUpdate({ type: 'repeat' })}
-					disabled={disabled || isDefault}
+					{disabled}
 					class={cn(
 						'flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-medium transition-colors',
 						reminder.type !== 'once'
 							? 'bg-primary text-primary-foreground'
 							: 'bg-background border border-border hover:bg-muted',
-						(disabled || isDefault) && 'opacity-50 cursor-not-allowed'
+						disabled && 'opacity-50 cursor-not-allowed'
 					)}
 				>
 					<Repeat class="w-4 h-4" />
@@ -131,13 +140,13 @@
 				<button
 					type="button"
 					onclick={() => onUpdate({ type: 'once' })}
-					disabled={disabled || isDefault}
+					{disabled}
 					class={cn(
 						'flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-medium transition-colors',
 						reminder.type === 'once'
 							? 'bg-primary text-primary-foreground'
 							: 'bg-background border border-border hover:bg-muted',
-						(disabled || isDefault) && 'opacity-50 cursor-not-allowed'
+						disabled && 'opacity-50 cursor-not-allowed'
 					)}
 				>
 					<Calendar class="w-4 h-4" />
@@ -153,7 +162,7 @@
 					type="time"
 					value={reminder.time}
 					onchange={(e: Event) => onUpdate({ time: (e.target as HTMLInputElement).value })}
-					disabled={disabled || isDefault}
+					{disabled}
 					class="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
 				/>
 			</div>
@@ -181,13 +190,13 @@
 							<button
 								type="button"
 								onclick={() => toggleDay(i)}
-								disabled={disabled || isDefault}
+								{disabled}
 								class={cn(
 									'w-8 h-8 rounded-full text-xs font-medium transition-colors',
 									(reminder.days || []).includes(i)
 										? 'bg-primary text-primary-foreground'
 										: 'bg-background border border-border hover:bg-muted',
-									(disabled || isDefault) && 'opacity-50 cursor-not-allowed'
+									disabled && 'opacity-50 cursor-not-allowed'
 								)}
 							>
 								{label}
