@@ -1,4 +1,5 @@
 import type { Memo } from '$lib/types/memo';
+import { notificationHistoryStore } from '$lib/stores/notificationHistory.svelte';
 import { extractUrlFromText } from './shareReceiver';
 
 // 동적 import를 사용하여 Capacitor 모듈을 안전하게 로드
@@ -109,7 +110,30 @@ export async function scheduleNotification(memo: Memo): Promise<void> {
 	}
 
 	if (notifications.length > 0) {
-		await LocalNotifications.schedule({ notifications });
+		try {
+			await LocalNotifications.schedule({ notifications });
+			notificationHistoryStore.addRecord({
+				memoId: memo.id,
+				memoTitle: memo.title,
+				reminderId: memo.reminder?.id || '',
+				reminderType: memo.reminder?.isDefault ? 'default' : 'additional',
+				channel: 'capacitor-local',
+				status: 'success',
+				sentAt: new Date().toISOString()
+			});
+		} catch (e) {
+			const errorMsg = e instanceof Error ? e.message : String(e);
+			notificationHistoryStore.addRecord({
+				memoId: memo.id,
+				memoTitle: memo.title,
+				reminderId: memo.reminder?.id || '',
+				reminderType: memo.reminder?.isDefault ? 'default' : 'additional',
+				channel: 'capacitor-local',
+				status: 'failed',
+				errorMessage: errorMsg,
+				sentAt: new Date().toISOString()
+			});
+		}
 	}
 }
 
