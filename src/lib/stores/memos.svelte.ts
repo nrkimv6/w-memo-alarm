@@ -724,7 +724,11 @@ function createMemosStore() {
 		}
 
 		// 1. 즉시 로컬에서 제거 (낙관적 업데이트)
-		memos = [...memos.slice(0, memoIndex), ...memos.slice(memoIndex + 1)];
+		// await 이후 배열이 변경되었을 수 있으므로 인덱스 재조회 (stale index 방어)
+		const currentIndex = memos.findIndex((m) => m.id === id);
+		if (currentIndex === -1) return false; // 이미 다른 호출에서 삭제됨
+
+		memos = [...memos.slice(0, currentIndex), ...memos.slice(currentIndex + 1)];
 		saveCacheToStorage(memos);
 
 		if (!authStore.isAuthenticated) {
@@ -737,8 +741,9 @@ function createMemosStore() {
 
 		if (error) {
 			console.error('Failed to delete memo:', error);
-			// 롤백: 삭제 실패 시 복원
-			memos = [...memos.slice(0, memoIndex), memoToDelete, ...memos.slice(memoIndex)];
+			// 롤백: 삭제 실패 시 복원 (현재 배열 기준으로 원래 위치에 삽입)
+			const rollbackIndex = Math.min(currentIndex, memos.length);
+			memos = [...memos.slice(0, rollbackIndex), memoToDelete, ...memos.slice(rollbackIndex)];
 			saveCacheToStorage(memos);
 			toastStore.error('메모 삭제 실패 - 복원됨');
 			return false;
@@ -978,6 +983,46 @@ function createMemosStore() {
 		toastStore.error('로그인된 상태에서는 개별 삭제만 가능합니다.');
 	}
 
+	async function removeAll(): Promise<void> {
+		const memosToDelete = [...memos];
+
+		// 알림 일괄 취소
+		for (const memo of memosToDelete) {
+			if (await isNative()) {
+				cancelNotification(memo.id);
+			} else {
+				notificationStore.removeReminderFromServiceWorker(memo.id);
+				if (authStore.isAuthenticated) {
+					deleteMemoAlarms(memo.id).catch((e) => {
+						console.warn('[Alarms] Failed to delete alarms:', e);
+					});
+				}
+			}
+
+			if (memo.memoType === 'todo') {
+				const { cancelTodoNotifications } = await import('$lib/utils/todoNotifications');
+				await cancelTodoNotifications(memo.id);
+			}
+		}
+
+		// 로컬 상태 일괄 초기화
+		memos = [];
+		saveCacheToStorage([]);
+
+		// 서버 일괄 삭제 (로그인 시)
+		if (authStore.isAuthenticated && authStore.user?.id) {
+			const { error } = await supabase
+				.from('ma_memos')
+				.delete()
+				.eq('user_id', authStore.user.id);
+
+			if (error) {
+				console.error('Failed to delete all memos from server:', error);
+				toastStore.error('서버 메모 삭제 실패');
+			}
+		}
+	}
+
 	function cleanup() {
 		subscription?.unsubscribe();
 		subscription = null;
@@ -1193,6 +1238,7 @@ function createMemosStore() {
 		importMemos,
 		importData,
 		clearAll,
+		removeAll,
 		cleanup,
 		retrySync,
 		updateDefaultReminderMemos,

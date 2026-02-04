@@ -562,8 +562,8 @@
 		showClearAllDialog = true;
 	}
 
-	function confirmClearAll() {
-		clearAllData();
+	async function confirmClearAll() {
+		await clearAllData();
 	}
 </script>
 
