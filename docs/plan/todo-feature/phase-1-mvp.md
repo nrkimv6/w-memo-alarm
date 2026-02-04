@@ -179,15 +179,15 @@
 
 ### 5-1. 하단 네비바 수정 (4탭 구조)
 
-- [ ] `src/lib/components/BottomNav.svelte` 수정 — 4탭: 홈 / 메모 / 할일 / 설정
+- [x] `src/lib/components/BottomNav.svelte` 수정 — 4탭: 홈 / 메모 / 할일 / 설정
   - 할일 탭 아이콘: CheckSquare 또는 유사 아이콘 (lucide-svelte)
   - 링크: /todos
   - 기존 탭 간격 4탭에 맞게 조정
-- [ ] 알림내역 접근: 홈 상단 벨 아이콘 또는 설정 내 하위메뉴로 이동
+- [x] 알림내역 접근: 홈 상단 벨 아이콘 또는 설정 내 하위메뉴로 이동
 
 ### 5-2. 홈 화면 "오늘의 할일" 섹션
 
-- [ ] `src/routes/+page.svelte`에 "오늘의 할일" 섹션 추가
+- [x] `src/routes/+page.svelte`에 "오늘의 할일" 섹션 추가
   - 오늘 기한 할일 + overdue 할일 표시 (최대 5개)
   - "더 보기" → /todos 이동
 
