@@ -9,9 +9,10 @@
 		compact?: boolean;
 		onEdit?: (todo: Memo) => void;
 		onPostpone?: (todo: Memo) => void;
+		onSkip?: (todo: Memo) => void;
 	}
 
-	let { todo, compact = false, onEdit, onPostpone }: Props = $props();
+	let { todo, compact = false, onEdit, onPostpone, onSkip }: Props = $props();
 
 	const overdue = $derived(isOverdue(todo));
 	const completed = $derived(todo.todoStatus === 'completed');
@@ -32,6 +33,11 @@
 	function handlePostpone(e: MouseEvent) {
 		e.stopPropagation();
 		onPostpone?.(todo);
+	}
+
+	function handleSkip(e: MouseEvent) {
+		e.stopPropagation();
+		onSkip?.(todo);
 	}
 </script>
 
@@ -129,6 +135,12 @@
 							📌 미루기
 						</button>
 					{/if}
+					<button
+						onclick={handleSkip}
+						class="px-3 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md transition-colors"
+					>
+						⏭️ 건너뛰기
+					</button>
 					<button
 						onclick={handleEdit}
 						class="px-3 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"

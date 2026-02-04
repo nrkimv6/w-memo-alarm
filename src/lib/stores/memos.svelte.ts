@@ -431,13 +431,30 @@ function createMemosStore() {
 				reminder: reminder,
 				folderId: data.folderId,
 				checklist: data.checklist,
-				syncStatus: 'synced' // 로컬 전용은 항상 synced
+				syncStatus: 'synced', // 로컬 전용은 항상 synced
+				memoType: data.memoType,
+				todoStatus: data.todoStatus,
+				todoPriority: data.todoPriority,
+				dueDate: data.dueDate,
+				dueTime: data.dueTime,
+				todoTiming: data.todoTiming,
+				completedAt: data.completedAt,
+				recurrence: data.recurrence,
+				todoInstances: data.todoInstances,
+				postponeInfo: data.postponeInfo,
+				todoGroupId: data.todoGroupId
 			};
 			memos = [newMemo, ...memos];
 			saveCacheToStorage(memos);
 
 			if (newMemo.reminder?.enabled && (await isNative())) {
 				scheduleNotification(newMemo);
+			}
+
+			// Todo 알림 스케줄링 (Phase 2)
+			if (newMemo.memoType === 'todo') {
+				const { scheduleTodoNotifications } = await import('$lib/utils/todoNotifications');
+				await scheduleTodoNotifications(newMemo);
 			}
 
 			return newMemo;
@@ -461,7 +478,18 @@ function createMemosStore() {
 			reminder: reminder,
 			folderId: data.folderId,
 			checklist: data.checklist,
-			syncStatus: 'pending'
+			syncStatus: 'pending',
+			memoType: data.memoType,
+			todoStatus: data.todoStatus,
+			todoPriority: data.todoPriority,
+			dueDate: data.dueDate,
+			dueTime: data.dueTime,
+			todoTiming: data.todoTiming,
+			completedAt: data.completedAt,
+			recurrence: data.recurrence,
+			todoInstances: data.todoInstances,
+			postponeInfo: data.postponeInfo,
+			todoGroupId: data.todoGroupId
 		};
 		memos = [optimisticMemo, ...memos];
 		saveCacheToStorage(memos);
@@ -516,6 +544,12 @@ function createMemosStore() {
 				// Service Worker에 알림 등록 (백그라운드 알림용)
 				notificationStore.updateReminderInServiceWorker(result);
 			}
+		}
+
+		// Todo 알림 스케줄링 (Phase 2)
+		if (result.memoType === 'todo') {
+			const { scheduleTodoNotifications } = await import('$lib/utils/todoNotifications');
+			await scheduleTodoNotifications(result);
 		}
 
 		return result;
@@ -604,6 +638,19 @@ function createMemosStore() {
 			}
 		}
 
+		// Todo 알림 스케줄링 (Phase 2) - todo 필드가 변경되었을 때
+		if (result.memoType === 'todo' && (
+			changes.dueDate !== undefined ||
+			changes.dueTime !== undefined ||
+			changes.todoTiming !== undefined ||
+			changes.todoStatus !== undefined ||
+			changes.todoPriority !== undefined ||
+			changes.title !== undefined
+		)) {
+			const { scheduleTodoNotifications } = await import('$lib/utils/todoNotifications');
+			await scheduleTodoNotifications(result);
+		}
+
 		return result;
 	}
 
@@ -627,6 +674,12 @@ function createMemosStore() {
 					console.warn('[Alarms] Failed to delete alarms:', alarmError);
 				});
 			}
+		}
+
+		// Todo 알림 취소 (Phase 2)
+		if (memoToDelete.memoType === 'todo') {
+			const { cancelTodoNotifications } = await import('$lib/utils/todoNotifications');
+			await cancelTodoNotifications(id);
 		}
 
 		// 1. 즉시 로컬에서 제거 (낙관적 업데이트)
@@ -896,14 +949,9 @@ function createMemosStore() {
 			m => m.memoType === 'todo' && m.todoTiming?.useGlobalRemind
 		);
 
-		for (const todo of todosWithGlobalRemind) {
-			await update(todo.id, {
-				todoTiming: {
-					...todo.todoTiming!,
-					remindTimes: [] // Phase 2에서 실제 시각 계산
-				}
-			});
-		}
+		// Phase 2: 알림 재스케줄
+		const { rescheduleAllTodosForGlobalRemind } = await import('$lib/utils/todoNotifications');
+		await rescheduleAllTodosForGlobalRemind(todosWithGlobalRemind, time);
 	}
 
 	async function updateGlobalAutoAlertTodos(minutesBefore: number): Promise<void> {
@@ -911,14 +959,9 @@ function createMemosStore() {
 			m => m.memoType === 'todo' && m.todoTiming?.useGlobalAutoAlert
 		);
 
-		for (const todo of todosWithGlobalAutoAlert) {
-			await update(todo.id, {
-				todoTiming: {
-					...todo.todoTiming!,
-					autoAlertBefore: minutesBefore
-				}
-			});
-		}
+		// Phase 2: 알림 재스케줄
+		const { rescheduleAllTodosForGlobalAutoAlert } = await import('$lib/utils/todoNotifications');
+		await rescheduleAllTodosForGlobalAutoAlert(todosWithGlobalAutoAlert, minutesBefore);
 	}
 
 	return {

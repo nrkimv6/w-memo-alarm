@@ -28,6 +28,12 @@
 	let useGlobalAutoAlert = $state(memo?.todoTiming?.useGlobalAutoAlert ?? true);
 	let autoAlertBefore = $state(memo?.todoTiming?.autoAlertBefore);
 	let showOverdue = $state(memo?.todoTiming?.showOverdue ?? true);
+	let remindTimes = $state<Array<{ type: 'time' | 'before_due'; value: string }>>(
+		memo?.todoTiming?.remindTimes || []
+	);
+	let alertTimes = $state<Array<{ type: 'datetime' | 'before_due'; value: string }>>(
+		memo?.todoTiming?.alertTimes || []
+	);
 
 	// UI state
 	let showAlarmSection = $state(!!dueDate || !!memo?.dueDate);
@@ -85,10 +91,10 @@
 
 		const todoTiming: TodoTiming = {
 			useGlobalRemind,
-			remindTimes: [],
+			remindTimes: useGlobalRemind ? [] : remindTimes,
 			useGlobalAutoAlert,
 			autoAlertBefore: useGlobalAutoAlert ? globalAutoAlertMinutes : autoAlertBefore,
-			alertTimes: [],
+			alertTimes: alertTimes,
 			showOverdue
 		};
 

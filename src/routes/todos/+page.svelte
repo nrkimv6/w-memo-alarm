@@ -4,6 +4,8 @@
 	import TodoForm from '$lib/components/todo/TodoForm.svelte';
 	import TodoCard from '$lib/components/todo/TodoCard.svelte';
 	import PostponeSheet from '$lib/components/todo/PostponeSheet.svelte';
+	import AlertModal from '$lib/components/todo/AlertModal.svelte';
+	import UndoToast from '$lib/components/todo/UndoToast.svelte';
 	import {
 		filterTodos,
 		sortTodos,
@@ -17,12 +19,18 @@
 	} from '$lib/utils/todo';
 	import type { Memo } from '$lib/types/memo';
 	import { Plus, Search, Settings, CheckSquare, Calendar, Clock, AlertCircle } from 'lucide-svelte';
+	import { onMount, onDestroy } from 'svelte';
+	import { initTodoAlertManager, cleanupTodoAlertManager } from '$lib/utils/todoAlertManager.svelte';
 
 	let showTodoForm = $state(false);
 	let showPostponeSheet = $state(false);
+	let showAlertModal = $state(false);
+	let showUndoToast = $state(false);
 	let selectedFilter = $state<'today' | 'week' | 'all' | 'completed'>('today');
 	let editingTodo = $state<Memo | undefined>(undefined);
 	let postponingTodo = $state<Memo | undefined>(undefined);
+	let alertingTodo = $state<Memo | undefined>(undefined);
+	let lastCompletedTodo = $state<Memo | undefined>(undefined);
 
 	const memos = $derived(memosStore.memos);
 	const todos = $derived(memos.filter(m => m.memoType === 'todo'));
@@ -58,6 +66,34 @@
 			todoStatus: newStatus,
 			completedAt: newStatus === 'completed' ? Date.now() : undefined
 		});
+
+		// 완료 시 undo 토스트 표시 (Phase 2)
+		if (newStatus === 'completed') {
+			lastCompletedTodo = todo;
+			showUndoToast = true;
+		}
+	}
+
+	async function handleUndo() {
+		if (!lastCompletedTodo) return;
+		await memosStore.updateMemo(lastCompletedTodo.id, {
+			todoStatus: 'pending',
+			completedAt: undefined
+		});
+		lastCompletedTodo = undefined;
+	}
+
+	function dismissUndoToast() {
+		showUndoToast = false;
+		lastCompletedTodo = undefined;
+	}
+
+	async function handleSkip(todo: Memo) {
+		if (!confirm(`"${todo.title}" 할일을 건너뛰시겠습니까?`)) return;
+
+		await memosStore.updateMemo(todo.id, {
+			todoStatus: 'skipped'
+		});
 	}
 
 	function formatSectionDate(dateStr: string): string {
@@ -76,6 +112,31 @@
 
 		return `${date.getMonth() + 1}/${date.getDate()} (${['일', '월', '화', '수', '목', '금', '토'][date.getDay()]})`;
 	}
+
+	function handleAlert(todo: Memo) {
+		alertingTodo = todo;
+		showAlertModal = true;
+	}
+
+	function closeAlertModal() {
+		showAlertModal = false;
+		alertingTodo = undefined;
+	}
+
+	function handleAlertPostpone(todo: Memo) {
+		closeAlertModal();
+		openPostponeSheet(todo);
+	}
+
+	onMount(() => {
+		// 포그라운드 알람 감지 시작
+		initTodoAlertManager(() => memosStore.memos, handleAlert);
+	});
+
+	onDestroy(() => {
+		// 정리
+		cleanupTodoAlertManager();
+	});
 </script>
 
 <svelte:head>
@@ -162,6 +223,7 @@
 								{todo}
 								onEdit={openTodoForm}
 								onPostpone={openPostponeSheet}
+								onSkip={handleSkip}
 							/>
 						{/each}
 					</div>
@@ -184,6 +246,7 @@
 								{todo}
 								onEdit={openTodoForm}
 								onPostpone={openPostponeSheet}
+								onSkip={handleSkip}
 							/>
 						{/each}
 					</div>
@@ -221,4 +284,18 @@
 <!-- Postpone Sheet -->
 {#if showPostponeSheet && postponingTodo}
 	<PostponeSheet todo={postponingTodo} onClose={closePostponeSheet} />
+{/if}
+
+<!-- Alert Modal -->
+{#if showAlertModal && alertingTodo}
+	<AlertModal todo={alertingTodo} onClose={closeAlertModal} onPostpone={handleAlertPostpone} />
+{/if}
+
+<!-- Undo Toast -->
+{#if showUndoToast && lastCompletedTodo}
+	<UndoToast
+		message={`"${lastCompletedTodo.title}" 완료`}
+		onUndo={handleUndo}
+		onDismiss={dismissUndoToast}
+	/>
 {/if}
