@@ -6,6 +6,7 @@
 	import { themeStore } from "$lib/stores/theme.svelte";
 	import { settingsStore } from "$lib/stores/settings.svelte";
 	import { notificationStore } from "$lib/stores/notifications.svelte";
+	import { notificationHistoryStore } from "$lib/stores/notificationHistory.svelte";
 	import { authStore } from "$lib/stores/auth.svelte";
 	import { memosStore } from "$lib/stores/memos.svelte";
 	import { filterStore } from "$lib/stores/filter.svelte";
@@ -89,6 +90,7 @@
 		themeStore.init();
 		settingsStore.init();
 		notificationStore.init();
+		notificationHistoryStore.init();
 
 		// authStore 초기화 완료 후 stores 초기화
 		await authStore.initialize();

@@ -66,6 +66,19 @@ export type MemoCreate = Omit<Memo, 'id' | 'createdAt' | 'updatedAt' | 'isPinned
 
 export type MemoUpdate = Partial<Omit<Memo, 'id' | 'createdAt'>>;
 
+export interface NotificationHistory {
+	id: string; // noti_타임스탬프_랜덤
+	memoId: string;
+	memoTitle: string; // 발송 시점 스냅샷
+	reminderId: string;
+	reminderType: 'default' | 'additional';
+	channel: 'sw-push' | 'capacitor-local' | 'fcm-push';
+	status: 'success' | 'failed' | 'unknown';
+	errorMessage?: string;
+	sentAt: string; // ISO datetime string
+	readAt?: string; // ISO datetime string (P2)
+}
+
 export type FilterType = 'all' | 'pinned' | 'favorites' | 'archived';
 
 export type SortType = 'recent' | 'oldest' | 'title' | 'updated';

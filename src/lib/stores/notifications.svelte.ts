@@ -1,5 +1,6 @@
 import type { Memo, Reminder } from '$lib/types/memo';
 import { memosStore } from './memos.svelte';
+import { notificationHistoryStore } from './notificationHistory.svelte';
 import { createLogger, devLogStore } from './devLogs.svelte';
 import { getCurrentTimeHHMM, getTodayDateISO } from '$lib/utils/timeUtils';
 import { SW_MSG } from '$lib/constants/swMessages';
@@ -113,7 +114,7 @@ function createNotificationStore() {
 			log.warn('❌ Notification API not supported');
 		}
 
-		// SW에서 보낸 로그 수신
+		// SW에서 보낸 로그 및 알림 발송 기록 수신
 		if ('serviceWorker' in navigator) {
 			navigator.serviceWorker.addEventListener('message', (event) => {
 				if (event.data.type === SW_MSG.SW_LOG) {
@@ -123,6 +124,19 @@ function createNotificationStore() {
 						event.data.message,
 						event.data.data
 					);
+				}
+				if (event.data.type === SW_MSG.NOTIFICATION_SENT) {
+					notificationHistoryStore.addRecord({
+						memoId: event.data.memoId,
+						memoTitle: event.data.memoTitle,
+						reminderId: event.data.reminderId || '',
+						reminderType: event.data.reminderType || 'default',
+						channel: event.data.channel || 'sw-push',
+						status: event.data.status,
+						errorMessage: event.data.errorMessage || undefined,
+						sentAt: event.data.sentAt
+					});
+					log.info(`SW notification record: ${event.data.memoTitle} (${event.data.status})`);
 				}
 			});
 			log.info('SW message listener registered');
@@ -287,23 +301,72 @@ function createNotificationStore() {
 			requireInteraction: true
 		};
 
+		const reminders = getRemindersFromMemo(memo);
+		const activeReminder = reminders.find(r => r.enabled);
+
 		if ('serviceWorker' in navigator) {
 			log.info('Using Service Worker');
 			navigator.serviceWorker.ready.then((registration) => {
 				log.info('SW ready, showing...');
-				registration.showNotification(title, options);
+				try {
+					registration.showNotification(title, options);
+					notificationHistoryStore.addRecord({
+						memoId: memo.id,
+						memoTitle: memo.title,
+						reminderId: activeReminder?.id || '',
+						reminderType: activeReminder?.isDefault ? 'default' : 'additional',
+						channel: 'sw-push',
+						status: 'success',
+						sentAt: new Date().toISOString()
+					});
+				} catch (e) {
+					const errorMsg = e instanceof Error ? e.message : String(e);
+					notificationHistoryStore.addRecord({
+						memoId: memo.id,
+						memoTitle: memo.title,
+						reminderId: activeReminder?.id || '',
+						reminderType: activeReminder?.isDefault ? 'default' : 'additional',
+						channel: 'sw-push',
+						status: 'failed',
+						errorMessage: errorMsg,
+						sentAt: new Date().toISOString()
+					});
+				}
 			});
 		} else {
 			log.info('Using native Notification API');
-			const notification = new Notification(title, options);
-			notification.onclick = () => {
-				window.focus();
-				if (memo.url && memo.reminder?.autoOpen) {
-					window.open(memo.url, '_blank');
-					memosStore.incrementOpenCount(memo.id);
-				}
-				notification.close();
-			};
+			try {
+				const notification = new Notification(title, options);
+				notification.onclick = () => {
+					window.focus();
+					if (memo.url && memo.reminder?.autoOpen) {
+						window.open(memo.url, '_blank');
+						memosStore.incrementOpenCount(memo.id);
+					}
+					notification.close();
+				};
+				notificationHistoryStore.addRecord({
+					memoId: memo.id,
+					memoTitle: memo.title,
+					reminderId: activeReminder?.id || '',
+					reminderType: activeReminder?.isDefault ? 'default' : 'additional',
+					channel: 'sw-push',
+					status: 'success',
+					sentAt: new Date().toISOString()
+				});
+			} catch (e) {
+				const errorMsg = e instanceof Error ? e.message : String(e);
+				notificationHistoryStore.addRecord({
+					memoId: memo.id,
+					memoTitle: memo.title,
+					reminderId: activeReminder?.id || '',
+					reminderType: activeReminder?.isDefault ? 'default' : 'additional',
+					channel: 'sw-push',
+					status: 'failed',
+					errorMessage: errorMsg,
+					sentAt: new Date().toISOString()
+				});
+			}
 		}
 	}
 

@@ -14,12 +14,14 @@
 		Folder,
 		Link2
 	} from 'lucide-svelte';
+	import { goto } from '$app/navigation';
 	import Modal from '$lib/components/ui/Modal.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import type { Memo } from '$lib/types/memo';
 	import { memosStore } from '$lib/stores/memos.svelte';
 	import { foldersStore } from '$lib/stores/folders.svelte';
+	import { notificationHistoryStore } from '$lib/stores/notificationHistory.svelte';
 	import { cn, formatRelativeTime, formatSmartDate } from '$lib/utils';
 
 	interface Props {
@@ -235,6 +237,14 @@
 							<span class="px-1.5 py-0.5 rounded bg-secondary/20 text-secondary text-[10px] font-medium">1회</span>
 						{/if}
 					</div>
+					{#if notificationHistoryStore.getByMemoId(memo.id).length > 0}
+						<button
+							onclick={() => { onClose(); goto(`/notifications?memoId=${memo.id}`); }}
+							class="text-xs text-primary hover:underline ml-7"
+						>
+							발송내역 {notificationHistoryStore.getByMemoId(memo.id).length}건 보기
+						</button>
+					{/if}
 				{/if}
 
 				<!-- Open history -->

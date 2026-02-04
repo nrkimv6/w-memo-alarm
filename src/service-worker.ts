@@ -135,21 +135,46 @@ sw.addEventListener('push', (event) => {
 	);
 });
 
+// 알림 발송 기록을 메인 앱에 전달
+function sendNotificationRecord(reminder: ScheduledReminder, status: 'success' | 'failed', errorMessage?: string) {
+	sw.clients.matchAll().then((clients) => {
+		clients.forEach((client) => {
+			client.postMessage({
+				type: 'NOTIFICATION_SENT',
+				memoId: reminder.memoId,
+				memoTitle: reminder.title,
+				reminderId: reminder.reminderId || '',
+				reminderType: 'default',
+				channel: 'sw-push',
+				status,
+				errorMessage: errorMessage || null,
+				sentAt: new Date().toISOString()
+			});
+		});
+	});
+}
+
 // 단일 알림 표시
 function showSingleNotification(reminder: ScheduledReminder) {
-	sw.registration.showNotification(reminder.title, {
-		body: reminder.body || '알림이 도착했습니다',
-		icon: '/favicon.png',
-		badge: '/favicon.png',
-		tag: `memo-${reminder.memoId}`,
-		data: {
-			memoId: reminder.memoId,
-			url: reminder.url || '/',
-			type: 'single'
-		},
-		vibrate: [200, 100, 200],
-		requireInteraction: true
-	});
+	try {
+		sw.registration.showNotification(reminder.title, {
+			body: reminder.body || '알림이 도착했습니다',
+			icon: '/favicon.png',
+			badge: '/favicon.png',
+			tag: `memo-${reminder.memoId}`,
+			data: {
+				memoId: reminder.memoId,
+				url: reminder.url || '/',
+				type: 'single'
+			},
+			vibrate: [200, 100, 200],
+			requireInteraction: true
+		});
+		sendNotificationRecord(reminder, 'success');
+	} catch (e) {
+		const errorMsg = e instanceof Error ? e.message : String(e);
+		sendNotificationRecord(reminder, 'failed', errorMsg);
+	}
 }
 
 // 병합 알림 표시 (같은 시간에 여러 알림이 있을 때)
@@ -157,20 +182,26 @@ function showMergedNotification(reminders: ScheduledReminder[], time: string) {
 	const titles = reminders.map(r => `• ${r.title}`).join('\n');
 	const memoIds = reminders.map(r => r.memoId);
 
-	sw.registration.showNotification(`${reminders.length}개의 메모 알림`, {
-		body: titles,
-		icon: '/favicon.png',
-		badge: '/favicon.png',
-		tag: `memo-batch-${time}`,
-		data: {
-			memoIds,
-			url: '/',
-			type: 'merged',
-			time
-		},
-		vibrate: [200, 100, 200],
-		requireInteraction: true
-	});
+	try {
+		sw.registration.showNotification(`${reminders.length}개의 메모 알림`, {
+			body: titles,
+			icon: '/favicon.png',
+			badge: '/favicon.png',
+			tag: `memo-batch-${time}`,
+			data: {
+				memoIds,
+				url: '/',
+				type: 'merged',
+				time
+			},
+			vibrate: [200, 100, 200],
+			requireInteraction: true
+		});
+		reminders.forEach((r) => sendNotificationRecord(r, 'success'));
+	} catch (e) {
+		const errorMsg = e instanceof Error ? e.message : String(e);
+		reminders.forEach((r) => sendNotificationRecord(r, 'failed', errorMsg));
+	}
 }
 
 // 메모 알림 체크 함수
