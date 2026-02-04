@@ -444,7 +444,7 @@
 								전체
 							</button>
 							{#each Array.from(availableFolders) as folderId}
-								{@const folder = foldersStore.getFolderById(folderId)}
+								{@const folder = foldersStore.getById(folderId)}
 								{#if folder}
 									<button
 										onclick={() => selectedFolder = selectedFolder === folderId ? undefined : folderId}

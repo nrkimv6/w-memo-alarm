@@ -42,8 +42,10 @@ export interface TodoRemindEntry {
 // Todo 알람 항목
 export interface TodoAlertEntry {
 	id: string;
-	time: string; // HH:mm
-	date?: string; // YYYY-MM-DD (특정 날짜 알람의 경우)
+	type: 'datetime' | 'before_due'; // 'datetime': 특정 날짜/시각, 'before_due': 기한 N분 전
+	time?: string; // HH:mm (type='datetime'일 때)
+	date?: string; // YYYY-MM-DD (type='datetime'일 때)
+	minutesBefore?: number; // 기한 전 분 (type='before_due'일 때)
 }
 
 // Todo 타이밍 설정 (상기/알람 통합)

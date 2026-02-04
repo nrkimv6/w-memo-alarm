@@ -113,7 +113,7 @@ function buildRemindNotifications(todo: Memo, globalRemindTime: string): TodoSch
 	// 개별 remindTimes 처리
 	else if (timing.remindTimes.length > 0) {
 		timing.remindTimes.forEach((remind, index) => {
-			if (remind.type === 'time') {
+			if (remind.type === 'time' && remind.time) {
 				// 매일 특정 시각
 				notifications.push({
 					memoId: todo.id,
@@ -122,15 +122,15 @@ function buildRemindNotifications(todo: Memo, globalRemindTime: string): TodoSch
 					body: buildRemindBody(todo),
 					type: 'todo-remind',
 					priority: 'normal',
-					time: remind.value, // HH:MM
+					time: remind.time, // HH:MM
 					requireInteraction: false,
 					url: `/todos?id=${todo.id}`,
 					dueDate: effectiveDueDate,
 					dueTime: todo.dueTime
 				});
-			} else if (remind.type === 'before_due' && effectiveDueDate) {
+			} else if (remind.type === 'before_due' && remind.minutesBefore && effectiveDueDate) {
 				// 기한 N분 전
-				const alertTime = calculateBeforeDueTime(effectiveDueDate, todo.dueTime, remind.value);
+				const alertTime = calculateBeforeDueTime(effectiveDueDate, todo.dueTime, String(remind.minutesBefore));
 				if (alertTime && alertTime > new Date()) {
 					notifications.push({
 						memoId: todo.id,
@@ -247,10 +247,10 @@ function calculateBeforeDueTime(
  */
 function parseAlertDateTime(alert: TodoAlertEntry, dueDate?: string): Date | null {
 	try {
-		if (alert.type === 'datetime') {
-			return new Date(alert.value);
-		} else if (alert.type === 'before_due' && dueDate) {
-			return calculateBeforeDueTime(dueDate, undefined, alert.value);
+		if (alert.type === 'datetime' && alert.date && alert.time) {
+			return new Date(`${alert.date}T${alert.time}:00`);
+		} else if (alert.type === 'before_due' && alert.minutesBefore && dueDate) {
+			return calculateBeforeDueTime(dueDate, undefined, String(alert.minutesBefore));
 		}
 		return null;
 	} catch {
