@@ -21,7 +21,7 @@
 	);
 
 	// 빠른 선택 옵션
-	const quickOptions = $derived(() => {
+	const quickOptions = $derived.by(() => {
 		const today = new Date();
 		const options = [];
 
@@ -164,7 +164,7 @@
 				<div>
 					<h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">빠른 선택</h4>
 					<div class="grid grid-cols-2 gap-2">
-						{#each quickOptions() as option}
+						{#each quickOptions as option}
 							<button
 								onclick={() => selectQuick(option.date)}
 								class="p-3 border rounded-lg text-left transition-colors {

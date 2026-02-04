@@ -10,7 +10,7 @@
 
 	let { todo, count = 5 }: Props = $props();
 
-	const schedules = $derived(() => {
+	const schedules = $derived.by(() => {
 		if (!todo.recurrence || !todo.todoInstances) return [];
 		return getUpcomingSchedules(todo.recurrence, todo.todoInstances, count);
 	});
@@ -59,9 +59,9 @@
 		{recurrenceDesc}
 	</p>
 
-	{#if schedules().length > 0}
+	{#if schedules.length > 0}
 		<div class="space-y-2">
-			{#each schedules() as schedule, idx}
+			{#each schedules as schedule, idx}
 				<div class="flex items-center justify-between p-2 rounded {
 					schedule.isActive
 						? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800'

@@ -20,7 +20,7 @@
 	);
 
 	// 다음 일정 계산
-	const nextSchedule = $derived(() => {
+	const nextSchedule = $derived.by(() => {
 		if (!todo.recurrence || !activeInstance) return null;
 
 		const fromDate = new Date(activeInstance.scheduledDate);
@@ -81,10 +81,10 @@
 			{/if}
 
 			<!-- 다음 일정 안내 -->
-			{#if nextSchedule()}
+			{#if nextSchedule}
 				<div class="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
 					<p class="text-sm text-green-900 dark:text-green-100">
-						다음 할일: <strong>{formatDate(nextSchedule())}</strong>에 자동 생성됩니다.
+						다음 할일: <strong>{formatDate(nextSchedule)}</strong>에 자동 생성됩니다.
 					</p>
 				</div>
 			{:else}
