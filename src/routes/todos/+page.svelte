@@ -1,0 +1,642 @@
+<script lang="ts">
+	import { memosStore } from '$lib/stores/memos.svelte';
+	import { settingsStore } from '$lib/stores/settings.svelte';
+	import { foldersStore } from '$lib/stores/folders.svelte';
+	import TodoForm from '$lib/components/todo/TodoForm.svelte';
+	import TodoCard from '$lib/components/todo/TodoCard.svelte';
+	import PostponeSheet from '$lib/components/todo/PostponeSheet.svelte';
+	import AlertModal from '$lib/components/todo/AlertModal.svelte';
+	import UndoToast from '$lib/components/todo/UndoToast.svelte';
+	import SkipDialog from '$lib/components/todo/SkipDialog.svelte';
+	import TodoStats from '$lib/components/todo/TodoStats.svelte';
+	import {
+		filterTodos,
+		sortTodos,
+		groupTodosByDate,
+		isOverdue,
+		formatDueDate,
+		getOverdueDays,
+		getPriorityColor,
+		getPriorityLabel
+	} from '$lib/utils/todo';
+	import { getTodayProgress, getWeekProgress } from '$lib/utils/todoProgress';
+	import type { Memo } from '$lib/types/memo';
+	import { Plus, Search, Settings, CheckSquare, Calendar, Clock, AlertCircle, BarChart3, ChevronDown, ChevronUp, CheckSquare2, X, Trash2 } from 'lucide-svelte';
+	import { onMount, onDestroy } from 'svelte';
+	import { initTodoAlertManager, cleanupTodoAlertManager } from '$lib/utils/todoAlertManager.svelte';
+
+	let showTodoForm = $state(false);
+	let showPostponeSheet = $state(false);
+	let showSkipDialog = $state(false);
+	let showAlertModal = $state(false);
+	let showUndoToast = $state(false);
+	let showStats = $state(false);
+	let selectedFilter = $state<'today' | 'week' | 'all' | 'completed'>('today');
+	let selectedTag = $state<string | undefined>(undefined);
+	let selectedFolder = $state<string | undefined>(undefined);
+	let editingTodo = $state<Memo | undefined>(undefined);
+	let postponingTodo = $state<Memo | undefined>(undefined);
+	let skippingTodo = $state<Memo | undefined>(undefined);
+	let alertingTodo = $state<Memo | undefined>(undefined);
+	let lastCompletedTodo = $state<Memo | undefined>(undefined);
+	// Phase 4 Section 7: Batch actions
+	let isMultiSelectMode = $state(false);
+	let selectedTodoIds = $state<Set<string>>(new Set());
+
+	const memos = $derived(memosStore.memos);
+	const todos = $derived(memos.filter(m => m.memoType === 'todo'));
+	const filteredTodos = $derived(() => {
+		let result = filterTodos(todos, selectedFilter);
+
+		// Phase 4 Section 4: Tag filtering
+		if (selectedTag) {
+			result = result.filter(t => t.tags.includes(selectedTag));
+		}
+
+		// Phase 4 Section 4: Folder filtering
+		if (selectedFolder) {
+			result = result.filter(t => t.folderId === selectedFolder);
+		}
+
+		return result;
+	});
+	const sortedTodos = $derived(sortTodos(filteredTodos()));
+	const groupedTodos = $derived(groupTodosByDate(sortedTodos));
+	const todayProgress = $derived(getTodayProgress(todos));
+	const weekProgress = $derived(getWeekProgress(todos));
+	const showProgress = $derived(settingsStore.settings.todoDefaults.showProgress);
+
+	// Get all unique tags from todos
+	const availableTags = $derived(() => {
+		const tags = new Set<string>();
+		todos.forEach(todo => {
+			todo.tags.forEach(tag => tags.add(tag));
+		});
+		return Array.from(tags).sort();
+	});
+
+	// Get all folders that have todos
+	const availableFolders = $derived(() => {
+		const folderIds = new Set<string>();
+		todos.forEach(todo => {
+			if (todo.folderId) folderIds.add(todo.folderId);
+		});
+		return folderIds;
+	});
+
+	function openTodoForm(todo?: Memo) {
+		editingTodo = todo;
+		showTodoForm = true;
+	}
+
+	function closeTodoForm() {
+		showTodoForm = false;
+		editingTodo = undefined;
+	}
+
+	function openPostponeSheet(todo: Memo) {
+		postponingTodo = todo;
+		showPostponeSheet = true;
+	}
+
+	function closePostponeSheet() {
+		showPostponeSheet = false;
+		postponingTodo = undefined;
+	}
+
+	function openSkipDialog(todo: Memo) {
+		skippingTodo = todo;
+		showSkipDialog = true;
+	}
+
+	function closeSkipDialog() {
+		showSkipDialog = false;
+		skippingTodo = undefined;
+	}
+
+	async function toggleComplete(todo: Memo) {
+		// 반복 할일인 경우 (Phase 3)
+		if (todo.recurrence && todo.todoInstances) {
+			const activeInstance = todo.todoInstances.find(i => i.status === 'pending');
+			if (activeInstance) {
+				// 현재 인스턴스 완료 + 다음 인스턴스 생성
+				await memosStore.completeTodoInstance(todo.id, activeInstance.id);
+				lastCompletedTodo = todo;
+				showUndoToast = true;
+				return;
+			}
+		}
+
+		// 단발성 할일 또는 반복 종료된 할일
+		const newStatus = todo.todoStatus === 'completed' ? 'pending' : 'completed';
+		await memosStore.updateMemo(todo.id, {
+			todoStatus: newStatus,
+			completedAt: newStatus === 'completed' ? Date.now() : undefined
+		});
+
+		// 완료 시 undo 토스트 표시 (Phase 2)
+		if (newStatus === 'completed') {
+			lastCompletedTodo = todo;
+			showUndoToast = true;
+		}
+	}
+
+	async function handleUndo() {
+		if (!lastCompletedTodo) return;
+		await memosStore.updateMemo(lastCompletedTodo.id, {
+			todoStatus: 'pending',
+			completedAt: undefined
+		});
+		lastCompletedTodo = undefined;
+	}
+
+	function dismissUndoToast() {
+		showUndoToast = false;
+		lastCompletedTodo = undefined;
+	}
+
+
+	function formatSectionDate(dateStr: string): string {
+		if (dateStr === 'no-due-date') return '기한 없음';
+
+		const date = new Date(dateStr);
+		const today = new Date();
+		const tomorrow = new Date(today);
+		tomorrow.setDate(today.getDate() + 1);
+
+		if (date.toDateString() === today.toDateString()) {
+			return `오늘 ${date.getMonth() + 1}/${date.getDate()} (${['일', '월', '화', '수', '목', '금', '토'][date.getDay()]})`;
+		} else if (date.toDateString() === tomorrow.toDateString()) {
+			return `내일 ${date.getMonth() + 1}/${date.getDate()} (${['일', '월', '화', '수', '목', '금', '토'][date.getDay()]})`;
+		}
+
+		return `${date.getMonth() + 1}/${date.getDate()} (${['일', '월', '화', '수', '목', '금', '토'][date.getDay()]})`;
+	}
+
+	function handleAlert(todo: Memo) {
+		alertingTodo = todo;
+		showAlertModal = true;
+	}
+
+	function closeAlertModal() {
+		showAlertModal = false;
+		alertingTodo = undefined;
+	}
+
+	function handleAlertPostpone(todo: Memo) {
+		closeAlertModal();
+		openPostponeSheet(todo);
+	}
+
+	// Phase 4 Section 7: Batch Actions
+	function toggleMultiSelectMode() {
+		isMultiSelectMode = !isMultiSelectMode;
+		if (!isMultiSelectMode) {
+			selectedTodoIds = new Set();
+		}
+	}
+
+	function toggleTodoSelection(todoId: string) {
+		const newSelection = new Set(selectedTodoIds);
+		if (newSelection.has(todoId)) {
+			newSelection.delete(todoId);
+		} else {
+			newSelection.add(todoId);
+		}
+		selectedTodoIds = newSelection;
+	}
+
+	function selectAllOverdue() {
+		const overdueTodos = sortedTodos.filter(isOverdue);
+		selectedTodoIds = new Set(overdueTodos.map(t => t.id));
+		isMultiSelectMode = true;
+	}
+
+	async function batchComplete() {
+		if (selectedTodoIds.size === 0) return;
+
+		for (const todoId of selectedTodoIds) {
+			const todo = memosStore.getById(todoId);
+			if (todo && todo.todoStatus !== 'completed') {
+				await memosStore.updateMemo(todoId, {
+					todoStatus: 'completed',
+					completedAt: Date.now()
+				});
+			}
+		}
+
+		selectedTodoIds = new Set();
+		isMultiSelectMode = false;
+	}
+
+	async function batchDelete() {
+		if (selectedTodoIds.size === 0) return;
+
+		const confirmed = confirm(`선택한 ${selectedTodoIds.size}개의 할일을 삭제하시겠습니까?`);
+		if (!confirmed) return;
+
+		for (const todoId of selectedTodoIds) {
+			await memosStore.remove(todoId);
+		}
+
+		selectedTodoIds = new Set();
+		isMultiSelectMode = false;
+	}
+
+	async function postponeAllOverdueToTomorrow() {
+		const overdueTodos = sortedTodos.filter(isOverdue);
+		if (overdueTodos.length === 0) return;
+
+		const tomorrow = new Date();
+		tomorrow.setDate(tomorrow.getDate() + 1);
+		const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+		for (const todo of overdueTodos) {
+			await memosStore.updateMemo(todo.id, {
+				dueDate: tomorrowStr
+			});
+		}
+	}
+
+	async function completeAllOverdue() {
+		const overdueTodos = sortedTodos.filter(isOverdue);
+		if (overdueTodos.length === 0) return;
+
+		const confirmed = confirm(`기한 지난 ${overdueTodos.length}개의 할일을 모두 완료하시겠습니까?`);
+		if (!confirmed) return;
+
+		for (const todo of overdueTodos) {
+			await memosStore.updateMemo(todo.id, {
+				todoStatus: 'completed',
+				completedAt: Date.now()
+			});
+		}
+	}
+
+	onMount(() => {
+		// 포그라운드 알람 감지 시작
+		initTodoAlertManager(() => memosStore.memos, handleAlert);
+	});
+
+	onDestroy(() => {
+		// 정리
+		cleanupTodoAlertManager();
+	});
+</script>
+
+<svelte:head>
+	<title>할일 - Memo Alarm</title>
+</svelte:head>
+
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
+	<!-- Header -->
+	<header class="bg-white dark:bg-gray-800 border-b dark:border-gray-700 sticky top-0 z-10">
+		<div class="max-w-4xl mx-auto px-4 py-4">
+			<div class="flex items-center justify-between">
+				<h1 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+					<CheckSquare class="w-6 h-6" />
+					할일
+				</h1>
+				<div class="flex items-center gap-2">
+					<button class="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+						<Search class="w-5 h-5" />
+					</button>
+					<button
+						onclick={() => showStats = !showStats}
+						class="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg {
+							showStats ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ''
+						}"
+						title="통계"
+					>
+						<BarChart3 class="w-5 h-5" />
+					</button>
+					<button
+						onclick={toggleMultiSelectMode}
+						class="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg {
+							isMultiSelectMode ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' : ''
+						}"
+						title="다중 선택"
+					>
+						<CheckSquare2 class="w-5 h-5" />
+					</button>
+					<a href="/settings" class="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+						<Settings class="w-5 h-5" />
+					</a>
+					<button
+						onclick={() => openTodoForm()}
+						class="p-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg"
+					>
+						<Plus class="w-5 h-5" />
+					</button>
+				</div>
+			</div>
+
+			<!-- Filter Tabs -->
+			<div class="flex gap-2 mt-4 overflow-x-auto">
+				{#each [
+					{ value: 'today', label: '오늘' },
+					{ value: 'week', label: '이번주' },
+					{ value: 'all', label: '전체' },
+					{ value: 'completed', label: '완료됨' }
+				] as filter}
+					<button
+						onclick={() => selectedFilter = filter.value as any}
+						class="px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors {
+							selectedFilter === filter.value
+								? 'bg-blue-600 text-white'
+								: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+						}"
+					>
+						{filter.label}
+					</button>
+				{/each}
+			</div>
+
+			<!-- Tag & Folder Filters (Phase 4 Section 4) -->
+			{#if availableTags().length > 0 || availableFolders().size > 0}
+				<div class="mt-4 space-y-2">
+					<!-- Tag Filters -->
+					{#if availableTags().length > 0}
+						<div class="flex items-center gap-2 flex-wrap">
+							<span class="text-sm font-medium text-gray-700 dark:text-gray-300">태그:</span>
+							<button
+								onclick={() => selectedTag = undefined}
+								class="px-3 py-1 rounded-full text-sm transition-colors {
+									selectedTag === undefined
+										? 'bg-blue-600 text-white'
+										: 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+								}"
+							>
+								전체
+							</button>
+							{#each availableTags() as tag}
+								<button
+									onclick={() => selectedTag = selectedTag === tag ? undefined : tag}
+									class="px-3 py-1 rounded-full text-sm transition-colors {
+										selectedTag === tag
+											? 'bg-blue-600 text-white'
+											: 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+									}"
+								>
+									#{tag}
+								</button>
+							{/each}
+						</div>
+					{/if}
+
+					<!-- Folder Filters -->
+					{#if availableFolders().size > 0}
+						<div class="flex items-center gap-2 flex-wrap">
+							<span class="text-sm font-medium text-gray-700 dark:text-gray-300">폴더:</span>
+							<button
+								onclick={() => selectedFolder = undefined}
+								class="px-3 py-1 rounded-full text-sm transition-colors {
+									selectedFolder === undefined
+										? 'bg-purple-600 text-white'
+										: 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+								}"
+							>
+								전체
+							</button>
+							{#each Array.from(availableFolders()) as folderId}
+								{@const folder = foldersStore.getFolderById(folderId)}
+								{#if folder}
+									<button
+										onclick={() => selectedFolder = selectedFolder === folderId ? undefined : folderId}
+										class="px-3 py-1 rounded-full text-sm transition-colors {
+											selectedFolder === folderId
+												? 'bg-purple-600 text-white'
+												: 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+										}"
+										style="background-color: {selectedFolder === folderId ? folder.color : ''}"
+									>
+										{folder.icon ? folder.icon + ' ' : ''}{folder.name}
+									</button>
+								{/if}
+							{/each}
+						</div>
+					{/if}
+				</div>
+			{/if}
+
+			<!-- Progress Bar (Phase 4) -->
+			{#if showProgress && (selectedFilter === 'today' || selectedFilter === 'week' || selectedFilter === 'all')}
+				<div class="mt-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+					<div class="flex items-center justify-between text-sm mb-2">
+						<span class="font-medium text-gray-900 dark:text-white">
+							📊 오늘: {todayProgress.completed}/{todayProgress.total} ({todayProgress.percentage}%)
+						</span>
+						<span class="text-gray-600 dark:text-gray-400">
+							| 이번 주: {weekProgress.completed}/{weekProgress.total} ({weekProgress.percentage}%)
+						</span>
+					</div>
+					<div class="flex gap-2">
+						<!-- Today Progress Bar -->
+						<div class="flex-1">
+							<div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+								<div
+									class="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-300"
+									style="width: {todayProgress.percentage}%"
+								></div>
+							</div>
+						</div>
+						<!-- Week Progress Bar -->
+						<div class="flex-1">
+							<div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+								<div
+									class="h-full bg-gradient-to-r from-purple-500 to-purple-600 transition-all duration-300"
+									style="width: {weekProgress.percentage}%"
+								></div>
+							</div>
+						</div>
+					</div>
+				</div>
+			{/if}
+		</div>
+	</header>
+
+	<!-- Statistics Section (Phase 4 Section 6) -->
+	{#if showStats}
+		<div class="max-w-4xl mx-auto px-4 py-4 bg-white dark:bg-gray-800 border-b dark:border-gray-700">
+			<TodoStats {todos} />
+		</div>
+	{/if}
+
+	<!-- Batch Action Bar (Phase 4 Section 7) -->
+	{#if isMultiSelectMode && selectedTodoIds.size > 0}
+		<div class="sticky top-16 z-10 bg-purple-100 dark:bg-purple-900/30 border-y border-purple-200 dark:border-purple-800">
+			<div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+				<div class="flex items-center gap-2">
+					<span class="text-sm font-medium text-purple-900 dark:text-purple-100">
+						{selectedTodoIds.size}개 선택됨
+					</span>
+				</div>
+				<div class="flex items-center gap-2">
+					<button
+						onclick={batchComplete}
+						class="px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700"
+					>
+						<CheckSquare class="w-4 h-4 inline mr-1" />
+						완료
+					</button>
+					<button
+						onclick={batchDelete}
+						class="px-3 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700"
+					>
+						<Trash2 class="w-4 h-4 inline mr-1" />
+						삭제
+					</button>
+					<button
+						onclick={toggleMultiSelectMode}
+						class="px-3 py-1.5 text-sm border border-purple-300 dark:border-purple-700 text-purple-900 dark:text-purple-100 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-900/50"
+					>
+						<X class="w-4 h-4 inline mr-1" />
+						취소
+					</button>
+				</div>
+			</div>
+		</div>
+	{/if}
+
+	<!-- Content -->
+	<main class="max-w-4xl mx-auto px-4 py-6">
+		{#if sortedTodos.length === 0}
+			<div class="text-center py-12">
+				<CheckSquare class="w-16 h-16 mx-auto text-gray-400 dark:text-gray-600 mb-4" />
+				<p class="text-gray-600 dark:text-gray-400">
+					{selectedFilter === 'completed' ? '완료된 할일이 없습니다' : '할일이 없습니다'}
+				</p>
+				{#if selectedFilter !== 'completed'}
+					<button
+						onclick={() => openTodoForm()}
+						class="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+					>
+						새 할일 만들기
+					</button>
+				{/if}
+			</div>
+		{:else}
+			<!-- Overdue Section -->
+			{@const overdueTodos = sortedTodos.filter(isOverdue)}
+			{#if overdueTodos.length > 0 && selectedFilter !== 'completed'}
+				<section class="mb-6">
+					<div class="flex items-center justify-between mb-3">
+						<h2 class="text-lg font-semibold text-red-600 dark:text-red-400 flex items-center gap-2">
+							<AlertCircle class="w-5 h-5" />
+							⚠️ 기한 지남 ({overdueTodos.length})
+						</h2>
+						<!-- Quick Actions (Phase 4 Section 7-3) -->
+						<div class="flex items-center gap-2">
+							<button
+								onclick={selectAllOverdue}
+								class="px-2 py-1 text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded hover:bg-purple-200 dark:hover:bg-purple-900/50"
+							>
+								모두 선택
+							</button>
+							<button
+								onclick={postponeAllOverdueToTomorrow}
+								class="px-2 py-1 text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded hover:bg-orange-200 dark:hover:bg-orange-900/50"
+							>
+								내일로 미루기
+							</button>
+							<button
+								onclick={completeAllOverdue}
+								class="px-2 py-1 text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded hover:bg-green-200 dark:hover:bg-green-900/50"
+							>
+								모두 완료
+							</button>
+						</div>
+					</div>
+					<div class="space-y-2">
+						{#each overdueTodos as todo}
+							<TodoCard
+								{todo}
+								onEdit={openTodoForm}
+								onPostpone={openPostponeSheet}
+								onSkip={openSkipDialog}
+								{isMultiSelectMode}
+								isSelected={selectedTodoIds.has(todo.id)}
+								onToggleSelection={toggleTodoSelection}
+							/>
+						{/each}
+					</div>
+				</section>
+			{/if}
+
+			<!-- Grouped Todos -->
+			{@const nonOverdueTodos = Array.from(groupedTodos.entries()).filter(([date, todos]) =>
+				!todos.every(isOverdue) || selectedFilter === 'completed'
+			)}
+			{#each nonOverdueTodos as [dateStr, dateTodos]}
+				<section class="mb-6">
+					<h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+						<Calendar class="w-5 h-5" />
+						{formatSectionDate(dateStr)}
+					</h2>
+					<div class="space-y-2">
+						{#each dateTodos.filter(t => !isOverdue(t) || selectedFilter === 'completed') as todo}
+							<TodoCard
+								{todo}
+								onEdit={openTodoForm}
+								onPostpone={openPostponeSheet}
+								onSkip={openSkipDialog}
+								{isMultiSelectMode}
+								isSelected={selectedTodoIds.has(todo.id)}
+								onToggleSelection={toggleTodoSelection}
+							/>
+						{/each}
+					</div>
+				</section>
+			{/each}
+		{/if}
+
+		<!-- Progress Bar -->
+		{#if showProgress && selectedFilter === 'today'}
+			<div class="mt-8 p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg">
+				<div class="flex items-center justify-between mb-2">
+					<span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+						📊 오늘 진행률
+					</span>
+					<span class="text-sm text-gray-600 dark:text-gray-400">
+						{todayProgress.completed}/{todayProgress.total} ({todayProgress.percentage}%)
+					</span>
+				</div>
+				<div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+					<div
+						class="bg-blue-600 h-2 rounded-full transition-all duration-300"
+						style="width: {todayProgress.percentage}%"
+					></div>
+				</div>
+			</div>
+		{/if}
+	</main>
+</div>
+
+<!-- Todo Form Modal -->
+{#if showTodoForm}
+	<TodoForm memo={editingTodo} onClose={closeTodoForm} />
+{/if}
+
+<!-- Postpone Sheet -->
+{#if showPostponeSheet && postponingTodo}
+	<PostponeSheet todo={postponingTodo} onClose={closePostponeSheet} />
+{/if}
+
+<!-- Skip Dialog -->
+{#if showSkipDialog && skippingTodo}
+	<SkipDialog todo={skippingTodo} onClose={closeSkipDialog} />
+{/if}
+
+<!-- Alert Modal -->
+{#if showAlertModal && alertingTodo}
+	<AlertModal todo={alertingTodo} onClose={closeAlertModal} onPostpone={handleAlertPostpone} />
+{/if}
+
+<!-- Undo Toast -->
+{#if showUndoToast && lastCompletedTodo}
+	<UndoToast
+		message={`"${lastCompletedTodo.title}" 완료`}
+		onUndo={handleUndo}
+		onDismiss={dismissUndoToast}
+	/>
+{/if}

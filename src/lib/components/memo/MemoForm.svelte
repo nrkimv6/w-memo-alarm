@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { X, Plus, Link, ListChecks, Sparkles } from 'lucide-svelte';
+	import { X, Plus, Link, ListChecks, Sparkles, ArrowRightLeft } from 'lucide-svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Textarea from '$lib/components/ui/Textarea.svelte';
@@ -218,6 +218,18 @@
 		showChecklist = false;
 		onClose();
 	}
+
+	async function handleConvertToTodo() {
+		if (!memo) return;
+
+		// 먼저 현재 변경사항 저장
+		await handleSubmit();
+
+		// 할일로 전환
+		await memosStore.convertMemoToTodo(memo.id);
+
+		handleClose();
+	}
 </script>
 
 <Modal bind:open title={memo ? '메모 수정' : '새 메모'}>
@@ -357,9 +369,21 @@
 	</form>
 
 	{#snippet footer()}
-		<Button variant="ghost" onclick={handleClose}>취소</Button>
-		<Button onclick={handleSubmit} disabled={!canSave}>
-			{memo ? '수정' : '저장'}
-		</Button>
+		<div class="flex items-center justify-between w-full">
+			<div>
+				{#if memo && memo.memoType !== 'todo'}
+					<Button variant="outline" size="sm" onclick={handleConvertToTodo}>
+						<ArrowRightLeft class="w-4 h-4 mr-1" />
+						할일로 전환
+					</Button>
+				{/if}
+			</div>
+			<div class="flex gap-2">
+				<Button variant="ghost" onclick={handleClose}>취소</Button>
+				<Button onclick={handleSubmit} disabled={!canSave}>
+					{memo ? '수정' : '저장'}
+				</Button>
+			</div>
+		</div>
 	{/snippet}
 </Modal>

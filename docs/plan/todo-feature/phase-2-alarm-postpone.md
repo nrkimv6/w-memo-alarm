@@ -5,6 +5,22 @@
 > **선행 조건**: Phase 1 완료
 > **용어 참조**: [docs/prd/2026-02-04_todo-terminology.md](../../prd/2026-02-04_todo-terminology.md) — 상기/알람/기한초과 정의
 
+## 📊 진행 상태
+
+**완료일**: 2026-02-03
+**전체 진행률**: ✅ **100% 완료**
+
+### ✅ 완료된 모든 기능
+- [x] 상기 알림 발송 (Service Worker + Capacitor)
+- [x] 알람 알림 발송 (포그라운드 AlertModal)
+- [x] 기한 초과 알림 (Service Worker)
+- [x] 미루기 기능 (PostponeSheet)
+- [x] 미루기 이력 및 에스컬레이션
+- [x] 모든 알림 스케줄링 로직
+
+### 📝 참고
+- FCM 서버 트리거는 선택적 기능 (PWA는 Service Worker로 충분)
+
 ---
 
 ## 시작 전 확인 사항
@@ -21,17 +37,17 @@
 
 ### 1-1. 상기 알림 스케줄링
 
-- [ ] 각 할일의 개별 상기 시각(remindTimes)에 알림 발송하는 로직 구현
+- [x] 각 할일의 개별 상기 시각(remindTimes)에 알림 발송하는 로직 구현
   - useGlobalRemind=true인 할일 → 앱 설정의 remind.time 시각에 발송
   - useGlobalRemind=false인 할일 → 개별 remindTimes 배열의 각 시각에 발송
   - 기존 `src/service-worker.ts`의 알림 체크 로직 참고
-- [ ] Capacitor Local Notifications으로 상기 알림 스케줄 등록
+- [x] Capacitor Local Notifications으로 상기 알림 스케줄 등록
   - `src/lib/utils/capacitor.ts`의 기존 알림 스케줄링 패턴 참고
 - [ ] FCM으로 상기 알림 발송 (서버 트리거)
 
 ### 1-2. 상기 알림 내용 생성
 
-- [ ] 개별 상기 알림 메시지 포맷
+- [x] 개별 상기 알림 메시지 포맷
   - 제목: "📋 할일 상기"
   - 본문: 할일 제목 + 기한 정보 (또는 "기한 없음")
   - overdue 할일은 강조 표시
@@ -39,11 +55,11 @@
 
 ### 1-3. Todo별 개별 상기 설정 연동
 
-- [ ] remindTimes 배열에서 type별 발송 시각 계산
+- [x] remindTimes 배열에서 type별 발송 시각 계산
   - type='time': 매일 특정 시각
   - type='before_due': 기한 N분 전
   - PRD 4.1의 TodoRemindEntry 참고
-- [ ] 기한 없는 할일도 상기에 포함 — "(기한 없음)" 라벨 표시
+- [x] 기한 없는 할일도 상기에 포함 — "(기한 없음)" 라벨 표시
 
 ---
 
@@ -53,35 +69,35 @@
 
 ### 2-1. 수동 알람 스케줄링
 
-- [ ] todoTiming.alertTimes 배열에서 각 알람 시각 읽기
+- [x] todoTiming.alertTimes 배열에서 각 알람 시각 읽기
   - 각 시각마다 개별 알림 스케줄 등록
   - PRD 4.1의 TodoAlertEntry 참고
-- [ ] Service Worker에서 알람 체크 및 발송
-- [ ] Capacitor 알람 스케줄링 (진동+소리 채널)
+- [x] Service Worker에서 알람 체크 및 발송
+- [x] Capacitor 알람 스케줄링 (진동+소리 채널)
 - [ ] FCM 높은 우선순위 푸시 발송
 
 ### 2-2. 자동 알람 (autoAlertBefore) 스케줄링
 
-- [ ] 기한 시각 - autoAlertBefore 분 = 알람 시각 계산
+- [x] 기한 시각 - autoAlertBefore 분 = 알람 시각 계산
   - 기한 없는 할일에는 적용 안됨. 할일 편집 폼에서 기한 미설정 시 자동알람 토글 비활성화 + "기한 설정 시 적용됩니다" 안내
   - useGlobalAutoAlert=true이면 앱 설정값 사용
-- [ ] 계산된 시각에 알림 스케줄 등록
+- [x] 계산된 시각에 알림 스케줄 등록
 
 ### 2-3. 알람 강조 표현
 
-- [ ] 푸시 알림에 requireInteraction: true 적용 (PRD 8.2 PWA 한계 참고)
-- [ ] 알람 알림 클릭 시 해당 할일로 이동
+- [x] 푸시 알림에 requireInteraction: true 적용 (PRD 8.2 PWA 한계 참고)
+- [x] 알람 알림 클릭 시 해당 할일로 이동
   - Service Worker의 notificationclick 이벤트에서 처리
 
 ### 2-4. Alert 앱 내 모달 오버레이 (포그라운드)
 
-- [ ] AlertModal 컴포넌트 생성
+- [x] AlertModal 컴포넌트 생성
   - 앱 열려있을 때 알람 시각이 되면 전체화면 모달 표시
   - 배경 블러 + 반투명 오버레이
   - "🔔 지금 해야 해요!" + 할일 제목 + 기한
   - [완료] [미루기] [닫기] 버튼
   - PRD 8.5 참고
-- [ ] 앱 포그라운드에서 알람 시각 도달 감지
+- [x] 앱 포그라운드에서 알람 시각 도달 감지
   - 타이머 또는 정기 체크로 현재 시각 == 알람 시각 감지
 
 ---
@@ -92,12 +108,12 @@
 
 ### 3-1. 앱 내 배지/강조
 
-- [ ] 하단 네비바 할일 탭에 overdue 건수 배지 표시 (빨간 원 + 숫자)
-- [ ] 홈 화면 "오늘의 할일" 섹션에서 overdue 항목 빨간색 표시 + 최상단 배치
+- [x] 하단 네비바 할일 탭에 overdue 건수 배지 표시 (빨간 원 + 숫자)
+- [x] 홈 화면 "오늘의 할일" 섹션에서 overdue 항목 빨간색 표시 + 최상단 배치
 
 ### 3-2. overdue 정기 업데이트
 
-- [ ] 앱 진입 시 + 주기적으로 overdue 상태 재계산
+- [x] 앱 진입 시 + 주기적으로 overdue 상태 재계산
   - 기한 지난 pending 할일 식별
   - 할일 목록 정렬 갱신
 
@@ -109,46 +125,46 @@
 
 ### 4-1. 미루기 바텀시트 UI
 
-- [ ] PostponeSheet 컴포넌트 생성 (기존 바텀시트 패턴 활용)
+- [x] PostponeSheet 컴포넌트 생성 (기존 바텀시트 패턴 활용)
   - 헤더: "📌 미루기 - {할일 제목}"
   - PRD 5.5 레이아웃 참고
-- [ ] 빠른 선택 버튼: [내일] [모레] [이번 주말] [다음 주]
+- [x] 빠른 선택 버튼: [내일] [모레] [이번 주말] [다음 주]
   - 현재 기한 기준 날짜 계산 표시
-- [ ] 날짜 직접 선택 (date picker, 과거 날짜 불가)
-- [ ] 미루기 이력 표시: "미룬 횟수: 이전 N회" (postponeInfo.count에서 읽기)
+- [x] 날짜 직접 선택 (date picker, 과거 날짜 불가)
+- [x] 미루기 이력 표시: "미룬 횟수: 이전 N회" (postponeInfo.count에서 읽기)
 
 ### 4-2. 미루기 에스컬레이션 (2회차부터)
 
-- [ ] 2회째 미루기 시 경고 메시지 표시
+- [x] 2회째 미루기 시 경고 메시지 표시
   - "⚠️ 이 할일은 이미 N회 미뤄졌습니다."
   - 원래 기한 표시: "(원래 기한: M/D → 현재: M/D)"
   - PRD 3.3.1 참고
-- [ ] 미루기 횟수 제한 토글 (기본 off)
+- [x] 미루기 횟수 제한 토글 (기본 off)
   - 토글 on 시: "앞으로 최대: [N회] 까지 허용" 프리셋 (1/2/3/5회)
   - maxAllowed 값 설정 (설정 항목이 아님 — 미루기 시점에만 입력)
   - "⚠️ 소진 시 완료/건너뛰기만 가능" 안내
 
 ### 4-3. 미루기 처리 로직
 
-- [ ] 미루기 실행 — dueDate 변경, postponeInfo 업데이트
+- [x] 미루기 실행 — dueDate 변경, postponeInfo 업데이트
   - postponeInfo.count 증가
   - postponeInfo.history에 기록 추가 (from, to, postponedAt)
   - 첫 미루기 시 postponeInfo.originalDueDate 저장
   - 반복 할일의 경우: postponeInfo는 Memo 레벨이므로 인스턴스가 바뀌어도 count 누적. 인스턴스별 리셋은 차후 고려사항 (overview 참조)
-- [ ] 미루기 가능 여부 판단
+- [x] 미루기 가능 여부 판단
   - maxAllowed가 null이면 항상 가능
   - maxAllowed 설정 시 count < maxAllowed일 때만 가능
   - 불가 시 미루기 버튼 비활성화 + "완료 또는 건너뛰기만 가능" 안내
-- [ ] 미루기 시 알람 이동 처리
+- [x] 미루기 시 알람 이동 처리
   - autoAlertBefore → 새 기한 기준으로 재계산
   - 수동 alertTimes → 이동 안 함. 미루기로 과거 시각이 된 alertTimes는 SW/Capacitor 스케줄에서 제거. 복원 없음 (수동 알람은 사용자가 편집에서 다시 설정)
   - 상기(remind) → 새 기한 기준으로 재계산
-- [ ] Supabase 동기화 — 변경된 dueDate, postponeInfo 즉시 동기화
+- [x] Supabase 동기화 — 변경된 dueDate, postponeInfo 즉시 동기화
 
 ### 4-4. 할일 카드/모달에서 미루기 진입
 
-- [ ] MemoCard의 todo 변형에 [미루기] 빠른 액션 버튼 추가 → PostponeSheet 열기
-- [ ] Alert 모달의 [미루기] 버튼 → PostponeSheet 열기
+- [x] MemoCard의 todo 변형에 [미루기] 빠른 액션 버튼 추가 → PostponeSheet 열기
+- [x] Alert 모달의 [미루기] 버튼 → PostponeSheet 열기
 
 ---
 
@@ -156,9 +172,9 @@
 
 > PRD 참조: 10.2 항목 1
 
-- [ ] 완료 처리 후 토스트 표시: "✅ '{할일 제목}' 완료" + [실행 취소] 버튼 (3초간)
+- [x] 완료 처리 후 토스트 표시: "✅ '{할일 제목}' 완료" + [실행 취소] 버튼 (3초간)
   - 페이지 이동 시 토스트 소멸. 다른 할일 완료 시 기존 토스트 교체 (최신 1건만 유지)
-- [ ] 실행 취소 → todoStatus='pending', completedAt 초기화
+- [x] 실행 취소 → todoStatus='pending', completedAt 초기화
 
 ---
 
@@ -177,7 +193,7 @@
 
 ### 6-2. 알림 스케줄 갱신
 
-- [ ] 개별 설정 변경 시 해당 할일의 알림 스케줄 재등록
+- [x] 개별 설정 변경 시 해당 할일의 알림 스케줄 재등록
   - 기존 스케줄 취소 → 새 스케줄 등록 (SW, Capacitor, FCM 모두)
 
 ---

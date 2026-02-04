@@ -26,7 +26,25 @@ interface ScheduledReminder {
 	lastNotified?: string; // YYYY-MM-DD-HH:MM
 }
 
+// Todo 알림 스케줄 (Phase 2)
+interface TodoScheduledNotification {
+	memoId: string;
+	notificationId: string;
+	title: string;
+	body: string;
+	type: 'todo-remind' | 'todo-alert' | 'todo-overdue';
+	priority: 'normal' | 'high';
+	time?: string; // HH:MM for daily remind
+	dateTime?: string; // ISO timestamp for one-time alerts
+	requireInteraction: boolean;
+	url: string;
+	dueDate?: string;
+	dueTime?: string;
+	lastNotified?: string; // YYYY-MM-DD-HH:MM
+}
+
 let scheduledReminders: ScheduledReminder[] = [];
+let todoNotifications: TodoScheduledNotification[] = [];
 let reminderCheckInterval: ReturnType<typeof setInterval> | null = null;
 
 // 시간/날짜 유틸리티 (Service Worker 스코프에서는 $lib import 불가)
@@ -204,6 +222,85 @@ function showMergedNotification(reminders: ScheduledReminder[], time: string) {
 	}
 }
 
+// Todo 알림 체크 함수 (Phase 2)
+function checkTodoNotifications() {
+	const now = new Date();
+	const currentTime = getCurrentTimeHHMM(now);
+	const todayDate = getTodayDateISO(now);
+	const notifyKey = `${todayDate}-${currentTime}`;
+
+	swLog('info', `📋 Todo Notifications: ${todoNotifications.length}`);
+
+	const todosToNotify: TodoScheduledNotification[] = [];
+
+	todoNotifications.forEach((notif) => {
+		// 이미 발송됨
+		if (notif.lastNotified === notifyKey) {
+			return;
+		}
+
+		let shouldNotify = false;
+
+		// 매일 반복 (상기)
+		if (notif.time) {
+			shouldNotify = notif.time === currentTime;
+		}
+		// 일회성 (알람)
+		else if (notif.dateTime) {
+			const alertTime = new Date(notif.dateTime);
+			const alertTimeHHMM = getCurrentTimeHHMM(alertTime);
+			const alertDate = getTodayDateISO(alertTime);
+			shouldNotify = alertDate === todayDate && alertTimeHHMM === currentTime;
+		}
+
+		if (shouldNotify) {
+			swLog('info', `🔔 Todo ${notif.type}: "${notif.title}"`);
+			todosToNotify.push(notif);
+			notif.lastNotified = notifyKey;
+
+			// 일회성 알람은 발송 후 제거
+			if (notif.dateTime) {
+				todoNotifications = todoNotifications.filter((n) => n.notificationId !== notif.notificationId);
+			}
+		}
+	});
+
+	// Todo 알림 발송
+	todosToNotify.forEach((notif) => {
+		try {
+			sw.registration.showNotification(notif.title, {
+				body: notif.body,
+				icon: '/favicon.png',
+				badge: '/favicon.png',
+				tag: notif.notificationId,
+				data: {
+					memoId: notif.memoId,
+					url: notif.url,
+					type: notif.type
+				},
+				vibrate: notif.type === 'todo-alert' ? [200, 100, 200, 100, 200] : [200, 100, 200],
+				requireInteraction: notif.requireInteraction
+			});
+
+			// 메인 스레드에 기록 전달
+			sw.clients.matchAll().then((clients) => {
+				clients.forEach((client) => {
+					client.postMessage({
+						type: 'TODO_NOTIFICATION_SENT',
+						memoId: notif.memoId,
+						notificationId: notif.notificationId,
+						notificationType: notif.type,
+						status: 'success',
+						sentAt: new Date().toISOString()
+					});
+				});
+			});
+		} catch (e) {
+			swLog('error', `Failed to show todo notification: ${notif.title}`, e);
+		}
+	});
+}
+
 // 메모 알림 체크 함수
 function checkScheduledReminders() {
 	const now = new Date();
@@ -277,6 +374,9 @@ function checkScheduledReminders() {
 		swLog('info', `🔔 TRIGGERING merged: ${remindersToNotify.length} reminders`);
 		showMergedNotification(remindersToNotify, currentTime);
 	}
+
+	// Todo 알림도 체크 (Phase 2)
+	checkTodoNotifications();
 }
 
 // 알림 체크 인터벌 시작
@@ -377,6 +477,31 @@ sw.addEventListener('message', (event) => {
 			reminders: scheduledReminders,
 			intervalRunning: !!reminderCheckInterval
 		});
+	}
+
+	// Todo 알림 등록 (Phase 2)
+	if (event.data.type === 'REGISTER_TODO_NOTIFICATIONS') {
+		swLog('info', '📝 REGISTER_TODO_NOTIFICATIONS received');
+		const notifications = event.data.notifications as TodoScheduledNotification[];
+
+		// 해당 todo의 기존 알림 제거
+		if (notifications.length > 0) {
+			const todoId = notifications[0].memoId;
+			todoNotifications = todoNotifications.filter((n) => n.memoId !== todoId);
+		}
+
+		// 새 알림 추가
+		todoNotifications.push(...notifications);
+		swLog('info', `Registered ${notifications.length} todo notifications. Total: ${todoNotifications.length}`);
+
+		// 체크 인터벌 시작
+		startReminderCheck();
+	}
+
+	// Todo 알림 제거 (Phase 2)
+	if (event.data.type === 'REMOVE_TODO_NOTIFICATIONS') {
+		swLog('info', `🗑️ REMOVE_TODO_NOTIFICATIONS: ${event.data.todoId}`);
+		todoNotifications = todoNotifications.filter((n) => n.memoId !== event.data.todoId);
 	}
 });
 
