@@ -23,31 +23,31 @@
 
 ### 1-1. 반복 패턴 선택
 
-- [ ] Phase 1에서 비활성/숨김 처리했던 반복 설정 UI 활성화
-- [ ] 반복 타입 드롭다운: 안 함(기본) / 매일 / 매주 / 매월 / 사용자 지정
+- [x] Phase 1에서 비활성/숨김 처리했던 반복 설정 UI 활성화
+- [x] 반복 타입 드롭다운: 안 함(기본) / 매일 / 매주 / 매월 / 사용자 지정
   - PRD 5.4의 반복 섹션 참고
 
 ### 1-2. 매주 반복 — 요일 선택
 
-- [ ] 요일 버튼 7개 (일~토) 토글 선택 (복수 가능)
+- [x] 요일 버튼 7개 (일~토) 토글 선택 (복수 가능)
   - recurrence.daysOfWeek에 저장
 
 ### 1-3. 매월 반복 — 일자 선택
 
-- [ ] 일자 선택 (1~31) — recurrence.dayOfMonth에 저장
+- [x] 일자 선택 (1~31) — recurrence.dayOfMonth에 저장
 
 ### 1-4. 사용자 지정 반복
 
-- [ ] 간격 입력: "매 [N] [일/주/월]" — recurrence.interval + recurrence.type='custom'
+- [x] 간격 입력: "매 [N] [일/주/월]" — recurrence.customInterval + recurrence.customUnit
 
 ### 1-5. 반복 종료 조건
 
-- [ ] 종료 옵션: 없음(무한, 기본) / 날짜 지정(endDate) / N회 후(endAfter)
+- [x] 종료 옵션: 없음(무한, 기본) / 날짜 지정(endDate) / N회 후(endAfter)
 
 ### 1-6. 반복 설정 데이터 저장
 
-- [ ] Memo.recurrence 필드에 저장 (PRD 4.1 Recurrence 인터페이스 참고)
-- [ ] Supabase recurrence JSONB 컬럼 동기화
+- [x] Memo.recurrence 필드에 저장 (PRD 4.1 Recurrence 인터페이스 참고)
+- [x] Supabase recurrence JSONB 컬럼 동기화
 
 ---
 
@@ -57,32 +57,32 @@
 
 ### 2-1. 첫 번째 인스턴스 생성
 
-- [ ] 반복 할일 최초 생성 시 가장 가까운 다음 일정 날짜 계산
-- [ ] todoInstances에 첫 인스턴스 1개 추가: { id, scheduledDate, status: 'pending', postponeCount: 0 }
+- [x] 반복 할일 최초 생성 시 가장 가까운 다음 일정 날짜 계산
+- [x] todoInstances에 첫 인스턴스 1개 추가: { id, scheduledDate, status: 'pending', postponeCount: 0 }
   - PRD 7.3 시나리오 1 참고
 
 ### 2-2. 완료 시 다음 인스턴스 생성
 
-- [ ] 현재 인스턴스 완료 처리: status='completed', completedAt=now
-- [ ] recurrence 패턴 기반으로 다음 인스턴스 1개 자동 생성
-- [ ] 종료 조건(endDate, endAfter) 확인 — 종료이면 미생성
+- [x] 현재 인스턴스 완료 처리: status='completed', completedAt=now
+- [x] recurrence 패턴 기반으로 다음 인스턴스 1개 자동 생성
+- [x] 종료 조건(endDate, endAfter) 확인 — 종료이면 미생성
   - PRD 7.3 시나리오 2 참고
 
 ### 2-3. 건너뛰기 시 다음 인스턴스 생성
 
-- [ ] 현재 인스턴스: status='skipped', skippedAt=now, skipReason=입력값
-- [ ] 다음 인스턴스 1개 자동 생성
+- [x] 현재 인스턴스: status='skipped', skippedAt=now, skipReason=입력값
+- [x] 다음 인스턴스 1개 자동 생성
   - PRD 7.3 시나리오 3 참고
 
 ### 2-4. 미루기 시 인스턴스 처리
 
-- [ ] 미루기는 새 인스턴스 생성하지 않음 — 현재 인스턴스의 scheduledDate만 변경
+- [x] 미루기는 새 인스턴스 생성하지 않음 — 현재 인스턴스의 scheduledDate만 변경
   - postponeCount 증가, 다음 정규 일정 영향 없음
   - PRD 7.3 시나리오 4 참고
 
 ### 2-5. 다음 일정 날짜 계산 함수
 
-- [ ] getNextOccurrence(recurrence, fromDate) 유틸 함수 구현
+- [x] getNextOccurrence(recurrence, fromDate) 유틸 함수 구현 (recurrence.ts)
   - daily: fromDate + interval일
   - weekly: 다음 해당 요일 (daysOfWeek 기준, 복수 요일 시 가장 가까운 것)
   - monthly: 다음 해당 일자
@@ -90,17 +90,19 @@
 
 ### 2-6. 앱 시작 시 누락 인스턴스 복구
 
-- [ ] 앱 시작 시 반복 할일 체크: 활성 인스턴스(pending)가 없고 마지막이 completed/skipped이면 다음 인스턴스 자동 생성
+- [x] 앱 시작 시 반복 할일 체크: 활성 인스턴스(pending)가 없고 마지막이 completed/skipped이면 다음 인스턴스 자동 생성
   - 오프라인 장기 사용 후 앱 열 때 필요
   - PRD 7.3 시나리오 5 참고
+  - recoverAllMissingInstances() 함수로 구현
 
 ### 2-7. overdue 인스턴스 누적 처리
 
-- [ ] 앱 시작 시 overdue 누적 체크: 활성 인스턴스가 overdue이고 다음 정규 일정이 이미 도래한 경우 → 다음 인스턴스도 생성
+- [x] 앱 시작 시 overdue 누적 체크: 활성 인스턴스가 overdue이고 다음 정규 일정이 이미 도래한 경우 → 다음 인스턴스도 생성
   - overdue 인스턴스 + 새 인스턴스가 공존 (활성 2개 이상 가능)
   - 예: 매주 수 반복, 2/5 overdue 미처리 → 2/12 도래 → 두 개 모두 활성
   - PRD 7.3 시나리오 6 참고
-- [ ] 자동 skip 안 함 — overdue 인스턴스는 사용자가 직접 완료/건너뛰기/미루기 처리
+  - recoverMissingInstances() 함수로 구현
+- [x] 자동 skip 안 함 — overdue 인스턴스는 사용자가 직접 완료/건너뛰기/미루기 처리
 - [ ] 할일 전용 뷰에서 같은 반복 할일의 overdue 인스턴스가 여러 개일 때 각각 별도 카드로 표시
   - overdue 섹션에 날짜별로 구분 표시. 예: "🔁 우유 사기 (2/5)", "🔁 우유 사기 (2/12)" 각각 카드
   - 그룹핑/요약 없이 개별 표시 (Phase 4 대량 처리에서 일괄 완료/미루기 가능)
@@ -113,7 +115,7 @@
 
 ### 3-1. 건너뛰기 확인 다이얼로그
 
-- [ ] SkipDialog 컴포넌트 생성
+- [x] SkipDialog 컴포넌트 생성
   - "⏭️ 건너뛰기 - {할일 제목} ({날짜})"
   - "다음 할일: M/D(요일)에 자동 생성됩니다." (다음 일정 계산 표시)
   - 사유 입력 (선택): 텍스트 필드
@@ -122,12 +124,14 @@
 
 ### 3-2. 건너뛰기 처리 로직
 
-- [ ] 현재 인스턴스 'skipped' 처리: skippedAt=now, skipReason=입력값
-- [ ] 다음 인스턴스 자동 생성 (새 인스턴스의 postponeCount = 0)
+- [x] 현재 인스턴스 'skipped' 처리: skippedAt=now, skipReason=입력값
+- [x] 다음 인스턴스 자동 생성 (새 인스턴스의 postponeCount = 0)
+  - skipTodoInstance() 함수로 구현
 
 ### 3-3. 할일 카드에서 건너뛰기 진입
 
-- [ ] MemoCard todo 변형에 [건너뛰기] 버튼 추가 (반복 할일에서만 표시)
+- [x] TodoCard에 [건너뛰기] 버튼 추가 (반복 할일에서만 표시)
+  - isRecurring 조건부로 표시
 
 ---
 
