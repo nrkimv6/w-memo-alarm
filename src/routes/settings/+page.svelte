@@ -1,6 +1,6 @@
 <script lang="ts">
 
-	import { Download, Upload, Trash2, Sun, Moon, Monitor, Bell, Cloud, LogIn, LogOut, Info, RefreshCw, Bug, BellRing, CheckCircle, XCircle, Smartphone, Radio, FileText, Settings2 } from 'lucide-svelte';
+	import { Download, Upload, Trash2, Sun, Moon, Monitor, Bell, Cloud, LogIn, LogOut, Info, RefreshCw, Bug, BellRing, CheckCircle, XCircle, Smartphone, Radio, FileText, Settings2, CheckSquare } from 'lucide-svelte';
 	import AlarmManager from '$lib/components/settings/AlarmManager.svelte';
 	import { APP_VERSION } from '$lib/config';
 	import Button from '$lib/components/ui/Button.svelte';
@@ -483,6 +483,48 @@
 		settingsStore.setAutoReminderOnCreate(autoReminderOnCreate);
 	}
 
+	// 할일 기본설정
+	let todoRemindEnabled = $state(settingsStore.settings.todoDefaults.remind.enabled);
+	let todoRemindTime = $state(settingsStore.settings.todoDefaults.remind.time);
+	let todoAutoAlertEnabled = $state(settingsStore.settings.todoDefaults.autoAlert.enabled);
+	let todoAutoAlertMinutes = $state(settingsStore.settings.todoDefaults.autoAlert.minutesBefore);
+	let todoShowOverdue = $state(settingsStore.settings.todoDefaults.showOverdue);
+	let todoShowProgress = $state(settingsStore.settings.todoDefaults.showProgress);
+
+	const todoCount = $derived(memosStore.memos.filter(m => m.memoType === 'todo').length);
+
+	function handleTodoRemindToggle() {
+		todoRemindEnabled = !todoRemindEnabled;
+		settingsStore.setTodoRemindEnabled(todoRemindEnabled);
+	}
+
+	function handleTodoRemindTimeChange(e: Event) {
+		const target = e.target as HTMLInputElement;
+		todoRemindTime = target.value;
+		settingsStore.setTodoRemindTime(target.value);
+	}
+
+	function handleTodoAutoAlertToggle() {
+		todoAutoAlertEnabled = !todoAutoAlertEnabled;
+		settingsStore.setTodoAutoAlertEnabled(todoAutoAlertEnabled);
+	}
+
+	function handleTodoAutoAlertMinutesChange(e: Event) {
+		const target = e.target as HTMLSelectElement;
+		todoAutoAlertMinutes = parseInt(target.value);
+		settingsStore.setTodoAutoAlertMinutes(todoAutoAlertMinutes);
+	}
+
+	function handleTodoShowOverdueToggle() {
+		todoShowOverdue = !todoShowOverdue;
+		settingsStore.setTodoShowOverdue(todoShowOverdue);
+	}
+
+	function handleTodoShowProgressToggle() {
+		todoShowProgress = !todoShowProgress;
+		settingsStore.setTodoShowProgress(todoShowProgress);
+	}
+
 	function handleExport() {
 		downloadFullBackup();
 	}
@@ -725,6 +767,123 @@
 					{/if}
 				</div>
 			{/if}
+		</div>
+	</section>
+
+	<!-- 할일 기본설정 -->
+	<section class="space-y-4">
+		<div class="flex items-center gap-2 text-primary">
+			<CheckSquare class="w-5 h-5" />
+			<h2 class="font-semibold">할일 기본설정</h2>
+		</div>
+
+		<div class="bg-card rounded-xl border border-border p-5 space-y-4">
+			<p class="text-xs text-muted-foreground">
+				현재 <strong>{todoCount}개</strong>의 할일이 있습니다.
+			</p>
+
+			<!-- 상기 알림 -->
+			<div class="flex items-center justify-between">
+				<div>
+					<span class="text-sm">매일 상기 알림</span>
+					<p class="text-xs text-muted-foreground">매일 같은 시각에 할일 상기 알림</p>
+				</div>
+				<button
+					type="button"
+					role="switch"
+					aria-checked={todoRemindEnabled}
+					onclick={handleTodoRemindToggle}
+					class={cn('toggle-switch', todoRemindEnabled && 'active')}
+				>
+					<span class="toggle-switch-thumb"></span>
+				</button>
+			</div>
+
+			{#if todoRemindEnabled}
+				<div class="space-y-2 p-3 rounded-lg bg-muted/50 border border-border">
+					<label for="todo-remind-time" class="text-sm">상기 시각</label>
+					<input
+						id="todo-remind-time"
+						type="time"
+						value={todoRemindTime}
+						onchange={handleTodoRemindTimeChange}
+						class="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+					/>
+					<p class="text-xs text-muted-foreground">
+						기한 없는 할일도 포함됩니다
+					</p>
+				</div>
+			{/if}
+
+			<!-- 자동 알람 -->
+			<div class="flex items-center justify-between">
+				<div>
+					<span class="text-sm">자동 알람</span>
+					<p class="text-xs text-muted-foreground">기한 전 N분에 자동으로 알람 발송</p>
+				</div>
+				<button
+					type="button"
+					role="switch"
+					aria-checked={todoAutoAlertEnabled}
+					onclick={handleTodoAutoAlertToggle}
+					class={cn('toggle-switch', todoAutoAlertEnabled && 'active')}
+				>
+					<span class="toggle-switch-thumb"></span>
+				</button>
+			</div>
+
+			{#if todoAutoAlertEnabled}
+				<div class="space-y-2 p-3 rounded-lg bg-muted/50 border border-border">
+					<label for="todo-auto-alert-minutes" class="text-sm">알람 시각</label>
+					<select
+						id="todo-auto-alert-minutes"
+						value={todoAutoAlertMinutes}
+						onchange={handleTodoAutoAlertMinutesChange}
+						class="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+					>
+						<option value={30}>30분 전</option>
+						<option value={60}>1시간 전</option>
+						<option value={180}>3시간 전</option>
+						<option value={1440}>하루 전</option>
+						<option value={4320}>3일 전</option>
+						<option value={10080}>1주 전</option>
+					</select>
+				</div>
+			{/if}
+
+			<!-- 기한 초과 표시 -->
+			<div class="flex items-center justify-between">
+				<div>
+					<span class="text-sm">기한 초과 강조 표시</span>
+					<p class="text-xs text-muted-foreground">기한 지난 할일 빨간색 강조</p>
+				</div>
+				<button
+					type="button"
+					role="switch"
+					aria-checked={todoShowOverdue}
+					onclick={handleTodoShowOverdueToggle}
+					class={cn('toggle-switch', todoShowOverdue && 'active')}
+				>
+					<span class="toggle-switch-thumb"></span>
+				</button>
+			</div>
+
+			<!-- 진행률 표시 -->
+			<div class="flex items-center justify-between">
+				<div>
+					<span class="text-sm">진행률 표시</span>
+					<p class="text-xs text-muted-foreground">오늘의 완료 진행률 바 표시</p>
+				</div>
+				<button
+					type="button"
+					role="switch"
+					aria-checked={todoShowProgress}
+					onclick={handleTodoShowProgressToggle}
+					class={cn('toggle-switch', todoShowProgress && 'active')}
+				>
+					<span class="toggle-switch-thumb"></span>
+				</button>
+			</div>
 		</div>
 	</section>
 
