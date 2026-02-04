@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { memosStore } from '$lib/stores/memos.svelte';
 	import { settingsStore } from '$lib/stores/settings.svelte';
+	import { foldersStore } from '$lib/stores/folders.svelte';
 	import TodoForm from '$lib/components/todo/TodoForm.svelte';
 	import TodoCard from '$lib/components/todo/TodoCard.svelte';
 	import PostponeSheet from '$lib/components/todo/PostponeSheet.svelte';
@@ -29,6 +30,8 @@
 	let showAlertModal = $state(false);
 	let showUndoToast = $state(false);
 	let selectedFilter = $state<'today' | 'week' | 'all' | 'completed'>('today');
+	let selectedTag = $state<string | undefined>(undefined);
+	let selectedFolder = $state<string | undefined>(undefined);
 	let editingTodo = $state<Memo | undefined>(undefined);
 	let postponingTodo = $state<Memo | undefined>(undefined);
 	let skippingTodo = $state<Memo | undefined>(undefined);
@@ -37,12 +40,44 @@
 
 	const memos = $derived(memosStore.memos);
 	const todos = $derived(memos.filter(m => m.memoType === 'todo'));
-	const filteredTodos = $derived(filterTodos(todos, selectedFilter));
-	const sortedTodos = $derived(sortTodos(filteredTodos));
+	const filteredTodos = $derived(() => {
+		let result = filterTodos(todos, selectedFilter);
+
+		// Phase 4 Section 4: Tag filtering
+		if (selectedTag) {
+			result = result.filter(t => t.tags.includes(selectedTag));
+		}
+
+		// Phase 4 Section 4: Folder filtering
+		if (selectedFolder) {
+			result = result.filter(t => t.folderId === selectedFolder);
+		}
+
+		return result;
+	});
+	const sortedTodos = $derived(sortTodos(filteredTodos()));
 	const groupedTodos = $derived(groupTodosByDate(sortedTodos));
 	const todayProgress = $derived(getTodayProgress(todos));
 	const weekProgress = $derived(getWeekProgress(todos));
 	const showProgress = $derived(settingsStore.settings.todoDefaults.showProgress);
+
+	// Get all unique tags from todos
+	const availableTags = $derived(() => {
+		const tags = new Set<string>();
+		todos.forEach(todo => {
+			todo.tags.forEach(tag => tags.add(tag));
+		});
+		return Array.from(tags).sort();
+	});
+
+	// Get all folders that have todos
+	const availableFolders = $derived(() => {
+		const folderIds = new Set<string>();
+		todos.forEach(todo => {
+			if (todo.folderId) folderIds.add(todo.folderId);
+		});
+		return folderIds;
+	});
 
 	function openTodoForm(todo?: Memo) {
 		editingTodo = todo;
@@ -208,6 +243,73 @@
 					</button>
 				{/each}
 			</div>
+
+			<!-- Tag & Folder Filters (Phase 4 Section 4) -->
+			{#if availableTags().length > 0 || availableFolders().size > 0}
+				<div class="mt-4 space-y-2">
+					<!-- Tag Filters -->
+					{#if availableTags().length > 0}
+						<div class="flex items-center gap-2 flex-wrap">
+							<span class="text-sm font-medium text-gray-700 dark:text-gray-300">태그:</span>
+							<button
+								onclick={() => selectedTag = undefined}
+								class="px-3 py-1 rounded-full text-sm transition-colors {
+									selectedTag === undefined
+										? 'bg-blue-600 text-white'
+										: 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+								}"
+							>
+								전체
+							</button>
+							{#each availableTags() as tag}
+								<button
+									onclick={() => selectedTag = selectedTag === tag ? undefined : tag}
+									class="px-3 py-1 rounded-full text-sm transition-colors {
+										selectedTag === tag
+											? 'bg-blue-600 text-white'
+											: 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+									}"
+								>
+									#{tag}
+								</button>
+							{/each}
+						</div>
+					{/if}
+
+					<!-- Folder Filters -->
+					{#if availableFolders().size > 0}
+						<div class="flex items-center gap-2 flex-wrap">
+							<span class="text-sm font-medium text-gray-700 dark:text-gray-300">폴더:</span>
+							<button
+								onclick={() => selectedFolder = undefined}
+								class="px-3 py-1 rounded-full text-sm transition-colors {
+									selectedFolder === undefined
+										? 'bg-purple-600 text-white'
+										: 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+								}"
+							>
+								전체
+							</button>
+							{#each Array.from(availableFolders()) as folderId}
+								{@const folder = foldersStore.getFolderById(folderId)}
+								{#if folder}
+									<button
+										onclick={() => selectedFolder = selectedFolder === folderId ? undefined : folderId}
+										class="px-3 py-1 rounded-full text-sm transition-colors {
+											selectedFolder === folderId
+												? 'bg-purple-600 text-white'
+												: 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+										}"
+										style="background-color: {selectedFolder === folderId ? folder.color : ''}"
+									>
+										{folder.icon ? folder.icon + ' ' : ''}{folder.name}
+									</button>
+								{/if}
+							{/each}
+						</div>
+					{/if}
+				</div>
+			{/if}
 
 			<!-- Progress Bar (Phase 4) -->
 			{#if showProgress && (selectedFilter === 'today' || selectedFilter === 'week' || selectedFilter === 'all')}
