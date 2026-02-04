@@ -982,6 +982,11 @@ function createMemosStore() {
 		subscription?.unsubscribe();
 		subscription = null;
 		syncQueue.clear();
+		// 로그아웃 시 메모 데이터 완전 초기화
+		memos = [];
+		saveCacheToStorage([]);
+		initialized = false;
+		loading = true;
 	}
 
 	// Todo 전역 설정 일괄 업데이트

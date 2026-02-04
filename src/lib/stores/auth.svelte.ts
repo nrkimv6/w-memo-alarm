@@ -3,7 +3,9 @@ import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from '$lib/services/supabase';
 import { memosStore } from './memos.svelte';
 import { foldersStore } from './folders.svelte';
+import { notificationStore } from './notifications.svelte';
 import { toastStore } from './toast.svelte';
+import { deactivateAllFCMTokens } from '$lib/fcm';
 
 // Capacitor 네이티브 플랫폼 체크 (동적 import로 웹에서도 안전하게 작동)
 async function isNativePlatform(): Promise<boolean> {
@@ -81,11 +83,17 @@ function createAuthStore() {
 					toastStore.success('로그인되었습니다');
 				}
 			} else if (event === 'SIGNED_OUT') {
+				// FCM 토큰 비활성화 (user 정보가 사라지기 전에 호출)
+				if (state.user?.id) {
+					deactivateAllFCMTokens(state.user.id);
+				}
 				state.user = null;
 				state.session = null;
-				// Store 클린업
+				state.hasShownLoginToast = false;
+				// Store 클린업 (메모/폴더 데이터 + 알림 스케줄 전체 초기화)
 				memosStore.cleanup();
 				foldersStore.cleanup();
+				notificationStore.cleanup();
 				toastStore.info('로그아웃되었습니다');
 			}
 		});
