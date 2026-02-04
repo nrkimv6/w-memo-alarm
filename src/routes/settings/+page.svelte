@@ -68,7 +68,7 @@
 	let showLogViewer = $state(false);
 
 	// 필터링된 로그
-	const filteredLogs = $derived(() => {
+	const filteredLogs = $derived.by(() => {
 		const logs = devLogStore.logs;
 		if (logFilter === 'all') return logs.slice(-100);
 		return logs.filter(l => l.source === logFilter).slice(-100);

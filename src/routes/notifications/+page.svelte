@@ -16,7 +16,7 @@
 	const memoIdFilter = $derived($page.url.searchParams.get('memoId'));
 
 	// 필터링 파이프라인
-	const filteredHistories = $derived(() => {
+	const filteredHistories = $derived.by(() => {
 		let result: NotificationHistory[] = notificationHistoryStore.histories;
 
 		// memoId 필터
@@ -48,13 +48,13 @@
 		return result;
 	});
 
-	const filteredCount = $derived(filteredHistories().length);
+	const filteredCount = $derived(filteredHistories.length);
 	const totalCount = $derived(notificationHistoryStore.histories.length);
 	const hasMore = $derived(filteredCount > displayCount);
 
 	// 표시할 데이터를 displayCount만큼 잘라서 날짜별 그룹핑
-	const visibleGrouped = $derived(() => {
-		const visible = filteredHistories().slice(0, displayCount);
+	const visibleGrouped = $derived.by(() => {
+		const visible = filteredHistories.slice(0, displayCount);
 		const g: Record<string, NotificationHistory[]> = {};
 		for (const h of visible) {
 			const dateKey = h.sentAt.split('T')[0];
@@ -64,14 +64,14 @@
 		return g;
 	});
 	const visibleDateKeys = $derived(
-		Object.keys(visibleGrouped()).sort((a, b) => b.localeCompare(a))
+		Object.keys(visibleGrouped).sort((a, b) => b.localeCompare(a))
 	);
 
 	// 통계
 	const stats = $derived(notificationHistoryStore.getStats());
 
 	// memoId 필터 중일 때 메모 제목 표시
-	const filterMemoTitle = $derived(() => {
+	const filterMemoTitle = $derived.by(() => {
 		if (!memoIdFilter) return '';
 		const record = notificationHistoryStore.histories.find((h) => h.memoId === memoIdFilter);
 		return record?.memoTitle || memoIdFilter;

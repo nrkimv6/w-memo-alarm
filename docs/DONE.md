@@ -1,5 +1,16 @@
 # DONE (최근 20개)
 
+- [x] 2026-02-04: **$derived 패턴 오류 수정** ✅
+  - **문제**: `$derived(() => {...})` 패턴이 함수를 반환하여 값이 아닌 함수 참조가 됨
+  - **수정**: 5개 파일에서 `$derived.by(() => {...})` 로 변경
+    - `settings/+page.svelte:71` — filteredLogs
+    - `+page.svelte:54` — upcomingReminders
+    - `notifications/+page.svelte:19, 56, 74` — filteredHistories, visibleGrouped, filterMemoTitle
+  - **추가 수정**: `filteredHistories()` 호출부를 `filteredHistories`로 변경 (값으로 사용)
+  - **영향**: 홈 페이지 upcomingReminders 섹션, 설정 로그 필터, 알림 히스토리 필터가 올바르게 동작
+  - **빌드**: ✅ npm run build 성공
+  - **참고**: `docs/plan/2026-02-04_derived-pattern-fix.md`
+
 - [x] 2026-01-25: **기본알림/사용자 지정알림 구분 기능** ✅
   - **Phase 1**: 데이터 모델 변경
     - `types/memo.ts`: Reminder 인터페이스에 `isDefault?: boolean` 추가

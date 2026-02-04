@@ -1,7 +1,8 @@
 # Memo Alarm - $derived 패턴 오류 수정
 
 > **작성일**: 2026-02-04
-> **상태**: TODO
+> **완료일**: 2026-02-04
+> **상태**: 완료
 > **우선순위**: MEDIUM
 > **원본**: common/docs/plan/2026-02-04_gentle-words-memo-alarm-defect-fix.md (프로젝트별 분리됨)
 > **감사 기반**: 소스 코드 정적 분석 결과
@@ -145,12 +146,12 @@ Object.keys(visibleGrouped()).sort(...)                       // → visibleGrou
 
 ## 작업 체크리스트
 
-- [ ] `src/routes/settings/+page.svelte:71` — `$derived.by()` 변경
-- [ ] `src/routes/+page.svelte:54` — `$derived.by()` 변경
-- [ ] `src/routes/notifications/+page.svelte:19` — `$derived.by()` 변경
-- [ ] `src/routes/notifications/+page.svelte:56` — `$derived.by()` 변경
-- [ ] `src/routes/notifications/+page.svelte:74` — `$derived.by()` 변경
-- [ ] `src/routes/notifications/+page.svelte:51-53, 57, 67` — 호출부 괄호 제거
+- [x] `src/routes/settings/+page.svelte:71` — `$derived.by()` 변경
+- [x] `src/routes/+page.svelte:54` — `$derived.by()` 변경
+- [x] `src/routes/notifications/+page.svelte:19` — `$derived.by()` 변경
+- [x] `src/routes/notifications/+page.svelte:56` — `$derived.by()` 변경
+- [x] `src/routes/notifications/+page.svelte:74` — `$derived.by()` 변경
+- [x] `src/routes/notifications/+page.svelte:51-53, 57, 67` — 호출부 괄호 제거
 
 ---
 

@@ -51,7 +51,7 @@
 			.slice(0, MAX_ITEMS_PER_SECTION)
 	);
 
-	const upcomingReminders = $derived(() => {
+	const upcomingReminders = $derived.by(() => {
 		const now = new Date();
 		const tomorrow = new Date(now);
 		tomorrow.setDate(tomorrow.getDate() + 2);
