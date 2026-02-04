@@ -823,12 +823,6 @@ interface TodoDefaultSettings {
   // 기한 초과 표시
   showOverdue: boolean;         // 기본: true
 
-  // 미루기 기본 제한
-  postponeLimit: {
-    enabled: boolean;           // 기본: false
-    maxCount: number;           // 기본: 3
-  };
-
   // 완료 통계 표시
   showProgress: boolean;        // 기본: true
 }
@@ -858,7 +852,6 @@ interface TodoDefaultSettings {
 | **상기** | 매일 07:00 (설정 시각) | 없음 |
 | **자동알람** | 기한 하루 전 (설정값) | 없음 |
 | **기한초과 표시** | ON | OFF |
-| **미루기 제한** | 3회 (설정값) | 무제한 |
 
 **기한이 없는 할일의 경우:**
 
