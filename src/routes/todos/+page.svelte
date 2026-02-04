@@ -2,6 +2,7 @@
 	import { memosStore } from '$lib/stores/memos.svelte';
 	import { settingsStore } from '$lib/stores/settings.svelte';
 	import TodoForm from '$lib/components/todo/TodoForm.svelte';
+	import TodoCard from '$lib/components/todo/TodoCard.svelte';
 	import PostponeSheet from '$lib/components/todo/PostponeSheet.svelte';
 	import {
 		filterTodos,
@@ -157,56 +158,11 @@
 					</h2>
 					<div class="space-y-2">
 						{#each overdueTodos as todo}
-							<div class="bg-red-50 dark:bg-red-900/20 border-2 border-red-300 dark:border-red-700 rounded-lg p-4">
-								<div class="flex items-start gap-3">
-									<input
-										type="checkbox"
-										checked={todo.todoStatus === 'completed'}
-										onchange={() => toggleComplete(todo)}
-										class="mt-1 w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-									/>
-									<div class="flex-1 min-w-0">
-										<div class="flex items-start justify-between gap-2">
-											<button
-												onclick={() => openTodoForm(todo)}
-												class="text-left flex-1 min-w-0"
-											>
-												<h3 class="font-medium text-gray-900 dark:text-white {todo.todoStatus === 'completed' ? 'line-through opacity-60' : ''}">
-													{todo.title}
-												</h3>
-												{#if todo.content}
-													<p class="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
-														{todo.content}
-													</p>
-												{/if}
-											</button>
-											{#if todo.todoPriority}
-												<span class="px-2 py-1 text-xs font-medium rounded {getPriorityColor(todo.todoPriority)}">
-													{getPriorityLabel(todo.todoPriority)}
-												</span>
-											{/if}
-										</div>
-										<div class="flex items-center gap-3 mt-2 text-sm text-red-600 dark:text-red-400">
-											<span class="flex items-center gap-1">
-												<Calendar class="w-4 h-4" />
-												{formatDueDate(todo)}
-											</span>
-											<span class="font-medium">
-												❌ {getOverdueDays(todo)}일 초과
-											</span>
-										</div>
-										{#if todo.tags.length > 0}
-											<div class="flex flex-wrap gap-1 mt-2">
-												{#each todo.tags as tag}
-													<span class="px-2 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-xs">
-														#{tag}
-													</span>
-												{/each}
-											</div>
-										{/if}
-									</div>
-								</div>
-							</div>
+							<TodoCard
+								{todo}
+								onEdit={openTodoForm}
+								onPostpone={openPostponeSheet}
+							/>
 						{/each}
 					</div>
 				</section>
@@ -224,60 +180,11 @@
 					</h2>
 					<div class="space-y-2">
 						{#each dateTodos.filter(t => !isOverdue(t) || selectedFilter === 'completed') as todo}
-							<div class="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow">
-								<div class="flex items-start gap-3">
-									<input
-										type="checkbox"
-										checked={todo.todoStatus === 'completed'}
-										onchange={() => toggleComplete(todo)}
-										class="mt-1 w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-									/>
-									<div class="flex-1 min-w-0">
-										<div class="flex items-start justify-between gap-2">
-											<button
-												onclick={() => openTodoForm(todo)}
-												class="text-left flex-1 min-w-0"
-											>
-												<h3 class="font-medium text-gray-900 dark:text-white {todo.todoStatus === 'completed' ? 'line-through opacity-60' : ''}">
-													{todo.title}
-												</h3>
-												{#if todo.content}
-													<p class="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
-														{todo.content}
-													</p>
-												{/if}
-											</button>
-											{#if todo.todoPriority && todo.todoStatus !== 'completed'}
-												<span class="px-2 py-1 text-xs font-medium rounded {getPriorityColor(todo.todoPriority)}">
-													{getPriorityLabel(todo.todoPriority)}
-												</span>
-											{/if}
-										</div>
-										<div class="flex items-center gap-3 mt-2 text-sm text-gray-600 dark:text-gray-400">
-											{#if dateStr !== 'no-due-date'}
-												<span class="flex items-center gap-1">
-													<Clock class="w-4 h-4" />
-													{todo.dueTime && todo.dueTime !== '23:59' ? todo.dueTime : '하루 종일'}
-												</span>
-											{/if}
-											{#if todo.todoStatus === 'completed' && todo.completedAt}
-												<span class="text-green-600 dark:text-green-400">
-													✅ {new Date(todo.completedAt).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-												</span>
-											{/if}
-										</div>
-										{#if todo.tags.length > 0}
-											<div class="flex flex-wrap gap-1 mt-2">
-												{#each todo.tags as tag}
-													<span class="px-2 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-xs">
-														#{tag}
-													</span>
-												{/each}
-											</div>
-										{/if}
-									</div>
-								</div>
-							</div>
+							<TodoCard
+								{todo}
+								onEdit={openTodoForm}
+								onPostpone={openPostponeSheet}
+							/>
 						{/each}
 					</div>
 				</section>
