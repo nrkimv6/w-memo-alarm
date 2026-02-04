@@ -20,11 +20,11 @@
 - [ ] Section 2: Native Ongoing Notification
 - [ ] Section 3: 배터리 최적화 해제 안내
 
-### 📝 선택적/추후 구현
-- [ ] Section 4-2: 전용 TodoGroup (사용자 피드백 기반 판단)
-- [ ] Section 5: 홈 화면 위젯
-- [ ] Section 7-2: 일괄 미루기 (PostponeSheet 통합)
-- [ ] Section 8-3: 체크리스트 → 할일 변환
+### 📝 선택적 기능 → [future-ideas.md](./future-ideas.md)로 분리
+- Section 4-2: 전용 TodoGroup
+- Section 5: 홈 화면 위젯
+- Section 7-2: 일괄 미루기
+- Section 8-3: 체크리스트 → 할일 변환
 
 ---
 
