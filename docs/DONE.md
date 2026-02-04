@@ -1,5 +1,26 @@
 # DONE (최근 20개)
 
+- [x] 2026-02-04: **할일 알림 UI 전면 재설계 + 미구현 기능 수정** ✅
+  - **문제 발견**: 전수 점검에서 다수 미완성/오류 발견
+    1. "알람 (Phase 2에서 활성화)" 텍스트 방치 (Phase 2는 이미 완료)
+    2. 상기/알람/초과 알림 - 체크박스만 존재, 1:N 커스텀 알림 미구현 (Phase 2 Section 6-1, 6-2)
+    3. "그룹 (Phase 4에서 활성화)" disabled UI 방치 (Phase 4-A Web은 이미 완료)
+    4. TodoAlertEntry 타입과 실제 코드 사이 필드명 불일치 (.value 사용 - 존재하지 않는 프로퍼티)
+    5. foldersStore.getFolderById() - 존재하지 않는 메서드 호출 (정확한 이름: getById)
+  - **수정 내용**:
+    - `TodoForm.svelte`: 알림 섹션 전면 재설계
+      - "매일 리마인더" - 프리셋 버튼(1h/3h/1d/3d) + 직접 시간 지정 + 개별 삭제
+      - "마감 알람" - 프리셋 버튼(30m/1h/3h/1d) + 직접 날짜/시간 지정 + 개별 삭제
+      - "기한이 지나면 빨간색으로 강조 표시" 자연어 레이블
+      - disabled 그룹 섹션 → 폴더 드롭다운 셀렉터로 교체
+    - `memo.ts`: TodoAlertEntry에 type/minutesBefore 필드 추가
+    - `todoNotifications.ts`: .value → .time/.minutesBefore/.date 필드 참조 수정
+    - `todoAlertManager.svelte.ts`: 동일 .value 참조 수정
+    - `todos/+page.svelte`: getFolderById → getById 수정
+    - `PostponeSheet.svelte`: Phase 코멘트 정리
+    - `phase-2-alarm-postpone.md`: Section 6 완료 표시
+  - **수정 파일**: 7개
+
 - [x] 2026-02-04: **Todo 탭 디자인 개편 (Home과 통일)** ✅
   - **목표**: Todo 탭의 이질적인 디자인을 제거하고 Home 탭과 동일한 디자인 언어(Semantic Token) 적용
   - **변경 내용**:
