@@ -693,6 +693,15 @@ function createMemosStore() {
 
 		const memoToDelete = memos[memoIndex];
 
+		// Phase 3 Section 7: 반복 할일 삭제 확인
+		if (memoToDelete.memoType === 'todo' && memoToDelete.recurrence) {
+			const instanceCount = memoToDelete.todoInstances?.length || 0;
+			const confirmed = confirm(
+				`이 반복 할일과 모든 인스턴스(${instanceCount}개)가 삭제됩니다.\n정말 삭제하시겠습니까?`
+			);
+			if (!confirmed) return false;
+		}
+
 		// 알림 취소 (먼저 실행)
 		if (await isNative()) {
 			cancelNotification(id);
