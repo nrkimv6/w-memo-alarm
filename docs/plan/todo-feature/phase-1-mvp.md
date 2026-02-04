@@ -19,25 +19,25 @@
 
 ### 1-1. 할일 관련 타입 정의
 
-- [ ] `src/lib/types/memo.ts`에 TodoStatus 타입 추가 ('pending' | 'completed' | 'skipped')
-- [ ] TodoPriority 타입 추가 ('low' | 'medium' | 'high' | 'urgent')
-- [ ] TodoTiming 인터페이스 추가 (상기/알람 개별 설정 구조)
+- [x] `src/lib/types/memo.ts`에 TodoStatus 타입 추가 ('pending' | 'completed' | 'skipped')
+- [x] TodoPriority 타입 추가 ('low' | 'medium' | 'high' | 'urgent')
+- [x] TodoTiming 인터페이스 추가 (상기/알람 개별 설정 구조)
   - TodoRemindEntry, TodoAlertEntry 포함
   - PRD 4.1 참고
-- [ ] Recurrence 인터페이스 추가 (Phase 3에서 사용하지만 타입은 미리 정의)
-- [ ] TodoInstance 인터페이스 추가 (Phase 3에서 사용하지만 타입은 미리 정의)
-- [ ] PostponeInfo, PostponeRecord 인터페이스 추가
+- [x] Recurrence 인터페이스 추가 (Phase 3에서 사용하지만 타입은 미리 정의)
+- [x] TodoInstance 인터페이스 추가 (Phase 3에서 사용하지만 타입은 미리 정의)
+- [x] PostponeInfo, PostponeRecord 인터페이스 추가
 
 ### 1-2. Memo 인터페이스 할일 필드 추가
 
-- [ ] memoType에 'todo' 추가 ('note' | 'bookmark' | 'todo')
-- [ ] 할일 전용 필드 추가: todoStatus, todoPriority, dueTime, todoTiming
-- [ ] Phase 3/4용 필드도 타입에 포함: recurrence, todoInstances, postponeInfo, todoGroupId
+- [x] memoType에 'todo' 추가 ('note' | 'bookmark' | 'todo')
+- [x] 할일 전용 필드 추가: todoStatus, todoPriority, dueTime, todoTiming
+- [x] Phase 3/4용 필드도 타입에 포함: recurrence, todoInstances, postponeInfo, todoGroupId
   - PRD 4.1 전체 Memo 인터페이스 확장 부분 참고
 
 ### 1-3. Supabase DB 마이그레이션
 
-- [ ] 마이그레이션 SQL 파일 작성 (`data/migrations/xxx_todo_feature.sql`)
+- [x] 마이그레이션 SQL 파일 작성 (`data/migrations/007_todo_feature.sql`)
   - ma_memos 테이블에 할일 컬럼 추가 (todo_status, todo_priority, due_time, todo_timing 등)
   - 인덱스 생성 (todo_status, due_date WHERE memo_type = 'todo')
   - **ma_todo_groups 테이블도 이 마이그레이션에 포함** (사용은 Phase 4이지만 DB는 미리 생성)
@@ -57,49 +57,49 @@
 
 ### 2-1. TodoForm 컴포넌트 기본 구조
 
-- [ ] 새 컴포넌트 생성 (예: `src/lib/components/todo/TodoForm.svelte`)
+- [x] 새 컴포넌트 생성 (`src/lib/components/todo/TodoForm.svelte`)
   - 또는 기존 MemoForm에 memoType='todo' 분기 추가
   - 어느 방식이든, PRD 5.4의 폼 레이아웃을 따를 것
-- [ ] 제목 입력 필드 (필수)
-- [ ] 메모(내용) 입력 필드 (선택)
+- [x] 제목 입력 필드 (필수)
+- [x] 메모(내용) 입력 필드 (선택)
   - 기존 MemoForm의 content 입력 재활용
 
 ### 2-2. 우선순위/태그
 
-- [ ] 우선순위 세그먼트 버튼 구현: [낮음] [보통] [높음] [긴급]
+- [x] 우선순위 세그먼트 버튼 구현: [낮음] [보통] [높음] [긴급]
   - 기본값: 'medium'
-- [ ] 태그 입력 — 기존 태그 컴포넌트 재활용
+- [x] 태그 입력 — 기존 태그 컴포넌트 재활용
 
 ### 2-3. 기한 설정 UI
 
-- [ ] 기한 날짜 선택 (date picker) — dueDate 필드. 선택사항 (기한 없는 할일 가능)
-- [ ] 기한 시각 선택 (time picker) — dueTime 필드 (HH:mm)
-- [ ] "하루 종일" 체크박스 — 체크 시 dueTime = '23:59'로 저장, 시각 입력 비활성화
-- [ ] 기한 설정 시 "알람" 섹션 자동 펼침
+- [x] 기한 날짜 선택 (date picker) — dueDate 필드. 선택사항 (기한 없는 할일 가능)
+- [x] 기한 시각 선택 (time picker) — dueTime 필드 (HH:mm)
+- [x] "하루 종일" 체크박스 — 체크 시 dueTime = '23:59'로 저장, 시각 입력 비활성화
+- [x] 기한 설정 시 "알람" 섹션 자동 펼침
   - Phase 1에서는 UI 표시만, 실제 알림 발송은 Phase 2
   - PRD 5.4의 "├─── ⏰ 알람 (기한 설정 시 자동 표시)" 참고
 
 ### 2-4. 알람 설정 UI (표시만, 발송은 Phase 2)
 
-- [ ] 상기 설정 토글 + 프리셋
+- [x] 상기 설정 토글 + 프리셋
   - "☑ 상기: [하루 전 ▼]" (프리셋: 1시간 전, 3시간 전, 하루 전, 3일 전)
   - useGlobalRemind 연동
   - 데이터는 todoTiming.remindTimes에 저장
-- [ ] 알람 설정 토글 + 시각 입력
+- [x] 알람 설정 토글 + 시각 입력
   - "☑ 알람: [10:00]" — 데이터는 todoTiming.alertTimes에 저장
-- [ ] 기한 초과 표시 토글 (기본 켜짐)
+- [x] 기한 초과 표시 토글 (기본 켜짐)
 
 ### 2-5. 반복/그룹 자리 확보
 
-- [ ] 반복 설정 영역 — Phase 1에서는 비활성 또는 숨김 처리 (Phase 3에서 활성화)
-- [ ] 그룹 선택 영역 — Phase 1에서는 비활성 또는 숨김 처리 (Phase 4에서 활성화)
+- [x] 반복 설정 영역 — Phase 1에서는 비활성 또는 숨김 처리 (Phase 3에서 활성화)
+- [x] 그룹 선택 영역 — Phase 1에서는 비활성 또는 숨김 처리 (Phase 4에서 활성화)
 
 ### 2-6. 저장 로직
 
-- [ ] memoType='todo'로 설정, todoStatus='pending', todoPriority=선택값으로 저장
-- [ ] dueDate, dueTime, todoTiming 저장
-- [ ] 기존 memosStore의 addMemo/updateMemo에서 할일 필드 처리 추가
-- [ ] Supabase 동기화 시 할일 필드 포함 확인
+- [x] memoType='todo'로 설정, todoStatus='pending', todoPriority=선택값으로 저장
+- [x] dueDate, dueTime, todoTiming 저장
+- [x] 기존 memosStore의 addMemo/updateMemo에서 할일 필드 처리 추가
+- [x] Supabase 동기화 시 할일 필드 포함 확인
 
 ---
 
@@ -120,21 +120,21 @@
 
 ### 3-2. overdue 카드 스타일
 
-- [ ] isOverdue(memo) 유틸 함수 구현
+- [x] isOverdue(memo) 유틸 함수 구현
   - pending 상태이고 dueDate + dueTime < now이면 overdue
   - "하루 종일" 할일: dueTime='23:59'이므로 해당 날짜 23:59:59 이후부터 overdue. 즉 사실상 자정(00:00)부터 overdue 표시
   - 기한 없으면 false
   - PRD 3.4 참고 — overdue는 연산된 상태
-- [ ] overdue 카드 시각 처리: 빨간 배경/테두리 + "⚠️ 기한지남" 배지 + "❌ N일 초과" 표시
+- [x] overdue 카드 시각 처리: 빨간 배경/테두리 + "⚠️ 기한지남" 배지 + "❌ N일 초과" 표시
 
 ### 3-3. 완료 카드 스타일
 
-- [ ] 완료된 할일: 취소선 + 연한 색상 + "✅ 완료" 배지 + 완료 시각 표시
+- [x] 완료된 할일: 취소선 + 연한 색상 + "✅ 완료" 배지 + 완료 시각 표시
 
 ### 3-4. 할일 완료 체크
 
-- [ ] 체크박스 클릭 → todoStatus='completed', completedAt 기록, 카드 스타일 즉시 반영
-- [ ] 완료 취소 (체크 해제) → todoStatus='pending', completedAt 초기화
+- [x] 체크박스 클릭 → todoStatus='completed', completedAt 기록, 카드 스타일 즉시 반영
+- [x] 완료 취소 (체크 해제) → todoStatus='pending', completedAt 초기화
 
 ---
 
@@ -144,13 +144,13 @@
 
 ### 4-1. 라우트 및 페이지 생성
 
-- [ ] `src/routes/todos/+page.svelte` 신규 생성
+- [x] `src/routes/todos/+page.svelte` 신규 생성
   - 페이지 타이틀 + 우측 상단 검색/설정/추가 버튼
 
 ### 4-2. 기간 필터 탭
 
-- [ ] 상단 필터 탭: [오늘] [이번주] [전체] [완료됨]
-- [ ] `src/lib/stores/filter.svelte.ts`에 할일 필터 로직 추가
+- [x] 상단 필터 탭: [오늘] [이번주] [전체] [완료됨]
+- [x] `src/lib/utils/todo.ts`에 할일 필터 로직 추가 (filterTodos 함수)
   - "오늘": 오늘 기한 + 기한 없는 미완료 + overdue
   - "이번주": 이번 주 기한 할일
   - "전체": 미완료 전체
@@ -158,16 +158,16 @@
 
 ### 4-3. 섹션별 정렬/표시
 
-- [ ] overdue 섹션: "⚠️ 기한 지남 (N)" 헤더, 최상단 배치
+- [x] overdue 섹션: "⚠️ 기한 지남 (N)" 헤더, 최상단 배치
   - PRD 5.3, 9.4의 정렬 우선순위 참고
-- [ ] 날짜별 섹션: "📅 오늘 2/4 (화)" 헤더, 각 섹션 내 시각 순 정렬
+- [x] 날짜별 섹션: "📅 오늘 2/4 (화)" 헤더, 각 섹션 내 시각 순 정렬
   - 동일 dueDate+dueTime인 할일이 여러 개일 때 생성순(createdAt ASC)으로 tiebreak
-- [ ] 기한 없는 할일: "오늘" 섹션 하단에 "(기한 없음)" 라벨로 표시
-- [ ] 완료된 할일: 각 날짜 섹션의 최하단, 연한 색상 + 취소선
+- [x] 기한 없는 할일: "오늘" 섹션 하단에 "(기한 없음)" 라벨로 표시
+- [x] 완료된 할일: 각 날짜 섹션의 최하단, 연한 색상 + 취소선
 
 ### 4-4. 진행률 바
 
-- [ ] 하단에 오늘 진행률 표시: "📊 오늘 진행률: ████░░░░ 1/3 (33%)"
+- [x] 하단에 오늘 진행률 표시: "📊 오늘 진행률: ████░░░░ 1/3 (33%)"
   - 오늘 기한 할일 중 완료 비율
   - 설정 showProgress=false이면 숨김
 
@@ -199,11 +199,11 @@
 
 ### 6-1. 설정 데이터 모델
 
-- [ ] `src/lib/stores/settings.svelte.ts`에 TodoDefaultSettings 추가
+- [x] `src/lib/stores/settings.svelte.ts`에 TodoDefaultSettings 추가
   - remind: { enabled, time } / autoAlert: { enabled, minutesBefore } / showOverdue / showProgress
   - 기본값: remind ON + 07:00, autoAlert OFF, showOverdue ON, showProgress ON
   - PRD 6.2 참고 (postponeLimit 없음)
-- [ ] localStorage 'memo-alarm-settings' 키에 todoDefaults 포함
+- [x] localStorage 'memo-alarm-settings' 키에 todoDefaults 포함
 
 ### 6-2. 설정 UI
 
@@ -231,11 +231,11 @@
 
 > PRD 참조: 6.4 기한이 없는 할일의 경우
 
-- [ ] 기한 없는 할일 생성 허용 (dueDate, dueTime 모두 미입력)
-- [ ] 상기에 포함 — "(기한 없음)" 라벨 표시 (Phase 2에서 실제 발송)
-- [ ] 자동알람 적용 안됨 (기한 없으면 계산 불가)
-- [ ] overdue 불가 — isOverdue에서 기한 없으면 false
-- [ ] 할일 전용 뷰에서 "오늘" 섹션 하단에 표시
+- [x] 기한 없는 할일 생성 허용 (dueDate, dueTime 모두 미입력)
+- [x] 상기에 포함 — "(기한 없음)" 라벨 표시 (Phase 2에서 실제 발송)
+- [x] 자동알람 적용 안됨 (기한 없으면 계산 불가)
+- [x] overdue 불가 — isOverdue에서 기한 없으면 false
+- [x] 할일 전용 뷰에서 "오늘" 섹션 하단에 표시
 
 ---
 
@@ -243,10 +243,10 @@
 
 > PRD 참조: 13.2 기존 코드 활용
 
-- [ ] 기존 dueDate 필드 확인 — Memo 인터페이스에 이미 있는지, 있으면 재활용
-- [ ] 기존 priority 필드 확인 — Memo 인터페이스에 이미 있는지
-- [ ] 기존 memoType 필드 확인 — 'note', 'bookmark' 사용 현황, 'task' 사용 이력
-- [ ] 기존 checklist 필드 확인 — ChecklistItem 인터페이스 존재 여부, 할일과의 관계 정리 (PRD 10.2 항목 10 참고)
+- [x] 기존 dueDate 필드 확인 — Memo 인터페이스에 이미 있는지, 있으면 재활용
+- [x] 기존 priority 필드 확인 — Memo 인터페이스에 이미 있는지
+- [x] 기존 memoType 필드 확인 — 'note', 'bookmark' 사용 현황, 'task' 사용 이력
+- [x] 기존 checklist 필드 확인 — ChecklistItem 인터페이스 존재 여부, 할일과의 관계 정리 (PRD 10.2 항목 10 참고)
   - 할일에 체크리스트가 포함된 경우: 체크리스트 완료와 할일 완료는 독립. 체크박스로 할일을 완료 처리하면 미완료 체크리스트가 있어도 완료됨. 체크리스트는 참고용 진행률로만 표시
 
 ---
