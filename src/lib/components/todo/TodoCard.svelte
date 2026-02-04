@@ -1,8 +1,9 @@
 <script lang="ts">
-	import { Calendar, Clock, AlertCircle, MoreVertical, Calendar as CalendarIcon } from 'lucide-svelte';
+	import { Calendar, Clock, AlertCircle, MoreVertical, Calendar as CalendarIcon, Repeat } from 'lucide-svelte';
 	import type { Memo } from '$lib/types/memo';
 	import { memosStore } from '$lib/stores/memos.svelte';
 	import { isOverdue, formatDueDate, getOverdueDays, getPriorityColor, getPriorityLabel } from '$lib/utils/todo';
+	import { getRecurrenceDescription } from '$lib/utils/recurrence';
 
 	interface Props {
 		todo: Memo;
@@ -16,8 +17,21 @@
 
 	const overdue = $derived(isOverdue(todo));
 	const completed = $derived(todo.todoStatus === 'completed');
+	const isRecurring = $derived(!!todo.recurrence);
+	const recurrenceDesc = $derived(todo.recurrence ? getRecurrenceDescription(todo.recurrence) : '');
 
 	async function handleToggleComplete() {
+		// 반복 할일인 경우 (Phase 3)
+		if (todo.recurrence && todo.todoInstances) {
+			const activeInstance = todo.todoInstances.find(i => i.status === 'pending');
+			if (activeInstance && !completed) {
+				// 현재 인스턴스 완료 + 다음 인스턴스 생성
+				await memosStore.completeTodoInstance(todo.id, activeInstance.id);
+				return;
+			}
+		}
+
+		// 단발성 할일 또는 반복 종료된 할일
 		const newStatus = completed ? 'pending' : 'completed';
 		await memosStore.updateMemo(todo.id, {
 			todoStatus: newStatus,
@@ -100,6 +114,13 @@
 					</span>
 				{/if}
 
+				{#if isRecurring}
+					<span class="flex items-center gap-1 text-purple-600 dark:text-purple-400 text-xs font-medium">
+						<Repeat class="w-3 h-3" />
+						{recurrenceDesc}
+					</span>
+				{/if}
+
 				{#if overdue && !completed}
 					<span class="text-red-600 dark:text-red-400 font-medium text-xs">
 						❌ {getOverdueDays(todo)}일 초과
@@ -135,12 +156,14 @@
 							📌 미루기
 						</button>
 					{/if}
-					<button
-						onclick={handleSkip}
-						class="px-3 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md transition-colors"
-					>
-						⏭️ 건너뛰기
-					</button>
+					{#if isRecurring}
+						<button
+							onclick={handleSkip}
+							class="px-3 py-1 text-xs font-medium text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 hover:bg-orange-100 dark:hover:bg-orange-900/40 rounded-md transition-colors"
+						>
+							⏭️ 건너뛰기
+						</button>
+					{/if}
 					<button
 						onclick={handleEdit}
 						class="px-3 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"

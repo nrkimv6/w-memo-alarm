@@ -6,6 +6,7 @@
 	import PostponeSheet from '$lib/components/todo/PostponeSheet.svelte';
 	import AlertModal from '$lib/components/todo/AlertModal.svelte';
 	import UndoToast from '$lib/components/todo/UndoToast.svelte';
+	import SkipDialog from '$lib/components/todo/SkipDialog.svelte';
 	import {
 		filterTodos,
 		sortTodos,
@@ -24,11 +25,13 @@
 
 	let showTodoForm = $state(false);
 	let showPostponeSheet = $state(false);
+	let showSkipDialog = $state(false);
 	let showAlertModal = $state(false);
 	let showUndoToast = $state(false);
 	let selectedFilter = $state<'today' | 'week' | 'all' | 'completed'>('today');
 	let editingTodo = $state<Memo | undefined>(undefined);
 	let postponingTodo = $state<Memo | undefined>(undefined);
+	let skippingTodo = $state<Memo | undefined>(undefined);
 	let alertingTodo = $state<Memo | undefined>(undefined);
 	let lastCompletedTodo = $state<Memo | undefined>(undefined);
 
@@ -60,7 +63,30 @@
 		postponingTodo = undefined;
 	}
 
+	function openSkipDialog(todo: Memo) {
+		skippingTodo = todo;
+		showSkipDialog = true;
+	}
+
+	function closeSkipDialog() {
+		showSkipDialog = false;
+		skippingTodo = undefined;
+	}
+
 	async function toggleComplete(todo: Memo) {
+		// 반복 할일인 경우 (Phase 3)
+		if (todo.recurrence && todo.todoInstances) {
+			const activeInstance = todo.todoInstances.find(i => i.status === 'pending');
+			if (activeInstance) {
+				// 현재 인스턴스 완료 + 다음 인스턴스 생성
+				await memosStore.completeTodoInstance(todo.id, activeInstance.id);
+				lastCompletedTodo = todo;
+				showUndoToast = true;
+				return;
+			}
+		}
+
+		// 단발성 할일 또는 반복 종료된 할일
 		const newStatus = todo.todoStatus === 'completed' ? 'pending' : 'completed';
 		await memosStore.updateMemo(todo.id, {
 			todoStatus: newStatus,
@@ -88,13 +114,6 @@
 		lastCompletedTodo = undefined;
 	}
 
-	async function handleSkip(todo: Memo) {
-		if (!confirm(`"${todo.title}" 할일을 건너뛰시겠습니까?`)) return;
-
-		await memosStore.updateMemo(todo.id, {
-			todoStatus: 'skipped'
-		});
-	}
 
 	function formatSectionDate(dateStr: string): string {
 		if (dateStr === 'no-due-date') return '기한 없음';
@@ -223,7 +242,7 @@
 								{todo}
 								onEdit={openTodoForm}
 								onPostpone={openPostponeSheet}
-								onSkip={handleSkip}
+								onSkip={openSkipDialog}
 							/>
 						{/each}
 					</div>
@@ -246,7 +265,7 @@
 								{todo}
 								onEdit={openTodoForm}
 								onPostpone={openPostponeSheet}
-								onSkip={handleSkip}
+								onSkip={openSkipDialog}
 							/>
 						{/each}
 					</div>
@@ -284,6 +303,11 @@
 <!-- Postpone Sheet -->
 {#if showPostponeSheet && postponingTodo}
 	<PostponeSheet todo={postponingTodo} onClose={closePostponeSheet} />
+{/if}
+
+<!-- Skip Dialog -->
+{#if showSkipDialog && skippingTodo}
+	<SkipDialog todo={skippingTodo} onClose={closeSkipDialog} />
 {/if}
 
 <!-- Alert Modal -->
