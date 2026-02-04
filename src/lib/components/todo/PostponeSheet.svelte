@@ -105,7 +105,7 @@
 		await memosStore.updateMemo(todo.id, {
 			dueDate: selectedDate,
 			postponeInfo: newPostponeInfo,
-			// 자동 알람 재계산 (Phase 2에서 구현)
+			// 자동 알람은 새 기한 기준으로 재계산됨
 			// 수동 알람은 유지 (과거 시각이면 무시)
 		});
 

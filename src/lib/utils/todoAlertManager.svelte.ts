@@ -103,12 +103,12 @@ function shouldTriggerAlert(todo: Memo, now: Date): boolean {
 
 	// 2. 수동 알람들 체크 (alertTimes)
 	for (const alert of timing.alertTimes) {
-		if (alert.type === 'datetime') {
-			const alertTime = new Date(alert.value);
+		if (alert.type === 'datetime' && alert.date && alert.time) {
+			const alertTime = new Date(`${alert.date}T${alert.time}:00`);
 			if (isTimeMatch(alertTime, now)) {
 				return true;
 			}
-		} else if (alert.type === 'before_due' && todo.dueDate) {
+		} else if (alert.type === 'before_due' && alert.minutesBefore && todo.dueDate) {
 			const dueDateTime = new Date(todo.dueDate);
 			if (todo.dueTime) {
 				const [hours, minutes] = todo.dueTime.split(':').map(Number);
@@ -117,8 +117,7 @@ function shouldTriggerAlert(todo: Memo, now: Date): boolean {
 				dueDateTime.setHours(23, 59, 0, 0);
 			}
 
-			const minutesBefore = parseInt(alert.value, 10);
-			const alertTime = new Date(dueDateTime.getTime() - minutesBefore * 60000);
+			const alertTime = new Date(dueDateTime.getTime() - alert.minutesBefore * 60000);
 			if (isTimeMatch(alertTime, now)) {
 				return true;
 			}

@@ -8,13 +8,13 @@
 
 ## Phase 구성
 
-| Phase | 이름 | 핵심 목표 | plan 파일 |
-|-------|------|----------|----------|
-| **1** | 기본 할일 (MVP) | 할일 CRUD + 기한 + 전용뷰 + 설정 | [phase-1-mvp.md](./phase-1-mvp.md) |
-| **2** | 알림 3단계 + 미루기 | 상기/알람/기한초과 알림 + 미루기 에스컬레이션 | [phase-2-alarm-postpone.md](./phase-2-alarm-postpone.md) |
-| **3** | 반복 할일 | 반복 설정 + 인스턴스 생성 + 건너뛰기 + 모아보기 | [phase-3-recurring.md](./phase-3-recurring.md) |
-| **4** | Native 강화 + 그룹 + 통계 | Fullscreen Alert + 그룹핑 + 완료 통계 + 대량 처리 | [phase-4-native-group-stats.md](./phase-4-native-group-stats.md) |
-| **5+** | 고급 기능 (향후) | 캘린더 뷰, 자연어 입력, 서브태스크 등 | (별도 plan 불필요) |
+| Phase | 이름 | 핵심 목표 | plan 파일 | 상태 |
+|-------|------|----------|----------|------|
+| **1** | 기본 할일 (MVP) | 할일 CRUD + 기한 + 전용뷰 + 설정 | [phase-1-mvp.md](./phase-1-mvp.md) | ✅ 완료 |
+| **2** | 알림 3단계 + 미루기 | 상기/알람/기한초과 알림 + 미루기 에스컬레이션 + 1:N 개별 알림 UI | [phase-2-alarm-postpone.md](./phase-2-alarm-postpone.md) | ✅ 완료 |
+| **3** | 반복 할일 | 반복 설정 + 인스턴스 생성 + 건너뛰기 + 모아보기 | [phase-3-recurring.md](./phase-3-recurring.md) | ✅ 완료 |
+| **4** | Native 강화 + 그룹 + 통계 | Fullscreen Alert + 그룹핑 + 완료 통계 + 대량 처리 | [phase-4-native-group-stats.md](./phase-4-native-group-stats.md) | 🚧 60% (Web ✅, Native ⏳) |
+| **5+** | 고급 기능 (향후) | 캘린더 뷰, 자연어 입력, 서브태스크 등 | (별도 plan 불필요) | ⏳ |
 
 ---
 
