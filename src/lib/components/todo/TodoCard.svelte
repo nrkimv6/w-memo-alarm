@@ -12,9 +12,13 @@
 		onEdit?: (todo: Memo) => void;
 		onPostpone?: (todo: Memo) => void;
 		onSkip?: (todo: Memo) => void;
+		// Phase 4 Section 7: Multi-select support
+		isMultiSelectMode?: boolean;
+		isSelected?: boolean;
+		onToggleSelection?: (todoId: string) => void;
 	}
 
-	let { todo, compact = false, onEdit, onPostpone, onSkip }: Props = $props();
+	let { todo, compact = false, onEdit, onPostpone, onSkip, isMultiSelectMode = false, isSelected = false, onToggleSelection }: Props = $props();
 
 	let showHistory = $state(false);
 
@@ -68,12 +72,23 @@
 }">
 	<div class="flex items-start gap-3">
 		<!-- Checkbox -->
-		<input
-			type="checkbox"
-			checked={completed}
-			onchange={handleToggleComplete}
-			class="mt-1 w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-		/>
+		{#if isMultiSelectMode}
+			<!-- Multi-select checkbox (Phase 4 Section 7) -->
+			<input
+				type="checkbox"
+				checked={isSelected}
+				onchange={() => onToggleSelection?.(todo.id)}
+				class="mt-1 w-5 h-5 rounded border-purple-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
+			/>
+		{:else}
+			<!-- Completion checkbox -->
+			<input
+				type="checkbox"
+				checked={completed}
+				onchange={handleToggleComplete}
+				class="mt-1 w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+			/>
+		{/if}
 
 		<!-- Content -->
 		<div class="flex-1 min-w-0">

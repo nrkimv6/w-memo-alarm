@@ -21,7 +21,7 @@
 	} from '$lib/utils/todo';
 	import { getTodayProgress, getWeekProgress } from '$lib/utils/todoProgress';
 	import type { Memo } from '$lib/types/memo';
-	import { Plus, Search, Settings, CheckSquare, Calendar, Clock, AlertCircle, BarChart3, ChevronDown, ChevronUp } from 'lucide-svelte';
+	import { Plus, Search, Settings, CheckSquare, Calendar, Clock, AlertCircle, BarChart3, ChevronDown, ChevronUp, CheckSquare2, X, Trash2 } from 'lucide-svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import { initTodoAlertManager, cleanupTodoAlertManager } from '$lib/utils/todoAlertManager.svelte';
 
@@ -39,6 +39,9 @@
 	let skippingTodo = $state<Memo | undefined>(undefined);
 	let alertingTodo = $state<Memo | undefined>(undefined);
 	let lastCompletedTodo = $state<Memo | undefined>(undefined);
+	// Phase 4 Section 7: Batch actions
+	let isMultiSelectMode = $state(false);
+	let selectedTodoIds = $state<Set<string>>(new Set());
 
 	const memos = $derived(memosStore.memos);
 	const todos = $derived(memos.filter(m => m.memoType === 'todo'));
@@ -185,6 +188,91 @@
 		openPostponeSheet(todo);
 	}
 
+	// Phase 4 Section 7: Batch Actions
+	function toggleMultiSelectMode() {
+		isMultiSelectMode = !isMultiSelectMode;
+		if (!isMultiSelectMode) {
+			selectedTodoIds = new Set();
+		}
+	}
+
+	function toggleTodoSelection(todoId: string) {
+		const newSelection = new Set(selectedTodoIds);
+		if (newSelection.has(todoId)) {
+			newSelection.delete(todoId);
+		} else {
+			newSelection.add(todoId);
+		}
+		selectedTodoIds = newSelection;
+	}
+
+	function selectAllOverdue() {
+		const overdueTodos = sortedTodos.filter(isOverdue);
+		selectedTodoIds = new Set(overdueTodos.map(t => t.id));
+		isMultiSelectMode = true;
+	}
+
+	async function batchComplete() {
+		if (selectedTodoIds.size === 0) return;
+
+		for (const todoId of selectedTodoIds) {
+			const todo = memosStore.getById(todoId);
+			if (todo && todo.todoStatus !== 'completed') {
+				await memosStore.updateMemo(todoId, {
+					todoStatus: 'completed',
+					completedAt: Date.now()
+				});
+			}
+		}
+
+		selectedTodoIds = new Set();
+		isMultiSelectMode = false;
+	}
+
+	async function batchDelete() {
+		if (selectedTodoIds.size === 0) return;
+
+		const confirmed = confirm(`선택한 ${selectedTodoIds.size}개의 할일을 삭제하시겠습니까?`);
+		if (!confirmed) return;
+
+		for (const todoId of selectedTodoIds) {
+			await memosStore.remove(todoId);
+		}
+
+		selectedTodoIds = new Set();
+		isMultiSelectMode = false;
+	}
+
+	async function postponeAllOverdueToTomorrow() {
+		const overdueTodos = sortedTodos.filter(isOverdue);
+		if (overdueTodos.length === 0) return;
+
+		const tomorrow = new Date();
+		tomorrow.setDate(tomorrow.getDate() + 1);
+		const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+		for (const todo of overdueTodos) {
+			await memosStore.updateMemo(todo.id, {
+				dueDate: tomorrowStr
+			});
+		}
+	}
+
+	async function completeAllOverdue() {
+		const overdueTodos = sortedTodos.filter(isOverdue);
+		if (overdueTodos.length === 0) return;
+
+		const confirmed = confirm(`기한 지난 ${overdueTodos.length}개의 할일을 모두 완료하시겠습니까?`);
+		if (!confirmed) return;
+
+		for (const todo of overdueTodos) {
+			await memosStore.updateMemo(todo.id, {
+				todoStatus: 'completed',
+				completedAt: Date.now()
+			});
+		}
+	}
+
 	onMount(() => {
 		// 포그라운드 알람 감지 시작
 		initTodoAlertManager(() => memosStore.memos, handleAlert);
@@ -221,6 +309,15 @@
 						title="통계"
 					>
 						<BarChart3 class="w-5 h-5" />
+					</button>
+					<button
+						onclick={toggleMultiSelectMode}
+						class="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg {
+							isMultiSelectMode ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' : ''
+						}"
+						title="다중 선택"
+					>
+						<CheckSquare2 class="w-5 h-5" />
 					</button>
 					<a href="/settings" class="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
 						<Settings class="w-5 h-5" />
@@ -365,6 +462,42 @@
 		</div>
 	{/if}
 
+	<!-- Batch Action Bar (Phase 4 Section 7) -->
+	{#if isMultiSelectMode && selectedTodoIds.size > 0}
+		<div class="sticky top-16 z-10 bg-purple-100 dark:bg-purple-900/30 border-y border-purple-200 dark:border-purple-800">
+			<div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+				<div class="flex items-center gap-2">
+					<span class="text-sm font-medium text-purple-900 dark:text-purple-100">
+						{selectedTodoIds.size}개 선택됨
+					</span>
+				</div>
+				<div class="flex items-center gap-2">
+					<button
+						onclick={batchComplete}
+						class="px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700"
+					>
+						<CheckSquare class="w-4 h-4 inline mr-1" />
+						완료
+					</button>
+					<button
+						onclick={batchDelete}
+						class="px-3 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700"
+					>
+						<Trash2 class="w-4 h-4 inline mr-1" />
+						삭제
+					</button>
+					<button
+						onclick={toggleMultiSelectMode}
+						class="px-3 py-1.5 text-sm border border-purple-300 dark:border-purple-700 text-purple-900 dark:text-purple-100 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-900/50"
+					>
+						<X class="w-4 h-4 inline mr-1" />
+						취소
+					</button>
+				</div>
+			</div>
+		</div>
+	{/if}
+
 	<!-- Content -->
 	<main class="max-w-4xl mx-auto px-4 py-6">
 		{#if sortedTodos.length === 0}
@@ -387,10 +520,33 @@
 			{@const overdueTodos = sortedTodos.filter(isOverdue)}
 			{#if overdueTodos.length > 0 && selectedFilter !== 'completed'}
 				<section class="mb-6">
-					<h2 class="text-lg font-semibold text-red-600 dark:text-red-400 mb-3 flex items-center gap-2">
-						<AlertCircle class="w-5 h-5" />
-						⚠️ 기한 지남 ({overdueTodos.length})
-					</h2>
+					<div class="flex items-center justify-between mb-3">
+						<h2 class="text-lg font-semibold text-red-600 dark:text-red-400 flex items-center gap-2">
+							<AlertCircle class="w-5 h-5" />
+							⚠️ 기한 지남 ({overdueTodos.length})
+						</h2>
+						<!-- Quick Actions (Phase 4 Section 7-3) -->
+						<div class="flex items-center gap-2">
+							<button
+								onclick={selectAllOverdue}
+								class="px-2 py-1 text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded hover:bg-purple-200 dark:hover:bg-purple-900/50"
+							>
+								모두 선택
+							</button>
+							<button
+								onclick={postponeAllOverdueToTomorrow}
+								class="px-2 py-1 text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded hover:bg-orange-200 dark:hover:bg-orange-900/50"
+							>
+								내일로 미루기
+							</button>
+							<button
+								onclick={completeAllOverdue}
+								class="px-2 py-1 text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded hover:bg-green-200 dark:hover:bg-green-900/50"
+							>
+								모두 완료
+							</button>
+						</div>
+					</div>
 					<div class="space-y-2">
 						{#each overdueTodos as todo}
 							<TodoCard
@@ -398,6 +554,9 @@
 								onEdit={openTodoForm}
 								onPostpone={openPostponeSheet}
 								onSkip={openSkipDialog}
+								{isMultiSelectMode}
+								isSelected={selectedTodoIds.has(todo.id)}
+								onToggleSelection={toggleTodoSelection}
 							/>
 						{/each}
 					</div>
@@ -421,6 +580,9 @@
 								onEdit={openTodoForm}
 								onPostpone={openPostponeSheet}
 								onSkip={openSkipDialog}
+								{isMultiSelectMode}
+								isSelected={selectedTodoIds.has(todo.id)}
+								onToggleSelection={toggleTodoSelection}
 							/>
 						{/each}
 					</div>
