@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { memosStore } from '$lib/stores/memos.svelte';
 	import { settingsStore } from '$lib/stores/settings.svelte';
-	import type { Memo, TodoPriority, TodoTiming } from '$lib/types/memo';
+	import type { Memo, TodoPriority, TodoTiming, Recurrence } from '$lib/types/memo';
 	import { Calendar, Clock, Bell, AlertCircle, Repeat, Folder } from 'lucide-svelte';
+	import { getRecurrenceDescription } from '$lib/utils/recurrence';
 
 	interface Props {
 		memo?: Memo;
@@ -34,6 +35,21 @@
 	let alertTimes = $state<Array<{ type: 'datetime' | 'before_due'; value: string }>>(
 		memo?.todoTiming?.alertTimes || []
 	);
+
+	// Recurrence state (Phase 3)
+	let recurrenceType = $state<'none' | 'daily' | 'weekly' | 'monthly' | 'custom'>(
+		memo?.recurrence ? memo.recurrence.type : 'none'
+	);
+	let recurrenceInterval = $state(memo?.recurrence?.interval || 1);
+	let recurrenceDaysOfWeek = $state<number[]>(memo?.recurrence?.daysOfWeek || []);
+	let recurrenceDayOfMonth = $state(memo?.recurrence?.dayOfMonth || 1);
+	let recurrenceCustomInterval = $state(memo?.recurrence?.customInterval || 1);
+	let recurrenceCustomUnit = $state<'day' | 'week' | 'month'>(memo?.recurrence?.customUnit || 'day');
+	let recurrenceEndType = $state<'none' | 'date' | 'count'>(
+		memo?.recurrence?.endDate ? 'date' : memo?.recurrence?.endAfter ? 'count' : 'none'
+	);
+	let recurrenceEndDate = $state(memo?.recurrence?.endDate || '');
+	let recurrenceEndAfter = $state(memo?.recurrence?.endAfter || 1);
 
 	// UI state
 	let showAlarmSection = $state(!!dueDate || !!memo?.dueDate);
@@ -83,6 +99,14 @@
 		}
 	}
 
+	function toggleDayOfWeek(day: number) {
+		if (recurrenceDaysOfWeek.includes(day)) {
+			recurrenceDaysOfWeek = recurrenceDaysOfWeek.filter(d => d !== day);
+		} else {
+			recurrenceDaysOfWeek = [...recurrenceDaysOfWeek, day].sort();
+		}
+	}
+
 	async function handleSubmit() {
 		if (!title.trim()) {
 			alert('제목을 입력해주세요');
@@ -98,6 +122,26 @@
 			showOverdue
 		};
 
+		// Build recurrence object (Phase 3)
+		let recurrence: Recurrence | undefined = undefined;
+		if (recurrenceType !== 'none') {
+			if (recurrenceType === 'weekly' && recurrenceDaysOfWeek.length === 0) {
+				alert('반복 요일을 선택해주세요');
+				return;
+			}
+
+			recurrence = {
+				type: recurrenceType,
+				interval: recurrenceType === 'custom' ? 1 : recurrenceInterval,
+				daysOfWeek: recurrenceType === 'weekly' ? recurrenceDaysOfWeek : undefined,
+				dayOfMonth: recurrenceType === 'monthly' ? recurrenceDayOfMonth : undefined,
+				customInterval: recurrenceType === 'custom' ? recurrenceCustomInterval : undefined,
+				customUnit: recurrenceType === 'custom' ? recurrenceCustomUnit : undefined,
+				endDate: recurrenceEndType === 'date' ? recurrenceEndDate : undefined,
+				endAfter: recurrenceEndType === 'count' ? recurrenceEndAfter : undefined
+			} as Recurrence;
+		}
+
 		const memoData = {
 			...(memo || {}),
 			title: title.trim(),
@@ -108,7 +152,8 @@
 			todoStatus: memo?.todoStatus || 'pending' as const,
 			dueDate: dueDate || undefined,
 			dueTime: allDay ? '23:59' : (dueTime || undefined),
-			todoTiming
+			todoTiming,
+			recurrence
 		};
 
 		if (isEdit && memo) {
@@ -272,14 +317,176 @@
 			{/if}
 
 			<!-- 반복 (Phase 3) -->
-			<div class="border dark:border-gray-700 rounded-lg p-4 opacity-50">
+			<div class="border dark:border-gray-700 rounded-lg p-4 space-y-4">
 				<h3 class="font-medium text-gray-900 dark:text-white flex items-center gap-2">
 					<Repeat class="w-4 h-4" />
-					반복 (Phase 3에서 활성화)
+					반복
 				</h3>
-				<p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
-					반복 설정은 Phase 3에서 구현됩니다
-				</p>
+
+				<!-- 반복 타입 선택 -->
+				<div>
+					<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+						반복 유형
+					</label>
+					<select
+						bind:value={recurrenceType}
+						class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+					>
+						<option value="none">반복 안 함</option>
+						<option value="daily">매일</option>
+						<option value="weekly">매주</option>
+						<option value="monthly">매월</option>
+						<option value="custom">사용자 지정</option>
+					</select>
+				</div>
+
+				{#if recurrenceType !== 'none'}
+					<!-- 간격 설정 (daily/weekly/monthly) -->
+					{#if recurrenceType === 'daily' || recurrenceType === 'weekly' || recurrenceType === 'monthly'}
+						<div>
+							<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+								간격
+							</label>
+							<div class="flex items-center gap-2">
+								<span class="text-sm text-gray-600 dark:text-gray-400">매</span>
+								<input
+									type="number"
+									bind:value={recurrenceInterval}
+									min="1"
+									class="w-20 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+								/>
+								<span class="text-sm text-gray-600 dark:text-gray-400">
+									{recurrenceType === 'daily' ? '일' : recurrenceType === 'weekly' ? '주' : '월'}마다
+								</span>
+							</div>
+						</div>
+					{/if}
+
+					<!-- 요일 선택 (weekly) -->
+					{#if recurrenceType === 'weekly'}
+						<div>
+							<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+								요일 선택 *
+							</label>
+							<div class="flex gap-2">
+								{#each ['일', '월', '화', '수', '목', '금', '토'] as dayLabel, idx}
+									<button
+										type="button"
+										onclick={() => toggleDayOfWeek(idx)}
+										class="flex-1 px-2 py-2 rounded-lg font-medium transition-colors {recurrenceDaysOfWeek.includes(idx)
+											? 'bg-blue-600 text-white'
+											: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}"
+									>
+										{dayLabel}
+									</button>
+								{/each}
+							</div>
+						</div>
+					{/if}
+
+					<!-- 일자 선택 (monthly) -->
+					{#if recurrenceType === 'monthly'}
+						<div>
+							<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+								날짜
+							</label>
+							<div class="flex items-center gap-2">
+								<span class="text-sm text-gray-600 dark:text-gray-400">매월</span>
+								<input
+									type="number"
+									bind:value={recurrenceDayOfMonth}
+									min="1"
+									max="31"
+									class="w-20 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+								/>
+								<span class="text-sm text-gray-600 dark:text-gray-400">일</span>
+							</div>
+						</div>
+					{/if}
+
+					<!-- 사용자 지정 간격 (custom) -->
+					{#if recurrenceType === 'custom'}
+						<div>
+							<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+								간격 설정
+							</label>
+							<div class="flex items-center gap-2">
+								<span class="text-sm text-gray-600 dark:text-gray-400">매</span>
+								<input
+									type="number"
+									bind:value={recurrenceCustomInterval}
+									min="1"
+									class="w-20 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+								/>
+								<select
+									bind:value={recurrenceCustomUnit}
+									class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+								>
+									<option value="day">일</option>
+									<option value="week">주</option>
+									<option value="month">월</option>
+								</select>
+								<span class="text-sm text-gray-600 dark:text-gray-400">마다</span>
+							</div>
+						</div>
+					{/if}
+
+					<!-- 반복 종료 조건 -->
+					<div class="space-y-3">
+						<label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+							반복 종료
+						</label>
+						<div class="space-y-2">
+							<label class="flex items-center gap-2 cursor-pointer">
+								<input
+									type="radio"
+									bind:group={recurrenceEndType}
+									value="none"
+									class="rounded-full"
+								/>
+								<span class="text-sm text-gray-700 dark:text-gray-300">종료 없음 (무한 반복)</span>
+							</label>
+
+							<label class="flex items-center gap-2 cursor-pointer">
+								<input
+									type="radio"
+									bind:group={recurrenceEndType}
+									value="date"
+									class="rounded-full"
+								/>
+								<span class="text-sm text-gray-700 dark:text-gray-300">날짜 지정</span>
+							</label>
+							{#if recurrenceEndType === 'date'}
+								<input
+									type="date"
+									bind:value={recurrenceEndDate}
+									class="ml-6 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+								/>
+							{/if}
+
+							<label class="flex items-center gap-2 cursor-pointer">
+								<input
+									type="radio"
+									bind:group={recurrenceEndType}
+									value="count"
+									class="rounded-full"
+								/>
+								<span class="text-sm text-gray-700 dark:text-gray-300">횟수 지정</span>
+							</label>
+							{#if recurrenceEndType === 'count'}
+								<div class="ml-6 flex items-center gap-2">
+									<input
+										type="number"
+										bind:value={recurrenceEndAfter}
+										min="1"
+										class="w-20 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+									/>
+									<span class="text-sm text-gray-600 dark:text-gray-400">회 후 종료</span>
+								</div>
+							{/if}
+						</div>
+					</div>
+				{/if}
 			</div>
 
 			<!-- 그룹 (Phase 4) -->

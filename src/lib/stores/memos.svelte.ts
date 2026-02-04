@@ -1,4 +1,4 @@
-import type { Memo, MemoCreate, MemoUpdate, SyncStatus, Reminder } from '$lib/types/memo';
+import type { Memo, MemoCreate, MemoUpdate, SyncStatus, Reminder, TodoInstance } from '$lib/types/memo';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { browser } from '$app/environment';
 import { supabase } from '$lib/services/supabase';
@@ -9,6 +9,7 @@ import { createMemoAlarm, updateMemoAlarm, deleteMemoAlarms, syncMemoAlarms } fr
 import { syncQueue } from '$lib/services/syncQueue';
 import { settingsStore } from './settings.svelte';
 import { notificationStore } from './notifications.svelte';
+import { createNextInstance, recoverMissingInstances } from '$lib/utils/recurrence';
 
 const CACHE_KEY = 'memo-alarm-memos-cache';
 const INITIALIZED_KEY = 'memo-alarm-initialized';
@@ -289,6 +290,9 @@ function createMemosStore() {
 
 		loading = false;
 		initialized = true;
+
+		// Phase 3: 누락된 반복 할일 인스턴스 복구
+		await recoverAllMissingInstances();
 	}
 
 	async function fetchFromSupabase() {
@@ -457,6 +461,15 @@ function createMemosStore() {
 				await scheduleTodoNotifications(newMemo);
 			}
 
+			// 반복 할일 첫 인스턴스 생성 (Phase 3)
+			if (newMemo.memoType === 'todo' && newMemo.recurrence) {
+				const firstInstance = createNextInstance(newMemo.recurrence, []);
+				if (firstInstance) {
+					newMemo.todoInstances = [firstInstance];
+					saveCacheToStorage(memos);
+				}
+			}
+
 			return newMemo;
 		}
 
@@ -550,6 +563,25 @@ function createMemosStore() {
 		if (result.memoType === 'todo') {
 			const { scheduleTodoNotifications } = await import('$lib/utils/todoNotifications');
 			await scheduleTodoNotifications(result);
+		}
+
+		// 반복 할일 첫 인스턴스 생성 (Phase 3)
+		if (result.memoType === 'todo' && result.recurrence && (!result.todoInstances || result.todoInstances.length === 0)) {
+			const firstInstance = createNextInstance(result.recurrence, []);
+			if (firstInstance) {
+				result.todoInstances = [firstInstance];
+				// Update locally and sync to server
+				const idx = memos.findIndex(m => m.id === result.id);
+				if (idx !== -1) {
+					memos[idx] = result;
+					saveCacheToStorage(memos);
+				}
+				// Update in database
+				await supabase
+					.from('ma_memos')
+					.update({ todo_instances: [firstInstance] })
+					.eq('id', result.id);
+			}
 		}
 
 		return result;
@@ -964,6 +996,85 @@ function createMemosStore() {
 		await rescheduleAllTodosForGlobalAutoAlert(todosWithGlobalAutoAlert, minutesBefore);
 	}
 
+	/**
+	 * 반복 할일 인스턴스 완료 처리 + 다음 인스턴스 생성 (Phase 3)
+	 */
+	async function completeTodoInstance(memoId: string, instanceId: string): Promise<Memo | null> {
+		const memo = memos.find(m => m.id === memoId);
+		if (!memo || memo.memoType !== 'todo' || !memo.recurrence || !memo.todoInstances) {
+			return null;
+		}
+
+		const instances = memo.todoInstances;
+		const instanceIndex = instances.findIndex(i => i.id === instanceId);
+		if (instanceIndex === -1) return null;
+
+		// 현재 인스턴스 완료 처리
+		const updatedInstances = [...instances];
+		updatedInstances[instanceIndex] = {
+			...updatedInstances[instanceIndex],
+			status: 'completed',
+			completedAt: Date.now()
+		};
+
+		// 다음 인스턴스 생성
+		const nextInstance = createNextInstance(memo.recurrence, updatedInstances);
+		if (nextInstance) {
+			updatedInstances.push(nextInstance);
+		}
+
+		// Update memo
+		return await update(memoId, { todoInstances: updatedInstances });
+	}
+
+	/**
+	 * 반복 할일 인스턴스 건너뛰기 + 다음 인스턴스 생성 (Phase 3)
+	 */
+	async function skipTodoInstance(memoId: string, instanceId: string, skipReason?: string): Promise<Memo | null> {
+		const memo = memos.find(m => m.id === memoId);
+		if (!memo || memo.memoType !== 'todo' || !memo.recurrence || !memo.todoInstances) {
+			return null;
+		}
+
+		const instances = memo.todoInstances;
+		const instanceIndex = instances.findIndex(i => i.id === instanceId);
+		if (instanceIndex === -1) return null;
+
+		// 현재 인스턴스 건너뛰기 처리
+		const updatedInstances = [...instances];
+		updatedInstances[instanceIndex] = {
+			...updatedInstances[instanceIndex],
+			status: 'skipped',
+			skippedAt: Date.now(),
+			skipReason: skipReason,
+			postponeCount: 0 // 건너뛰면 postponeCount 리셋
+		};
+
+		// 다음 인스턴스 생성
+		const nextInstance = createNextInstance(memo.recurrence, updatedInstances);
+		if (nextInstance) {
+			updatedInstances.push(nextInstance);
+		}
+
+		// Update memo
+		return await update(memoId, { todoInstances: updatedInstances });
+	}
+
+	/**
+	 * 앱 시작 시 누락된 인스턴스 복구 (Phase 3)
+	 */
+	async function recoverAllMissingInstances(): Promise<void> {
+		const recurringTodos = memos.filter(m => m.memoType === 'todo' && m.recurrence);
+
+		for (const memo of recurringTodos) {
+			const newInstances = recoverMissingInstances(memo);
+			if (newInstances.length > 0) {
+				const updatedInstances = [...(memo.todoInstances || []), ...newInstances];
+				await update(memo.id, { todoInstances: updatedInstances }, { silent: true });
+			}
+		}
+	}
+
 	return {
 		get memos() {
 			return memos;
@@ -1013,6 +1124,10 @@ function createMemosStore() {
 		removeReminder,
 		updateReminderEnabled,
 		getReminders,
+		// Phase 3: 반복 할일 인스턴스 관리
+		completeTodoInstance,
+		skipTodoInstance,
+		recoverAllMissingInstances,
 		// 구 API 호환성 (sync용)
 		deleteMemo: remove,
 		updateMemo: update,

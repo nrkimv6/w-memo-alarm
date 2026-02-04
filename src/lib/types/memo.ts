@@ -65,6 +65,8 @@ export interface Recurrence {
 	interval: number; // 간격 (매 N일/주/월)
 	daysOfWeek?: number[]; // 0-6 (주간 반복 시)
 	dayOfMonth?: number; // 1-31 (월간 반복 시)
+	customInterval?: number; // 사용자 지정 간격 (type='custom'일 때)
+	customUnit?: 'day' | 'week' | 'month'; // 사용자 지정 단위 (type='custom'일 때)
 	endDate?: string; // YYYY-MM-DD (반복 종료 날짜)
 	endAfter?: number; // N회 후 종료
 }
