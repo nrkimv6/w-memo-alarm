@@ -425,7 +425,7 @@
 			{/if}
 
 			<!-- 알림 예정 -->
-			{#if upcomingReminders().length > 0}
+			{#if upcomingReminders.length > 0}
 				<section>
 					<div class="flex items-center justify-between mb-3">
 						<h2 class="text-base font-semibold flex items-center gap-2">
@@ -440,7 +440,7 @@
 						</button>
 					</div>
 					<div class="space-y-2">
-						{#each upcomingReminders() as memo (memo.id)}
+						{#each upcomingReminders as memo (memo.id)}
 							<button
 								onclick={() => handleView(memo)}
 								class="w-full flex items-center gap-3 p-3 rounded-lg bg-card border border-border hover:border-primary/50 transition-colors text-left"
@@ -492,7 +492,7 @@
 			{/if}
 
 			<!-- 메모는 있지만 모든 섹션이 비어있는 경우 -->
-			{#if pinnedMemos.length === 0 && favoriteMemos.length === 0 && upcomingReminders().length === 0 && recentMemos.length === 0}
+			{#if pinnedMemos.length === 0 && favoriteMemos.length === 0 && upcomingReminders.length === 0 && recentMemos.length === 0}
 				<div class="flex flex-col items-center justify-center py-8 text-center">
 					<p class="text-muted-foreground mb-4">활성화된 메모가 없습니다</p>
 					<a href="/memos" class="text-primary hover:underline flex items-center gap-1">

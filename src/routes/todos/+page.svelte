@@ -45,7 +45,7 @@
 
 	const memos = $derived(memosStore.memos);
 	const todos = $derived(memos.filter(m => m.memoType === 'todo'));
-	const filteredTodos = $derived(() => {
+	const filteredTodos = $derived.by(() => {
 		let result = filterTodos(todos, selectedFilter);
 
 		// Phase 4 Section 4: Tag filtering
@@ -60,14 +60,14 @@
 
 		return result;
 	});
-	const sortedTodos = $derived(sortTodos(filteredTodos()));
+	const sortedTodos = $derived(sortTodos(filteredTodos));
 	const groupedTodos = $derived(groupTodosByDate(sortedTodos));
 	const todayProgress = $derived(getTodayProgress(todos));
 	const weekProgress = $derived(getWeekProgress(todos));
 	const showProgress = $derived(settingsStore.settings.todoDefaults.showProgress);
 
 	// Get all unique tags from todos
-	const availableTags = $derived(() => {
+	const availableTags = $derived.by(() => {
 		const tags = new Set<string>();
 		todos.forEach(todo => {
 			todo.tags.forEach(tag => tags.add(tag));
@@ -76,7 +76,7 @@
 	});
 
 	// Get all folders that have todos
-	const availableFolders = $derived(() => {
+	const availableFolders = $derived.by(() => {
 		const folderIds = new Set<string>();
 		todos.forEach(todo => {
 			if (todo.folderId) folderIds.add(todo.folderId);
@@ -353,10 +353,10 @@
 			</div>
 
 			<!-- Tag & Folder Filters (Phase 4 Section 4) -->
-			{#if availableTags().length > 0 || availableFolders().size > 0}
+			{#if availableTags.length > 0 || availableFolders.size > 0}
 				<div class="mt-4 space-y-2">
 					<!-- Tag Filters -->
-					{#if availableTags().length > 0}
+					{#if availableTags.length > 0}
 						<div class="flex items-center gap-2 flex-wrap">
 							<span class="text-sm font-medium text-gray-700 dark:text-gray-300">태그:</span>
 							<button
@@ -369,7 +369,7 @@
 							>
 								전체
 							</button>
-							{#each availableTags() as tag}
+							{#each availableTags as tag}
 								<button
 									onclick={() => selectedTag = selectedTag === tag ? undefined : tag}
 									class="px-3 py-1 rounded-full text-sm transition-colors {
@@ -385,7 +385,7 @@
 					{/if}
 
 					<!-- Folder Filters -->
-					{#if availableFolders().size > 0}
+					{#if availableFolders.size > 0}
 						<div class="flex items-center gap-2 flex-wrap">
 							<span class="text-sm font-medium text-gray-700 dark:text-gray-300">폴더:</span>
 							<button
@@ -398,7 +398,7 @@
 							>
 								전체
 							</button>
-							{#each Array.from(availableFolders()) as folderId}
+							{#each Array.from(availableFolders) as folderId}
 								{@const folder = foldersStore.getFolderById(folderId)}
 								{#if folder}
 									<button
