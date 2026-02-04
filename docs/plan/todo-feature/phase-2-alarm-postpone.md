@@ -63,7 +63,7 @@
 ### 2-2. 자동 알람 (autoAlertBefore) 스케줄링
 
 - [ ] 기한 시각 - autoAlertBefore 분 = 알람 시각 계산
-  - 기한 없는 할일에는 적용 안됨
+  - 기한 없는 할일에는 적용 안됨. 할일 편집 폼에서 기한 미설정 시 자동알람 토글 비활성화 + "기한 설정 시 적용됩니다" 안내
   - useGlobalAutoAlert=true이면 앱 설정값 사용
 - [ ] 계산된 시각에 알림 스케줄 등록
 
@@ -134,13 +134,14 @@
   - postponeInfo.count 증가
   - postponeInfo.history에 기록 추가 (from, to, postponedAt)
   - 첫 미루기 시 postponeInfo.originalDueDate 저장
+  - 반복 할일의 경우: postponeInfo는 Memo 레벨이므로 인스턴스가 바뀌어도 count 누적. 인스턴스별 리셋은 차후 고려사항 (overview 참조)
 - [ ] 미루기 가능 여부 판단
   - maxAllowed가 null이면 항상 가능
   - maxAllowed 설정 시 count < maxAllowed일 때만 가능
   - 불가 시 미루기 버튼 비활성화 + "완료 또는 건너뛰기만 가능" 안내
 - [ ] 미루기 시 알람 이동 처리
   - autoAlertBefore → 새 기한 기준으로 재계산
-  - 수동 alertTimes → 이동 안 함 (과거 시각이 되면 발송 안 함)
+  - 수동 alertTimes → 이동 안 함. 미루기로 과거 시각이 된 alertTimes는 SW/Capacitor 스케줄에서 제거. 복원 없음 (수동 알람은 사용자가 편집에서 다시 설정)
   - 상기(remind) → 새 기한 기준으로 재계산
 - [ ] Supabase 동기화 — 변경된 dueDate, postponeInfo 즉시 동기화
 
@@ -156,6 +157,7 @@
 > PRD 참조: 10.2 항목 1
 
 - [ ] 완료 처리 후 토스트 표시: "✅ '{할일 제목}' 완료" + [실행 취소] 버튼 (3초간)
+  - 페이지 이동 시 토스트 소멸. 다른 할일 완료 시 기존 토스트 교체 (최신 1건만 유지)
 - [ ] 실행 취소 → todoStatus='pending', completedAt 초기화
 
 ---
