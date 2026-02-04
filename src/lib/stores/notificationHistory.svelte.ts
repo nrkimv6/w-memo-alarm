@@ -86,6 +86,47 @@ function createNotificationHistoryStore() {
 		return grouped;
 	}
 
+	function getByStatus(status: NotificationHistory['status']): NotificationHistory[] {
+		return histories.filter((h) => h.status === status);
+	}
+
+	function deleteById(id: string) {
+		histories = histories.filter((h) => h.id !== id);
+		saveToStorage();
+	}
+
+	function deleteByDateRange(startDate: string, endDate: string) {
+		const start = new Date(startDate).getTime();
+		const end = new Date(endDate).getTime();
+		histories = histories.filter((h) => {
+			const t = new Date(h.sentAt).getTime();
+			return t < start || t > end;
+		});
+		saveToStorage();
+	}
+
+	function getStats() {
+		const total = histories.length;
+		const success = histories.filter((h) => h.status === 'success').length;
+		const failed = histories.filter((h) => h.status === 'failed').length;
+		const unknown = histories.filter((h) => h.status === 'unknown').length;
+		const successRate = total > 0 ? Math.round((success / total) * 100) : 0;
+
+		// 가장 많이 발송된 메모 Top 3
+		const memoCounts: Record<string, { title: string; count: number }> = {};
+		for (const h of histories) {
+			if (!memoCounts[h.memoId]) {
+				memoCounts[h.memoId] = { title: h.memoTitle, count: 0 };
+			}
+			memoCounts[h.memoId].count++;
+		}
+		const topMemos = Object.values(memoCounts)
+			.sort((a, b) => b.count - a.count)
+			.slice(0, 3);
+
+		return { total, success, failed, unknown, successRate, topMemos };
+	}
+
 	function clearAll() {
 		histories = [];
 		saveToStorage();
@@ -104,6 +145,10 @@ function createNotificationHistoryStore() {
 		getByMemoId,
 		getByDateRange,
 		getGroupedByDate,
+		getByStatus,
+		deleteById,
+		deleteByDateRange,
+		getStats,
 		clearAll
 	};
 }
