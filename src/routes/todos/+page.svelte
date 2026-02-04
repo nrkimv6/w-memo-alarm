@@ -12,12 +12,12 @@
 		sortTodos,
 		groupTodosByDate,
 		isOverdue,
-		getTodayProgress,
 		formatDueDate,
 		getOverdueDays,
 		getPriorityColor,
 		getPriorityLabel
 	} from '$lib/utils/todo';
+	import { getTodayProgress, getWeekProgress } from '$lib/utils/todoProgress';
 	import type { Memo } from '$lib/types/memo';
 	import { Plus, Search, Settings, CheckSquare, Calendar, Clock, AlertCircle } from 'lucide-svelte';
 	import { onMount, onDestroy } from 'svelte';
@@ -41,6 +41,7 @@
 	const sortedTodos = $derived(sortTodos(filteredTodos));
 	const groupedTodos = $derived(groupTodosByDate(sortedTodos));
 	const todayProgress = $derived(getTodayProgress(todos));
+	const weekProgress = $derived(getWeekProgress(todos));
 	const showProgress = $derived(settingsStore.settings.todoDefaults.showProgress);
 
 	function openTodoForm(todo?: Memo) {
@@ -207,6 +208,40 @@
 					</button>
 				{/each}
 			</div>
+
+			<!-- Progress Bar (Phase 4) -->
+			{#if showProgress && (selectedFilter === 'today' || selectedFilter === 'week' || selectedFilter === 'all')}
+				<div class="mt-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+					<div class="flex items-center justify-between text-sm mb-2">
+						<span class="font-medium text-gray-900 dark:text-white">
+							📊 오늘: {todayProgress.completed}/{todayProgress.total} ({todayProgress.percentage}%)
+						</span>
+						<span class="text-gray-600 dark:text-gray-400">
+							| 이번 주: {weekProgress.completed}/{weekProgress.total} ({weekProgress.percentage}%)
+						</span>
+					</div>
+					<div class="flex gap-2">
+						<!-- Today Progress Bar -->
+						<div class="flex-1">
+							<div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+								<div
+									class="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-300"
+									style="width: {todayProgress.percentage}%"
+								></div>
+							</div>
+						</div>
+						<!-- Week Progress Bar -->
+						<div class="flex-1">
+							<div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+								<div
+									class="h-full bg-gradient-to-r from-purple-500 to-purple-600 transition-all duration-300"
+									style="width: {weekProgress.percentage}%"
+								></div>
+							</div>
+						</div>
+					</div>
+				</div>
+			{/if}
 		</div>
 	</header>
 
