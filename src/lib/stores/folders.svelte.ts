@@ -290,6 +290,11 @@ function createFoldersStore() {
 	function cleanup() {
 		subscription?.unsubscribe();
 		subscription = null;
+		// 로그아웃 시 폴더 데이터 완전 초기화
+		folders = [];
+		saveCacheToStorage([]);
+		initialized = false;
+		loading = true;
 	}
 
 	return {

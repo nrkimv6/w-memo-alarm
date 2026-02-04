@@ -579,6 +579,38 @@ function createNotificationStore() {
 		}
 	}
 
+	// 로그아웃 시 알림 관련 전체 정리
+	async function cleanup() {
+		// 1. 백그라운드 체크 인터벌 중지
+		stopBackgroundCheck();
+
+		// 2. Service Worker에 등록된 리마인더 모두 해제
+		if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+			try {
+				const registration = await navigator.serviceWorker.ready;
+				if (registration.active) {
+					registration.active.postMessage({
+						type: SW_MSG.REGISTER_MEMO_REMINDERS,
+						reminders: []
+					});
+				}
+			} catch (e) {
+				log.error('Failed to clear SW reminders on logout', e);
+			}
+		}
+
+		// 3. 스누즈 상태 초기화
+		snoozedReminders = [];
+		saveSnoozed();
+
+		// 4. 알림 발송 기록 초기화
+		lastNotifiedMap = {};
+		saveLastNotified();
+
+		// 5. 초기화 플래그 리셋
+		initialized = false;
+	}
+
 	return {
 		get permission() {
 			return permission;
@@ -590,6 +622,7 @@ function createNotificationStore() {
 			return snoozedReminders;
 		},
 		init,
+		cleanup,
 		requestPermission,
 		showNotification,
 		getTodayReminders,
