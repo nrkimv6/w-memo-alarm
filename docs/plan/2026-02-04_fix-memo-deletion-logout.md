@@ -1,5 +1,28 @@
 # 로그아웃 상태에서 "모든 메모 삭제" 시 1개 잔존 버그 수정 계획
 
+## 진행 상태
+
+- [x] Task 1: `remove()` 함수의 stale index 방어 코드 추가
+  - [x] 1-1. await 이후 memoIndex 재조회 로직 추가
+  - [x] 1-2. 재조회 인덱스가 -1이면 조기 종료
+  - [x] 1-3. 롤백 코드에서도 재조회 인덱스 사용
+- [x] Task 2: `removeAll()` 벌크 삭제 메서드 추가
+  - [x] 2-1. removeAll() 함수 신규 작성
+  - [x] 2-2. 알림 취소 처리 (네이티브/웹/FCM/todo)
+  - [x] 2-3. 로컬 상태 일괄 초기화
+  - [x] 2-4. 서버 일괄 삭제 (로그인 시)
+  - [x] 2-5. return 객체에 removeAll export
+- [x] Task 3: `clearAllData()`가 `removeAll()`을 사용하도록 변경
+  - [x] 3-1. async 시그니처로 변경
+  - [x] 3-2. removeAll() 사용으로 교체
+  - [x] 3-3. 폴더 삭제도 순차 await로 변경
+- [x] Task 4: `clearAllData()` 호출부에 `await` 추가
+  - [x] 4-1. confirmClearAll()을 async로 변경
+  - [x] 4-2. await 추가
+- [x] Task 5: 빌드 검증
+  - [x] 5-1. svelte-check 통과 (변경 파일 에러 0건, 기존 에러만 존재)
+- [ ] Task 6: 수동 테스트 (사용자 확인 필요)
+
 ## 버그 현상
 
 - **재현 경로**: 로그아웃 상태 → 설정 → "모든 메모 삭제" 실행
