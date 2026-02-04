@@ -1,0 +1,847 @@
+Loading svelte-check in workspace: d:\work\project\service\wtools\memo-alarm
+Getting Svelte diagnostics...
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\utils\todoNotifications.ts[39m:125:19
+[31mError[39m: Property 'value' does not exist on type 'TodoRemindEntry'. 
+[36m					priority: 'normal',
+					time: remind.[35mvalue[36m, // HH:MM
+					requireInteraction: false,[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\utils\todoNotifications.ts[39m:133:85
+[31mError[39m: Property 'value' does not exist on type 'TodoRemindEntry'. 
+[36m				// 기한 N분 전
+				const alertTime = calculateBeforeDueTime(effectiveDueDate, todo.dueTime, remind.[35mvalue[36m);
+				if (alertTime && alertTime > new Date()) {[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\utils\todoNotifications.ts[39m:250:13
+[31mError[39m: Property 'type' does not exist on type 'TodoAlertEntry'. 
+[36m	try {
+		if (alert.[35mtype[36m === 'datetime') {
+			return new Date(alert.value);[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\utils\todoNotifications.ts[39m:251:26
+[31mError[39m: Property 'value' does not exist on type 'TodoAlertEntry'. 
+[36m		if (alert.type === 'datetime') {
+			return new Date(alert.[35mvalue[36m);
+		} else if (alert.type === 'before_due' && dueDate) {[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\utils\todoNotifications.ts[39m:252:20
+[31mError[39m: Property 'type' does not exist on type 'TodoAlertEntry'. 
+[36m			return new Date(alert.value);
+		} else if (alert.[35mtype[36m === 'before_due' && dueDate) {
+			return calculateBeforeDueTime(dueDate, undefined, alert.value);[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\utils\todoNotifications.ts[39m:253:60
+[31mError[39m: Property 'value' does not exist on type 'TodoAlertEntry'. 
+[36m		} else if (alert.type === 'before_due' && dueDate) {
+			return calculateBeforeDueTime(dueDate, undefined, alert.[35mvalue[36m);
+		}[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\ui\Textarea.svelte[39m:15:3
+[33mWarn[39m: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+[36m	{#if label}
+		[35m<label class="text-sm font-medium text-foreground">
+			{label}
+		</label>[36m
+	{/if}[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\memo\FolderSelector.svelte[39m:112:8
+[33mWarn[39m: Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label (svelte)
+[36m						{#each foldersStore.DEFAULT_COLORS as color}
+							[35m<button
+								type="button"
+								onclick={() => newFolderColor = color}
+								class={cn(
+									'w-5 h-5 rounded-full transition-transform',
+									newFolderColor === color && 'ring-2 ring-offset-2 ring-primary scale-110'
+								)}
+								style="background-color: {color}"
+							></button>[36m
+						{/each}[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\memo\MemoForm.svelte[39m:288:5
+[33mWarn[39m: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+[36m			<div class="space-y-2">
+				[35m<label class="text-sm font-medium">폴더</label>[36m
+				<FolderSelector selectedFolderId={folderId} onSelect={(id) => folderId = id} />[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\memo\MemoForm.svelte[39m:261:20
+[31mError[39m: Object literal may only specify known properties, and 'emoji' does not exist in type 'Props'. (ts)
+[36m				<div class="flex gap-2">
+					<EmojiPicker {[35memoji[36m} onSelect={(e) => emoji = e} />
+					<Input[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\memo\MemoCard.svelte[39m:108:59
+[31mError[39m: Object literal may only specify known properties, and '"title"' does not exist in type 'Properties<IconProps, { default: {}; }>'. (ts)
+[36m			{#if isLocalOnly}
+				<CloudOff class="w-4 h-4 text-blue-500 flex-shrink-0" [35mtitle[36m="로컬에 저장됨 - 동기화 대기" />
+			{:else if isPending}[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\memo\MemoCard.svelte[39m:110:74
+[31mError[39m: Object literal may only specify known properties, and '"title"' does not exist in type 'Properties<IconProps, { default: {}; }>'. (ts)
+[36m			{:else if isPending}
+				<RefreshCw class="w-4 h-4 text-amber-500 animate-spin flex-shrink-0" [35mtitle[36m="동기화 중..." />
+			{:else if isFailed}[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\memo\MemoCard.svelte[39m:154:60
+[31mError[39m: Object literal may only specify known properties, and '"title"' does not exist in type 'Properties<IconProps, { default: {}; }>'. (ts)
+[36m				{#if isLocalOnly}
+					<CloudOff class="w-4 h-4 text-blue-500 flex-shrink-0" [35mtitle[36m="로컬에 저장됨 - 동기화 대기" />
+				{:else if isPending}[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\memo\MemoCard.svelte[39m:156:75
+[31mError[39m: Object literal may only specify known properties, and '"title"' does not exist in type 'Properties<IconProps, { default: {}; }>'. (ts)
+[36m				{:else if isPending}
+					<RefreshCw class="w-4 h-4 text-amber-500 animate-spin flex-shrink-0" [35mtitle[36m="동기화 중..." />
+				{:else if isFailed}[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\memo\MemoDetailModal.svelte[39m:122:27
+[31mError[39m: Object literal may only specify known properties, and '"size"' does not exist in type '$$ComponentProps'. (ts)
+[36m
+<Modal bind:open title="" [35msize[36m="lg">
+	{#if memo}[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\memo\TodayReminders.svelte[39m:92:8
+[33mWarn[39m: `<button>` cannot be a child of `<button>`. When rendering this component on the server, the resulting HTML will be modified by the browser (by moving, removing, or inserting elements), likely resulting in a `hydration_mismatch` warning
+https://svelte.dev/e/node_invalid_placement_ssr (svelte)
+[36m						{#if memo.url}
+							[35m<button
+								onclick={(e) => handleUrlClick(memo, e)}
+								class="p-2 rounded-md hover:bg-primary/10 transition-colors"
+							>
+								<ExternalLink class="w-4 h-4 text-muted-foreground" />
+							</button>[36m
+						{/if}[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\memo\QuickMemoInput.svelte[39m:41:4
+[31mError[39m: Property 'id' is missing in type '{ enabled: boolean; time: string; days: number[]; autoOpen: boolean; }' but required in type 'Reminder'. (ts)
+[36m			const defaultReminder = settingsStore.getDefaultReminder();
+			[35mdata.reminder[36m = { ...defaultReminder };
+		}[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\memo\ScheduledRemindersModal.svelte[39m:87:33
+[31mError[39m: Object literal may only specify known properties, and '"size"' does not exist in type '$$ComponentProps'. (ts)
+[36m
+<Modal bind:open title="예정된 알림" [35msize[36m="md">
+	<div class="space-y-4">[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\memo\ShareModal.svelte[39m:37:6
+[33mWarn[39m: `cardElement` is updated, but is not declared with `$state(...)`. Changing its value will not correctly trigger updates
+https://svelte.dev/e/non_reactive_update (svelte)
+[36m	let copied = $state(false);
+	let [35mcardElement: HTMLDivElement[36m;[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\memo\ShareModal.svelte[39m:104:32
+[31mError[39m: Object literal may only specify known properties, and '"size"' does not exist in type '$$ComponentProps'. (ts)
+[36m
+<Modal bind:open title="메모 공유" [35msize[36m="md">
+	{#if memo}[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\utils\todoAlertManager.svelte.ts[39m:106:13
+[31mError[39m: Property 'type' does not exist on type 'TodoAlertEntry'. 
+[36m	for (const alert of timing.alertTimes) {
+		if (alert.[35mtype[36m === 'datetime') {
+			const alertTime = new Date(alert.value);[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\utils\todoAlertManager.svelte.ts[39m:107:37
+[31mError[39m: Property 'value' does not exist on type 'TodoAlertEntry'. 
+[36m		if (alert.type === 'datetime') {
+			const alertTime = new Date(alert.[35mvalue[36m);
+			if (isTimeMatch(alertTime, now)) {[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\utils\todoAlertManager.svelte.ts[39m:111:20
+[31mError[39m: Property 'type' does not exist on type 'TodoAlertEntry'. 
+[36m			}
+		} else if (alert.[35mtype[36m === 'before_due' && todo.dueDate) {
+			const dueDateTime = new Date(todo.dueDate);[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\utils\todoAlertManager.svelte.ts[39m:120:41
+[31mError[39m: Property 'value' does not exist on type 'TodoAlertEntry'. 
+[36m
+			const minutesBefore = parseInt(alert.[35mvalue[36m, 10);
+			const alertTime = new Date(dueDateTime.getTime() - minutesBefore * 60000);[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\OnboardingModal.svelte[39m:119:6
+[33mWarn[39m: `<svelte:component>` is deprecated in runes mode — components are dynamic by default
+https://svelte.dev/e/svelte_component_deprecated (svelte)
+[36m				<div class="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-4">
+					[35m<svelte:component this={step.icon} class="w-8 h-8 text-blue-600 dark:text-blue-400" />[36m
+				</div>[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\OnboardingModal.svelte[39m:13:24
+[31mError[39m: Block-scoped variable 'steps' used before its declaration. (ts)
+[36m	let dialogRef: HTMLDialogElement;
+	const step = $derived([35msteps[36m[currentStep]);[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\OnboardingModal.svelte[39m:13:24
+[31mError[39m: Variable 'steps' is used before being assigned. (ts)
+[36m	let dialogRef: HTMLDialogElement;
+	const step = $derived([35msteps[36m[currentStep]);[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\memo\SwipeGuideModal.svelte[39m:25:40
+[31mError[39m: Object literal may only specify known properties, and '"size"' does not exist in type '$$ComponentProps'. (ts)
+[36m
+<Modal bind:open title="💡 메모 카드 사용 팁" [35msize[36m="md">
+	<div class="space-y-6">[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\PostponeSheet.svelte[39m:251:9
+[33mWarn[39m: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+[36m							<div>
+								[35m<label
+									class="block text-xs text-muted-foreground mb-2"
+								>
+									앞으로 최대:
+								</label>[36m
+								<select[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\SkipDialog.svelte[39m:65:1
+[33mWarn[39m: Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events (svelte)
+[36m
+[35m<div
+	class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+	onclick={(e) => e.target === e.currentTarget && onClose()}
+>
+	<div
+		class="bg-card rounded-lg shadow-xl max-w-md w-full border border-border"
+	>
+		<!-- Header -->
+		<div
+			class="px-6 py-4 border-b border-border flex items-center justify-between"
+		>
+			<h2
+				class="text-lg font-semibold text-foreground flex items-center gap-2"
+			>
+				<SkipForward class="w-5 h-5 text-secondary" />
+				⏭️ 건너뛰기 - {todo.title}
+			</h2>
+			<button
+				onclick={onClose}
+				class="text-muted-foreground hover:text-foreground"
+			>
+				<X class="w-5 h-5" />
+			</button>
+		</div>
+
+		<!-- Content -->
+		<div class="p-6 space-y-4">
+			<!-- 현재 일정 -->
+			{#if activeInstance}
+				<div
+					class="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg"
+				>
+					<p class="text-sm text-blue-900 dark:text-blue-100">
+						현재 일정: <strong
+							>{activeInstance.scheduledDate}</strong
+						>
+					</p>
+				</div>
+			{/if}
+
+			<!-- 다음 일정 안내 -->
+			{#if nextSchedule}
+				<div class="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+					<p class="text-sm text-green-900 dark:text-green-100">
+						다음 할일: <strong>{formatDate(nextSchedule)}</strong>에 자동 생성됩니다.
+					</p>
+				</div>
+			{:else}
+				<div
+					class="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg"
+				>
+					<p class="text-sm text-yellow-900 dark:text-yellow-100">
+						⚠️ 반복 종료 - 다음 일정이 없습니다.
+					</p>
+				</div>
+			{/if}
+
+			<!-- 사유 입력 -->
+			<div>
+				<label class="block text-sm font-medium text-foreground mb-2">
+					사유 (선택)
+				</label>
+				<textarea
+					bind:value={skipReason}
+					placeholder="예: 출장, 휴가, 기타 사유..."
+					rows="3"
+					class="sketchy-input w-full resize-none"
+				></textarea>
+			</div>
+		</div>
+
+		<!-- Actions -->
+		<div class="px-6 pb-6 flex gap-3">
+			<button
+				type="button"
+				onclick={onClose}
+				disabled={submitting}
+				class="flex-1 px-4 py-2 border border-border rounded-lg text-foreground hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+			>
+				취소
+			</button>
+			<button
+				type="button"
+				onclick={handleSkip}
+				disabled={submitting}
+				class="flex-1 px-4 py-2 bg-secondary text-secondary-foreground rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+			>
+				{submitting ? "처리 중..." : "⏭️ 건너뛰기"}
+			</button>
+		</div>
+	</div>
+</div>[36m[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\SkipDialog.svelte[39m:65:1
+[33mWarn[39m: `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions (svelte)
+[36m
+[35m<div
+	class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+	onclick={(e) => e.target === e.currentTarget && onClose()}
+>
+	<div
+		class="bg-card rounded-lg shadow-xl max-w-md w-full border border-border"
+	>
+		<!-- Header -->
+		<div
+			class="px-6 py-4 border-b border-border flex items-center justify-between"
+		>
+			<h2
+				class="text-lg font-semibold text-foreground flex items-center gap-2"
+			>
+				<SkipForward class="w-5 h-5 text-secondary" />
+				⏭️ 건너뛰기 - {todo.title}
+			</h2>
+			<button
+				onclick={onClose}
+				class="text-muted-foreground hover:text-foreground"
+			>
+				<X class="w-5 h-5" />
+			</button>
+		</div>
+
+		<!-- Content -->
+		<div class="p-6 space-y-4">
+			<!-- 현재 일정 -->
+			{#if activeInstance}
+				<div
+					class="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg"
+				>
+					<p class="text-sm text-blue-900 dark:text-blue-100">
+						현재 일정: <strong
+							>{activeInstance.scheduledDate}</strong
+						>
+					</p>
+				</div>
+			{/if}
+
+			<!-- 다음 일정 안내 -->
+			{#if nextSchedule}
+				<div class="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+					<p class="text-sm text-green-900 dark:text-green-100">
+						다음 할일: <strong>{formatDate(nextSchedule)}</strong>에 자동 생성됩니다.
+					</p>
+				</div>
+			{:else}
+				<div
+					class="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg"
+				>
+					<p class="text-sm text-yellow-900 dark:text-yellow-100">
+						⚠️ 반복 종료 - 다음 일정이 없습니다.
+					</p>
+				</div>
+			{/if}
+
+			<!-- 사유 입력 -->
+			<div>
+				<label class="block text-sm font-medium text-foreground mb-2">
+					사유 (선택)
+				</label>
+				<textarea
+					bind:value={skipReason}
+					placeholder="예: 출장, 휴가, 기타 사유..."
+					rows="3"
+					class="sketchy-input w-full resize-none"
+				></textarea>
+			</div>
+		</div>
+
+		<!-- Actions -->
+		<div class="px-6 pb-6 flex gap-3">
+			<button
+				type="button"
+				onclick={onClose}
+				disabled={submitting}
+				class="flex-1 px-4 py-2 border border-border rounded-lg text-foreground hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+			>
+				취소
+			</button>
+			<button
+				type="button"
+				onclick={handleSkip}
+				disabled={submitting}
+				class="flex-1 px-4 py-2 bg-secondary text-secondary-foreground rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+			>
+				{submitting ? "처리 중..." : "⏭️ 건너뛰기"}
+			</button>
+		</div>
+	</div>
+</div>[36m[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\SkipDialog.svelte[39m:124:5
+[33mWarn[39m: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+[36m			<div>
+				[35m<label class="block text-sm font-medium text-foreground mb-2">
+					사유 (선택)
+				</label>[36m
+				<textarea[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoCard.svelte[39m:160:45
+[31mError[39m: This comparison appears to be unintentional because the types 'TodoPriority' and '"none"' have no overlap. (ts)
+[36m				<!-- Priority Badge -->
+				{#if todo.todoPriority && !completed && [35mtodo.todoPriority !== "none"[36m}
+					<span[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:30:19
+[33mWarn[39m: This reference only captures the initial value of `memo`. Did you mean to reference it inside a closure instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+[36m
+	const isEdit = !![35mmemo[36m;[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:33:21
+[33mWarn[39m: This reference only captures the initial value of `memo`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+[36m	// Form state
+	let title = $state([35mmemo[36m?.title || "");
+	let content = $state(memo?.content || "");[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:34:23
+[33mWarn[39m: This reference only captures the initial value of `memo`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+[36m	let title = $state(memo?.title || "");
+	let content = $state([35mmemo[36m?.content || "");
+	let tags = $state<string[]>(memo?.tags || []);[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:35:30
+[33mWarn[39m: This reference only captures the initial value of `memo`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+[36m	let content = $state(memo?.content || "");
+	let tags = $state<string[]>([35mmemo[36m?.tags || []);
+	let todoPriority = $state<TodoPriority>(memo?.todoPriority || "medium");[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:36:42
+[33mWarn[39m: This reference only captures the initial value of `memo`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+[36m	let tags = $state<string[]>(memo?.tags || []);
+	let todoPriority = $state<TodoPriority>([35mmemo[36m?.todoPriority || "medium");
+	let dueDate = $state(memo?.dueDate || "");[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:37:23
+[33mWarn[39m: This reference only captures the initial value of `memo`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+[36m	let todoPriority = $state<TodoPriority>(memo?.todoPriority || "medium");
+	let dueDate = $state([35mmemo[36m?.dueDate || "");
+	let dueTime = $state(memo?.dueTime || "");[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:38:23
+[33mWarn[39m: This reference only captures the initial value of `memo`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+[36m	let dueDate = $state(memo?.dueDate || "");
+	let dueTime = $state([35mmemo[36m?.dueTime || "");
+	let allDay = $state(memo?.dueTime === "23:59" || false);[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:39:22
+[33mWarn[39m: This reference only captures the initial value of `memo`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+[36m	let dueTime = $state(memo?.dueTime || "");
+	let allDay = $state([35mmemo[36m?.dueTime === "23:59" || false);[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:42:31
+[33mWarn[39m: This reference only captures the initial value of `memo`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+[36m	// TodoTiming state
+	let useGlobalRemind = $state([35mmemo[36m?.todoTiming?.useGlobalRemind ?? true);
+	let useGlobalAutoAlert = $state([39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:44:3
+[33mWarn[39m: This reference only captures the initial value of `memo`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+[36m	let useGlobalAutoAlert = $state(
+		[35mmemo[36m?.todoTiming?.useGlobalAutoAlert ?? true,
+	);[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:46:31
+[33mWarn[39m: This reference only captures the initial value of `memo`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+[36m	);
+	let autoAlertBefore = $state([35mmemo[36m?.todoTiming?.autoAlertBefore);
+	let showOverdue = $state(memo?.todoTiming?.showOverdue ?? true);[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:47:27
+[33mWarn[39m: This reference only captures the initial value of `memo`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+[36m	let autoAlertBefore = $state(memo?.todoTiming?.autoAlertBefore);
+	let showOverdue = $state([35mmemo[36m?.todoTiming?.showOverdue ?? true);
+	let remindTimes = $state<[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:50:4
+[33mWarn[39m: This reference only captures the initial value of `memo`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+[36m		Array<{ type: "time" | "before_due"; value: string }>
+	>([35mmemo[36m?.todoTiming?.remindTimes || []);
+	let alertTimes = $state<[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:53:4
+[33mWarn[39m: This reference only captures the initial value of `memo`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+[36m		Array<{ type: "datetime" | "before_due"; value: string }>
+	>([35mmemo[36m?.todoTiming?.alertTimes || []);[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:58:4
+[33mWarn[39m: This reference only captures the initial value of `memo`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+[36m		"none" | "daily" | "weekly" | "monthly" | "custom"
+	>([35mmemo[36m?.recurrence ? memo.recurrence.type : "none");
+	let recurrenceInterval = $state(memo?.recurrence?.interval || 1);[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:58:23
+[33mWarn[39m: This reference only captures the initial value of `memo`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+[36m		"none" | "daily" | "weekly" | "monthly" | "custom"
+	>(memo?.recurrence ? [35mmemo[36m.recurrence.type : "none");
+	let recurrenceInterval = $state(memo?.recurrence?.interval || 1);[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:59:34
+[33mWarn[39m: This reference only captures the initial value of `memo`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+[36m	>(memo?.recurrence ? memo.recurrence.type : "none");
+	let recurrenceInterval = $state([35mmemo[36m?.recurrence?.interval || 1);
+	let recurrenceDaysOfWeek = $state<number[]>([39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:61:3
+[33mWarn[39m: This reference only captures the initial value of `memo`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+[36m	let recurrenceDaysOfWeek = $state<number[]>(
+		[35mmemo[36m?.recurrence?.daysOfWeek || [],
+	);[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:63:36
+[33mWarn[39m: This reference only captures the initial value of `memo`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+[36m	);
+	let recurrenceDayOfMonth = $state([35mmemo[36m?.recurrence?.dayOfMonth || 1);
+	let recurrenceCustomInterval = $state([39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:65:3
+[33mWarn[39m: This reference only captures the initial value of `memo`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+[36m	let recurrenceCustomInterval = $state(
+		[35mmemo[36m?.recurrence?.customInterval || 1,
+	);[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:68:3
+[33mWarn[39m: This reference only captures the initial value of `memo`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+[36m	let recurrenceCustomUnit = $state<"day" | "week" | "month">(
+		[35mmemo[36m?.recurrence?.customUnit || "day",
+	);[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:71:3
+[33mWarn[39m: This reference only captures the initial value of `memo`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+[36m	let recurrenceEndType = $state<"none" | "date" | "count">(
+		[35mmemo[36m?.recurrence?.endDate
+			? "date"[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:73:6
+[33mWarn[39m: This reference only captures the initial value of `memo`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+[36m			? "date"
+			: [35mmemo[36m?.recurrence?.endAfter
+				? "count"[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:77:33
+[33mWarn[39m: This reference only captures the initial value of `memo`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+[36m	);
+	let recurrenceEndDate = $state([35mmemo[36m?.recurrence?.endDate || "");
+	let recurrenceEndAfter = $state(memo?.recurrence?.endAfter || 1);[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:78:34
+[33mWarn[39m: This reference only captures the initial value of `memo`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+[36m	let recurrenceEndDate = $state(memo?.recurrence?.endDate || "");
+	let recurrenceEndAfter = $state([35mmemo[36m?.recurrence?.endAfter || 1);[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:81:34
+[33mWarn[39m: This reference only captures the initial value of `dueDate`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+[36m	// UI state
+	let showAlarmSection = $state(!![35mdueDate[36m || !!memo?.dueDate);
+	let tagInput = $state("");[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:81:47
+[33mWarn[39m: This reference only captures the initial value of `memo`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+[36m	// UI state
+	let showAlarmSection = $state(!!dueDate || !![35mmemo[36m?.dueDate);
+	let tagInput = $state("");[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:300:5
+[33mWarn[39m: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+[36m			<div>
+				[35m<label class="block text-sm font-medium text-foreground mb-2">
+					제목 *
+				</label>[36m
+				<input[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:314:5
+[33mWarn[39m: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+[36m			<div>
+				[35m<label class="block text-sm font-medium text-foreground mb-2">
+					메모
+				</label>[36m
+				<textarea[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:327:5
+[33mWarn[39m: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+[36m			<div>
+				[35m<label class="block text-sm font-medium text-foreground mb-2">
+					우선순위
+				</label>[36m
+				<div class="flex gap-2">[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:458:6
+[33mWarn[39m: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+[36m				<div>
+					[35m<label
+						class="block text-sm font-medium text-foreground mb-2"
+					>
+						반복 유형
+					</label>[36m
+					<select[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:479:8
+[33mWarn[39m: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+[36m						<div>
+							[35m<label
+								class="block text-sm font-medium text-foreground mb-2"
+							>
+								간격
+							</label>[36m
+							<div class="flex items-center gap-2">[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:508:8
+[33mWarn[39m: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+[36m						<div>
+							[35m<label
+								class="block text-sm font-medium text-foreground mb-2"
+							>
+								요일 선택 *
+							</label>[36m
+							<div class="flex gap-2">[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:534:8
+[33mWarn[39m: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+[36m						<div>
+							[35m<label
+								class="block text-sm font-medium text-foreground mb-2"
+							>
+								날짜
+							</label>[36m
+							<div class="flex items-center gap-2">[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:560:8
+[33mWarn[39m: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+[36m						<div>
+							[35m<label
+								class="block text-sm font-medium text-foreground mb-2"
+							>
+								간격 설정
+							</label>[36m
+							<div class="flex items-center gap-2">[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:592:7
+[33mWarn[39m: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+[36m					<div class="space-y-3">
+						[35m<label
+							class="block text-sm font-medium text-foreground"
+						>
+							반복 종료
+						</label>[36m
+						<div class="space-y-2">[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:684:5
+[33mWarn[39m: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+[36m			<div>
+				[35m<label class="block text-sm font-medium text-foreground mb-2">
+					태그
+				</label>[36m
+				<div class="flex flex-wrap gap-2 mb-2">[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:50:4
+[31mError[39m: Argument of type 'TodoRemindEntry[]' is not assignable to parameter of type '{ type: "time" | "before_due"; value: string; }[]'.
+  Property 'value' is missing in type 'TodoRemindEntry' but required in type '{ type: "time" | "before_due"; value: string; }'. (ts)
+[36m		Array<{ type: "time" | "before_due"; value: string }>
+	>([35mmemo?.todoTiming?.remindTimes || [][36m);
+	let alertTimes = $state<[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:53:4
+[31mError[39m: Argument of type 'TodoAlertEntry[]' is not assignable to parameter of type '{ type: "before_due" | "datetime"; value: string; }[]'.
+  Type 'TodoAlertEntry' is missing the following properties from type '{ type: "before_due" | "datetime"; value: string; }': type, value (ts)
+[36m		Array<{ type: "datetime" | "before_due"; value: string }>
+	>([35mmemo?.todoTiming?.alertTimes || [][36m);[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:152:4
+[31mError[39m: Type '{ type: "time" | "before_due"; value: string; }[]' is not assignable to type 'TodoRemindEntry[]'.
+  Property 'id' is missing in type '{ type: "time" | "before_due"; value: string; }' but required in type 'TodoRemindEntry'. (ts)
+[36m			useGlobalRemind,
+			[35mremindTimes[36m: useGlobalRemind ? [] : remindTimes,
+			useGlobalAutoAlert,[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:157:4
+[31mError[39m: Type '{ type: "before_due" | "datetime"; value: string; }[]' is not assignable to type 'TodoAlertEntry[]'.
+  Type '{ type: "before_due" | "datetime"; value: string; }' is missing the following properties from type 'TodoAlertEntry': id, time (ts)
+[36m				: autoAlertBefore,
+			[35malertTimes[36m: alertTimes,
+			showOverdue,[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\lib\components\todo\TodoForm.svelte[39m:219:21
+[31mError[39m: Property 'addMemo' does not exist on type '{ readonly memos: Memo[]; readonly loading: boolean; readonly initialized: boolean; readonly syncingFromServer: boolean; readonly pendingCount: number; readonly failedCount: number; ... 34 more ...; addMemoWithId: (memo: Memo) => void; }'. (ts)
+[36m		} else {
+			await memosStore.[35maddMemo[36m({
+				...memoData,[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\routes\auth\callback\+page.svelte[39m:101:16
+[31mError[39m: Property 'error' does not exist on type '{ provider?: string | undefined; access_token?: string | undefined; id_token?: string | undefined; refresh_token?: string | undefined; supabase_access_token?: string | undefined; supabase_refresh_token?: string | undefined; returnTo?: string | undefined; } | { ...; }'.
+  Property 'error' does not exist on type '{ provider?: string | undefined; access_token?: string | undefined; id_token?: string | undefined; refresh_token?: string | undefined; supabase_access_token?: string | undefined; supabase_refresh_token?: string | undefined; returnTo?: string | undefined; }'. (ts)
+[36m			// 에러 처리
+			if (tokens?.[35merror[36m) {
+				throw new Error(`인증 오류: ${tokens.error}`);[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\routes\auth\callback\+page.svelte[39m:102:38
+[31mError[39m: Property 'error' does not exist on type '{ provider?: string | undefined; access_token?: string | undefined; id_token?: string | undefined; refresh_token?: string | undefined; supabase_access_token?: string | undefined; supabase_refresh_token?: string | undefined; returnTo?: string | undefined; } | { ...; }'.
+  Property 'error' does not exist on type '{ provider?: string | undefined; access_token?: string | undefined; id_token?: string | undefined; refresh_token?: string | undefined; supabase_access_token?: string | undefined; supabase_refresh_token?: string | undefined; returnTo?: string | undefined; }'. (ts)
+[36m			if (tokens?.error) {
+				throw new Error(`인증 오류: ${tokens.[35merror[36m}`);
+			}[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\routes\notifications\+page.svelte[39m:151:55
+[31mError[39m: This expression is not callable.
+  Type 'String' has no call signatures. (ts)
+[36m				>
+					<span class="text-primary font-medium truncate">{[35mfilterMemoTitle[36m()}</span>
+					<span class="text-muted-foreground">메모의 알림 내역</span>[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\routes\notifications\+page.svelte[39m:261:14
+[31mError[39m: This expression is not callable.
+  Type 'Record<string, NotificationHistory[]>' has no call signatures. (ts)
+[36m					<div class="space-y-2">
+						{#each [35mvisibleGrouped[36m()[dateKey] as record (record.id)}
+							<HistoryCard {record} />[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\routes\settings\+page.svelte[39m:791:5
+[33mWarn[39m: Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label (svelte)
+[36m				</div>
+				[35m<button
+					type="button"
+					role="switch"
+					aria-checked={todoRemindEnabled}
+					onclick={handleTodoRemindToggle}
+					class={cn('toggle-switch', todoRemindEnabled && 'active')}
+				>
+					<span class="toggle-switch-thumb"></span>
+				</button>[36m
+			</div>[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\routes\settings\+page.svelte[39m:824:5
+[33mWarn[39m: Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label (svelte)
+[36m				</div>
+				[35m<button
+					type="button"
+					role="switch"
+					aria-checked={todoAutoAlertEnabled}
+					onclick={handleTodoAutoAlertToggle}
+					class={cn('toggle-switch', todoAutoAlertEnabled && 'active')}
+				>
+					<span class="toggle-switch-thumb"></span>
+				</button>[36m
+			</div>[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\routes\settings\+page.svelte[39m:860:5
+[33mWarn[39m: Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label (svelte)
+[36m				</div>
+				[35m<button
+					type="button"
+					role="switch"
+					aria-checked={todoShowOverdue}
+					onclick={handleTodoShowOverdueToggle}
+					class={cn('toggle-switch', todoShowOverdue && 'active')}
+				>
+					<span class="toggle-switch-thumb"></span>
+				</button>[36m
+			</div>[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\routes\settings\+page.svelte[39m:877:5
+[33mWarn[39m: Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label (svelte)
+[36m				</div>
+				[35m<button
+					type="button"
+					role="switch"
+					aria-checked={todoShowProgress}
+					onclick={handleTodoShowProgressToggle}
+					class={cn('toggle-switch', todoShowProgress && 'active')}
+				>
+					<span class="toggle-switch-thumb"></span>
+				</button>[36m
+			</div>[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\routes\settings\+page.svelte[39m:1483:13
+[31mError[39m: This expression is not callable.
+  Type 'DevLog[]' has no call signatures. (ts)
+[36m						<div class="text-xs font-mono bg-black text-green-400 p-3 rounded-lg max-h-80 overflow-y-auto space-y-1">
+							{#if [35mfilteredLogs[36m().length === 0}
+								<p class="text-gray-500">로그가 없습니다.</p>[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\routes\settings\+page.svelte[39m:1486:16
+[31mError[39m: This expression is not callable.
+  Type 'DevLog[]' has no call signatures. (ts)
+[36m							{:else}
+								{#each [35mfilteredLogs[36m().reverse() as log}
+									<div class={cn([39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\routes\share\+page.svelte[39m:265:7
+[33mWarn[39m: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+[36m					<div class="space-y-2">
+						[35m<label class="text-sm font-medium">폴더</label>[36m
+						<FolderSelector selectedFolderId={folderId} onSelect={(id) => (folderId = id)} />[39m
+
+d:\work\project\service\wtools\memo-alarm\[32msrc\routes\share\+page.svelte[39m:230:22
+[31mError[39m: Object literal may only specify known properties, and 'emoji' does not exist in type 'Props'. (ts)
+[36m						<div class="flex gap-2">
+							<EmojiPicker {[35memoji[36m} onSelect={(e) => (emoji = e)} />
+							<Input[39m
+
+====================================
+[31msvelte-check found 35 errors and 52 warnings in 21 files
+[39m
