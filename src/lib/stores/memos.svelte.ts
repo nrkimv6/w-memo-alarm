@@ -1100,6 +1100,56 @@ function createMemosStore() {
 		}
 	}
 
+	/**
+	 * Phase 4 Section 8: 메모를 할일로 전환
+	 */
+	async function convertMemoToTodo(memoId: string): Promise<Memo | null> {
+		const memo = getById(memoId);
+		if (!memo) return null;
+
+		const result = await update(memoId, {
+			memoType: 'todo',
+			todoStatus: 'pending'
+		});
+
+		if (result) {
+			toastStore.success('할일로 전환되었습니다');
+		}
+
+		return result;
+	}
+
+	/**
+	 * Phase 4 Section 8: 할일을 메모로 전환
+	 */
+	async function convertTodoToMemo(todoId: string): Promise<Memo | null> {
+		const todo = getById(todoId);
+		if (!todo) return null;
+
+		// 할일 전용 필드 제거
+		const result = await update(todoId, {
+			memoType: 'note',
+			todoStatus: undefined,
+			todoPriority: undefined,
+			dueTime: undefined,
+			todoTiming: undefined,
+			completedAt: undefined,
+			recurrence: undefined,
+			todoInstances: undefined,
+			postponeInfo: undefined,
+			todoGroupId: undefined
+		});
+
+		if (result) {
+			toastStore.success('메모로 전환되었습니다');
+			// 알림 재스케줄링 (할일 알림 제거)
+			const { scheduleTodoNotifications } = await import('$lib/utils/todoNotifications');
+			await scheduleTodoNotifications(result);
+		}
+
+		return result;
+	}
+
 	return {
 		get memos() {
 			return memos;
@@ -1153,6 +1203,9 @@ function createMemosStore() {
 		completeTodoInstance,
 		skipTodoInstance,
 		recoverAllMissingInstances,
+		// Phase 4 Section 8: 메모 ↔ 할일 전환
+		convertMemoToTodo,
+		convertTodoToMemo,
 		// 구 API 호환성 (sync용)
 		deleteMemo: remove,
 		updateMemo: update,

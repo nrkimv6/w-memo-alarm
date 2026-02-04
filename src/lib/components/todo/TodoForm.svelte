@@ -2,7 +2,7 @@
 	import { memosStore } from '$lib/stores/memos.svelte';
 	import { settingsStore } from '$lib/stores/settings.svelte';
 	import type { Memo, TodoPriority, TodoTiming, Recurrence } from '$lib/types/memo';
-	import { Calendar, Clock, Bell, AlertCircle, Repeat, Folder } from 'lucide-svelte';
+	import { Calendar, Clock, Bell, AlertCircle, Repeat, Folder, ArrowRightLeft } from 'lucide-svelte';
 	import { getRecurrenceDescription } from '$lib/utils/recurrence';
 	import FutureSchedules from './FutureSchedules.svelte';
 
@@ -174,6 +174,18 @@
 		if (onSave) {
 			onSave(memoData as Memo);
 		}
+
+		onClose();
+	}
+
+	async function handleConvertToMemo() {
+		if (!memo) return;
+
+		// 먼저 현재 변경사항 저장
+		await handleSubmit();
+
+		// 메모로 전환
+		await memosStore.convertTodoToMemo(memo.id);
 
 		onClose();
 	}
@@ -535,20 +547,34 @@
 			</div>
 
 			<!-- 액션 버튼 -->
-			<div class="flex gap-3 pt-4">
-				<button
-					type="button"
-					onclick={onClose}
-					class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-				>
-					취소
-				</button>
-				<button
-					type="submit"
-					class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-				>
-					{isEdit ? '저장' : '생성'}
-				</button>
+			<div class="flex items-center justify-between pt-4">
+				<div>
+					{#if isEdit && memo}
+						<button
+							type="button"
+							onclick={handleConvertToMemo}
+							class="flex items-center gap-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+						>
+							<ArrowRightLeft class="w-4 h-4" />
+							메모로 전환
+						</button>
+					{/if}
+				</div>
+				<div class="flex gap-3">
+					<button
+						type="button"
+						onclick={onClose}
+						class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+					>
+						취소
+					</button>
+					<button
+						type="submit"
+						class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+					>
+						{isEdit ? '저장' : '생성'}
+					</button>
+				</div>
 			</div>
 		</form>
 	</div>
