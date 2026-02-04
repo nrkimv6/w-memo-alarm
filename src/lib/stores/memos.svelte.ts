@@ -163,6 +163,19 @@ function supabaseToMemo(row: any): Memo {
 		reminders: row.reminders,
 		folderId: row.folder_id,
 		checklist: row.checklist,
+		memoType: row.memo_type,
+		dueDate: row.due_date,
+		priority: row.priority,
+		// Todo 필드
+		todoStatus: row.todo_status,
+		todoPriority: row.todo_priority,
+		dueTime: row.due_time,
+		todoTiming: row.todo_timing,
+		completedAt: row.completed_at ? new Date(row.completed_at).getTime() : undefined,
+		recurrence: row.recurrence,
+		todoInstances: row.todo_instances,
+		postponeInfo: row.postpone_info,
+		todoGroupId: row.todo_group_id,
 		version: row.version || 1
 	};
 	// 자동 마이그레이션: reminder → reminders
@@ -185,6 +198,19 @@ function memoToSupabase(memo: Partial<Memo>): any {
 	if (memo.reminders !== undefined) result.reminders = memo.reminders;
 	if (memo.folderId !== undefined) result.folder_id = memo.folderId;
 	if (memo.checklist !== undefined) result.checklist = memo.checklist;
+	if (memo.memoType !== undefined) result.memo_type = memo.memoType;
+	if (memo.dueDate !== undefined) result.due_date = memo.dueDate;
+	if (memo.priority !== undefined) result.priority = memo.priority;
+	// Todo 필드
+	if (memo.todoStatus !== undefined) result.todo_status = memo.todoStatus;
+	if (memo.todoPriority !== undefined) result.todo_priority = memo.todoPriority;
+	if (memo.dueTime !== undefined) result.due_time = memo.dueTime;
+	if (memo.todoTiming !== undefined) result.todo_timing = memo.todoTiming;
+	if (memo.completedAt !== undefined) result.completed_at = memo.completedAt ? new Date(memo.completedAt).toISOString() : null;
+	if (memo.recurrence !== undefined) result.recurrence = memo.recurrence;
+	if (memo.todoInstances !== undefined) result.todo_instances = memo.todoInstances;
+	if (memo.postponeInfo !== undefined) result.postpone_info = memo.postponeInfo;
+	if (memo.todoGroupId !== undefined) result.todo_group_id = memo.todoGroupId;
 	return result;
 }
 
@@ -864,6 +890,37 @@ function createMemosStore() {
 		syncQueue.clear();
 	}
 
+	// Todo 전역 설정 일괄 업데이트
+	async function updateGlobalRemindTodos(time: string): Promise<void> {
+		const todosWithGlobalRemind = memos.filter(
+			m => m.memoType === 'todo' && m.todoTiming?.useGlobalRemind
+		);
+
+		for (const todo of todosWithGlobalRemind) {
+			await update(todo.id, {
+				todoTiming: {
+					...todo.todoTiming!,
+					remindTimes: [] // Phase 2에서 실제 시각 계산
+				}
+			});
+		}
+	}
+
+	async function updateGlobalAutoAlertTodos(minutesBefore: number): Promise<void> {
+		const todosWithGlobalAutoAlert = memos.filter(
+			m => m.memoType === 'todo' && m.todoTiming?.useGlobalAutoAlert
+		);
+
+		for (const todo of todosWithGlobalAutoAlert) {
+			await update(todo.id, {
+				todoTiming: {
+					...todo.todoTiming!,
+					autoAlertBefore: minutesBefore
+				}
+			});
+		}
+	}
+
 	return {
 		get memos() {
 			return memos;
@@ -905,6 +962,8 @@ function createMemosStore() {
 		cleanup,
 		retrySync,
 		updateDefaultReminderMemos,
+		updateGlobalRemindTodos,
+		updateGlobalAutoAlertTodos,
 		// 알림 관련 메서드
 		addReminder,
 		updateReminder,
