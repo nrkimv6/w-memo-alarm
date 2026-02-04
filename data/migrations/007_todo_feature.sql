@@ -7,9 +7,13 @@
 -- 1. ma_memos 테이블에 Todo 컬럼 추가
 -- ============================================
 
+-- 메모 타입 컬럼 추가 (memo 또는 todo)
+ALTER TABLE ma_memos ADD COLUMN IF NOT EXISTS memo_type TEXT DEFAULT 'memo' CHECK (memo_type IN ('memo', 'todo'));
+
 -- Todo 전용 필드
 ALTER TABLE ma_memos ADD COLUMN IF NOT EXISTS todo_status TEXT CHECK (todo_status IN ('pending', 'completed', 'skipped'));
 ALTER TABLE ma_memos ADD COLUMN IF NOT EXISTS todo_priority TEXT CHECK (todo_priority IN ('low', 'medium', 'high', 'urgent'));
+ALTER TABLE ma_memos ADD COLUMN IF NOT EXISTS due_date DATE; -- 기한 날짜
 ALTER TABLE ma_memos ADD COLUMN IF NOT EXISTS due_time TEXT; -- HH:mm 형식
 ALTER TABLE ma_memos ADD COLUMN IF NOT EXISTS todo_timing JSONB; -- TodoTiming 구조
 ALTER TABLE ma_memos ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ;

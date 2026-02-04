@@ -1,5 +1,18 @@
 # DONE (최근 20개)
 
+- [x] 2026-02-04: **Todo 탭 디자인 개편 (Home과 통일)** ✅
+  - **목표**: Todo 탭의 이질적인 디자인을 제거하고 Home 탭과 동일한 디자인 언어(Semantic Token) 적용
+  - **변경 내용**:
+    - `todos/+page.svelte`: 헤더 스타일을 Home과 동일하게 변경 (Sticky translucent header)
+    - `TodoCard.svelte`: 하드코딩된 색상 제거 → Semantic Colors (`primary`, `secondary`, `destructive`) 적용
+    - `TodoForm.svelte`: 입력 폼, 버튼, 우선순위 선택 UI를 디자인 시스템에 맞게 전면 수정
+    - `TodoStats.svelte`: 통계 카드의 색상 및 스타일 개선
+    - `PostponeSheet.svelte`, `SkipDialog.svelte`: 미루기/건너뛰기 모달 디자인 통일
+  - **기술적 개선**:
+    - Tailwind CSS Semantic Token 활용 (`bg-card`, `text-foreground`, `ring-primary` 등)
+    - 다크 모드 자동 지원 강화
+  - **검증**: `npm run build` 성공
+
 - [x] 2026-02-04: **$derived 패턴 오류 수정** ✅
   - **문제**: `$derived(() => {...})` 패턴이 함수를 반환하여 값이 아닌 함수 참조가 됨
   - **수정**: 5개 파일에서 `$derived.by(() => {...})` 로 변경

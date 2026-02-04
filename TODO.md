@@ -7,10 +7,11 @@
 ## 관련 계획서
 
 ### ⚙️ 코드 정리 (P2)
-- [ ] **$derived 패턴 오류 수정** — [2026-02-04_derived-pattern-fix.md](docs/plan/2026-02-04_derived-pattern-fix.md)
-  - MA-1 (MEDIUM): $derived 패턴 5개소 수정
+- [x] **$derived 패턴 오류 수정** — [2026-02-04_derived-pattern-fix.md](docs/plan/2026-02-04_derived-pattern-fix.md) ✅ 2026-02-04 완료
+  - MA-1 (MEDIUM): $derived 패턴 5개소 수정 완료
   - `$derived(() => {})` → `$derived.by(() => {})`로 변경
   - 호출부 괄호 제거
+  - 커밋: 1c8ad9a
 
 ---
 

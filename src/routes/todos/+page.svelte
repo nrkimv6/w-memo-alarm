@@ -1,14 +1,15 @@
 <script lang="ts">
-	import { memosStore } from '$lib/stores/memos.svelte';
-	import { settingsStore } from '$lib/stores/settings.svelte';
-	import { foldersStore } from '$lib/stores/folders.svelte';
-	import TodoForm from '$lib/components/todo/TodoForm.svelte';
-	import TodoCard from '$lib/components/todo/TodoCard.svelte';
-	import PostponeSheet from '$lib/components/todo/PostponeSheet.svelte';
-	import AlertModal from '$lib/components/todo/AlertModal.svelte';
-	import UndoToast from '$lib/components/todo/UndoToast.svelte';
-	import SkipDialog from '$lib/components/todo/SkipDialog.svelte';
-	import TodoStats from '$lib/components/todo/TodoStats.svelte';
+	import { memosStore } from "$lib/stores/memos.svelte";
+	import { settingsStore } from "$lib/stores/settings.svelte";
+	import { foldersStore } from "$lib/stores/folders.svelte";
+	import TodoForm from "$lib/components/todo/TodoForm.svelte";
+	import TodoCard from "$lib/components/todo/TodoCard.svelte";
+	import PostponeSheet from "$lib/components/todo/PostponeSheet.svelte";
+	import AlertModal from "$lib/components/todo/AlertModal.svelte";
+	import UndoToast from "$lib/components/todo/UndoToast.svelte";
+	import SkipDialog from "$lib/components/todo/SkipDialog.svelte";
+	import TodoStats from "$lib/components/todo/TodoStats.svelte";
+	import Button from "$lib/components/ui/Button.svelte";
 	import {
 		filterTodos,
 		sortTodos,
@@ -17,13 +18,30 @@
 		formatDueDate,
 		getOverdueDays,
 		getPriorityColor,
-		getPriorityLabel
-	} from '$lib/utils/todo';
-	import { getTodayProgress, getWeekProgress } from '$lib/utils/todoProgress';
-	import type { Memo } from '$lib/types/memo';
-	import { Plus, Search, Settings, CheckSquare, Calendar, Clock, AlertCircle, BarChart3, ChevronDown, ChevronUp, CheckSquare2, X, Trash2 } from 'lucide-svelte';
-	import { onMount, onDestroy } from 'svelte';
-	import { initTodoAlertManager, cleanupTodoAlertManager } from '$lib/utils/todoAlertManager.svelte';
+		getPriorityLabel,
+	} from "$lib/utils/todo";
+	import { getTodayProgress, getWeekProgress } from "$lib/utils/todoProgress";
+	import type { Memo } from "$lib/types/memo";
+	import {
+		Plus,
+		Search,
+		Settings,
+		CheckSquare,
+		Calendar,
+		Clock,
+		AlertCircle,
+		BarChart3,
+		ChevronDown,
+		ChevronUp,
+		CheckSquare2,
+		X,
+		Trash2,
+	} from "lucide-svelte";
+	import { onMount, onDestroy } from "svelte";
+	import {
+		initTodoAlertManager,
+		cleanupTodoAlertManager,
+	} from "$lib/utils/todoAlertManager.svelte";
 
 	let showTodoForm = $state(false);
 	let showPostponeSheet = $state(false);
@@ -31,7 +49,9 @@
 	let showAlertModal = $state(false);
 	let showUndoToast = $state(false);
 	let showStats = $state(false);
-	let selectedFilter = $state<'today' | 'week' | 'all' | 'completed'>('today');
+	let selectedFilter = $state<"today" | "week" | "all" | "completed">(
+		"today",
+	);
 	let selectedTag = $state<string | undefined>(undefined);
 	let selectedFolder = $state<string | undefined>(undefined);
 	let editingTodo = $state<Memo | undefined>(undefined);
@@ -50,12 +70,12 @@
 
 		// Phase 4 Section 4: Tag filtering
 		if (selectedTag) {
-			result = result.filter(t => t.tags.includes(selectedTag));
+			result = result.filter((t) => t.tags.includes(selectedTag));
 		}
 
 		// Phase 4 Section 4: Folder filtering
 		if (selectedFolder) {
-			result = result.filter(t => t.folderId === selectedFolder);
+			result = result.filter((t) => t.folderId === selectedFolder);
 		}
 
 		return result;
@@ -64,13 +84,15 @@
 	const groupedTodos = $derived(groupTodosByDate(sortedTodos));
 	const todayProgress = $derived(getTodayProgress(todos));
 	const weekProgress = $derived(getWeekProgress(todos));
-	const showProgress = $derived(settingsStore.settings.todoDefaults.showProgress);
+	const showProgress = $derived(
+		settingsStore.settings.todoDefaults.showProgress,
+	);
 
 	// Get all unique tags from todos
 	const availableTags = $derived.by(() => {
 		const tags = new Set<string>();
-		todos.forEach(todo => {
-			todo.tags.forEach(tag => tags.add(tag));
+		todos.forEach((todo) => {
+			todo.tags.forEach((tag) => tags.add(tag));
 		});
 		return Array.from(tags).sort();
 	});
@@ -78,7 +100,7 @@
 	// Get all folders that have todos
 	const availableFolders = $derived.by(() => {
 		const folderIds = new Set<string>();
-		todos.forEach(todo => {
+		todos.forEach((todo) => {
 			if (todo.folderId) folderIds.add(todo.folderId);
 		});
 		return folderIds;
@@ -117,10 +139,15 @@
 	async function toggleComplete(todo: Memo) {
 		// 반복 할일인 경우 (Phase 3)
 		if (todo.recurrence && todo.todoInstances) {
-			const activeInstance = todo.todoInstances.find(i => i.status === 'pending');
+			const activeInstance = todo.todoInstances.find(
+				(i) => i.status === "pending",
+			);
 			if (activeInstance) {
 				// 현재 인스턴스 완료 + 다음 인스턴스 생성
-				await memosStore.completeTodoInstance(todo.id, activeInstance.id);
+				await memosStore.completeTodoInstance(
+					todo.id,
+					activeInstance.id,
+				);
 				lastCompletedTodo = todo;
 				showUndoToast = true;
 				return;
@@ -128,14 +155,15 @@
 		}
 
 		// 단발성 할일 또는 반복 종료된 할일
-		const newStatus = todo.todoStatus === 'completed' ? 'pending' : 'completed';
+		const newStatus =
+			todo.todoStatus === "completed" ? "pending" : "completed";
 		await memosStore.updateMemo(todo.id, {
 			todoStatus: newStatus,
-			completedAt: newStatus === 'completed' ? Date.now() : undefined
+			completedAt: newStatus === "completed" ? Date.now() : undefined,
 		});
 
 		// 완료 시 undo 토스트 표시 (Phase 2)
-		if (newStatus === 'completed') {
+		if (newStatus === "completed") {
 			lastCompletedTodo = todo;
 			showUndoToast = true;
 		}
@@ -144,8 +172,8 @@
 	async function handleUndo() {
 		if (!lastCompletedTodo) return;
 		await memosStore.updateMemo(lastCompletedTodo.id, {
-			todoStatus: 'pending',
-			completedAt: undefined
+			todoStatus: "pending",
+			completedAt: undefined,
 		});
 		lastCompletedTodo = undefined;
 	}
@@ -155,9 +183,8 @@
 		lastCompletedTodo = undefined;
 	}
 
-
 	function formatSectionDate(dateStr: string): string {
-		if (dateStr === 'no-due-date') return '기한 없음';
+		if (dateStr === "no-due-date") return "기한 없음";
 
 		const date = new Date(dateStr);
 		const today = new Date();
@@ -165,12 +192,12 @@
 		tomorrow.setDate(today.getDate() + 1);
 
 		if (date.toDateString() === today.toDateString()) {
-			return `오늘 ${date.getMonth() + 1}/${date.getDate()} (${['일', '월', '화', '수', '목', '금', '토'][date.getDay()]})`;
+			return `오늘 ${date.getMonth() + 1}/${date.getDate()} (${["일", "월", "화", "수", "목", "금", "토"][date.getDay()]})`;
 		} else if (date.toDateString() === tomorrow.toDateString()) {
-			return `내일 ${date.getMonth() + 1}/${date.getDate()} (${['일', '월', '화', '수', '목', '금', '토'][date.getDay()]})`;
+			return `내일 ${date.getMonth() + 1}/${date.getDate()} (${["일", "월", "화", "수", "목", "금", "토"][date.getDay()]})`;
 		}
 
-		return `${date.getMonth() + 1}/${date.getDate()} (${['일', '월', '화', '수', '목', '금', '토'][date.getDay()]})`;
+		return `${date.getMonth() + 1}/${date.getDate()} (${["일", "월", "화", "수", "목", "금", "토"][date.getDay()]})`;
 	}
 
 	function handleAlert(todo: Memo) {
@@ -208,7 +235,7 @@
 
 	function selectAllOverdue() {
 		const overdueTodos = sortedTodos.filter(isOverdue);
-		selectedTodoIds = new Set(overdueTodos.map(t => t.id));
+		selectedTodoIds = new Set(overdueTodos.map((t) => t.id));
 		isMultiSelectMode = true;
 	}
 
@@ -217,10 +244,10 @@
 
 		for (const todoId of selectedTodoIds) {
 			const todo = memosStore.getById(todoId);
-			if (todo && todo.todoStatus !== 'completed') {
+			if (todo && todo.todoStatus !== "completed") {
 				await memosStore.updateMemo(todoId, {
-					todoStatus: 'completed',
-					completedAt: Date.now()
+					todoStatus: "completed",
+					completedAt: Date.now(),
 				});
 			}
 		}
@@ -232,7 +259,9 @@
 	async function batchDelete() {
 		if (selectedTodoIds.size === 0) return;
 
-		const confirmed = confirm(`선택한 ${selectedTodoIds.size}개의 할일을 삭제하시겠습니까?`);
+		const confirmed = confirm(
+			`선택한 ${selectedTodoIds.size}개의 할일을 삭제하시겠습니까?`,
+		);
 		if (!confirmed) return;
 
 		for (const todoId of selectedTodoIds) {
@@ -249,11 +278,11 @@
 
 		const tomorrow = new Date();
 		tomorrow.setDate(tomorrow.getDate() + 1);
-		const tomorrowStr = tomorrow.toISOString().split('T')[0];
+		const tomorrowStr = tomorrow.toISOString().split("T")[0];
 
 		for (const todo of overdueTodos) {
 			await memosStore.updateMemo(todo.id, {
-				dueDate: tomorrowStr
+				dueDate: tomorrowStr,
 			});
 		}
 	}
@@ -262,13 +291,15 @@
 		const overdueTodos = sortedTodos.filter(isOverdue);
 		if (overdueTodos.length === 0) return;
 
-		const confirmed = confirm(`기한 지난 ${overdueTodos.length}개의 할일을 모두 완료하시겠습니까?`);
+		const confirmed = confirm(
+			`기한 지난 ${overdueTodos.length}개의 할일을 모두 완료하시겠습니까?`,
+		);
 		if (!confirmed) return;
 
 		for (const todo of overdueTodos) {
 			await memosStore.updateMemo(todo.id, {
-				todoStatus: 'completed',
-				completedAt: Date.now()
+				todoStatus: "completed",
+				completedAt: Date.now(),
 			});
 		}
 	}
@@ -288,64 +319,76 @@
 	<title>할일 - Memo Alarm</title>
 </svelte:head>
 
-<div class="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
+<div class="min-h-screen pb-20">
 	<!-- Header -->
-	<header class="bg-white dark:bg-gray-800 border-b dark:border-gray-700 sticky top-0 z-10">
-		<div class="max-w-4xl mx-auto px-4 py-4">
-			<div class="flex items-center justify-between">
-				<h1 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-					<CheckSquare class="w-6 h-6" />
+	<header
+		class="sticky top-14 z-20 bg-background/95 backdrop-blur-sm border-b border-border/50"
+	>
+		<div class="max-w-4xl mx-auto px-4 py-4 space-y-3">
+			<div class="flex items-center justify-between gap-4">
+				<h1
+					class="text-xl font-bold tracking-tight text-foreground shrink-0 flex items-center gap-2"
+				>
+					<CheckSquare class="w-5 h-5 text-primary" />
 					할일
 				</h1>
 				<div class="flex items-center gap-2">
-					<button class="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-						<Search class="w-5 h-5" />
-					</button>
-					<button
-						onclick={() => showStats = !showStats}
-						class="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg {
-							showStats ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ''
-						}"
+					<Button
+						variant="ghost"
+						size="icon"
+						class="text-muted-foreground"
+						title="검색"
+					>
+						<Search class="w-4 h-4" />
+					</Button>
+					<Button
+						variant={showStats ? "secondary" : "ghost"}
+						size="icon"
+						onclick={() => (showStats = !showStats)}
+						class={showStats
+							? "text-secondary"
+							: "text-muted-foreground"}
 						title="통계"
 					>
-						<BarChart3 class="w-5 h-5" />
-					</button>
-					<button
+						<BarChart3 class="w-4 h-4" />
+					</Button>
+					<Button
+						variant={isMultiSelectMode ? "secondary" : "ghost"}
+						size="icon"
 						onclick={toggleMultiSelectMode}
-						class="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg {
-							isMultiSelectMode ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' : ''
-						}"
+						class={isMultiSelectMode
+							? "text-secondary"
+							: "text-muted-foreground"}
 						title="다중 선택"
 					>
-						<CheckSquare2 class="w-5 h-5" />
-					</button>
-					<a href="/settings" class="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-						<Settings class="w-5 h-5" />
-					</a>
-					<button
-						onclick={() => openTodoForm()}
-						class="p-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg"
+						<CheckSquare2 class="w-4 h-4" />
+					</Button>
+					<a
+						href="/settings"
+						class="inline-flex items-center justify-center rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background hover:bg-muted hover:text-foreground h-9 w-9 text-muted-foreground"
 					>
-						<Plus class="w-5 h-5" />
-					</button>
+						<Settings class="w-4 h-4" />
+					</a>
+					<Button
+						variant="default"
+						onclick={() => openTodoForm()}
+						class="shrink-0"
+					>
+						<Plus class="w-4 h-4" />
+						<span class="hidden sm:inline ml-2">할일 추가</span>
+					</Button>
 				</div>
 			</div>
 
 			<!-- Filter Tabs -->
-			<div class="flex gap-2 mt-4 overflow-x-auto">
-				{#each [
-					{ value: 'today', label: '오늘' },
-					{ value: 'week', label: '이번주' },
-					{ value: 'all', label: '전체' },
-					{ value: 'completed', label: '완료됨' }
-				] as filter}
+			<div class="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+				{#each [{ value: "today", label: "오늘" }, { value: "week", label: "이번주" }, { value: "all", label: "전체" }, { value: "completed", label: "완료됨" }] as filter}
 					<button
-						onclick={() => selectedFilter = filter.value as any}
-						class="px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors {
-							selectedFilter === filter.value
-								? 'bg-blue-600 text-white'
-								: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-						}"
+						onclick={() => (selectedFilter = filter.value as any)}
+						class="px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors {selectedFilter ===
+						filter.value
+							? 'bg-primary text-primary-foreground'
+							: 'bg-muted text-muted-foreground hover:bg-muted/80'}"
 					>
 						{filter.label}
 					</button>
@@ -360,23 +403,25 @@
 						<div class="flex items-center gap-2 flex-wrap">
 							<span class="text-sm font-medium text-gray-700 dark:text-gray-300">태그:</span>
 							<button
-								onclick={() => selectedTag = undefined}
-								class="px-3 py-1 rounded-full text-sm transition-colors {
-									selectedTag === undefined
-										? 'bg-blue-600 text-white'
-										: 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-								}"
+								onclick={() => (selectedTag = undefined)}
+								class="px-2.5 py-1 rounded-full text-xs font-medium transition-colors {selectedTag ===
+								undefined
+									? 'bg-secondary/20 text-secondary border border-secondary/30'
+									: 'bg-muted/50 text-muted-foreground hover:bg-muted'}"
 							>
 								전체
 							</button>
 							{#each availableTags as tag}
 								<button
-									onclick={() => selectedTag = selectedTag === tag ? undefined : tag}
-									class="px-3 py-1 rounded-full text-sm transition-colors {
-										selectedTag === tag
-											? 'bg-blue-600 text-white'
-											: 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-									}"
+									onclick={() =>
+										(selectedTag =
+											selectedTag === tag
+												? undefined
+												: tag)}
+									class="px-2.5 py-1 rounded-full text-xs font-medium transition-colors {selectedTag ===
+									tag
+										? 'bg-secondary/20 text-secondary border border-secondary/30'
+										: 'bg-muted/50 text-muted-foreground hover:bg-muted'}"
 								>
 									#{tag}
 								</button>
@@ -419,32 +464,40 @@
 				</div>
 			{/if}
 
-			<!-- Progress Bar (Phase 4) -->
-			{#if showProgress && (selectedFilter === 'today' || selectedFilter === 'week' || selectedFilter === 'all')}
-				<div class="mt-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-					<div class="flex items-center justify-between text-sm mb-2">
-						<span class="font-medium text-gray-900 dark:text-white">
-							📊 오늘: {todayProgress.completed}/{todayProgress.total} ({todayProgress.percentage}%)
+			<!-- Progress Bar -->
+			{#if showProgress && (selectedFilter === "today" || selectedFilter === "week" || selectedFilter === "all")}
+				<div
+					class="mt-3 p-3 bg-muted/30 rounded-lg border border-border/50"
+				>
+					<div class="flex items-center justify-between text-xs mb-2">
+						<span class="font-medium text-foreground">
+							📊 오늘: {todayProgress.completed}/{todayProgress.total}
+							({todayProgress.percentage}%)
 						</span>
-						<span class="text-gray-600 dark:text-gray-400">
-							| 이번 주: {weekProgress.completed}/{weekProgress.total} ({weekProgress.percentage}%)
+						<span class="text-muted-foreground">
+							| 이번 주: {weekProgress.completed}/{weekProgress.total}
+							({weekProgress.percentage}%)
 						</span>
 					</div>
 					<div class="flex gap-2">
 						<!-- Today Progress Bar -->
 						<div class="flex-1">
-							<div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+							<div
+								class="w-full bg-muted rounded-full h-1.5 overflow-hidden"
+							>
 								<div
-									class="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-300"
+									class="h-full bg-primary transition-all duration-300"
 									style="width: {todayProgress.percentage}%"
 								></div>
 							</div>
 						</div>
 						<!-- Week Progress Bar -->
 						<div class="flex-1">
-							<div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+							<div
+								class="w-full bg-muted rounded-full h-1.5 overflow-hidden"
+							>
 								<div
-									class="h-full bg-gradient-to-r from-purple-500 to-purple-600 transition-all duration-300"
+									class="h-full bg-secondary transition-all duration-300"
 									style="width: {weekProgress.percentage}%"
 								></div>
 							</div>
@@ -457,42 +510,53 @@
 
 	<!-- Statistics Section (Phase 4 Section 6) -->
 	{#if showStats}
-		<div class="max-w-4xl mx-auto px-4 py-4 bg-white dark:bg-gray-800 border-b dark:border-gray-700">
+		<div
+			class="max-w-4xl mx-auto px-4 py-4 bg-background border-b border-border/50 animate-fade-in"
+		>
 			<TodoStats {todos} />
 		</div>
 	{/if}
 
 	<!-- Batch Action Bar (Phase 4 Section 7) -->
 	{#if isMultiSelectMode && selectedTodoIds.size > 0}
-		<div class="sticky top-16 z-10 bg-purple-100 dark:bg-purple-900/30 border-y border-purple-200 dark:border-purple-800">
-			<div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+		<div
+			class="sticky top-40 z-10 bg-secondary/10 border-y border-secondary/20 animate-fade-in"
+		>
+			<div
+				class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between"
+			>
 				<div class="flex items-center gap-2">
-					<span class="text-sm font-medium text-purple-900 dark:text-purple-100">
+					<span class="text-sm font-medium text-secondary">
 						{selectedTodoIds.size}개 선택됨
 					</span>
 				</div>
 				<div class="flex items-center gap-2">
-					<button
+					<Button
+						variant="ghost"
+						size="sm"
 						onclick={batchComplete}
-						class="px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700"
+						class="text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20"
 					>
-						<CheckSquare class="w-4 h-4 inline mr-1" />
+						<CheckSquare class="w-4 h-4 mr-1" />
 						완료
-					</button>
-					<button
+					</Button>
+					<Button
+						variant="ghost"
+						size="sm"
 						onclick={batchDelete}
-						class="px-3 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700"
+						class="text-destructive hover:bg-destructive/10"
 					>
-						<Trash2 class="w-4 h-4 inline mr-1" />
+						<Trash2 class="w-4 h-4 mr-1" />
 						삭제
-					</button>
-					<button
+					</Button>
+					<Button
+						variant="ghost"
+						size="sm"
 						onclick={toggleMultiSelectMode}
-						class="px-3 py-1.5 text-sm border border-purple-300 dark:border-purple-700 text-purple-900 dark:text-purple-100 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-900/50"
 					>
-						<X class="w-4 h-4 inline mr-1" />
+						<X class="w-4 h-4 mr-1" />
 						취소
-					</button>
+					</Button>
 				</div>
 			</div>
 		</div>
@@ -501,50 +565,60 @@
 	<!-- Content -->
 	<main class="max-w-4xl mx-auto px-4 py-6">
 		{#if sortedTodos.length === 0}
-			<div class="text-center py-12">
-				<CheckSquare class="w-16 h-16 mx-auto text-gray-400 dark:text-gray-600 mb-4" />
-				<p class="text-gray-600 dark:text-gray-400">
-					{selectedFilter === 'completed' ? '완료된 할일이 없습니다' : '할일이 없습니다'}
+			<div
+				class="flex flex-col items-center justify-center py-12 text-center"
+			>
+				<div
+					class="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4"
+				>
+					<CheckSquare class="w-8 h-8 text-muted-foreground" />
+				</div>
+				<p class="text-muted-foreground">
+					{selectedFilter === "completed"
+						? "완료된 할일이 없습니다"
+						: "할일이 없습니다"}
 				</p>
-				{#if selectedFilter !== 'completed'}
-					<button
+				{#if selectedFilter !== "completed"}
+					<Button
+						variant="default"
 						onclick={() => openTodoForm()}
-						class="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+						class="mt-4"
 					>
 						새 할일 만들기
-					</button>
+					</Button>
 				{/if}
 			</div>
 		{:else}
 			<!-- Overdue Section -->
 			{@const overdueTodos = sortedTodos.filter(isOverdue)}
-			{#if overdueTodos.length > 0 && selectedFilter !== 'completed'}
+			{#if overdueTodos.length > 0 && selectedFilter !== "completed"}
 				<section class="mb-6">
 					<div class="flex items-center justify-between mb-3">
-						<h2 class="text-lg font-semibold text-red-600 dark:text-red-400 flex items-center gap-2">
-							<AlertCircle class="w-5 h-5" />
-							⚠️ 기한 지남 ({overdueTodos.length})
+						<h2
+							class="text-sm font-semibold text-destructive flex items-center gap-2"
+						>
+							<AlertCircle class="w-4 h-4" />
+							기한 지남 ({overdueTodos.length})
 						</h2>
 						<!-- Quick Actions (Phase 4 Section 7-3) -->
 						<div class="flex items-center gap-2">
-							<button
+							<Button
+								variant="ghost"
+								size="sm"
+								class="h-7 text-xs"
 								onclick={selectAllOverdue}
-								class="px-2 py-1 text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded hover:bg-purple-200 dark:hover:bg-purple-900/50"
 							>
 								모두 선택
-							</button>
-							<button
+							</Button>
+							<div class="h-3 w-px bg-border"></div>
+							<Button
+								variant="ghost"
+								size="sm"
+								class="h-7 text-xs text-orange-600 hover:text-orange-700"
 								onclick={postponeAllOverdueToTomorrow}
-								class="px-2 py-1 text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded hover:bg-orange-200 dark:hover:bg-orange-900/50"
 							>
 								내일로 미루기
-							</button>
-							<button
-								onclick={completeAllOverdue}
-								class="px-2 py-1 text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded hover:bg-green-200 dark:hover:bg-green-900/50"
-							>
-								모두 완료
-							</button>
+							</Button>
 						</div>
 					</div>
 					<div class="space-y-2">
@@ -564,17 +638,20 @@
 			{/if}
 
 			<!-- Grouped Todos -->
-			{@const nonOverdueTodos = Array.from(groupedTodos.entries()).filter(([date, todos]) =>
-				!todos.every(isOverdue) || selectedFilter === 'completed'
+			{@const nonOverdueTodos = Array.from(groupedTodos.entries()).filter(
+				([date, todos]) =>
+					!todos.every(isOverdue) || selectedFilter === "completed",
 			)}
 			{#each nonOverdueTodos as [dateStr, dateTodos]}
 				<section class="mb-6">
-					<h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-						<Calendar class="w-5 h-5" />
+					<h2
+						class="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2 sticky top-[8.5rem] z-10 bg-background/95 backdrop-blur-sm py-2"
+					>
+						<Calendar class="w-4 h-4" />
 						{formatSectionDate(dateStr)}
 					</h2>
 					<div class="space-y-2">
-						{#each dateTodos.filter(t => !isOverdue(t) || selectedFilter === 'completed') as todo}
+						{#each dateTodos.filter((t) => !isOverdue(t) || selectedFilter === "completed") as todo}
 							<TodoCard
 								{todo}
 								onEdit={openTodoForm}
@@ -591,19 +668,21 @@
 		{/if}
 
 		<!-- Progress Bar -->
-		{#if showProgress && selectedFilter === 'today'}
-			<div class="mt-8 p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg">
+		{#if showProgress && selectedFilter === "today"}
+			<div
+				class="mt-8 p-4 bg-muted/30 border border-border/50 rounded-xl"
+			>
 				<div class="flex items-center justify-between mb-2">
-					<span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+					<span class="text-sm font-medium text-foreground">
 						📊 오늘 진행률
 					</span>
-					<span class="text-sm text-gray-600 dark:text-gray-400">
+					<span class="text-sm text-muted-foreground">
 						{todayProgress.completed}/{todayProgress.total} ({todayProgress.percentage}%)
 					</span>
 				</div>
-				<div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+				<div class="w-full bg-muted rounded-full h-2">
 					<div
-						class="bg-blue-600 h-2 rounded-full transition-all duration-300"
+						class="bg-primary h-2 rounded-full transition-all duration-300"
 						style="width: {todayProgress.percentage}%"
 					></div>
 				</div>
@@ -629,7 +708,11 @@
 
 <!-- Alert Modal -->
 {#if showAlertModal && alertingTodo}
-	<AlertModal todo={alertingTodo} onClose={closeAlertModal} onPostpone={handleAlertPostpone} />
+	<AlertModal
+		todo={alertingTodo}
+		onClose={closeAlertModal}
+		onPostpone={handleAlertPostpone}
+	/>
 {/if}
 
 <!-- Undo Toast -->
