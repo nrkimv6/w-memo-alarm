@@ -385,30 +385,43 @@ sw.addEventListener('notificationclick', (event) => {
 	event.notification.close();
 
 	const data = event.notification.data;
-	let url = '/';
 
+	// 앱 내 네비게이션 URL 결정 (항상 same-origin)
+	let appUrl: string;
 	if (data?.type === 'merged') {
-		// 병합 알림: 홈으로 이동
-		url = '/';
+		appUrl = '/';
 		swLog('info', `📱 Merged notification clicked, navigating to home`);
+	} else if (data?.memoId) {
+		appUrl = `/?memo=${data.memoId}`;
+		swLog('info', `📱 Single notification clicked: memoId=${data.memoId}`);
 	} else {
-		// 단일 알림: 해당 URL로 이동
-		url = data?.url || '/';
-		swLog('info', `📱 Single notification clicked: ${url}`);
+		appUrl = '/';
+		swLog('info', `📱 Notification clicked, no memoId, navigating to home`);
 	}
+
+	// 외부 URL이 있으면 별도로 열기 위해 저장
+	const externalUrl = data?.url && data.url !== '/' && data.url.startsWith('http') ? data.url : null;
 
 	event.waitUntil(
 		sw.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-			// 이미 열린 창이 있으면 포커스
+			// 이미 열린 창이 있으면 포커스 후 네비게이트
 			for (const client of clientList) {
 				if (client.url.includes(sw.location.origin) && 'focus' in client) {
-					(client as WindowClient).focus();
-					(client as WindowClient).navigate(url);
-					return;
+					return (client as WindowClient).focus().then((focusedClient) => {
+						if (externalUrl) {
+							// 외부 URL: 새 탭으로 열기
+							return sw.clients.openWindow(externalUrl).then(() => focusedClient);
+						}
+						// 앱 내 URL: 네비게이트
+						return focusedClient.navigate(appUrl);
+					});
 				}
 			}
-			// 없으면 새 창 열기
-			return sw.clients.openWindow(url);
+			// 열린 창 없으면 새 창 열기
+			if (externalUrl) {
+				return sw.clients.openWindow(externalUrl);
+			}
+			return sw.clients.openWindow(appUrl);
 		})
 	);
 });
