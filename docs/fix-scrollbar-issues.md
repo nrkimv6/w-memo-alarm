@@ -74,137 +74,300 @@ function handleTouchMove(e: TouchEvent) {
 
 ---
 
-## 3. 수정 계획
+## 3. 수정 계획 (세부 업무 단위)
 
-### Task 1: 세로 스크롤바 수정 (높은 우선순위)
+---
 
-#### 1-1. 루트 레이아웃 수정
+### Task 1: 루트 레이아웃 Flexbox 구조 변경
+
+**담당자**: _______________
+**우선순위**: 높음 (다른 Task의 선행 작업)
+**난이도**: ★★☆☆☆
+
 **파일**: `src/routes/+layout.svelte`
 
-**수정 전**:
-```svelte
-<div class="min-h-screen bg-background"
-     style="padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));">
-```
+**작업 내용**:
+1. 파일을 열고 115번 라인 근처의 루트 컨테이너 div를 찾는다
+2. 현재 클래스 `min-h-screen bg-background`에 `flex flex-col`을 추가한다
+3. 기존 inline style의 `padding-bottom`을 제거한다
+4. 자식 요소들을 감싸는 main 태그를 추가하고 `flex-1` 클래스를 부여한다
+5. main 태그에 기존 padding-bottom 스타일을 이동시킨다
 
-**수정 후**:
-```svelte
-<div class="flex flex-col min-h-screen bg-background">
-  <UnifiedHeader />
-  <main class="flex-1" style="padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));">
-    {@render children()}
-  </main>
-  <SyncStatusBanner />
-  <BottomNav />
-</div>
-```
+**완료 기준**:
+- 루트 div가 flex 컨테이너로 동작
+- 콘텐츠 영역이 flex-1로 남은 공간을 채움
+- BottomNav와 Header는 고정 크기 유지
 
-#### 1-2. 각 페이지에서 `min-h-screen` 제거
-**수정 대상 파일**:
-- `src/routes/+page.svelte` (line 241)
-- `src/routes/memos/+page.svelte` (line 177)
-- `src/routes/todos/+page.svelte` (line 324)
-- `src/routes/settings/+page.svelte` (line 570)
-- `src/routes/notifications/+page.svelte` (line 119)
-
-**수정 방법**:
-```diff
-- <div class="min-h-screen">
-+ <div>
-```
-
-**todos 페이지 특별 처리**:
-```diff
-- <div class="min-h-screen pb-20">
-+ <div>
-```
-(pb-20은 루트 레이아웃에서 처리되므로 제거)
+**의존성**: 없음 (첫 번째로 수행)
 
 ---
 
-### Task 2: 가로 스크롤바 수정 (중간 우선순위)
+### Task 2-1: 홈탭 min-h-screen 제거
 
-#### 2-1. 전역 오버플로우 제어
+**담당자**: _______________
+**우선순위**: 높음
+**난이도**: ★☆☆☆☆
+
+**파일**: `src/routes/+page.svelte`
+
+**작업 내용**:
+1. 파일을 열고 241번 라인 근처를 찾는다
+2. `class="min-h-screen"`에서 `min-h-screen`을 제거한다
+3. 빈 class 속성이 되면 class 속성 자체를 삭제해도 됨
+
+**완료 기준**:
+- 해당 div에 min-h-screen 클래스가 없음
+- 페이지가 정상적으로 렌더링됨
+
+**의존성**: Task 1 완료 후 수행
+
+**테스트 방법**:
+- 홈탭에서 메모가 1-2개만 있을 때 세로 스크롤바가 없어야 함
+- 메모가 많을 때는 정상적으로 스크롤되어야 함
+
+---
+
+### Task 2-2: 메모탭 min-h-screen 제거
+
+**담당자**: _______________
+**우선순위**: 높음
+**난이도**: ★☆☆☆☆
+
+**파일**: `src/routes/memos/+page.svelte`
+
+**작업 내용**:
+1. 파일을 열고 177번 라인 근처를 찾는다
+2. `class="min-h-screen"`에서 `min-h-screen`을 제거한다
+
+**완료 기준**:
+- 해당 div에 min-h-screen 클래스가 없음
+
+**의존성**: Task 1 완료 후 수행
+
+**테스트 방법**:
+- 메모탭에서 메모가 적을 때 세로 스크롤바가 없어야 함
+
+---
+
+### Task 2-3: 할일탭 min-h-screen 및 pb-20 제거
+
+**담당자**: _______________
+**우선순위**: 높음
+**난이도**: ★☆☆☆☆
+
+**파일**: `src/routes/todos/+page.svelte`
+
+**작업 내용**:
+1. 파일을 열고 324번 라인 근처를 찾는다
+2. `class="min-h-screen pb-20"`에서 `min-h-screen`과 `pb-20` 모두 제거한다
+3. pb-20은 루트 레이아웃에서 이미 처리되므로 중복 제거
+
+**완료 기준**:
+- 해당 div에 min-h-screen, pb-20 클래스가 모두 없음
+
+**의존성**: Task 1 완료 후 수행
+
+**주의사항**:
+- 이 파일만 pb-20이 추가로 있으므로 반드시 함께 제거할 것
+
+**테스트 방법**:
+- 할일탭에서 할일이 적을 때 세로 스크롤바가 없어야 함
+- 하단 여백이 BottomNav에 가려지지 않아야 함
+
+---
+
+### Task 2-4: 설정탭 min-h-screen 제거
+
+**담당자**: _______________
+**우선순위**: 높음
+**난이도**: ★☆☆☆☆
+
+**파일**: `src/routes/settings/+page.svelte`
+
+**작업 내용**:
+1. 파일을 열고 570번 라인 근처를 찾는다
+2. `class="min-h-screen"`에서 `min-h-screen`을 제거한다
+
+**완료 기준**:
+- 해당 div에 min-h-screen 클래스가 없음
+
+**의존성**: Task 1 완료 후 수행
+
+**테스트 방법**:
+- 설정탭이 정상적으로 표시되어야 함
+
+---
+
+### Task 2-5: 알림탭 min-h-screen 제거
+
+**담당자**: _______________
+**우선순위**: 높음
+**난이도**: ★☆☆☆☆
+
+**파일**: `src/routes/notifications/+page.svelte`
+
+**작업 내용**:
+1. 파일을 열고 119번 라인 근처를 찾는다
+2. `class="min-h-screen"`에서 `min-h-screen`을 제거한다
+
+**완료 기준**:
+- 해당 div에 min-h-screen 클래스가 없음
+
+**의존성**: Task 1 완료 후 수행
+
+**테스트 방법**:
+- 알림탭에서 알림이 적을 때 세로 스크롤바가 없어야 함
+
+---
+
+### Task 3: 전역 가로 오버플로우 숨김 설정
+
+**담당자**: _______________
+**우선순위**: 중간
+**난이도**: ★☆☆☆☆
+
 **파일**: `src/app.css`
 
-**추가할 코드**:
-```css
-@layer base {
-  html, body {
-    overflow-x: hidden;
-    max-width: 100vw;
-  }
-}
-```
+**작업 내용**:
+1. 파일을 열고 `@layer base` 블록을 찾는다
+2. 해당 블록 안에 html, body 선택자를 추가한다
+3. overflow-x: hidden과 max-width: 100vw 속성을 추가한다
 
-#### 2-2. FilterTabs 컨테이너 수정
-**파일**: `src/lib/components/layout/FilterTabs.svelte`
+**완료 기준**:
+- html과 body 요소에 가로 오버플로우가 숨겨짐
+- 전체 페이지에서 가로 스크롤바가 나타나지 않음
 
-**수정 전**:
-```svelte
-<div class="flex items-center justify-between gap-2 overflow-x-auto pb-1">
-```
+**의존성**: 없음 (독립 작업)
 
-**수정 후**:
-```svelte
-<div class="flex items-center justify-between gap-2 overflow-x-auto overflow-y-hidden pb-1 -mx-4 px-4">
-```
-(음수 마진 + 패딩으로 스크롤 영역 확장)
+**테스트 방법**:
+- 모든 탭에서 가로 스크롤바가 없어야 함
+- 브라우저 창을 좁게 줄여도 가로 스크롤이 안 생겨야 함
 
 ---
 
-### Task 3: 스와이프 터치 이벤트 수정 (높은 우선순위)
+### Task 4: FilterTabs 스크롤 영역 개선
+
+**담당자**: _______________
+**우선순위**: 중간
+**난이도**: ★★☆☆☆
+
+**파일**: `src/lib/components/layout/FilterTabs.svelte`
+
+**작업 내용**:
+1. 파일을 열고 가장 바깥쪽 컨테이너 div를 찾는다 (약 19번 라인)
+2. 기존 클래스에 `overflow-y-hidden`을 추가한다
+3. 기존 클래스에 `-mx-4 px-4`를 추가한다 (음수 마진 + 패딩 기법)
+
+**완료 기준**:
+- 필터 탭이 좁은 화면에서 가로 스크롤 가능
+- 스크롤 영역이 부모 컨테이너 밖으로 누출되지 않음
+
+**의존성**: 없음 (독립 작업)
+
+**배경 지식**:
+- 음수 마진(-mx-4)으로 컨테이너를 부모 밖으로 확장
+- 동일한 크기의 패딩(px-4)으로 내용물 위치는 유지
+- 이렇게 하면 스크롤 영역이 화면 가장자리까지 확장됨
+
+**테스트 방법**:
+- 메모탭에서 필터 버튼들이 많을 때 가로 스크롤이 자연스럽게 됨
+- 스크롤해도 페이지 전체에 가로 스크롤바가 생기지 않음
+
+---
+
+### Task 5: SwipeableCard에 touch-action CSS 추가
+
+**담당자**: _______________
+**우선순위**: 높음
+**난이도**: ★☆☆☆☆
 
 **파일**: `src/lib/components/memo/SwipeableCard.svelte`
 
-#### 3-1. touch-action CSS 추가
-```diff
-<div
--   class="relative pt-3"
-+   class="relative pt-3"
-+   style="touch-action: pan-y;"
-    bind:this={containerElement}
-```
+**작업 내용**:
+1. 파일을 열고 가장 바깥쪽 컨테이너 div를 찾는다 (bind:this={containerElement}가 있는 div)
+2. 해당 div에 `style="touch-action: pan-y;"` 속성을 추가한다
 
-#### 3-2. preventDefault 추가
-```diff
-function handleTouchMove(e: TouchEvent) {
-    if (!isDragging) return;
--   currentX = e.touches[0].clientX - startX;
-+   const deltaX = e.touches[0].clientX - startX;
-+
-+   // 가로 스와이프가 세로보다 크면 페이지 스크롤 방지
-+   if (Math.abs(deltaX) > 10) {
-+       e.preventDefault();
-+   }
-+
-+   currentX = deltaX;
-```
+**완료 기준**:
+- 컨테이너에 touch-action: pan-y 스타일이 적용됨
 
-#### 3-3. touchstart에서 초기 Y 좌표 저장 (선택적 개선)
-```diff
-let startX = $state(0);
-+ let startY = $state(0);
+**의존성**: 없음 (Task 6과 동시 진행 가능)
 
-function handleTouchStart(e: TouchEvent) {
-    startX = e.touches[0].clientX;
-+   startY = e.touches[0].clientY;
-    isDragging = true;
-}
+**배경 지식**:
+- touch-action: pan-y는 "세로 스크롤만 브라우저가 처리하라"는 의미
+- 가로 방향 터치는 JavaScript 코드가 직접 처리함
+- 이를 통해 스와이프와 페이지 스크롤의 충돌 방지
 
-function handleTouchMove(e: TouchEvent) {
-    if (!isDragging) return;
-+
-+   const deltaX = e.touches[0].clientX - startX;
-+   const deltaY = e.touches[0].clientY - startY;
-+
-+   // 가로 스와이프가 우세하면 페이지 스크롤 방지
-+   if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10) {
-+       e.preventDefault();
-+   }
-+
-    currentX = e.touches[0].clientX - startX;
-```
+**테스트 방법**:
+- 메모 카드를 좌우로 스와이프해도 페이지 전체가 움직이지 않음
+
+---
+
+### Task 6: SwipeableCard touchstart에 Y좌표 저장 추가
+
+**담당자**: _______________
+**우선순위**: 높음
+**난이도**: ★★☆☆☆
+
+**파일**: `src/lib/components/memo/SwipeableCard.svelte`
+
+**작업 내용**:
+1. 파일 상단의 state 변수 선언부를 찾는다
+2. `let startX = $state(0);` 옆에 `let startY = $state(0);`를 추가한다
+3. handleTouchStart 함수를 찾는다
+4. `startX = e.touches[0].clientX;` 다음 줄에 `startY = e.touches[0].clientY;`를 추가한다
+
+**완료 기준**:
+- startY 상태 변수가 선언됨
+- 터치 시작 시 Y좌표가 저장됨
+
+**의존성**: 없음 (Task 5, 7과 동시 진행 가능)
+
+---
+
+### Task 7: SwipeableCard touchmove에 preventDefault 로직 추가
+
+**담당자**: _______________
+**우선순위**: 높음
+**난이도**: ★★★☆☆
+
+**파일**: `src/lib/components/memo/SwipeableCard.svelte`
+
+**작업 내용**:
+1. handleTouchMove 함수를 찾는다
+2. 기존 `currentX = e.touches[0].clientX - startX;` 코드를 수정한다
+3. deltaX와 deltaY를 계산하는 코드를 추가한다
+4. 가로 움직임이 세로보다 크고 10px 이상이면 e.preventDefault()를 호출하는 조건문을 추가한다
+5. currentX에 deltaX 값을 할당한다
+
+**완료 기준**:
+- 가로 스와이프가 우세할 때 브라우저 기본 동작이 방지됨
+- 세로 스크롤은 여전히 정상 동작함
+
+**의존성**: Task 6 완료 후 수행 (startY 변수 필요)
+
+**배경 지식**:
+- deltaX: 터치 시작점에서 현재 위치까지의 가로 이동 거리
+- deltaY: 터치 시작점에서 현재 위치까지의 세로 이동 거리
+- Math.abs(): 절대값 함수 (음수를 양수로 변환)
+- 가로 움직임이 더 크면 사용자가 스와이프를 의도한 것으로 판단
+
+**테스트 방법**:
+- 메모 카드를 좌우로 스와이프할 때 화면이 흔들리지 않음
+- 세로로 스크롤할 때는 정상적으로 페이지가 스크롤됨
+- 핀/삭제 기능이 정상 동작함
+
+---
+
+### Task 8: 통합 테스트
+
+**담당자**: _______________
+**우선순위**: 높음
+**난이도**: ★★☆☆☆
+
+**작업 내용**:
+모든 수정 완료 후 아래 체크리스트를 따라 테스트 수행
+
+**의존성**: Task 1~7 모두 완료 후 수행
 
 ---
 
@@ -234,15 +397,85 @@ function handleTouchMove(e: TouchEvent) {
 
 ---
 
-## 5. 예상 소요 시간
+## 5. 업무 분배 요약
 
-| Task | 예상 시간 |
-|------|----------|
-| Task 1: 세로 스크롤바 수정 | 30분 |
-| Task 2: 가로 스크롤바 수정 | 20분 |
-| Task 3: 스와이프 터치 수정 | 30분 |
-| 테스트 | 30분 |
-| **총계** | **약 2시간** |
+### 5.1 Task 의존성 다이어그램
+
+```
+[Task 1: 루트 레이아웃] ─────┬──▶ [Task 2-1: 홈탭]
+        (선행 필수)         ├──▶ [Task 2-2: 메모탭]
+                           ├──▶ [Task 2-3: 할일탭]
+                           ├──▶ [Task 2-4: 설정탭]
+                           └──▶ [Task 2-5: 알림탭]
+
+[Task 3: 전역 CSS] ─────────────▶ (독립 작업)
+
+[Task 4: FilterTabs] ───────────▶ (독립 작업)
+
+[Task 5: touch-action] ─────────▶ (독립 작업)
+
+[Task 6: startY 추가] ──────────▶ [Task 7: preventDefault]
+
+                                     │
+                                     ▼
+                              [Task 8: 통합 테스트]
+```
+
+### 5.2 병렬 작업 가능 그룹
+
+| 그룹 | Task | 동시 작업 가능 |
+|------|------|---------------|
+| A | Task 1 | 단독 (선행 필수) |
+| B | Task 2-1 ~ 2-5 | 5개 동시 가능 |
+| C | Task 3, 4, 5, 6 | 4개 동시 가능 |
+| D | Task 7 | Task 6 완료 후 |
+| E | Task 8 | 최종 (모두 완료 후) |
+
+### 5.3 난이도별 분류
+
+| 난이도 | Task | 적합 대상 |
+|--------|------|----------|
+| ★☆☆☆☆ | 2-1, 2-2, 2-4, 2-5, 3, 5 | 입문자 |
+| ★★☆☆☆ | 1, 2-3, 4, 6, 8 | 초급 개발자 |
+| ★★★☆☆ | 7 | 중급 개발자 |
+
+### 5.4 예상 소요 시간
+
+| Task | 예상 시간 | 담당자 |
+|------|----------|--------|
+| Task 1: 루트 레이아웃 Flexbox 변경 | 20분 | |
+| Task 2-1: 홈탭 min-h-screen 제거 | 5분 | |
+| Task 2-2: 메모탭 min-h-screen 제거 | 5분 | |
+| Task 2-3: 할일탭 min-h-screen/pb-20 제거 | 5분 | |
+| Task 2-4: 설정탭 min-h-screen 제거 | 5분 | |
+| Task 2-5: 알림탭 min-h-screen 제거 | 5분 | |
+| Task 3: 전역 가로 오버플로우 숨김 | 10분 | |
+| Task 4: FilterTabs 스크롤 영역 개선 | 15분 | |
+| Task 5: SwipeableCard touch-action 추가 | 5분 | |
+| Task 6: SwipeableCard startY 추가 | 10분 | |
+| Task 7: SwipeableCard preventDefault 추가 | 20분 | |
+| Task 8: 통합 테스트 | 30분 | |
+| **총계** | **약 2시간 15분** | |
+
+### 5.5 권장 작업 순서
+
+**1단계 (1명, 20분)**
+- Task 1: 루트 레이아웃 수정 (필수 선행)
+
+**2단계 (최대 5명 병렬, 각 5분)**
+- Task 2-1 ~ 2-5: 각 페이지 min-h-screen 제거
+
+**3단계 (최대 4명 병렬, 10~20분)**
+- Task 3: 전역 CSS 수정
+- Task 4: FilterTabs 수정
+- Task 5: touch-action 추가
+- Task 6: startY 추가
+
+**4단계 (1명, 20분)**
+- Task 7: preventDefault 로직 추가
+
+**5단계 (전원 참여, 30분)**
+- Task 8: 통합 테스트
 
 ---
 
