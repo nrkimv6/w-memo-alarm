@@ -1024,7 +1024,15 @@ function createMemosStore() {
 		}
 
 		// Update memo
-		return await update(memoId, { todoInstances: updatedInstances });
+		const result = await update(memoId, { todoInstances: updatedInstances });
+
+		// Phase 3 Section 6: 알림 재스케줄링 (새 인스턴스 기준)
+		if (result) {
+			const { scheduleTodoNotifications } = await import('$lib/utils/todoNotifications');
+			await scheduleTodoNotifications(result);
+		}
+
+		return result;
 	}
 
 	/**
@@ -1057,7 +1065,15 @@ function createMemosStore() {
 		}
 
 		// Update memo
-		return await update(memoId, { todoInstances: updatedInstances });
+		const result = await update(memoId, { todoInstances: updatedInstances });
+
+		// Phase 3 Section 6: 알림 재스케줄링 (새 인스턴스 기준)
+		if (result) {
+			const { scheduleTodoNotifications } = await import('$lib/utils/todoNotifications');
+			await scheduleTodoNotifications(result);
+		}
+
+		return result;
 	}
 
 	/**

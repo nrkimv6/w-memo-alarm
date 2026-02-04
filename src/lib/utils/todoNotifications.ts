@@ -32,6 +32,15 @@ export async function scheduleTodoNotifications(todo: Memo): Promise<void> {
 		return;
 	}
 
+	// Phase 3: 반복 할일인 경우 활성 인스턴스가 없으면 스케줄링하지 않음
+	if (todo.recurrence && todo.todoInstances) {
+		const activeInstance = todo.todoInstances.find(i => i.status === 'pending');
+		if (!activeInstance) {
+			await cancelTodoNotifications(todo.id);
+			return;
+		}
+	}
+
 	// 전역 설정 가져오기
 	const { settingsStore } = await import('$lib/stores/settings.svelte');
 	const globalRemindTime = settingsStore.settings.todoDefaults.remind.time;
@@ -57,6 +66,23 @@ export async function scheduleTodoNotifications(todo: Memo): Promise<void> {
 }
 
 /**
+ * Phase 3: 반복 할일의 유효 기한 날짜 계산
+ * - 반복 할일: 활성 인스턴스의 scheduledDate
+ * - 단발성 할일: dueDate
+ */
+function getEffectiveDueDate(todo: Memo): string | undefined {
+	// Phase 3: 반복 할일인 경우 활성 인스턴스의 scheduledDate 사용
+	if (todo.recurrence && todo.todoInstances) {
+		const activeInstance = todo.todoInstances.find(i => i.status === 'pending');
+		if (activeInstance) {
+			return activeInstance.scheduledDate;
+		}
+	}
+	// 단발성 할일은 원래 dueDate 사용
+	return todo.dueDate;
+}
+
+/**
  * 상기 알림 생성 (매일 특정 시각)
  */
 function buildRemindNotifications(todo: Memo, globalRemindTime: string): TodoScheduledNotification[] {
@@ -64,6 +90,9 @@ function buildRemindNotifications(todo: Memo, globalRemindTime: string): TodoSch
 	const timing = todo.todoTiming;
 
 	if (!timing) return notifications;
+
+	// Phase 3: 유효 기한 날짜 계산 (반복 할일은 활성 인스턴스 기준)
+	const effectiveDueDate = getEffectiveDueDate(todo);
 
 	// useGlobalRemind=true인 경우 - 전역 설정 시각 사용
 	if (timing.useGlobalRemind) {
@@ -77,7 +106,7 @@ function buildRemindNotifications(todo: Memo, globalRemindTime: string): TodoSch
 			time: globalRemindTime, // HH:MM
 			requireInteraction: false,
 			url: `/todos?id=${todo.id}`,
-			dueDate: todo.dueDate,
+			dueDate: effectiveDueDate,
 			dueTime: todo.dueTime
 		});
 	}
@@ -96,12 +125,12 @@ function buildRemindNotifications(todo: Memo, globalRemindTime: string): TodoSch
 					time: remind.value, // HH:MM
 					requireInteraction: false,
 					url: `/todos?id=${todo.id}`,
-					dueDate: todo.dueDate,
+					dueDate: effectiveDueDate,
 					dueTime: todo.dueTime
 				});
-			} else if (remind.type === 'before_due' && todo.dueDate) {
+			} else if (remind.type === 'before_due' && effectiveDueDate) {
 				// 기한 N분 전
-				const alertTime = calculateBeforeDueTime(todo.dueDate, todo.dueTime, remind.value);
+				const alertTime = calculateBeforeDueTime(effectiveDueDate, todo.dueTime, remind.value);
 				if (alertTime && alertTime > new Date()) {
 					notifications.push({
 						memoId: todo.id,
@@ -113,7 +142,7 @@ function buildRemindNotifications(todo: Memo, globalRemindTime: string): TodoSch
 						dateTime: alertTime.toISOString(),
 						requireInteraction: false,
 						url: `/todos?id=${todo.id}`,
-						dueDate: todo.dueDate,
+						dueDate: effectiveDueDate,
 						dueTime: todo.dueTime
 					});
 				}
@@ -133,12 +162,15 @@ function buildAlertNotifications(todo: Memo, globalAutoAlertMinutes: number): To
 
 	if (!timing) return notifications;
 
+	// Phase 3: 유효 기한 날짜 계산 (반복 할일은 활성 인스턴스 기준)
+	const effectiveDueDate = getEffectiveDueDate(todo);
+
 	// 1. 자동 알람 (autoAlertBefore) - 전역 또는 개별
 	const autoAlertMinutes = timing.useGlobalAutoAlert ? globalAutoAlertMinutes : timing.autoAlertBefore;
 
-	if (autoAlertMinutes && todo.dueDate) {
+	if (autoAlertMinutes && effectiveDueDate) {
 		const alertTime = calculateBeforeDueTime(
-			todo.dueDate,
+			effectiveDueDate,
 			todo.dueTime,
 			String(autoAlertMinutes)
 		);
@@ -154,7 +186,7 @@ function buildAlertNotifications(todo: Memo, globalAutoAlertMinutes: number): To
 				dateTime: alertTime.toISOString(),
 				requireInteraction: true,
 				url: `/todos?id=${todo.id}`,
-				dueDate: todo.dueDate,
+				dueDate: effectiveDueDate,
 				dueTime: todo.dueTime
 			});
 		}
@@ -162,7 +194,7 @@ function buildAlertNotifications(todo: Memo, globalAutoAlertMinutes: number): To
 
 	// 2. 수동 알람들 (alertTimes)
 	timing.alertTimes.forEach((alert, index) => {
-		const alertDateTime = parseAlertDateTime(alert, todo.dueDate);
+		const alertDateTime = parseAlertDateTime(alert, effectiveDueDate);
 		if (alertDateTime && alertDateTime > new Date()) {
 			notifications.push({
 				memoId: todo.id,
@@ -174,7 +206,7 @@ function buildAlertNotifications(todo: Memo, globalAutoAlertMinutes: number): To
 				dateTime: alertDateTime.toISOString(),
 				requireInteraction: true,
 				url: `/todos?id=${todo.id}`,
-				dueDate: todo.dueDate,
+				dueDate: effectiveDueDate,
 				dueTime: todo.dueTime
 			});
 		}
