@@ -190,7 +190,7 @@ async function convertChecklistToTodos(memo: Memo) {
 
 ---
 
-## 5. 기타 아이디어 (Phase 5+)
+## 5. 장기 로드맵 아이디어 (계획 미정)
 
 ### 캘린더 뷰
 - 월간 캘린더에 할일 표시
@@ -230,7 +230,7 @@ async function convertChecklistToTodos(memo: Memo) {
 2. **홈 화면 위젯** - Android 사용자 비율 확인
 
 ### 장기 로드맵 📅
-1. **캘린더 뷰** - Phase 5
-2. **자연어 입력** - Phase 5
-3. **서브태스크** - Phase 5
-4. **AI 기능** - Phase 6+
+1. **캘린더 뷰** - 요청 시 검토
+2. **자연어 입력** - 요청 시 검토
+3. **서브태스크** - 요청 시 검토
+4. **AI 기능** - 향후 고려

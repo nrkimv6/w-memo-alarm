@@ -224,10 +224,17 @@
 4. ⏳ 배터리 최적화 해제 안내가 표시된다
 5. ⏳ Ongoing notification으로 할일이 고정 표시된다
 
-**Phase 4에서 동작하지 않는 것 (Phase 5 이후):**
+**Phase 4 범위 외 기능 (현재 계획 없음):**
 - 캘린더 뷰
 - 자연어 입력
 - 서브태스크
-- Android 위젯
 - 알림 피로도 관리
 - On-Device AI 연동
+
+**선택적 기능 (사용자 요청 시 검토):**
+- 전용 TodoGroup
+- Android 홈 화면 위젯
+- 일괄 미루기
+- 체크리스트→할일 변환
+
+👉 자세한 내용: [future-ideas.md](./future-ideas.md)
