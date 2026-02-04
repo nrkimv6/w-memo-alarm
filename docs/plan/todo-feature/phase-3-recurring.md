@@ -5,6 +5,26 @@
 > **선행 조건**: Phase 1 + Phase 2 완료
 > **용어 참조**: [docs/prd/2026-02-04_todo-terminology.md](../../prd/2026-02-04_todo-terminology.md) — 인스턴스, JIT 생성 정의
 
+## 📊 진행 상태
+
+**완료일**: 2026-02-04
+**전체 진행률**: ✅ **100% 완료**
+
+### ✅ 완료된 모든 기능
+- [x] 반복 설정 UI (일간/주간/월간/사용자지정)
+- [x] JIT 인스턴스 생성 로직 (`recurrence.ts`)
+- [x] 건너뛰기 기능 (SkipDialog)
+- [x] 완료/건너뛴 인스턴스 히스토리 (RecurringHistory)
+- [x] 향후 일정 미리보기 (FutureSchedules)
+- [x] 반복 할일 알림 처리
+- [x] 반복 할일 삭제 확인 다이얼로그
+
+### 📝 핵심 파일
+- `src/lib/utils/recurrence.ts` (308줄) - 반복 로직
+- `src/lib/components/todo/SkipDialog.svelte`
+- `src/lib/components/todo/RecurringHistory.svelte`
+- `src/lib/components/todo/FutureSchedules.svelte`
+
 ---
 
 ## 시작 전 확인 사항
