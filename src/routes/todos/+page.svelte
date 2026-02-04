@@ -8,6 +8,7 @@
 	import AlertModal from '$lib/components/todo/AlertModal.svelte';
 	import UndoToast from '$lib/components/todo/UndoToast.svelte';
 	import SkipDialog from '$lib/components/todo/SkipDialog.svelte';
+	import TodoStats from '$lib/components/todo/TodoStats.svelte';
 	import {
 		filterTodos,
 		sortTodos,
@@ -20,7 +21,7 @@
 	} from '$lib/utils/todo';
 	import { getTodayProgress, getWeekProgress } from '$lib/utils/todoProgress';
 	import type { Memo } from '$lib/types/memo';
-	import { Plus, Search, Settings, CheckSquare, Calendar, Clock, AlertCircle } from 'lucide-svelte';
+	import { Plus, Search, Settings, CheckSquare, Calendar, Clock, AlertCircle, BarChart3, ChevronDown, ChevronUp } from 'lucide-svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import { initTodoAlertManager, cleanupTodoAlertManager } from '$lib/utils/todoAlertManager.svelte';
 
@@ -29,6 +30,7 @@
 	let showSkipDialog = $state(false);
 	let showAlertModal = $state(false);
 	let showUndoToast = $state(false);
+	let showStats = $state(false);
 	let selectedFilter = $state<'today' | 'week' | 'all' | 'completed'>('today');
 	let selectedTag = $state<string | undefined>(undefined);
 	let selectedFolder = $state<string | undefined>(undefined);
@@ -211,6 +213,15 @@
 					<button class="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
 						<Search class="w-5 h-5" />
 					</button>
+					<button
+						onclick={() => showStats = !showStats}
+						class="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg {
+							showStats ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ''
+						}"
+						title="통계"
+					>
+						<BarChart3 class="w-5 h-5" />
+					</button>
 					<a href="/settings" class="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
 						<Settings class="w-5 h-5" />
 					</a>
@@ -346,6 +357,13 @@
 			{/if}
 		</div>
 	</header>
+
+	<!-- Statistics Section (Phase 4 Section 6) -->
+	{#if showStats}
+		<div class="max-w-4xl mx-auto px-4 py-4 bg-white dark:bg-gray-800 border-b dark:border-gray-700">
+			<TodoStats {todos} />
+		</div>
+	{/if}
 
 	<!-- Content -->
 	<main class="max-w-4xl mx-auto px-4 py-6">
