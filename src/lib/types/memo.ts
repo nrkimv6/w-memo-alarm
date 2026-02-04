@@ -13,8 +13,10 @@ export interface ChecklistItem {
 	completed: boolean;
 }
 
-export type MemoType = 'note' | 'bookmark' | 'task';
+export type MemoType = 'note' | 'bookmark' | 'task' | 'todo';
 export type Priority = 'low' | 'medium' | 'high';
+export type TodoPriority = 'low' | 'medium' | 'high' | 'urgent';
+export type TodoStatus = 'pending' | 'completed' | 'skipped';
 export type SyncStatus = 'local-only' | 'pending' | 'synced' | 'failed';
 
 export interface Reminder {
@@ -27,6 +29,70 @@ export interface Reminder {
 	date?: string; // YYYY-MM-DD for one-time reminders
 	datetime?: string; // ISO datetime string (computed for display)
 	isDefault?: boolean; // 기본알림 사용 여부 (true: 기본설정 시간 사용, false/undefined: 사용자 지정)
+}
+
+// Todo 상기 알림 항목
+export interface TodoRemindEntry {
+	id: string;
+	type: 'time' | 'before_due'; // 'time': 매일 특정 시각, 'before_due': 기한 N분 전
+	time?: string; // HH:mm (type='time'일 때)
+	minutesBefore?: number; // 기한 전 분 (type='before_due'일 때)
+}
+
+// Todo 알람 항목
+export interface TodoAlertEntry {
+	id: string;
+	time: string; // HH:mm
+	date?: string; // YYYY-MM-DD (특정 날짜 알람의 경우)
+}
+
+// Todo 타이밍 설정 (상기/알람 통합)
+export interface TodoTiming {
+	// 상기 설정
+	useGlobalRemind: boolean; // 앱 전역 상기 시간 사용 여부
+	remindTimes: TodoRemindEntry[]; // 개별 상기 시각 배열
+	// 알람 설정
+	useGlobalAutoAlert: boolean; // 앱 전역 자동알람 사용 여부
+	autoAlertBefore?: number; // 기한 전 N분에 자동 알람 (null이면 비활성)
+	alertTimes: TodoAlertEntry[]; // 수동 알람 시각 배열
+	// 기한 초과 표시
+	showOverdue: boolean; // 기본 true
+}
+
+// 반복 설정
+export interface Recurrence {
+	type: 'daily' | 'weekly' | 'monthly' | 'custom';
+	interval: number; // 간격 (매 N일/주/월)
+	daysOfWeek?: number[]; // 0-6 (주간 반복 시)
+	dayOfMonth?: number; // 1-31 (월간 반복 시)
+	endDate?: string; // YYYY-MM-DD (반복 종료 날짜)
+	endAfter?: number; // N회 후 종료
+}
+
+// Todo 인스턴스 (반복 할일용)
+export interface TodoInstance {
+	id: string;
+	scheduledDate: string; // YYYY-MM-DD (해당 인스턴스의 일정 날짜)
+	status: 'pending' | 'completed' | 'skipped';
+	completedAt?: number; // 완료 시각
+	skippedAt?: number; // 건너뛴 시각
+	skipReason?: string; // 건너뛴 이유
+	postponeCount: number; // 이 인스턴스가 미뤄진 횟수
+}
+
+// 미루기 기록
+export interface PostponeRecord {
+	from: string; // YYYY-MM-DD (변경 전 기한)
+	to: string; // YYYY-MM-DD (변경 후 기한)
+	postponedAt: number; // 미룬 시각
+}
+
+// 미루기 정보
+export interface PostponeInfo {
+	count: number; // 총 미루기 횟수
+	originalDueDate?: string; // YYYY-MM-DD (최초 기한)
+	maxAllowed?: number; // 최대 허용 횟수 (null이면 무제한)
+	history: PostponeRecord[]; // 미루기 이력
 }
 
 export interface Memo {
@@ -55,6 +121,19 @@ export interface Memo {
 	checklist?: ChecklistItem[];
 	dueDate?: string; // YYYY-MM-DD
 	priority?: Priority;
+	// Todo 전용 필드
+	todoStatus?: TodoStatus;
+	todoPriority?: TodoPriority;
+	dueTime?: string; // HH:mm
+	todoTiming?: TodoTiming;
+	completedAt?: number; // 완료 시각 (timestamp)
+	// Phase 3: 반복 할일
+	recurrence?: Recurrence;
+	todoInstances?: TodoInstance[];
+	// Phase 2: 미루기
+	postponeInfo?: PostponeInfo;
+	// Phase 4: 그룹
+	todoGroupId?: string;
 	// Online-First: 버전 관리 (충돌 감지용)
 	version?: number;
 	// Optimistic UI: 동기화 상태

@@ -7,9 +7,23 @@ export interface DefaultReminderSettings {
 	autoOpen: boolean;
 }
 
+export interface TodoDefaultSettings {
+	remind: {
+		enabled: boolean;
+		time: string; // HH:mm
+	};
+	autoAlert: {
+		enabled: boolean;
+		minutesBefore: number; // 기한 전 N분
+	};
+	showOverdue: boolean;
+	showProgress: boolean;
+}
+
 export interface AppSettings {
 	defaultReminder: DefaultReminderSettings;
 	autoReminderOnCreate: boolean;
+	todoDefaults: TodoDefaultSettings;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -19,7 +33,19 @@ const DEFAULT_SETTINGS: AppSettings = {
 		days: [1, 2, 3, 4, 5], // 월-금
 		autoOpen: false
 	},
-	autoReminderOnCreate: false
+	autoReminderOnCreate: false,
+	todoDefaults: {
+		remind: {
+			enabled: true,
+			time: '07:00'
+		},
+		autoAlert: {
+			enabled: false,
+			minutesBefore: 60 // 1시간 전 (기본값)
+		},
+		showOverdue: true,
+		showProgress: true
+	}
 };
 
 function loadFromStorage(): AppSettings {
@@ -121,6 +147,81 @@ function createSettingsStore() {
 		return settings.defaultReminder;
 	}
 
+	// Todo 설정 메서드
+	async function setTodoRemindEnabled(enabled: boolean) {
+		settings = {
+			...settings,
+			todoDefaults: {
+				...settings.todoDefaults,
+				remind: { ...settings.todoDefaults.remind, enabled }
+			}
+		};
+		saveToStorage(settings);
+	}
+
+	async function setTodoRemindTime(time: string) {
+		const oldTime = settings.todoDefaults.remind.time;
+		settings = {
+			...settings,
+			todoDefaults: {
+				...settings.todoDefaults,
+				remind: { ...settings.todoDefaults.remind, time }
+			}
+		};
+		saveToStorage(settings);
+
+		// useGlobalRemind=true인 할일들 일괄 업데이트
+		if (typeof window !== 'undefined' && oldTime !== time) {
+			const { memosStore } = await import('./memos.svelte');
+			await memosStore.updateGlobalRemindTodos(time);
+		}
+	}
+
+	async function setTodoAutoAlertEnabled(enabled: boolean) {
+		settings = {
+			...settings,
+			todoDefaults: {
+				...settings.todoDefaults,
+				autoAlert: { ...settings.todoDefaults.autoAlert, enabled }
+			}
+		};
+		saveToStorage(settings);
+	}
+
+	async function setTodoAutoAlertMinutes(minutesBefore: number) {
+		const oldMinutes = settings.todoDefaults.autoAlert.minutesBefore;
+		settings = {
+			...settings,
+			todoDefaults: {
+				...settings.todoDefaults,
+				autoAlert: { ...settings.todoDefaults.autoAlert, minutesBefore }
+			}
+		};
+		saveToStorage(settings);
+
+		// useGlobalAutoAlert=true인 할일들 일괄 업데이트
+		if (typeof window !== 'undefined' && oldMinutes !== minutesBefore) {
+			const { memosStore } = await import('./memos.svelte');
+			await memosStore.updateGlobalAutoAlertTodos(minutesBefore);
+		}
+	}
+
+	function setTodoShowOverdue(showOverdue: boolean) {
+		settings = {
+			...settings,
+			todoDefaults: { ...settings.todoDefaults, showOverdue }
+		};
+		saveToStorage(settings);
+	}
+
+	function setTodoShowProgress(showProgress: boolean) {
+		settings = {
+			...settings,
+			todoDefaults: { ...settings.todoDefaults, showProgress }
+		};
+		saveToStorage(settings);
+	}
+
 	return {
 		get settings() {
 			return settings;
@@ -133,7 +234,14 @@ function createSettingsStore() {
 		setDefaultReminderDays,
 		setAutoReminderOnCreate,
 		setDefaultReminderAutoOpen,
-		getDefaultReminder
+		getDefaultReminder,
+		// Todo 설정
+		setTodoRemindEnabled,
+		setTodoRemindTime,
+		setTodoAutoAlertEnabled,
+		setTodoAutoAlertMinutes,
+		setTodoShowOverdue,
+		setTodoShowProgress
 	};
 }
 
