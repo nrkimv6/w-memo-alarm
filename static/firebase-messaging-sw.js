@@ -40,22 +40,22 @@ self.addEventListener('notificationclick', (event) => {
 
 	// 알림 데이터에서 메모 ID 추출
 	const memoId = event.notification.data?.memoId;
+	const appUrl = memoId ? `/?memo=${memoId}` : '/';
 
 	// 알림 클릭 시 앱 열기
 	event.waitUntil(
 		clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-			// 이미 열린 창이 있으면 포커스
+			// 이미 열린 창이 있으면 포커스 후 네비게이트
 			for (const client of clientList) {
 				if (client.url.includes(self.location.origin) && 'focus' in client) {
-					return client.focus();
+					return client.focus().then((focusedClient) => {
+						return focusedClient.navigate(appUrl);
+					});
 				}
 			}
 
 			// 열린 창이 없으면 새 창 열기
-			if (clients.openWindow) {
-				const url = memoId ? `/?memo=${memoId}` : '/';
-				return clients.openWindow(url);
-			}
+			return clients.openWindow(appUrl);
 		})
 	);
 });

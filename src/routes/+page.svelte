@@ -84,6 +84,29 @@
 	onMount(() => {
 		// memosStore, filterStore, foldersStore 초기화는 +layout.svelte에서 수행됨
 
+		// 알림 클릭으로 진입 시 ?memo= 파라미터 처리
+		if (typeof window !== 'undefined') {
+			const params = new URLSearchParams(window.location.search);
+			const memoId = params.get('memo');
+			if (memoId) {
+				// URL에서 ?memo= 파라미터 제거 (뒤로가기 시 재진입 방지)
+				const cleanUrl = window.location.pathname;
+				window.history.replaceState({}, '', cleanUrl);
+
+				// memosStore가 초기화될 때까지 대기 후 메모 열기
+				const tryOpenMemo = () => {
+					const memo = memosStore.getById(memoId);
+					if (memo) {
+						viewingMemo = memo;
+						showDetailModal = true;
+					} else if (!memosStore.initialized) {
+						setTimeout(tryOpenMemo, 200);
+					}
+				};
+				tryOpenMemo();
+			}
+		}
+
 		if (typeof window !== 'undefined' && !localStorage.getItem(ONBOARDING_KEY)) {
 			showOnboarding = true;
 		} else if (!onboardingStore.hasSeenSwipeGuide) {
