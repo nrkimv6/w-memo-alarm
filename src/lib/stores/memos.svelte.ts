@@ -222,6 +222,14 @@ function createMemosStore() {
 	let syncingFromServer = $state(false);
 	let subscription: RealtimeChannel | null = null;
 
+	// 인증 상태 변경 시 강제 재초기화 (로그인 후 메모 로드용)
+	async function reinit() {
+		subscription?.unsubscribe();
+		subscription = null;
+		initialized = false;
+		await init();
+	}
+
 	async function init() {
 		if (initialized) return;
 
@@ -1178,6 +1186,7 @@ function createMemosStore() {
 			return memos.filter((m) => m.syncStatus === 'local-only').length;
 		},
 		init,
+		reinit,
 		add,
 		update,
 		remove,

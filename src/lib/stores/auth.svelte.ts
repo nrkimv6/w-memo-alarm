@@ -73,9 +73,9 @@ function createAuthStore() {
 			state.user = newSession?.user || null;
 
 			if (event === 'SIGNED_IN' && newSession?.user) {
-				// Store 초기화 (Realtime 구독 시작)
-				await memosStore.init();
-				await foldersStore.init();
+				// Store 재초기화 (비인증 모드로 먼저 초기화된 경우에도 서버 데이터 로드)
+				await memosStore.reinit();
+				await foldersStore.reinit();
 				// 실제 로그인(이전에 로그아웃 상태)인 경우에만 토스트 표시
 				// 외부 링크 복귀, 페이지 새로고침 등에서는 토스트 미표시
 				if (!wasLoggedIn && !state.hasShownLoginToast) {

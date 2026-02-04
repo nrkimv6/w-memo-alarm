@@ -67,6 +67,14 @@ function createFoldersStore() {
 	let initialized = $state(false);
 	let subscription: RealtimeChannel | null = null;
 
+	// 인증 상태 변경 시 강제 재초기화 (로그인 후 폴더 로드용)
+	async function reinit() {
+		subscription?.unsubscribe();
+		subscription = null;
+		initialized = false;
+		await init();
+	}
+
 	async function init() {
 		if (initialized) return;
 
@@ -309,6 +317,7 @@ function createFoldersStore() {
 		},
 		DEFAULT_COLORS,
 		init,
+		reinit,
 		add,
 		update,
 		remove,
