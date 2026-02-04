@@ -2,6 +2,7 @@
 	import { memosStore } from '$lib/stores/memos.svelte';
 	import { settingsStore } from '$lib/stores/settings.svelte';
 	import TodoForm from '$lib/components/todo/TodoForm.svelte';
+	import PostponeSheet from '$lib/components/todo/PostponeSheet.svelte';
 	import {
 		filterTodos,
 		sortTodos,
@@ -17,8 +18,10 @@
 	import { Plus, Search, Settings, CheckSquare, Calendar, Clock, AlertCircle } from 'lucide-svelte';
 
 	let showTodoForm = $state(false);
+	let showPostponeSheet = $state(false);
 	let selectedFilter = $state<'today' | 'week' | 'all' | 'completed'>('today');
 	let editingTodo = $state<Memo | undefined>(undefined);
+	let postponingTodo = $state<Memo | undefined>(undefined);
 
 	const memos = $derived(memosStore.memos);
 	const todos = $derived(memos.filter(m => m.memoType === 'todo'));
@@ -36,6 +39,16 @@
 	function closeTodoForm() {
 		showTodoForm = false;
 		editingTodo = undefined;
+	}
+
+	function openPostponeSheet(todo: Memo) {
+		postponingTodo = todo;
+		showPostponeSheet = true;
+	}
+
+	function closePostponeSheet() {
+		showPostponeSheet = false;
+		postponingTodo = undefined;
 	}
 
 	async function toggleComplete(todo: Memo) {
@@ -296,4 +309,9 @@
 <!-- Todo Form Modal -->
 {#if showTodoForm}
 	<TodoForm memo={editingTodo} onClose={closeTodoForm} />
+{/if}
+
+<!-- Postpone Sheet -->
+{#if showPostponeSheet && postponingTodo}
+	<PostponeSheet todo={postponingTodo} onClose={closePostponeSheet} />
 {/if}
