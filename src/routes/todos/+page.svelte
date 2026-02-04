@@ -64,18 +64,20 @@
 	let selectedTodoIds = $state<Set<string>>(new Set());
 
 	const memos = $derived(memosStore.memos);
-	const todos = $derived(memos.filter(m => m.memoType === 'todo'));
+	const todos = $derived(memos.filter((m) => m.memoType === "todo"));
 	const filteredTodos = $derived.by(() => {
 		let result = filterTodos(todos, selectedFilter);
 
 		// Phase 4 Section 4: Tag filtering
-		if (selectedTag) {
-			result = result.filter((t) => t.tags.includes(selectedTag));
+		const tag = selectedTag;
+		if (tag) {
+			result = result.filter((t) => t.tags.includes(tag));
 		}
 
 		// Phase 4 Section 4: Folder filtering
-		if (selectedFolder) {
-			result = result.filter((t) => t.folderId === selectedFolder);
+		const folder = selectedFolder;
+		if (folder) {
+			result = result.filter((t) => t.folderId === folder);
 		}
 
 		return result;
@@ -324,7 +326,7 @@
 	<header
 		class="sticky top-14 z-20 bg-background/95 backdrop-blur-sm border-b border-border/50"
 	>
-		<div class="max-w-4xl mx-auto px-4 py-4 space-y-3">
+		<div class="max-w-6xl mx-auto px-4 py-4 space-y-3">
 			<div class="flex items-center justify-between gap-4">
 				<h1
 					class="text-xl font-bold tracking-tight text-foreground shrink-0 flex items-center gap-2"
@@ -401,7 +403,10 @@
 					<!-- Tag Filters -->
 					{#if availableTags.length > 0}
 						<div class="flex items-center gap-2 flex-wrap">
-							<span class="text-sm font-medium text-gray-700 dark:text-gray-300">태그:</span>
+							<span
+								class="text-sm font-medium text-gray-700 dark:text-gray-300"
+								>태그:</span
+							>
 							<button
 								onclick={() => (selectedTag = undefined)}
 								class="px-2.5 py-1 rounded-full text-xs font-medium transition-colors {selectedTag ===
@@ -432,30 +437,40 @@
 					<!-- Folder Filters -->
 					{#if availableFolders.size > 0}
 						<div class="flex items-center gap-2 flex-wrap">
-							<span class="text-sm font-medium text-gray-700 dark:text-gray-300">폴더:</span>
+							<span
+								class="text-sm font-medium text-gray-700 dark:text-gray-300"
+								>폴더:</span
+							>
 							<button
-								onclick={() => selectedFolder = undefined}
-								class="px-3 py-1 rounded-full text-sm transition-colors {
-									selectedFolder === undefined
-										? 'bg-purple-600 text-white'
-										: 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-								}"
+								onclick={() => (selectedFolder = undefined)}
+								class="px-3 py-1 rounded-full text-sm transition-colors {selectedFolder ===
+								undefined
+									? 'bg-purple-600 text-white'
+									: 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'}"
 							>
 								전체
 							</button>
 							{#each Array.from(availableFolders) as folderId}
-								{@const folder = foldersStore.getFolderById(folderId)}
+								{@const folder = foldersStore.getById(folderId)}
 								{#if folder}
 									<button
-										onclick={() => selectedFolder = selectedFolder === folderId ? undefined : folderId}
-										class="px-3 py-1 rounded-full text-sm transition-colors {
-											selectedFolder === folderId
-												? 'bg-purple-600 text-white'
-												: 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-										}"
-										style="background-color: {selectedFolder === folderId ? folder.color : ''}"
+										onclick={() =>
+											(selectedFolder =
+												selectedFolder === folderId
+													? undefined
+													: folderId)}
+										class="px-3 py-1 rounded-full text-sm transition-colors {selectedFolder ===
+										folderId
+											? 'bg-purple-600 text-white'
+											: 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'}"
+										style="background-color: {selectedFolder ===
+										folderId
+											? folder.color
+											: ''}"
 									>
-										{folder.icon ? folder.icon + ' ' : ''}{folder.name}
+										{folder.icon
+											? folder.icon + " "
+											: ""}{folder.name}
 									</button>
 								{/if}
 							{/each}
@@ -511,7 +526,7 @@
 	<!-- Statistics Section (Phase 4 Section 6) -->
 	{#if showStats}
 		<div
-			class="max-w-4xl mx-auto px-4 py-4 bg-background border-b border-border/50 animate-fade-in"
+			class="max-w-6xl mx-auto px-4 py-4 bg-background border-b border-border/50 animate-fade-in"
 		>
 			<TodoStats {todos} />
 		</div>
@@ -523,7 +538,7 @@
 			class="sticky top-40 z-10 bg-secondary/10 border-y border-secondary/20 animate-fade-in"
 		>
 			<div
-				class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between"
+				class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between"
 			>
 				<div class="flex items-center gap-2">
 					<span class="text-sm font-medium text-secondary">
@@ -563,7 +578,7 @@
 	{/if}
 
 	<!-- Content -->
-	<main class="max-w-4xl mx-auto px-4 py-6">
+	<main class="max-w-6xl mx-auto px-4 py-6">
 		{#if sortedTodos.length === 0}
 			<div
 				class="flex flex-col items-center justify-center py-12 text-center"

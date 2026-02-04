@@ -9,6 +9,7 @@
     - `TodoStats.svelte`: 통계 카드의 색상 및 스타일 개선
     - `PostponeSheet.svelte`, `SkipDialog.svelte`: 미루기/건너뛰기 모달 디자인 통일
   - **기술적 개선**:
+    - `todos/+page.svelte` 레이아웃 컨테이너 너비를 `max-w-4xl` → `max-w-6xl`로 확장하여 Home/Memo 탭과 통일
     - Tailwind CSS Semantic Token 활용 (`bg-card`, `text-foreground`, `ring-primary` 등)
     - 다크 모드 자동 지원 강화
   - **검증**: `npm run build` 성공
