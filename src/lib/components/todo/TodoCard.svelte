@@ -1,9 +1,10 @@
 <script lang="ts">
-	import { Calendar, Clock, AlertCircle, MoreVertical, Calendar as CalendarIcon, Repeat } from 'lucide-svelte';
+	import { Calendar, Clock, AlertCircle, MoreVertical, Calendar as CalendarIcon, Repeat, ChevronDown, ChevronUp } from 'lucide-svelte';
 	import type { Memo } from '$lib/types/memo';
 	import { memosStore } from '$lib/stores/memos.svelte';
 	import { isOverdue, formatDueDate, getOverdueDays, getPriorityColor, getPriorityLabel } from '$lib/utils/todo';
 	import { getRecurrenceDescription } from '$lib/utils/recurrence';
+	import RecurringHistory from './RecurringHistory.svelte';
 
 	interface Props {
 		todo: Memo;
@@ -15,10 +16,15 @@
 
 	let { todo, compact = false, onEdit, onPostpone, onSkip }: Props = $props();
 
+	let showHistory = $state(false);
+
 	const overdue = $derived(isOverdue(todo));
 	const completed = $derived(todo.todoStatus === 'completed');
 	const isRecurring = $derived(!!todo.recurrence);
 	const recurrenceDesc = $derived(todo.recurrence ? getRecurrenceDescription(todo.recurrence) : '');
+	const hasHistory = $derived(
+		isRecurring && todo.todoInstances && todo.todoInstances.some(i => i.status !== 'pending')
+	);
 
 	async function handleToggleComplete() {
 		// 반복 할일인 경우 (Phase 3)
@@ -171,6 +177,27 @@
 						✏️ 편집
 					</button>
 				</div>
+			{/if}
+
+			<!-- 반복 이력 토글 버튼 -->
+			{#if hasHistory && !compact}
+				<button
+					onclick={() => showHistory = !showHistory}
+					class="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 mt-2"
+				>
+					{#if showHistory}
+						<ChevronUp class="w-4 h-4" />
+						이력 숨기기
+					{:else}
+						<ChevronDown class="w-4 h-4" />
+						이력 보기
+					{/if}
+				</button>
+			{/if}
+
+			<!-- 반복 이력 -->
+			{#if showHistory && hasHistory && !compact}
+				<RecurringHistory {todo} />
 			{/if}
 		</div>
 	</div>

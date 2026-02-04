@@ -4,6 +4,7 @@
 	import type { Memo, TodoPriority, TodoTiming, Recurrence } from '$lib/types/memo';
 	import { Calendar, Clock, Bell, AlertCircle, Repeat, Folder } from 'lucide-svelte';
 	import { getRecurrenceDescription } from '$lib/utils/recurrence';
+	import FutureSchedules from './FutureSchedules.svelte';
 
 	interface Props {
 		memo?: Memo;
@@ -486,6 +487,11 @@
 							{/if}
 						</div>
 					</div>
+
+					<!-- 미래 일정 미리보기 (편집 시에만 표시) -->
+					{#if isEdit && memo?.recurrence && memo?.todoInstances}
+						<FutureSchedules todo={memo} count={5} />
+					{/if}
 				{/if}
 			</div>
 
