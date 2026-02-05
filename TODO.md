@@ -4,6 +4,8 @@
 
 ---
 
+## In Progress
+
 ## Pending
 
 ### 🔴 메모/할일 버그 수정 (P0) — [계획서](docs/plan/2026-02-05_fix-memo-todo-bugs.md)
