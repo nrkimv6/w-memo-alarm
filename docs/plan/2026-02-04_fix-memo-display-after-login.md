@@ -5,12 +5,21 @@
 - `Ctrl+Shift+R` (강제 새로고침) 해야 메모가 정상 표시됨
 
 ## 진행 상태
-- [ ] 원인 분석 완료
-- [ ] `auth/callback/+page.svelte` - `finishLogin()` 수정
-- [ ] `memos.svelte.ts` - `init()` 재진입 가능하도록 수정
-- [ ] `+layout.svelte` - 인증 상태 변경 시 스토어 재초기화 로직 추가
-- [ ] 빌드 검증
-- [ ] 커밋 & 푸시
+
+### Phase 1: 기본 수정 (완료)
+- [x] 원인 분석 완료
+- [x] `memos.svelte.ts` - `reinit()` 메서드 추가
+- [x] `folders.svelte.ts` - `reinit()` 메서드 추가
+- [x] `auth.svelte.ts` - `SIGNED_IN` 핸들러에서 `reinit()` 호출
+- [x] `auth/callback/+page.svelte` - `finishLogin()`에서 스토어 초기화 보장
+- [x] `+layout.svelte` - auth callback 경로 시 조기 초기화 방지
+- [x] 커밋 (8fd01bd)
+
+### Phase 2: 추가 수정 (완료)
+- [x] `memos.svelte.ts` - `reinit()` 동시 실행 방지 가드 추가
+- [x] `folders.svelte.ts` - `reinit()` 동시 실행 방지 가드 추가
+- [x] `auth/callback/+page.svelte` - `initFCM()` 호출 추가
+- [x] 개발자 가이드 문서 작성 (`docs/guides/auth-store-race-condition-guide.md`)
 
 ---
 
@@ -110,138 +119,90 @@ async function init() {
 
 ---
 
-## 수정 계획
+## 수정 내용
 
-### 수정 전략: Callback 중심의 순차 실행
+### Phase 1: 기본 수정
 
-`/auth/callback`에서 인증이 완료된 후에만 스토어를 초기화하고, Layout의 조기 초기화를 방지한다.
+#### 수정 1: `reinit()` 메서드 추가
 
-### 수정 1: `auth/callback/+page.svelte` - finishLogin() 강화
+`memos.svelte.ts`, `folders.svelte.ts`에 강제 재초기화 메서드 추가:
+```typescript
+async function reinit() {
+    subscription?.unsubscribe();
+    subscription = null;
+    initialized = false;
+    await init();
+}
+```
 
-**파일**: `src/routes/auth/callback/+page.svelte` (158-171줄)
+#### 수정 2: `SIGNED_IN` 핸들러에서 `reinit()` 호출
 
-**문제**: `finishLogin()`이 `authStore.initialize()`만 호출하고 메모 스토어 초기화를 보장하지 않음
+`auth.svelte.ts`에서 `init()` 대신 `reinit()` 사용:
+```typescript
+if (event === 'SIGNED_IN' && newSession?.user) {
+    await memosStore.reinit();
+    await foldersStore.reinit();
+}
+```
 
-**수정 내용**:
+#### 수정 3: `+layout.svelte` - 경로 기반 분기
+
+```typescript
+const isAuthCallback = window.location.pathname.startsWith('/auth/callback');
+if (!isAuthCallback) {
+    await memosStore.init();
+    // ...
+}
+```
+
+#### 수정 4: `auth/callback/+page.svelte` - 명시적 초기화
+
 ```typescript
 async function finishLogin(returnTo: string) {
-    status = "로그인 완료...";
-
-    if (browser) {
-        sessionStorage.setItem("login_success", "true");
-    }
-
-    // Auth store 초기화 - 세션이 이미 설정된 상태이므로 인증됨
     await authStore.initialize();
-
-    // 스토어 초기화를 명시적으로 보장
-    // (onAuthStateChange에서 이미 호출되었을 수 있지만, 안전하게 재호출)
-    await memosStore.init();
-    await foldersStore.init();
-
+    await memosStore.reinit();
+    await foldersStore.reinit();
+    filterStore.init();
+    notificationStore.registerRemindersToServiceWorker();
     goto(returnTo, { replaceState: true });
 }
 ```
 
-이 수정만으로는 불충분. `memosStore.init()`이 이미 비인증 모드로 초기화된 경우 가드에 의해 스킵됨.
+### Phase 2: 추가 수정
 
-### 수정 2: `memos.svelte.ts` - 재초기화 지원
+#### 수정 5: `reinit()` 동시 실행 방지 가드
 
-**파일**: `src/lib/stores/memos.svelte.ts` (225-296줄)
-
-**문제**: `init()`이 `initialized = true`이면 무조건 스킵하므로 인증 상태 변경 후 재초기화 불가
-
-**수정안 A (권장): `reinit()` 메서드 추가**
+`onAuthStateChange`와 `finishLogin()`에서 동시에 `reinit()` 호출 시 경쟁 상태 방지:
 
 ```typescript
-// 인증 상태 변경 시 강제 재초기화
+let isReinitializing = false;
+
 async function reinit() {
-    // 기존 구독 정리
-    subscription?.unsubscribe();
-    subscription = null;
-
-    // 초기화 플래그 리셋 (데이터는 유지하여 UI 깜빡임 방지)
-    initialized = false;
-
-    // 재초기화
-    await init();
+    if (isReinitializing) return;  // 동시 호출 방지
+    isReinitializing = true;
+    try {
+        subscription?.unsubscribe();
+        subscription = null;
+        initialized = false;
+        await init();
+    } finally {
+        isReinitializing = false;
+    }
 }
 ```
 
-export 목록에 `reinit` 추가.
+#### 수정 6: FCM 초기화 추가
 
-### 수정 3: `auth.svelte.ts` - SIGNED_IN 핸들러에서 `reinit()` 호출
-
-**파일**: `src/lib/stores/auth.svelte.ts` (70-84줄)
-
-**문제**: `SIGNED_IN` 이벤트에서 `memosStore.init()`을 호출하지만 이미 초기화된 경우 스킵됨
-
-**수정 내용**:
+`auth/callback/+page.svelte`에서 FCM 초기화 누락 수정:
 ```typescript
-supabase.auth.onAuthStateChange(async (event, newSession) => {
-    const wasLoggedIn = !!state.user;
-    state.session = newSession;
-    state.user = newSession?.user || null;
+import { initFCM } from "$lib/fcm";
 
-    if (event === 'SIGNED_IN' && newSession?.user) {
-        // reinit으로 변경: 비인증 모드로 먼저 초기화된 경우에도 재초기화
-        await memosStore.reinit();
-        await foldersStore.reinit();
-
-        if (!wasLoggedIn && !state.hasShownLoginToast) {
-            state.hasShownLoginToast = true;
-            toastStore.success('로그인되었습니다');
-        }
-    } else if (event === 'SIGNED_OUT') {
-        // ... (기존 코드 유지)
-    }
-});
-```
-
-### 수정 4: `folders.svelte.ts` - `reinit()` 메서드 추가
-
-**파일**: `src/lib/stores/folders.svelte.ts`
-
-`memosStore`와 동일한 패턴으로 `reinit()` 메서드 추가:
-```typescript
-async function reinit() {
-    subscription?.unsubscribe();
-    subscription = null;
-    initialized = false;
-    await init();
+async function finishLogin(returnTo: string) {
+    // ... 기존 코드 ...
+    notificationStore.registerRemindersToServiceWorker();
+    initFCM();  // ← 추가
+    goto(returnTo, { replaceState: true });
 }
-```
-
-export 목록에 `reinit` 추가.
-
-### 수정 5 (선택사항): `+layout.svelte` - 로그인 콜백 경로 시 조기 초기화 방지
-
-**파일**: `src/routes/+layout.svelte` (89-112줄)
-
-Layout의 `onMount`에서 `/auth/callback` 경로일 때는 스토어 초기화를 지연:
-```typescript
-onMount(async () => {
-    themeStore.init();
-    settingsStore.init();
-    notificationStore.init();
-    notificationHistoryStore.init();
-
-    await authStore.initialize();
-
-    // auth callback 페이지에서는 스토어 초기화를 callback에 위임
-    // (callback에서 setSession → authStore.initialize → reinit 순서 보장)
-    const isAuthCallback = window.location.pathname.startsWith('/auth/callback');
-    if (!isAuthCallback) {
-        await memosStore.init();
-        filterStore.init();
-        foldersStore.init();
-
-        notificationStore.registerRemindersToServiceWorker();
-        initFCM();
-    }
-
-    setupShareIntentListener(handleShareIntent);
-});
 ```
 
 ---
@@ -250,17 +211,12 @@ onMount(async () => {
 
 | 파일 | 변경 내용 |
 |------|----------|
-| `src/lib/stores/memos.svelte.ts` | `reinit()` 메서드 추가, export |
-| `src/lib/stores/folders.svelte.ts` | `reinit()` 메서드 추가, export |
+| `src/lib/stores/memos.svelte.ts` | `reinit()` 메서드 + 동시 실행 방지 가드 |
+| `src/lib/stores/folders.svelte.ts` | `reinit()` 메서드 + 동시 실행 방지 가드 |
 | `src/lib/stores/auth.svelte.ts` | `SIGNED_IN` 핸들러에서 `reinit()` 호출 |
-| `src/routes/auth/callback/+page.svelte` | `finishLogin()`에서 스토어 초기화 보장 |
-| `src/routes/+layout.svelte` | (선택) auth callback 경로 시 조기 초기화 방지 |
-
-## 영향 범위
-
-- 로그인 흐름 (Google, Kakao 모두 동일 경로 사용)
-- 네이티브 앱 로그인 (동일 callback 사용하므로 동일 수정 적용)
-- `reinit()`은 기존 `cleanup()` + `init()` 조합이므로 기존 동작 영향 없음
+| `src/routes/auth/callback/+page.svelte` | `finishLogin()` 강화 + `initFCM()` 추가 |
+| `src/routes/+layout.svelte` | auth callback 경로 시 조기 초기화 방지 |
+| `docs/guides/auth-store-race-condition-guide.md` | **신규** - 개발자 가이드 |
 
 ## 검증 방법
 
@@ -268,13 +224,17 @@ onMount(async () => {
    - Google/Kakao 로그인 → 대시보드에 서버 메모 즉시 표시되는지 확인
    - `Ctrl+Shift+R` 없이도 정상 동작하는지 확인
 
-2. **기존 기능 회귀 테스트**
+2. **FCM 초기화 확인**
+   - 로그인 후 콘솔에서 `[FCM]` 로그 확인
+   - 메모에 알림 설정 후 푸시 수신 확인
+
+3. **기존 기능 회귀 테스트**
    - 이미 로그인된 상태에서 페이지 새로고침 → 메모 정상 표시
    - 로그아웃 → 메모 클리어 확인
    - 로그아웃 → 재로그인 → 메모 정상 표시
 
-3. **엣지 케이스**
+4. **엣지 케이스**
    - 느린 네트워크에서 로그인 후 메모 표시
    - 여러 탭에서 동시 로그인 시 동작
 
-4. `npm run build` 빌드 성공 확인
+5. `npm run build` 빌드 성공 확인

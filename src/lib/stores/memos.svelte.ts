@@ -221,13 +221,20 @@ function createMemosStore() {
 	let initialized = $state(false);
 	let syncingFromServer = $state(false);
 	let subscription: RealtimeChannel | null = null;
+	let isReinitializing = false; // reinit() 동시 실행 방지
 
 	// 인증 상태 변경 시 강제 재초기화 (로그인 후 메모 로드용)
 	async function reinit() {
-		subscription?.unsubscribe();
-		subscription = null;
-		initialized = false;
-		await init();
+		if (isReinitializing) return; // 동시 호출 방지
+		isReinitializing = true;
+		try {
+			subscription?.unsubscribe();
+			subscription = null;
+			initialized = false;
+			await init();
+		} finally {
+			isReinitializing = false;
+		}
 	}
 
 	async function init() {
