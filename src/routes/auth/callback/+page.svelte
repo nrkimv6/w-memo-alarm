@@ -52,13 +52,10 @@
 		return null;
 	}
 
-	// Query parameter에서 토큰 파싱 (웹에서 Worker가 리다이렉트)
+	// Query parameter에서 메타데이터 파싱 (토큰은 hash에서)
 	function parseQueryParams(): {
 		provider?: string;
-		access_token?: string;
-		id_token?: string;
-		supabase_access_token?: string;
-		supabase_refresh_token?: string;
+		appId?: string;
 		returnTo?: string;
 		error?: string;
 	} | null {
@@ -67,40 +64,51 @@
 		const searchParams = new URLSearchParams(window.location.search);
 
 		const provider = searchParams.get("provider");
-		const id_token = searchParams.get("id_token");
-		const access_token = searchParams.get("access_token");
-		const supabase_access_token = searchParams.get("supabase_access_token");
-		const supabase_refresh_token = searchParams.get("supabase_refresh_token");
+		const appId = searchParams.get("appId");
 		const returnTo = searchParams.get("returnTo");
 		const errorParam = searchParams.get("error");
+
+		console.log("[Auth Callback] Query metadata:", {
+			provider,
+			appId,
+			returnTo,
+			error: errorParam,
+		});
 
 		if (errorParam) {
 			return { error: errorParam };
 		}
 
-		// 카카오는 supabase_access_token이 있고, 구글은 id_token이 있음
-		if (provider && (access_token || supabase_access_token)) {
+		if (provider) {
 			return {
 				provider,
-				id_token: id_token || undefined,
-				access_token: access_token || undefined,
-				supabase_access_token: supabase_access_token || undefined,
-				supabase_refresh_token: supabase_refresh_token || undefined,
+				appId: appId || undefined,
 				returnTo: returnTo || undefined,
 			};
 		}
+
 		return null;
 	}
 
 	onMount(async () => {
 		try {
-			// 1. Query params에서 확인 (웹 - Worker에서 리다이렉트)
-			const queryTokens = parseQueryParams();
+			// 1. Query params에서 메타데이터 확인
+			const queryMetadata = parseQueryParams();
 
-			// 2. Hash fragment에서 확인 (네이티브 - Intent URL에서 전달)
+			// 2. Hash fragment에서 토큰 확인
 			const hashTokens = parseHashFragment();
 
-			const tokens = queryTokens || hashTokens;
+			// 통합: 메타데이터 우선, 토큰은 hash에서
+			const tokens = { ...hashTokens, ...queryMetadata };
+
+			console.log(
+				"[Auth Callback] Query metadata:",
+				queryMetadata ? "present" : "none"
+			);
+			console.log(
+				"[Auth Callback] Hash tokens:",
+				hashTokens ? "present" : "none"
+			);
 
 			// 에러 처리
 			if (tokens?.error) {
@@ -109,12 +117,18 @@
 
 			if (!tokens?.provider) {
 				// 기존 세션 확인 (Supabase가 자동 처리한 경우)
-				const { data: { session }, error: authError } = await supabase.auth.getSession();
+				const {
+					data: { session },
+					error: authError,
+				} = await supabase.auth.getSession();
 
 				if (authError) throw authError;
 
 				if (session) {
-					await finishLogin(tokens?.returnTo || "/");
+					console.log("[Auth Callback] Using existing session");
+					const safeReturnTo =
+						tokens?.returnTo === "/login" ? "/" : tokens?.returnTo || "/";
+					await finishLogin(safeReturnTo);
 					return;
 				}
 
@@ -125,6 +139,7 @@
 
 			// 카카오는 Supabase 토큰 직접 사용 (setSession)
 			if (tokens.supabase_access_token && tokens.supabase_refresh_token) {
+				console.log("[Auth Callback] Using Supabase tokens (Kakao)");
 				const { error: sessionError } = await supabase.auth.setSession({
 					access_token: tokens.supabase_access_token,
 					refresh_token: tokens.supabase_refresh_token,
@@ -135,14 +150,19 @@
 				}
 			} else if (tokens.id_token && tokens.access_token) {
 				// 구글은 기존 방식 (signInWithIdToken)
-				const { data, error: signInError } = await supabase.auth.signInWithIdToken({
-					provider: "google",
-					token: tokens.id_token,
-					access_token: tokens.access_token,
-				});
+				console.log("[Auth Callback] Using signInWithIdToken (Google)");
+				const { data, error: signInError } =
+					await supabase.auth.signInWithIdToken({
+						provider: "google",
+						token: tokens.id_token,
+						access_token: tokens.access_token,
+					});
 
 				if (signInError) {
-					console.error("[Auth Callback] signInWithIdToken error:", signInError);
+					console.error(
+						"[Auth Callback] signInWithIdToken error:",
+						signInError
+					);
 					throw signInError;
 				}
 
@@ -153,10 +173,16 @@
 				throw new Error("유효한 토큰을 찾을 수 없습니다.");
 			}
 
-			await finishLogin(tokens.returnTo || "/");
+			console.log("[Auth Callback] Session created successfully");
+			const safeReturnTo =
+				tokens.returnTo === "/login" ? "/" : tokens.returnTo || "/";
+			await finishLogin(safeReturnTo);
 		} catch (err) {
 			console.error("[Auth Callback] Error:", err);
-			error = err instanceof Error ? err.message : "로그인 처리 중 오류가 발생했습니다.";
+			error =
+				err instanceof Error
+					? err.message
+					: "로그인 처리 중 오류가 발생했습니다.";
 		}
 	});
 
