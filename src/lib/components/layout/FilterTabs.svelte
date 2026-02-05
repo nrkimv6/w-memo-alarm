@@ -16,7 +16,7 @@
 	const showInactive = $derived(filterStore.showInactive);
 </script>
 
-<div class="flex items-center justify-between gap-2 overflow-x-auto pb-1">
+<div class="flex items-center justify-between gap-2 overflow-x-auto overflow-y-hidden pb-1 -mx-4 px-4">
 	<!-- Filter tabs -->
 	<nav class="flex gap-1 p-1 bg-muted rounded-lg flex-shrink-0">
 		{#each tabs as tab}

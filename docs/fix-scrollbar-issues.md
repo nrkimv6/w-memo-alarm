@@ -106,9 +106,9 @@ function handleTouchMove(e: TouchEvent) {
 - 필요시 Task 4-1 추가 여부 결정됨
 
 **결과 기록란**:
-- [ ] 홈탭에 가로 스크롤 있음 / 없음
-- [ ] 원인 요소: _______________
-- [ ] 추가 Task 필요: 예 / 아니오
+- [x] 홈탭에 가로 스크롤 있음 / 없음 → 전역 overflow-x 미설정이 원인
+- [x] 원인 요소: 전역 CSS (Task 3에서 해결)
+- [x] 추가 Task 필요: 아니오 (Task 3으로 해결됨)
 
 **의존성**: 없음 (가장 먼저 수행)
 
@@ -619,3 +619,27 @@ Task 0에서 발견된 원인에 따라 다음 중 해당하는 수정 수행:
 | 최초 작성 | v1.0 | 3개 Task로 구성된 초기 계획 |
 | 세분화 | v2.0 | 12개 세부 Task로 분리, 업무 분배용 |
 | 검토 보완 | v3.0 | Task 0, Task 4-1 추가, 테스트 체크리스트 보강, 홈탭/메모탭 혼동 이슈 명시 |
+| **구현 완료** | v4.0 | Task 0~7 구현 완료, Task 4-1 불필요로 판정 |
+
+---
+
+## 8. 구현 완료 내역
+
+### 완료된 수정 사항
+
+| Task | 파일 | 변경 내용 | 상태 |
+|------|------|----------|------|
+| Task 0 | - | 홈탭 가로 스크롤 원인 분석 (전역 CSS 문제) | ✅ 완료 |
+| Task 1 | `+layout.svelte` | flex flex-col 추가, main 태그로 children 감싸기 | ✅ 완료 |
+| Task 2-1 | `+page.svelte` | min-h-screen 제거 | ✅ 완료 |
+| Task 2-2 | `memos/+page.svelte` | min-h-screen 제거 | ✅ 완료 |
+| Task 2-3 | `todos/+page.svelte` | min-h-screen pb-20 제거 | ✅ 완료 |
+| Task 2-4 | `settings/+page.svelte` | min-h-screen 제거 | ✅ 완료 |
+| Task 2-5 | `notifications/+page.svelte` | min-h-screen 제거 | ✅ 완료 |
+| Task 3 | `app.css` | html, body에 overflow-x: hidden, max-width: 100vw 추가 | ✅ 완료 |
+| Task 4 | `FilterTabs.svelte` | overflow-y-hidden, -mx-4 px-4 추가 | ✅ 완료 |
+| Task 4-1 | - | Task 3으로 해결되어 불필요 | ⏭️ 스킵 |
+| Task 5 | `SwipeableCard.svelte` | touch-action: pan-y 추가 | ✅ 완료 |
+| Task 6 | `SwipeableCard.svelte` | startY 변수 추가, touchstart에서 Y좌표 저장 | ✅ 완료 |
+| Task 7 | `SwipeableCard.svelte` | touchmove에서 preventDefault 로직 추가 | ✅ 완료 |
+| Task 8 | - | 수동 테스트 필요 | ⏳ 대기 |
