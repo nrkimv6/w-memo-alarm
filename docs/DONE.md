@@ -2,6 +2,12 @@
 
 > 이 파일은 memo-alarm 프로젝트에서 완료된 작업을 기록합니다.
 
+## 2026-02-05: 하단 네비게이션 꿈틀거림 수정
+
+- `app.css` - html에 `scrollbar-gutter: stable` 추가 (스크롤바 유무에 따른 뷰포트 폭 변동 방지)
+- `BottomNav.svelte` - `view-transition-name: bottom-nav` 제거 (cross-fade 시 위치 차이 노출 방지)
+- `app.css` - View Transition에서 scale 애니메이션 제거, fade만 유지 (0.35s→0.25s)
+
 ## 2026-02-04: 로그인 후 메모 미표시 버그 수정 (Phase 1 + 2)
 
 **상태**: Phase 1 + 2 완료 (100%)
