@@ -7,8 +7,8 @@
 ## 요약
 
 총 12개 개선 항목 (High: 1, Medium: 5, Low: 6)
-- 완료: 7개 (프로덕션 console 정리, 시간 포맷 유틸리티, SW 메시지 상수화, 빈 catch 블록 검토, 타입 변환 함수 통합, Button 접근성, URL sanitize)
-- 미처리: 5개
+- 완료: 8개 (프로덕션 console 정리, 시간 포맷 유틸리티, SW 메시지 상수화, 빈 catch 블록 검토, 타입 변환 함수 통합, Button 접근성, URL sanitize, 알림 체크 최적화)
+- 미처리: 4개
 
 ---
 
@@ -64,10 +64,10 @@
   - `href={memo.url}` 2곳을 `href={safeHref(memo.url)}`로 교체
   - 관련 파일: `src/lib/components/memo/MemoCard.svelte`
 
-- [ ] **알림 체크 최적화** ⭐⭐
-  - 현재 문제: checkAndTriggerReminders()마다 전체 memos 필터링
-  - 해결 방법: 활성 리마인더만 별도 derived 스토어로 관리
-  - 관련 파일: `src/lib/stores/notifications.svelte.ts` (194-197줄)
+- [x] **알림 체크 최적화** ⭐⭐ ✅ 2026-02-05 완료
+  - `activeReminderMemos` $derived 스토어 추가: 활성 리마인더 메모만 사전 필터링
+  - `checkAndTriggerReminders`, `getTodayReminders`, `registerRemindersToServiceWorker` 3곳 적용
+  - 관련 파일: `src/lib/stores/notifications.svelte.ts`
 
 - [ ] **MemoForm tag 제안 debounce** ⭐
   - 현재 문제: 매 렌더마다 태그 제안 계산
