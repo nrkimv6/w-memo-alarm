@@ -7,8 +7,8 @@
 ## 요약
 
 총 12개 개선 항목 (High: 1, Medium: 5, Low: 6)
-- 완료: 10개
-- 미처리: 2개 (백그라운드 알림 아키텍처, 컴포넌트 aria-label)
+- 완료: 11개
+- 미처리: 1개 (백그라운드 알림 아키텍처)
 
 ---
 
@@ -53,10 +53,10 @@
 
 ### 🟢 Low Priority
 
-- [ ] **컴포넌트 aria-label 추가** ⭐
-  - 현재 문제: 30개 컴포넌트에 aria-label 8개만 있음
-  - 해결 방법: 아이콘 버튼, 삭제/수정 버튼 등에 레이블 추가
-  - 관련 파일: `src/lib/components/memo/*.svelte`
+- [x] **컴포넌트 aria-label 추가** ⭐ ✅ 2026-02-05 완료
+  - svelte-check a11y 경고 5곳에 aria-label 추가 (53→48 warnings)
+  - FolderSelector 색상 버튼, settings 토글 스위치 4곳
+  - 관련 파일: `FolderSelector.svelte`, `settings/+page.svelte`
 
 - [x] **MemoCard URL sanitize** ⭐⭐ ✅ 2026-02-05 완료
   - `safeHref()` 함수 추가: http/https만 허용, 그 외 `#` 반환

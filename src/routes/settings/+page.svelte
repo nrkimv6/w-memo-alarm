@@ -792,6 +792,7 @@
 					type="button"
 					role="switch"
 					aria-checked={todoRemindEnabled}
+					aria-label="매일 상기 알림"
 					onclick={handleTodoRemindToggle}
 					class={cn('toggle-switch', todoRemindEnabled && 'active')}
 				>
@@ -825,6 +826,7 @@
 					type="button"
 					role="switch"
 					aria-checked={todoAutoAlertEnabled}
+					aria-label="자동 알람"
 					onclick={handleTodoAutoAlertToggle}
 					class={cn('toggle-switch', todoAutoAlertEnabled && 'active')}
 				>
@@ -861,6 +863,7 @@
 					type="button"
 					role="switch"
 					aria-checked={todoShowOverdue}
+					aria-label="기한 초과 강조 표시"
 					onclick={handleTodoShowOverdueToggle}
 					class={cn('toggle-switch', todoShowOverdue && 'active')}
 				>
@@ -878,6 +881,7 @@
 					type="button"
 					role="switch"
 					aria-checked={todoShowProgress}
+					aria-label="진행률 표시"
 					onclick={handleTodoShowProgressToggle}
 					class={cn('toggle-switch', todoShowProgress && 'active')}
 				>
