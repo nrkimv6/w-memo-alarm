@@ -10,6 +10,11 @@
 - **증상**: 필터 버튼 영역(전체/핀/즐겨찾기)이 화면 너비를 초과
 - **영향 범위**: 메모탭의 FilterTabs 컴포넌트
 
+**⚠️ 확인 필요**: 사용자가 "홈탭"이라고 언급했으나, "전체/핀/즐겨찾기" 버튼은 **메모탭**에만 존재함. 홈탭에서 가로 스크롤이 발생한다면 다음 요소들이 원인일 수 있음:
+- 섹션 헤더 ("고정된 메모" + "더보기" 링크)
+- QuickMemoInput 컴포넌트
+- UnifiedHeader 컴포넌트
+
 ### 1.3 스와이프 시 화면 움직임
 - **증상**: 메모 카드 스와이프(핀/삭제) 시 화면 전체가 미세하게 움직임
 - **영향 범위**: SwipeableCard 컴포넌트 사용하는 모든 곳
@@ -75,6 +80,37 @@ function handleTouchMove(e: TouchEvent) {
 ---
 
 ## 3. 수정 계획 (세부 업무 단위)
+
+---
+
+### Task 0: 홈탭 가로 스크롤 원인 사전 확인 (필수 선행)
+
+**담당자**: _______________
+**우선순위**: 최상 (다른 Task 전에 수행)
+**난이도**: ★☆☆☆☆
+
+**작업 내용**:
+1. 개발자 도구를 열고 홈탭으로 이동한다
+2. 화면 너비를 320px로 줄인다 (모바일 최소 너비)
+3. 가로 스크롤바가 나타나는지 확인한다
+4. 나타난다면, 개발자 도구에서 요소 검사를 통해 어떤 요소가 화면을 넘어가는지 찾는다
+5. 발견된 요소의 파일 경로와 라인 번호를 기록한다
+
+**확인할 요소들**:
+- 섹션 헤더 영역 (`src/routes/+page.svelte` 324번 라인 근처)
+- QuickMemoInput (`src/lib/components/memo/QuickMemoInput.svelte`)
+- UnifiedHeader (`src/lib/components/layout/UnifiedHeader.svelte`)
+
+**완료 기준**:
+- 홈탭 가로 스크롤의 정확한 원인 요소가 파악됨
+- 필요시 Task 4-1 추가 여부 결정됨
+
+**결과 기록란**:
+- [ ] 홈탭에 가로 스크롤 있음 / 없음
+- [ ] 원인 요소: _______________
+- [ ] 추가 Task 필요: 예 / 아니오
+
+**의존성**: 없음 (가장 먼저 수행)
 
 ---
 
@@ -275,6 +311,39 @@ function handleTouchMove(e: TouchEvent) {
 
 ---
 
+### Task 4-1: 홈탭 가로 스크롤 원인 수정 (조건부)
+
+**담당자**: _______________
+**우선순위**: 중간
+**난이도**: ★★☆☆☆
+
+**⚠️ 이 Task는 Task 0 결과에 따라 수행 여부가 결정됨**
+
+**파일**: Task 0에서 파악된 파일
+
+**작업 내용**:
+Task 0에서 발견된 원인에 따라 다음 중 해당하는 수정 수행:
+
+**케이스 A: 섹션 헤더가 원인인 경우** (`src/routes/+page.svelte`)
+1. 324번 라인 근처의 섹션 헤더 div를 찾는다
+2. `flex items-center justify-between`에 `min-w-0`을 추가한다
+3. 텍스트 요소에 `truncate` 클래스를 추가하여 오버플로우 방지
+
+**케이스 B: QuickMemoInput이 원인인 경우** (`src/lib/components/memo/QuickMemoInput.svelte`)
+1. 64번 라인 근처의 컨테이너 div를 찾는다
+2. `max-w-full` 또는 `overflow-hidden` 클래스 추가
+
+**케이스 C: UnifiedHeader가 원인인 경우** (`src/lib/components/layout/UnifiedHeader.svelte`)
+1. 헤더 내부 요소들의 `flex-shrink-0` 사용 검토
+2. 필요시 `min-w-0` 또는 `overflow-hidden` 추가
+
+**완료 기준**:
+- 홈탭에서 320px 화면 너비에서도 가로 스크롤바가 없음
+
+**의존성**: Task 0 완료 후 (원인 파악 필요)
+
+---
+
 ### Task 5: SwipeableCard에 touch-action CSS 추가
 
 **담당자**: _______________
@@ -379,21 +448,45 @@ function handleTouchMove(e: TouchEvent) {
 - [ ] 할일탭: 할일이 적을 때 불필요한 스크롤바 없음
 - [ ] 설정탭: 스크롤바 적절하게 동작
 - [ ] 알림탭: 알림이 적을 때 불필요한 스크롤바 없음
+- [ ] 콘텐츠가 많을 때 스크롤이 정상 동작함
+- [ ] 하단 BottomNav에 콘텐츠가 가려지지 않음
 
 ### 4.2 가로 스크롤 테스트
-- [ ] 모든 화면 너비에서 가로 스크롤바 없음
-- [ ] FilterTabs가 좁은 화면에서 올바르게 스크롤됨
-- [ ] 헤더 요소가 오버플로우되지 않음
+- [ ] **홈탭** 320px 너비에서 가로 스크롤바 없음
+- [ ] **메모탭** 320px 너비에서 가로 스크롤바 없음
+- [ ] **할일탭** 320px 너비에서 가로 스크롤바 없음
+- [ ] FilterTabs가 좁은 화면에서 올바르게 가로 스크롤됨
+- [ ] UnifiedHeader가 오버플로우되지 않음
+- [ ] 섹션 헤더("고정된 메모" 등)가 오버플로우되지 않음
 
 ### 4.3 스와이프 테스트
-- [ ] 메모 카드 스와이프 시 화면 전체가 움직이지 않음
-- [ ] 세로 스크롤은 정상 동작
-- [ ] 핀/삭제 기능 정상 동작
+- [ ] **홈탭** 메모 카드 스와이프 시 화면 전체가 움직이지 않음
+- [ ] **메모탭** 메모 카드 스와이프 시 화면 전체가 움직이지 않음
+- [ ] 세로 스크롤 중 가로 스와이프 시도 시 충돌 없음
+- [ ] 가로 스와이프 중 세로 스크롤 시도 시 충돌 없음
+- [ ] 왼쪽 스와이프 → 삭제 기능 정상 동작
+- [ ] 오른쪽 스와이프 → 핀 기능 정상 동작
+- [ ] 스와이프 후 원위치 복귀 정상 동작
 
 ### 4.4 반응형 테스트
-- [ ] 모바일 (320px ~ 480px)
-- [ ] 태블릿 (768px ~ 1024px)
-- [ ] 데스크톱 (1200px+)
+- [ ] iPhone SE (320px) - 최소 너비
+- [ ] iPhone 12/13/14 (390px) - 일반 모바일
+- [ ] iPhone Plus/Max (428px) - 대형 모바일
+- [ ] iPad Mini (768px) - 태블릿 시작점
+- [ ] iPad (1024px) - 태블릿
+- [ ] Desktop (1200px+) - 데스크톱
+
+### 4.5 플랫폼별 테스트
+- [ ] Chrome 개발자 도구 (시뮬레이션)
+- [ ] 실제 iOS 기기 (Safari)
+- [ ] 실제 Android 기기 (Chrome)
+- [ ] PWA 모드에서 테스트
+
+### 4.6 엣지 케이스 테스트
+- [ ] 메모가 0개일 때 빈 화면 레이아웃
+- [ ] 메모가 100개 이상일 때 스크롤 성능
+- [ ] 긴 제목의 메모가 있을 때 레이아웃
+- [ ] 화면 회전 (세로 ↔ 가로) 시 레이아웃
 
 ---
 
@@ -402,6 +495,9 @@ function handleTouchMove(e: TouchEvent) {
 ### 5.1 Task 의존성 다이어그램
 
 ```
+[Task 0: 홈탭 가로 스크롤 확인] ───▶ [Task 4-1: 홈탭 수정] (조건부)
+        (최우선)                              │
+                                             ▼
 [Task 1: 루트 레이아웃] ─────┬──▶ [Task 2-1: 홈탭]
         (선행 필수)         ├──▶ [Task 2-2: 메모탭]
                            ├──▶ [Task 2-3: 할일탭]
@@ -425,9 +521,10 @@ function handleTouchMove(e: TouchEvent) {
 
 | 그룹 | Task | 동시 작업 가능 |
 |------|------|---------------|
+| 0 | Task 0 | 단독 (최우선, 사전 확인) |
 | A | Task 1 | 단독 (선행 필수) |
 | B | Task 2-1 ~ 2-5 | 5개 동시 가능 |
-| C | Task 3, 4, 5, 6 | 4개 동시 가능 |
+| C | Task 3, 4, 4-1(조건부), 5, 6 | 최대 5개 동시 가능 |
 | D | Task 7 | Task 6 완료 후 |
 | E | Task 8 | 최종 (모두 완료 후) |
 
@@ -435,14 +532,15 @@ function handleTouchMove(e: TouchEvent) {
 
 | 난이도 | Task | 적합 대상 |
 |--------|------|----------|
-| ★☆☆☆☆ | 2-1, 2-2, 2-4, 2-5, 3, 5 | 입문자 |
-| ★★☆☆☆ | 1, 2-3, 4, 6, 8 | 초급 개발자 |
+| ★☆☆☆☆ | 0, 2-1, 2-2, 2-4, 2-5, 3, 5 | 입문자 |
+| ★★☆☆☆ | 1, 2-3, 4, 4-1, 6, 8 | 초급 개발자 |
 | ★★★☆☆ | 7 | 중급 개발자 |
 
 ### 5.4 예상 소요 시간
 
 | Task | 예상 시간 | 담당자 |
 |------|----------|--------|
+| Task 0: 홈탭 가로 스크롤 원인 확인 | 10분 | |
 | Task 1: 루트 레이아웃 Flexbox 변경 | 20분 | |
 | Task 2-1: 홈탭 min-h-screen 제거 | 5분 | |
 | Task 2-2: 메모탭 min-h-screen 제거 | 5분 | |
@@ -451,13 +549,18 @@ function handleTouchMove(e: TouchEvent) {
 | Task 2-5: 알림탭 min-h-screen 제거 | 5분 | |
 | Task 3: 전역 가로 오버플로우 숨김 | 10분 | |
 | Task 4: FilterTabs 스크롤 영역 개선 | 15분 | |
+| Task 4-1: 홈탭 가로 스크롤 수정 (조건부) | 15분 | |
 | Task 5: SwipeableCard touch-action 추가 | 5분 | |
 | Task 6: SwipeableCard startY 추가 | 10분 | |
 | Task 7: SwipeableCard preventDefault 추가 | 20분 | |
 | Task 8: 통합 테스트 | 30분 | |
-| **총계** | **약 2시간 15분** | |
+| **총계** | **약 2시간 40분** | |
 
 ### 5.5 권장 작업 순서
+
+**0단계 (1명, 10분) - 필수 사전 작업**
+- Task 0: 홈탭 가로 스크롤 원인 확인
+- 결과에 따라 Task 4-1 수행 여부 결정
 
 **1단계 (1명, 20분)**
 - Task 1: 루트 레이아웃 수정 (필수 선행)
@@ -465,9 +568,10 @@ function handleTouchMove(e: TouchEvent) {
 **2단계 (최대 5명 병렬, 각 5분)**
 - Task 2-1 ~ 2-5: 각 페이지 min-h-screen 제거
 
-**3단계 (최대 4명 병렬, 10~20분)**
+**3단계 (최대 5명 병렬, 10~20분)**
 - Task 3: 전역 CSS 수정
 - Task 4: FilterTabs 수정
+- Task 4-1: 홈탭 가로 스크롤 수정 (Task 0 결과에 따라)
 - Task 5: touch-action 추가
 - Task 6: startY 추가
 
@@ -481,17 +585,37 @@ function handleTouchMove(e: TouchEvent) {
 
 ## 6. 관련 파일 목록
 
-### 수정 필요 파일
-1. `src/routes/+layout.svelte`
-2. `src/routes/+page.svelte`
-3. `src/routes/memos/+page.svelte`
-4. `src/routes/todos/+page.svelte`
-5. `src/routes/settings/+page.svelte`
-6. `src/routes/notifications/+page.svelte`
-7. `src/lib/components/memo/SwipeableCard.svelte`
-8. `src/lib/components/layout/FilterTabs.svelte`
-9. `src/app.css`
+### 수정 필요 파일 (확정)
+| # | 파일 | 관련 Task |
+|---|------|----------|
+| 1 | `src/routes/+layout.svelte` | Task 1 |
+| 2 | `src/routes/+page.svelte` | Task 2-1, Task 4-1 |
+| 3 | `src/routes/memos/+page.svelte` | Task 2-2 |
+| 4 | `src/routes/todos/+page.svelte` | Task 2-3 |
+| 5 | `src/routes/settings/+page.svelte` | Task 2-4 |
+| 6 | `src/routes/notifications/+page.svelte` | Task 2-5 |
+| 7 | `src/lib/components/memo/SwipeableCard.svelte` | Task 5, 6, 7 |
+| 8 | `src/lib/components/layout/FilterTabs.svelte` | Task 4 |
+| 9 | `src/app.css` | Task 3 |
 
-### 확인 필요 파일
-1. `src/lib/components/BottomNav.svelte`
-2. `src/lib/components/layout/UnifiedHeader.svelte`
+### 수정 가능 파일 (Task 0 결과에 따라)
+| # | 파일 | 관련 Task | 조건 |
+|---|------|----------|------|
+| 10 | `src/lib/components/memo/QuickMemoInput.svelte` | Task 4-1 | 케이스 B |
+| 11 | `src/lib/components/layout/UnifiedHeader.svelte` | Task 4-1 | 케이스 C |
+
+### 확인 필요 파일 (변경 없음, 참조용)
+| # | 파일 | 용도 |
+|---|------|------|
+| 1 | `src/lib/components/BottomNav.svelte` | 레이아웃 구조 확인 |
+| 2 | `src/lib/components/memo/MemoCard.svelte` | SwipeableCard 사용 위치 확인 |
+
+---
+
+## 7. 검토 이력
+
+| 일자 | 버전 | 변경 내용 |
+|------|------|----------|
+| 최초 작성 | v1.0 | 3개 Task로 구성된 초기 계획 |
+| 세분화 | v2.0 | 12개 세부 Task로 분리, 업무 분배용 |
+| 검토 보완 | v3.0 | Task 0, Task 4-1 추가, 테스트 체크리스트 보강, 홈탭/메모탭 혼동 이슈 명시 |
