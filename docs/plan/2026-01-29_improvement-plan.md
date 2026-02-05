@@ -7,8 +7,8 @@
 ## 요약
 
 총 12개 개선 항목 (High: 1, Medium: 5, Low: 6)
-- 완료: 4개 (프로덕션 console 정리, 시간 포맷 유틸리티, SW 메시지 상수화, 빈 catch 블록 검토)
-- 미처리: 8개
+- 완료: 5개 (프로덕션 console 정리, 시간 포맷 유틸리티, SW 메시지 상수화, 빈 catch 블록 검토, 타입 변환 함수 통합)
+- 미처리: 7개
 
 ---
 
@@ -36,10 +36,10 @@
   - 25건 디버그 console.log 제거 (10개 파일)
   - console.error/warn만 유지
 
-- [ ] **타입 변환 함수 통합** ⭐⭐
-  - 현재 문제: supabaseToMemo, memoToSupabase 코드가 반복적
-  - 해결 방법: 매핑 설정 객체 기반 변환 함수로 리팩토링
-  - 관련 파일: `src/lib/stores/memos.svelte.ts` (73-111줄)
+- [x] **타입 변환 함수 통합** ⭐⭐ ✅ 2026-02-05 완료
+  - MEMO_FIELD_MAPPINGS 매핑 설정 객체 기반으로 supabaseToMemo/memoToSupabase 리팩토링
+  - 29개 필드 매핑을 선언적 배열로 통합, toMemo/toDb 변환 함수 지원
+  - 관련 파일: `src/lib/stores/memos.svelte.ts`
 
 - [x] **시간 포맷 유틸리티 추출** ⭐⭐ ✅ 2026-02-03 완료
   - `src/lib/utils/timeUtils.ts` 생성

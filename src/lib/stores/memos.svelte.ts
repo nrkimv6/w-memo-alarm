@@ -145,73 +145,67 @@ function saveCacheToStorage(memos: Memo[]): void {
 	}
 }
 
-// Supabase 타입 변환 함수
+// Supabase ↔ Memo 필드 매핑 설정
+interface FieldMapping {
+	memo: string;
+	db: string;
+	toMemo?: (val: any) => any;
+	toDb?: (val: any) => any;
+}
+
+const MEMO_FIELD_MAPPINGS: FieldMapping[] = [
+	{ memo: 'id', db: 'id' },
+	{ memo: 'title', db: 'title' },
+	{ memo: 'content', db: 'content', toMemo: (v) => v || '' },
+	{ memo: 'tags', db: 'tags', toMemo: (v) => v || [] },
+	{ memo: 'isPinned', db: 'is_pinned', toMemo: (v) => v || false },
+	{ memo: 'isFavorite', db: 'is_favorite', toMemo: (v) => v || false },
+	{ memo: 'isActive', db: 'is_active', toMemo: (v) => v !== false },
+	{ memo: 'createdAt', db: 'created_at', toMemo: (v) => new Date(v).getTime() },
+	{ memo: 'updatedAt', db: 'updated_at', toMemo: (v) => new Date(v).getTime() },
+	{ memo: 'url', db: 'url' },
+	{ memo: 'emoji', db: 'emoji' },
+	{ memo: 'openCount', db: 'open_count', toMemo: (v) => v || 0 },
+	{ memo: 'reminder', db: 'reminder' },
+	{ memo: 'reminders', db: 'reminders' },
+	{ memo: 'folderId', db: 'folder_id' },
+	{ memo: 'checklist', db: 'checklist' },
+	{ memo: 'memoType', db: 'memo_type' },
+	{ memo: 'dueDate', db: 'due_date' },
+	{ memo: 'priority', db: 'priority' },
+	{ memo: 'todoStatus', db: 'todo_status' },
+	{ memo: 'todoPriority', db: 'todo_priority' },
+	{ memo: 'dueTime', db: 'due_time' },
+	{ memo: 'todoTiming', db: 'todo_timing' },
+	{
+		memo: 'completedAt', db: 'completed_at',
+		toMemo: (v) => v ? new Date(v).getTime() : undefined,
+		toDb: (v) => v ? new Date(v).toISOString() : null
+	},
+	{ memo: 'recurrence', db: 'recurrence' },
+	{ memo: 'todoInstances', db: 'todo_instances' },
+	{ memo: 'postponeInfo', db: 'postpone_info' },
+	{ memo: 'todoGroupId', db: 'todo_group_id' },
+	{ memo: 'version', db: 'version', toMemo: (v) => v || 1 },
+];
+
+// 매핑 기반 타입 변환 함수
 function supabaseToMemo(row: any): Memo {
-	const memo: Memo = {
-		id: row.id,
-		title: row.title,
-		content: row.content || '',
-		tags: row.tags || [],
-		isPinned: row.is_pinned || false,
-		isFavorite: row.is_favorite || false,
-		isActive: row.is_active !== false,
-		createdAt: new Date(row.created_at).getTime(),
-		updatedAt: new Date(row.updated_at).getTime(),
-		url: row.url,
-		emoji: row.emoji,
-		openCount: row.open_count || 0,
-		reminder: row.reminder,
-		reminders: row.reminders,
-		folderId: row.folder_id,
-		checklist: row.checklist,
-		memoType: row.memo_type,
-		dueDate: row.due_date,
-		priority: row.priority,
-		// Todo 필드
-		todoStatus: row.todo_status,
-		todoPriority: row.todo_priority,
-		dueTime: row.due_time,
-		todoTiming: row.todo_timing,
-		completedAt: row.completed_at ? new Date(row.completed_at).getTime() : undefined,
-		recurrence: row.recurrence,
-		todoInstances: row.todo_instances,
-		postponeInfo: row.postpone_info,
-		todoGroupId: row.todo_group_id,
-		version: row.version || 1
-	};
-	// 자동 마이그레이션: reminder → reminders
-	return migrateToMultipleReminders(memo);
+	const memo = {} as Record<string, any>;
+	for (const { memo: key, db, toMemo } of MEMO_FIELD_MAPPINGS) {
+		memo[key] = toMemo ? toMemo(row[db]) : row[db];
+	}
+	return migrateToMultipleReminders(memo as Memo);
 }
 
 function memoToSupabase(memo: Partial<Memo>): any {
 	const result: any = {};
-	if (memo.id !== undefined) result.id = memo.id;
-	if (memo.title !== undefined) result.title = memo.title;
-	if (memo.content !== undefined) result.content = memo.content;
-	if (memo.tags !== undefined) result.tags = memo.tags;
-	if (memo.isPinned !== undefined) result.is_pinned = memo.isPinned;
-	if (memo.isFavorite !== undefined) result.is_favorite = memo.isFavorite;
-	if (memo.isActive !== undefined) result.is_active = memo.isActive;
-	if (memo.url !== undefined) result.url = memo.url;
-	if (memo.emoji !== undefined) result.emoji = memo.emoji;
-	if (memo.openCount !== undefined) result.open_count = memo.openCount;
-	if (memo.reminder !== undefined) result.reminder = memo.reminder;
-	if (memo.reminders !== undefined) result.reminders = memo.reminders;
-	if (memo.folderId !== undefined) result.folder_id = memo.folderId;
-	if (memo.checklist !== undefined) result.checklist = memo.checklist;
-	if (memo.memoType !== undefined) result.memo_type = memo.memoType;
-	if (memo.dueDate !== undefined) result.due_date = memo.dueDate;
-	if (memo.priority !== undefined) result.priority = memo.priority;
-	// Todo 필드
-	if (memo.todoStatus !== undefined) result.todo_status = memo.todoStatus;
-	if (memo.todoPriority !== undefined) result.todo_priority = memo.todoPriority;
-	if (memo.dueTime !== undefined) result.due_time = memo.dueTime;
-	if (memo.todoTiming !== undefined) result.todo_timing = memo.todoTiming;
-	if (memo.completedAt !== undefined) result.completed_at = memo.completedAt ? new Date(memo.completedAt).toISOString() : null;
-	if (memo.recurrence !== undefined) result.recurrence = memo.recurrence;
-	if (memo.todoInstances !== undefined) result.todo_instances = memo.todoInstances;
-	if (memo.postponeInfo !== undefined) result.postpone_info = memo.postponeInfo;
-	if (memo.todoGroupId !== undefined) result.todo_group_id = memo.todoGroupId;
+	for (const { memo: key, db, toDb } of MEMO_FIELD_MAPPINGS) {
+		const val = (memo as any)[key];
+		if (val !== undefined) {
+			result[db] = toDb ? toDb(val) : val;
+		}
+	}
 	return result;
 }
 
