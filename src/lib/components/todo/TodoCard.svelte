@@ -66,7 +66,7 @@
 
 		// 단발성 할일 또는 반복 종료된 할일
 		const newStatus = completed ? "pending" : "completed";
-		await memosStore.updateMemo(todo.id, {
+		await memosStore.update(todo.id, {
 			todoStatus: newStatus,
 			completedAt: newStatus === "completed" ? Date.now() : undefined,
 		});

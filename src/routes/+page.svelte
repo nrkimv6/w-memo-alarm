@@ -366,7 +366,7 @@
 									<input
 										type="checkbox"
 										checked={todo.todoStatus === 'completed'}
-										onchange={() => memosStore.updateMemo(todo.id, {
+										onchange={() => memosStore.update(todo.id, {
 											todoStatus: todo.todoStatus === 'completed' ? 'pending' : 'completed',
 											completedAt: todo.todoStatus === 'completed' ? undefined : Date.now()
 										})}

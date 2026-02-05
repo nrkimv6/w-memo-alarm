@@ -102,7 +102,7 @@
 			],
 		};
 
-		await memosStore.updateMemo(todo.id, {
+		await memosStore.update(todo.id, {
 			dueDate: selectedDate,
 			postponeInfo: newPostponeInfo,
 			// 자동 알람은 새 기한 기준으로 재계산됨

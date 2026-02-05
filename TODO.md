@@ -6,8 +6,7 @@
 
 ## Pending
 
-- [ ] **2026-02-04 결함 감사 수정** - [docs/plan/2026-02-04_memo-alarm-defect-fix.md](docs/plan/2026-02-04_memo-alarm-defect-fix.md) (1/3 완료, 33%)
-  - MEDIUM 1건(완료), LOW 2건
+(없음)
 
 ---
 

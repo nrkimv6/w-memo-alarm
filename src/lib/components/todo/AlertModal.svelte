@@ -13,7 +13,7 @@
 	let { todo, onClose, onPostpone }: Props = $props();
 
 	async function handleComplete() {
-		await memosStore.updateMemo(todo.id, {
+		await memosStore.update(todo.id, {
 			todoStatus: 'completed',
 			completedAt: Date.now()
 		});

@@ -159,7 +159,7 @@
 		// 단발성 할일 또는 반복 종료된 할일
 		const newStatus =
 			todo.todoStatus === "completed" ? "pending" : "completed";
-		await memosStore.updateMemo(todo.id, {
+		await memosStore.update(todo.id, {
 			todoStatus: newStatus,
 			completedAt: newStatus === "completed" ? Date.now() : undefined,
 		});
@@ -173,7 +173,7 @@
 
 	async function handleUndo() {
 		if (!lastCompletedTodo) return;
-		await memosStore.updateMemo(lastCompletedTodo.id, {
+		await memosStore.update(lastCompletedTodo.id, {
 			todoStatus: "pending",
 			completedAt: undefined,
 		});
@@ -247,7 +247,7 @@
 		for (const todoId of selectedTodoIds) {
 			const todo = memosStore.getById(todoId);
 			if (todo && todo.todoStatus !== "completed") {
-				await memosStore.updateMemo(todoId, {
+				await memosStore.update(todoId, {
 					todoStatus: "completed",
 					completedAt: Date.now(),
 				});
@@ -283,7 +283,7 @@
 		const tomorrowStr = tomorrow.toISOString().split("T")[0];
 
 		for (const todo of overdueTodos) {
-			await memosStore.updateMemo(todo.id, {
+			await memosStore.update(todo.id, {
 				dueDate: tomorrowStr,
 			});
 		}
@@ -299,7 +299,7 @@
 		if (!confirmed) return;
 
 		for (const todo of overdueTodos) {
-			await memosStore.updateMemo(todo.id, {
+			await memosStore.update(todo.id, {
 				todoStatus: "completed",
 				completedAt: Date.now(),
 			});

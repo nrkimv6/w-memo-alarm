@@ -305,9 +305,9 @@
 		};
 
 		if (isEdit && memo) {
-			await memosStore.updateMemo(memo.id, memoData);
+			await memosStore.update(memo.id, memoData);
 		} else {
-			await memosStore.addMemo({
+			await memosStore.add({
 				...memoData,
 				id: "",
 				createdAt: Date.now(),

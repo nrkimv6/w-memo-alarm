@@ -1,5 +1,19 @@
 # DONE (최근 20개)
 
+- [x] 2026-02-05: **Todo 등록 버그 수정 + Store 메서드 일관성 개선** ✅
+  - **버그 수정**: TodoForm.svelte에서 존재하지 않는 `memosStore.addMemo()` 호출로 todo 등록 실패
+    - 에러: `TypeError: tt.addMemo is not a function`
+    - 원인: Store에 `addMemo` 메서드가 없음 (올바른 이름은 `add`)
+  - **코드 일관성 개선**: 레거시 `updateMemo` → 표준 `update`로 일괄 변경
+  - **수정 파일** (10개):
+    - `src/lib/components/todo/TodoForm.svelte`: addMemo→add, updateMemo→update
+    - `src/routes/todos/+page.svelte`: updateMemo→update (5곳)
+    - `src/routes/+page.svelte`: updateMemo→update (1곳)
+    - `src/lib/components/todo/AlertModal.svelte`: updateMemo→update
+    - `src/lib/components/todo/PostponeSheet.svelte`: updateMemo→update
+    - `src/lib/components/todo/TodoCard.svelte`: updateMemo→update
+  - **효과**: Todo 등록이 정상 작동, Store API 일관성 확보
+
 - [x] 2026-02-04: **할일 알림 UI 전면 재설계 + 미구현 기능 수정** ✅
   - **문제 발견**: 전수 점검에서 다수 미완성/오류 발견
     1. "알람 (Phase 2에서 활성화)" 텍스트 방치 (Phase 2는 이미 완료)
