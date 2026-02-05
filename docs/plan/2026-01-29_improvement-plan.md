@@ -7,8 +7,8 @@
 ## 요약
 
 총 12개 개선 항목 (High: 1, Medium: 5, Low: 6)
-- 완료: 6개 (프로덕션 console 정리, 시간 포맷 유틸리티, SW 메시지 상수화, 빈 catch 블록 검토, 타입 변환 함수 통합, Button 접근성)
-- 미처리: 6개
+- 완료: 7개 (프로덕션 console 정리, 시간 포맷 유틸리티, SW 메시지 상수화, 빈 catch 블록 검토, 타입 변환 함수 통합, Button 접근성, URL sanitize)
+- 미처리: 5개
 
 ---
 
@@ -58,10 +58,11 @@
   - 해결 방법: 아이콘 버튼, 삭제/수정 버튼 등에 레이블 추가
   - 관련 파일: `src/lib/components/memo/*.svelte`
 
-- [ ] **MemoCard URL sanitize** ⭐⭐
-  - 현재 문제: getDomain() 함수에서 URL 검증 미흡
-  - 해결 방법: URL 생성자로 유효성 검사 추가
-  - 관련 파일: `src/lib/components/memo/MemoCard.svelte` (47-52줄)
+- [x] **MemoCard URL sanitize** ⭐⭐ ✅ 2026-02-05 완료
+  - `safeHref()` 함수 추가: http/https만 허용, 그 외 `#` 반환
+  - `getDomain()`에도 프로토콜 검증 추가
+  - `href={memo.url}` 2곳을 `href={safeHref(memo.url)}`로 교체
+  - 관련 파일: `src/lib/components/memo/MemoCard.svelte`
 
 - [ ] **알림 체크 최적화** ⭐⭐
   - 현재 문제: checkAndTriggerReminders()마다 전체 memos 필터링
