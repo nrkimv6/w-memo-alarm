@@ -36,6 +36,14 @@ function createNotificationStore() {
 	let lastNotifiedMap = $state<Record<string, string>>({});
 	let snoozedReminders = $state<SnoozedReminder[]>([]);
 
+	// 활성 리마인더가 있는 메모만 사전 필터링 (매번 전체 memos 순회 방지)
+	const activeReminderMemos = $derived(
+		memosStore.memos.filter(m => {
+			const reminders = getRemindersFromMemo(m);
+			return reminders.some(r => r.enabled);
+		})
+	);
+
 	function loadLastNotified() {
 		if (typeof window === 'undefined') return;
 		try {
@@ -212,11 +220,10 @@ function createNotificationStore() {
 			}
 		});
 
-		// Check regular reminders
-		const activeReminders = memosStore.memos.filter((m) => m.reminder?.enabled);
-		log.info(`📋 Active reminders: ${activeReminders.length}`);
+		// Check regular reminders (activeReminderMemos: 사전 필터링된 derived 스토어)
+		log.info(`📋 Active reminders: ${activeReminderMemos.length}`);
 
-		memosStore.memos.forEach((memo) => {
+		activeReminderMemos.forEach((memo) => {
 			if (!memo.reminder?.enabled) return;
 
 			const reminderTime = memo.reminder.time;
@@ -375,7 +382,7 @@ function createNotificationStore() {
 		const today = now.getDay();
 		const todayDate = getTodayDateISO(now);
 
-		return memosStore.memos.filter((memo) => {
+		return activeReminderMemos.filter((memo) => {
 			if (!memo.reminder?.enabled) return false;
 
 			// Check if it's a one-time reminder
@@ -441,7 +448,7 @@ function createNotificationStore() {
 			// NOTE: Svelte 5의 $state는 Proxy 객체를 사용하므로 postMessage 전송 전 plain object로 변환 필요
 			const activeReminders: unknown[] = [];
 
-			memosStore.memos.forEach((memo) => {
+			activeReminderMemos.forEach((memo) => {
 				const reminders = getRemindersFromMemo(memo);
 				reminders.filter(r => r.enabled).forEach(r => {
 					const reminder = {
