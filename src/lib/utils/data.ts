@@ -166,14 +166,15 @@ export async function importFullBackup(
 	}
 }
 
-export function clearAllData(): void {
-	// Clear memos
-	const memoIds = memosStore.memos.map((m) => m.id);
-	memoIds.forEach((id) => memosStore.remove(id));
+export async function clearAllData(): Promise<void> {
+	// Clear memos (벌크 삭제로 레이스 컨디션 방지)
+	await memosStore.removeAll();
 
-	// Clear folders
+	// Clear folders (순차 실행)
 	const folderIds = foldersStore.folders.map((f) => f.id);
-	folderIds.forEach((id) => foldersStore.remove(id));
+	for (const id of folderIds) {
+		await foldersStore.remove(id);
+	}
 
 	toastStore.success('모든 데이터가 삭제되었습니다');
 }

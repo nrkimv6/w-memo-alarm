@@ -174,7 +174,7 @@
 	}
 </script>
 
-<div class="min-h-screen">
+<div>
 	<!-- Filter section -->
 	<div class="sticky top-14 z-20 bg-background/95 backdrop-blur-sm border-b border-border/50">
 		<div class="max-w-6xl mx-auto px-4 py-4 space-y-4">

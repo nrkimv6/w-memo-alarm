@@ -11,6 +11,7 @@
 	let { onSwipeLeft, onSwipeRight, children }: Props = $props();
 
 	let startX = $state(0);
+	let startY = $state(0);
 	let currentX = $state(0);
 	let isDragging = $state(false);
 	let containerElement: HTMLDivElement;
@@ -20,12 +21,22 @@
 
 	function handleTouchStart(e: TouchEvent) {
 		startX = e.touches[0].clientX;
+		startY = e.touches[0].clientY;
 		isDragging = true;
 	}
 
 	function handleTouchMove(e: TouchEvent) {
 		if (!isDragging) return;
-		currentX = e.touches[0].clientX - startX;
+
+		const deltaX = e.touches[0].clientX - startX;
+		const deltaY = e.touches[0].clientY - startY;
+
+		// 가로 스와이프가 우세하면 페이지 스크롤 방지
+		if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10) {
+			e.preventDefault();
+		}
+
+		currentX = deltaX;
 
 		// 최대 드래그 거리 제한
 		if (Math.abs(currentX) > MAX_DRAG) {
@@ -60,6 +71,7 @@
 
 <div
 	class="relative pt-3"
+	style="touch-action: pan-y;"
 	bind:this={containerElement}
 	ontouchstart={handleTouchStart}
 	ontouchmove={handleTouchMove}

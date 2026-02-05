@@ -321,7 +321,7 @@
 	<title>할일 - Memo Alarm</title>
 </svelte:head>
 
-<div class="min-h-screen pb-20">
+<div>
 	<!-- Header -->
 	<header
 		class="sticky top-14 z-20 bg-background/95 backdrop-blur-sm border-b border-border/50"

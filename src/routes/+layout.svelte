@@ -112,9 +112,11 @@
 	});
 </script>
 
-<div class="min-h-screen bg-background" style="padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));">
+<div class="flex flex-col min-h-screen bg-background">
 	<UnifiedHeader />
-	{@render children()}
+	<main class="flex-1" style="padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));">
+		{@render children()}
+	</main>
 	<SyncStatusBanner />
 	<BottomNav />
 </div>
