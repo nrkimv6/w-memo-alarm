@@ -7,8 +7,8 @@
 ## 요약
 
 총 12개 개선 항목 (High: 1, Medium: 5, Low: 6)
-- 완료: 8개 (프로덕션 console 정리, 시간 포맷 유틸리티, SW 메시지 상수화, 빈 catch 블록 검토, 타입 변환 함수 통합, Button 접근성, URL sanitize, 알림 체크 최적화)
-- 미처리: 4개
+- 완료: 9개
+- 미처리: 3개 (백그라운드 알림, 컴포넌트 aria-label, reminder.time 검증)
 
 ---
 
@@ -69,10 +69,10 @@
   - `checkAndTriggerReminders`, `getTodayReminders`, `registerRemindersToServiceWorker` 3곳 적용
   - 관련 파일: `src/lib/stores/notifications.svelte.ts`
 
-- [ ] **MemoForm tag 제안 debounce** ⭐
-  - 현재 문제: 매 렌더마다 태그 제안 계산
-  - 해결 방법: 입력 300ms 후 계산
-  - 관련 파일: `src/lib/components/memo/MemoForm.svelte` (45-51줄)
+- [x] **MemoForm tag 제안 debounce** ⭐ ✅ 2026-02-05 완료
+  - 제목/내용 변경 시 $effect + setTimeout 300ms debounce 자동 태그 제안
+  - 기존 수동 "추천" 버튼도 유지
+  - 관련 파일: `src/lib/components/memo/MemoForm.svelte`
 
 - [x] **SW 메시지 타입 상수화** ⭐ ✅ 2026-02-03 완료
   - `src/lib/constants/swMessages.ts` 생성

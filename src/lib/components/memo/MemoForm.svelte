@@ -43,6 +43,7 @@
 
 	// Phase 15: AI 태그 추천
 	let suggestedTags = $state<string[]>([]);
+	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 	function updateTagSuggestions() {
 		if (title.trim() || content.trim()) {
@@ -52,6 +53,15 @@
 			suggestedTags = [];
 		}
 	}
+
+	// 제목/내용 변경 시 300ms debounce로 자동 태그 제안
+	$effect(() => {
+		title;
+		content;
+		if (debounceTimer) clearTimeout(debounceTimer);
+		debounceTimer = setTimeout(updateTagSuggestions, 300);
+		return () => { if (debounceTimer) clearTimeout(debounceTimer); };
+	});
 
 	function addSuggestedTag(tag: string) {
 		if (!tags.includes(tag)) {
