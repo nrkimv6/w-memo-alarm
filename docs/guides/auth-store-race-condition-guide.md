@@ -174,7 +174,7 @@ onMount(async () => {
     if (!isAuthCallback) {
         // 일반 페이지: Layout에서 초기화
         await dataStore.init();
-        await initFCM();
+        await registerFCMToken(userId);
     }
     // 인증 콜백: callback 페이지에서 초기화
 });
@@ -198,7 +198,7 @@ async function finishLogin(returnTo: string) {
 
     // 3. 부가 서비스 초기화 (누락 주의!)
     notificationStore.registerReminders();
-    await initFCM();  // 잊기 쉬움!
+    await registerFCMToken(userId);  // 잊기 쉬움!
 
     // 4. 네비게이션
     goto(returnTo, { replaceState: true });
@@ -249,7 +249,7 @@ supabase.auth.onAuthStateChange(async (event, session) => {
 │          │                  finishLogin()                           │
 │          │                  ├─ authStore.initialize()               │
 │          │                  ├─ dataStore.reinit()                   │
-│          │                  ├─ initFCM()                            │
+│          │                  ├─ registerFCMToken()                    │
 │          │                  └─ goto('/')                            │
 │          │                         │                                │
 │          │◀────────────────────────┘                                │
@@ -285,7 +285,7 @@ supabase.auth.onAuthStateChange(async (event, session) => {
 - [ ] 모든 데이터 스토어의 `reinit()` 호출됨
 - [ ] `filterStore.init()` 등 유틸 스토어 초기화됨
 - [ ] `notificationStore.registerReminders()` 호출됨
-- [ ] `initFCM()` 호출됨 (**누락 주의!**)
+- [ ] FCM 토큰 등록 (`registerFCMToken()`) 호출됨 (**누락 주의!**)
 - [ ] `goto()` 호출이 모든 초기화 완료 후 실행됨
 
 ### Auth 스토어 체크리스트

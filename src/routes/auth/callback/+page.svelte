@@ -7,7 +7,7 @@
 	import { foldersStore } from "$lib/stores/folders.svelte";
 	import { filterStore } from "$lib/stores/filter.svelte";
 	import { notificationStore } from "$lib/stores/notifications.svelte";
-	import { initFCM } from "$lib/fcm";
+	import { registerFCMToken, setupForegroundMessageListener } from "$lib/fcm";
 	import { browser } from "$app/environment";
 	import { Loader2 } from "lucide-svelte";
 
@@ -181,7 +181,15 @@
 		notificationStore.registerRemindersToServiceWorker();
 
 		// FCM 초기화 (웹 푸시 알림)
-		initFCM();
+		if (authStore.user?.id) {
+			registerFCMToken(authStore.user.id).then((result) => {
+				if (result) {
+					setupForegroundMessageListener();
+				}
+			}).catch((err) => {
+				console.error('[Auth Callback] FCM registration error:', err);
+			});
+		}
 
 		// SPA 네비게이션으로 이동
 		goto(returnTo, { replaceState: true });

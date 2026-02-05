@@ -195,12 +195,21 @@ async function reinit() {
 
 `auth/callback/+page.svelte`에서 FCM 초기화 누락 수정:
 ```typescript
-import { initFCM } from "$lib/fcm";
+import { registerFCMToken, setupForegroundMessageListener } from "$lib/fcm";
 
 async function finishLogin(returnTo: string) {
     // ... 기존 코드 ...
     notificationStore.registerRemindersToServiceWorker();
-    initFCM();  // ← 추가
+
+    // FCM 초기화 (웹 푸시 알림)
+    if (authStore.user?.id) {
+        registerFCMToken(authStore.user.id).then((result) => {
+            if (result) {
+                setupForegroundMessageListener();
+            }
+        });
+    }
+
     goto(returnTo, { replaceState: true });
 }
 ```
