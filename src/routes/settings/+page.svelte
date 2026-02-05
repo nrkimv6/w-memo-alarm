@@ -697,9 +697,10 @@
 			{#if !isNativePlatform}
 				<div class="flex items-start gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
 					<Info class="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
-					<p class="text-xs text-blue-700 dark:text-blue-300">
-						웹 브라우저에서는 로그인 후 FCM 푸시 알림으로 동작합니다.
-					</p>
+					<div class="text-xs text-blue-700 dark:text-blue-300 space-y-1">
+						<p>웹 브라우저에서는 로그인 후 FCM 푸시 알림으로 동작합니다.</p>
+						<p class="text-blue-600/80 dark:text-blue-400/80">브라우저가 백그라운드이거나 탭이 비활성 상태일 때 알림이 지연되거나 누락될 수 있습니다. 안정적인 알림을 위해 모바일 앱 사용을 권장합니다.</p>
+					</div>
 				</div>
 			{/if}
 

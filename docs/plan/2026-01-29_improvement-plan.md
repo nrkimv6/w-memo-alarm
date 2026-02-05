@@ -1,14 +1,13 @@
 # memo-alarm 개선 계획
 
 > 작성일: 2026-01-29
-> 최종 업데이트: 2026-02-03
+> 최종 업데이트: 2026-02-05
 > 난이도: ⭐ 쉬움 | ⭐⭐ 보통 | ⭐⭐⭐ 어려움
 
 ## 요약
 
 총 12개 개선 항목 (High: 1, Medium: 5, Low: 6)
-- 완료: 11개
-- 미처리: 1개 (백그라운드 알림 아키텍처)
+- 완료: 12개 ✅ 전체 완료
 
 ---
 
@@ -16,15 +15,18 @@
 
 ### 🔴 High Priority
 
-- [ ] **백그라운드 알림 아키텍처 검토** ⭐⭐⭐
+- [x] **백그라운드 알림 아키텍처 검토** ⭐⭐⭐ ✅ 2026-02-05 검토 완료
   - 현재 문제: setInterval 기반 알림이 앱 백그라운드/브라우저 유휴 시 동작 안함
-  - 해결 방법: (장기 과제)
-    1. 서버 사이드 FCM/Web Push 구현
-    2. 또는 현재 한계 사용자에게 안내
-  - 참고: MEMO_NOTIFICATION_FIX_PLAN.md 문서 참조
+  - 아키텍처 분석: 3계층 구조 (setInterval + Service Worker + FCM) 확인
+    - Client: setInterval 1분 주기 체크 (탭 비활성 시 throttle됨)
+    - SW: message 기반 알림 표시 (독립 스케줄링 없음)
+    - FCM: 토큰 등록 완료, 서버 Edge Function 미배포 상태
+  - 조치: 설정 페이지에 백그라운드 알림 한계 안내 메시지 추가
+  - 장기 과제: 서버 사이드 FCM Edge Function 배포로 완전한 백그라운드 알림 구현 필요
   - 관련 파일:
     - `src/lib/stores/notifications.svelte.ts`
     - `src/service-worker.ts`
+    - `src/routes/settings/+page.svelte`
 
 ### 🟡 Medium Priority
 
@@ -93,4 +95,4 @@
 ~3. 시간 포맷 유틸리티 추출~ ✅ 완료
 ~4. Button 컴포넌트 접근성 개선~ ✅ 완료
 ~5. 타입 변환 함수 통합~ ✅ 완료
-6. 백그라운드 알림은 장기 과제로 별도 계획
+~6. 백그라운드 알림 아키텍처 검토~ ✅ 검토 완료 (사용자 안내 추가, 서버 FCM은 장기 과제)
