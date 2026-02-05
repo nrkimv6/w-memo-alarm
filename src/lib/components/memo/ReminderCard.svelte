@@ -17,6 +17,7 @@
 	let expanded = $state(false);
 
 	const dayLabels = ['일', '월', '화', '수', '목', '금', '토'];
+	const TIME_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 	function getTodayDate(): string {
 		return new Date().toISOString().split('T')[0];
@@ -161,7 +162,10 @@
 					id="reminder-time-{reminder.id}"
 					type="time"
 					value={reminder.time}
-					onchange={(e: Event) => onUpdate({ time: (e.target as HTMLInputElement).value })}
+					onchange={(e: Event) => {
+					const value = (e.target as HTMLInputElement).value;
+					if (TIME_REGEX.test(value)) onUpdate({ time: value });
+				}}
 					{disabled}
 					class="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
 				/>

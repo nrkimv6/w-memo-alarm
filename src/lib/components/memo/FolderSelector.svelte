@@ -112,6 +112,7 @@
 							<button
 								type="button"
 								onclick={() => newFolderColor = color}
+								aria-label="폴더 색상 선택"
 								class={cn(
 									'w-5 h-5 rounded-full transition-transform',
 									newFolderColor === color && 'ring-2 ring-offset-2 ring-primary scale-110'

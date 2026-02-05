@@ -46,9 +46,22 @@
 
 	function getDomain(url: string): string {
 		try {
-			return new URL(url).hostname.replace('www.', '');
+			const parsed = new URL(url);
+			if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+				return url;
+			}
+			return parsed.hostname.replace('www.', '');
 		} catch {
 			return url;
+		}
+	}
+
+	function safeHref(url: string): string {
+		try {
+			const { protocol } = new URL(url);
+			return protocol === 'http:' || protocol === 'https:' ? url : '#';
+		} catch {
+			return '#';
 		}
 	}
 
@@ -124,7 +137,7 @@
 			</h3>
 			{#if memo.url}
 				<a
-					href={memo.url}
+					href={safeHref(memo.url)}
 					target="_blank"
 					rel="noopener noreferrer"
 					onclick={handleUrlClick}
@@ -206,7 +219,7 @@
 				<Link2 class="w-4 h-4 text-link flex-shrink-0" />
 			{/if}
 			<a
-				href={memo.url}
+				href={safeHref(memo.url)}
 				target="_blank"
 				rel="noopener noreferrer"
 				onclick={handleUrlClick}

@@ -1,18 +1,19 @@
 <script lang="ts">
 	import { cn } from '$lib/utils';
 
+	import type { HTMLButtonAttributes } from 'svelte/elements';
+
 	let {
 		class: className = '',
 		variant = 'primary',
 		size = 'md',
 		children,
 		...rest
-	}: {
+	}: HTMLButtonAttributes & {
 		class?: string;
 		variant?: string;
 		size?: string;
 		children: any;
-		[key: string]: any;
 	} = $props();
 
 	const variants: Record<string, string> = {

@@ -1,14 +1,13 @@
 # memo-alarm 개선 계획
 
 > 작성일: 2026-01-29
-> 최종 업데이트: 2026-02-03
+> 최종 업데이트: 2026-02-05
 > 난이도: ⭐ 쉬움 | ⭐⭐ 보통 | ⭐⭐⭐ 어려움
 
 ## 요약
 
 총 12개 개선 항목 (High: 1, Medium: 5, Low: 6)
-- 완료: 4개 (프로덕션 console 정리, 시간 포맷 유틸리티, SW 메시지 상수화, 빈 catch 블록 검토)
-- 미처리: 8개
+- 완료: 12개 ✅ 전체 완료
 
 ---
 
@@ -16,15 +15,18 @@
 
 ### 🔴 High Priority
 
-- [ ] **백그라운드 알림 아키텍처 검토** ⭐⭐⭐
+- [x] **백그라운드 알림 아키텍처 검토** ⭐⭐⭐ ✅ 2026-02-05 검토 완료
   - 현재 문제: setInterval 기반 알림이 앱 백그라운드/브라우저 유휴 시 동작 안함
-  - 해결 방법: (장기 과제)
-    1. 서버 사이드 FCM/Web Push 구현
-    2. 또는 현재 한계 사용자에게 안내
-  - 참고: MEMO_NOTIFICATION_FIX_PLAN.md 문서 참조
+  - 아키텍처 분석: 3계층 구조 (setInterval + Service Worker + FCM) 확인
+    - Client: setInterval 1분 주기 체크 (탭 비활성 시 throttle됨)
+    - SW: message 기반 알림 표시 (독립 스케줄링 없음)
+    - FCM: 토큰 등록 완료, 서버 Edge Function 미배포 상태
+  - 조치: 설정 페이지에 백그라운드 알림 한계 안내 메시지 추가
+  - 장기 과제: 서버 사이드 FCM Edge Function 배포로 완전한 백그라운드 알림 구현 필요
   - 관련 파일:
     - `src/lib/stores/notifications.svelte.ts`
     - `src/service-worker.ts`
+    - `src/routes/settings/+page.svelte`
 
 ### 🟡 Medium Priority
 
@@ -36,52 +38,53 @@
   - 25건 디버그 console.log 제거 (10개 파일)
   - console.error/warn만 유지
 
-- [ ] **타입 변환 함수 통합** ⭐⭐
-  - 현재 문제: supabaseToMemo, memoToSupabase 코드가 반복적
-  - 해결 방법: 매핑 설정 객체 기반 변환 함수로 리팩토링
-  - 관련 파일: `src/lib/stores/memos.svelte.ts` (73-111줄)
+- [x] **타입 변환 함수 통합** ⭐⭐ ✅ 2026-02-05 완료
+  - MEMO_FIELD_MAPPINGS 매핑 설정 객체 기반으로 supabaseToMemo/memoToSupabase 리팩토링
+  - 29개 필드 매핑을 선언적 배열로 통합, toMemo/toDb 변환 함수 지원
+  - 관련 파일: `src/lib/stores/memos.svelte.ts`
 
 - [x] **시간 포맷 유틸리티 추출** ⭐⭐ ✅ 2026-02-03 완료
   - `src/lib/utils/timeUtils.ts` 생성
   - `getCurrentTimeHHMM()`, `getTodayDateISO()` 함수 추출
   - notifications.svelte.ts 4곳, service-worker.ts 1곳 중복 제거
 
-- [ ] **Button 컴포넌트 접근성 개선** ⭐
-  - 현재 문제: aria-label prop 지원 안함
-  - 해결 방법: aria-label prop 추가하고 {...$$restProps} 전달
+- [x] **Button 컴포넌트 접근성 개선** ⭐ ✅ 2026-02-05 완료
+  - `[key: string]: any` → `HTMLButtonAttributes` 타입으로 교체
+  - aria-label 포함 모든 네이티브 button 속성에 정확한 타입 지원
   - 관련 파일: `src/lib/components/ui/Button.svelte`
 
 ### 🟢 Low Priority
 
-- [ ] **컴포넌트 aria-label 추가** ⭐
-  - 현재 문제: 30개 컴포넌트에 aria-label 8개만 있음
-  - 해결 방법: 아이콘 버튼, 삭제/수정 버튼 등에 레이블 추가
-  - 관련 파일: `src/lib/components/memo/*.svelte`
+- [x] **컴포넌트 aria-label 추가** ⭐ ✅ 2026-02-05 완료
+  - svelte-check a11y 경고 5곳에 aria-label 추가 (53→48 warnings)
+  - FolderSelector 색상 버튼, settings 토글 스위치 4곳
+  - 관련 파일: `FolderSelector.svelte`, `settings/+page.svelte`
 
-- [ ] **MemoCard URL sanitize** ⭐⭐
-  - 현재 문제: getDomain() 함수에서 URL 검증 미흡
-  - 해결 방법: URL 생성자로 유효성 검사 추가
-  - 관련 파일: `src/lib/components/memo/MemoCard.svelte` (47-52줄)
+- [x] **MemoCard URL sanitize** ⭐⭐ ✅ 2026-02-05 완료
+  - `safeHref()` 함수 추가: http/https만 허용, 그 외 `#` 반환
+  - `getDomain()`에도 프로토콜 검증 추가
+  - `href={memo.url}` 2곳을 `href={safeHref(memo.url)}`로 교체
+  - 관련 파일: `src/lib/components/memo/MemoCard.svelte`
 
-- [ ] **알림 체크 최적화** ⭐⭐
-  - 현재 문제: checkAndTriggerReminders()마다 전체 memos 필터링
-  - 해결 방법: 활성 리마인더만 별도 derived 스토어로 관리
-  - 관련 파일: `src/lib/stores/notifications.svelte.ts` (194-197줄)
+- [x] **알림 체크 최적화** ⭐⭐ ✅ 2026-02-05 완료
+  - `activeReminderMemos` $derived 스토어 추가: 활성 리마인더 메모만 사전 필터링
+  - `checkAndTriggerReminders`, `getTodayReminders`, `registerRemindersToServiceWorker` 3곳 적용
+  - 관련 파일: `src/lib/stores/notifications.svelte.ts`
 
-- [ ] **MemoForm tag 제안 debounce** ⭐
-  - 현재 문제: 매 렌더마다 태그 제안 계산
-  - 해결 방법: 입력 300ms 후 계산
-  - 관련 파일: `src/lib/components/memo/MemoForm.svelte` (45-51줄)
+- [x] **MemoForm tag 제안 debounce** ⭐ ✅ 2026-02-05 완료
+  - 제목/내용 변경 시 $effect + setTimeout 300ms debounce 자동 태그 제안
+  - 기존 수동 "추천" 버튼도 유지
+  - 관련 파일: `src/lib/components/memo/MemoForm.svelte`
 
 - [x] **SW 메시지 타입 상수화** ⭐ ✅ 2026-02-03 완료
   - `src/lib/constants/swMessages.ts` 생성
   - 8개 메시지 타입을 `SW_MSG` 상수 객체로 중앙 관리
   - Main Thread 측 하드코딩 교체 완료
 
-- [ ] **reminder.time 형식 검증** ⭐
-  - 현재 문제: HH:MM 형식 검증 없음
-  - 해결 방법: 정규식으로 형식 검사 추가
-  - 관련 파일: `src/lib/components/memo/ReminderSettings.svelte`
+- [x] **reminder.time 형식 검증** ⭐ ✅ 2026-02-05 완료
+  - ReminderCard에 TIME_REGEX(`/^([01]\d|2[0-3]):([0-5]\d)$/`) 검증 추가
+  - time input onchange에서 유효한 HH:MM 형식만 onUpdate 호출
+  - 관련 파일: `src/lib/components/memo/ReminderCard.svelte`
 
 ---
 
@@ -90,6 +93,6 @@
 ~1. 프로덕션 console 정리~ ✅ 완료
 ~2. 빈 catch 블록 에러 로깅 추가~ ✅ 검토 완료 (현행 유지)
 ~3. 시간 포맷 유틸리티 추출~ ✅ 완료
-4. Button 컴포넌트 접근성 개선
-5. 타입 변환 함수 통합
-6. 백그라운드 알림은 장기 과제로 별도 계획
+~4. Button 컴포넌트 접근성 개선~ ✅ 완료
+~5. 타입 변환 함수 통합~ ✅ 완료
+~6. 백그라운드 알림 아키텍처 검토~ ✅ 검토 완료 (사용자 안내 추가, 서버 FCM은 장기 과제)
