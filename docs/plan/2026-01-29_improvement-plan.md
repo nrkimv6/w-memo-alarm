@@ -7,8 +7,8 @@
 ## 요약
 
 총 12개 개선 항목 (High: 1, Medium: 5, Low: 6)
-- 완료: 9개
-- 미처리: 3개 (백그라운드 알림, 컴포넌트 aria-label, reminder.time 검증)
+- 완료: 10개
+- 미처리: 2개 (백그라운드 알림 아키텍처, 컴포넌트 aria-label)
 
 ---
 
@@ -79,10 +79,10 @@
   - 8개 메시지 타입을 `SW_MSG` 상수 객체로 중앙 관리
   - Main Thread 측 하드코딩 교체 완료
 
-- [ ] **reminder.time 형식 검증** ⭐
-  - 현재 문제: HH:MM 형식 검증 없음
-  - 해결 방법: 정규식으로 형식 검사 추가
-  - 관련 파일: `src/lib/components/memo/ReminderSettings.svelte`
+- [x] **reminder.time 형식 검증** ⭐ ✅ 2026-02-05 완료
+  - ReminderCard에 TIME_REGEX(`/^([01]\d|2[0-3]):([0-5]\d)$/`) 검증 추가
+  - time input onchange에서 유효한 HH:MM 형식만 onUpdate 호출
+  - 관련 파일: `src/lib/components/memo/ReminderCard.svelte`
 
 ---
 
