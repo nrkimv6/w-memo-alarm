@@ -92,20 +92,26 @@
 		notificationStore.init();
 		notificationHistoryStore.init();
 
+		// auth callback 페이지에서는 스토어 초기화를 callback에 위임
+		// (callback에서 setSession → authStore.initialize → reinit 순서 보장)
+		const isAuthCallback = window.location.pathname.startsWith('/auth/callback');
+
 		// authStore 초기화 완료 후 stores 초기화
 		await authStore.initialize();
 
-		// 메모 스토어 초기화 (authStore 상태 확정 후)
-		// 로컬 캐시를 즉시 로드하여 새로고침 시에도 메모가 표시됨
-		await memosStore.init();
-		filterStore.init();
-		foldersStore.init();
+		if (!isAuthCallback) {
+			// 메모 스토어 초기화 (authStore 상태 확정 후)
+			// 로컬 캐시를 즉시 로드하여 새로고침 시에도 메모가 표시됨
+			await memosStore.init();
+			filterStore.init();
+			foldersStore.init();
 
-		// 메모 로드 완료 후 Service Worker에 알림 스케줄 등록
-		notificationStore.registerRemindersToServiceWorker();
+			// 메모 로드 완료 후 Service Worker에 알림 스케줄 등록
+			notificationStore.registerRemindersToServiceWorker();
 
-		// FCM 등록
-		initFCM();
+			// FCM 등록
+			initFCM();
+		}
 
 		// Android Share Intent 리스너 설정
 		setupShareIntentListener(handleShareIntent);

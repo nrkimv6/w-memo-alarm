@@ -3,6 +3,11 @@
 	import { goto } from "$app/navigation";
 	import { supabase } from "$lib/services/supabase";
 	import { authStore } from "$lib/stores/auth.svelte";
+	import { memosStore } from "$lib/stores/memos.svelte";
+	import { foldersStore } from "$lib/stores/folders.svelte";
+	import { filterStore } from "$lib/stores/filter.svelte";
+	import { notificationStore } from "$lib/stores/notifications.svelte";
+	import { registerFCMToken, setupForegroundMessageListener } from "$lib/fcm";
 	import { browser } from "$app/environment";
 	import { Loader2 } from "lucide-svelte";
 
@@ -165,6 +170,26 @@
 
 		// Auth store 초기화 (onAuthStateChange 리스너 등록)
 		await authStore.initialize();
+
+		// 스토어 초기화 보장: onAuthStateChange의 reinit()이 경쟁 상태로
+		// 스킵될 수 있으므로 명시적으로 재초기화
+		await memosStore.reinit();
+		await foldersStore.reinit();
+		filterStore.init();
+
+		// 메모 로드 완료 후 알림 관련 초기화
+		notificationStore.registerRemindersToServiceWorker();
+
+		// FCM 초기화 (웹 푸시 알림)
+		if (authStore.user?.id) {
+			registerFCMToken(authStore.user.id).then((result) => {
+				if (result) {
+					setupForegroundMessageListener();
+				}
+			}).catch((err) => {
+				console.error('[Auth Callback] FCM registration error:', err);
+			});
+		}
 
 		// SPA 네비게이션으로 이동
 		goto(returnTo, { replaceState: true });
