@@ -7,8 +7,8 @@
 ## 요약
 
 총 12개 개선 항목 (High: 1, Medium: 5, Low: 6)
-- 완료: 5개 (프로덕션 console 정리, 시간 포맷 유틸리티, SW 메시지 상수화, 빈 catch 블록 검토, 타입 변환 함수 통합)
-- 미처리: 7개
+- 완료: 6개 (프로덕션 console 정리, 시간 포맷 유틸리티, SW 메시지 상수화, 빈 catch 블록 검토, 타입 변환 함수 통합, Button 접근성)
+- 미처리: 6개
 
 ---
 
@@ -46,9 +46,9 @@
   - `getCurrentTimeHHMM()`, `getTodayDateISO()` 함수 추출
   - notifications.svelte.ts 4곳, service-worker.ts 1곳 중복 제거
 
-- [ ] **Button 컴포넌트 접근성 개선** ⭐
-  - 현재 문제: aria-label prop 지원 안함
-  - 해결 방법: aria-label prop 추가하고 {...$$restProps} 전달
+- [x] **Button 컴포넌트 접근성 개선** ⭐ ✅ 2026-02-05 완료
+  - `[key: string]: any` → `HTMLButtonAttributes` 타입으로 교체
+  - aria-label 포함 모든 네이티브 button 속성에 정확한 타입 지원
   - 관련 파일: `src/lib/components/ui/Button.svelte`
 
 ### 🟢 Low Priority
@@ -90,6 +90,6 @@
 ~1. 프로덕션 console 정리~ ✅ 완료
 ~2. 빈 catch 블록 에러 로깅 추가~ ✅ 검토 완료 (현행 유지)
 ~3. 시간 포맷 유틸리티 추출~ ✅ 완료
-4. Button 컴포넌트 접근성 개선
-5. 타입 변환 함수 통합
+~4. Button 컴포넌트 접근성 개선~ ✅ 완료
+~5. 타입 변환 함수 통합~ ✅ 완료
 6. 백그라운드 알림은 장기 과제로 별도 계획
