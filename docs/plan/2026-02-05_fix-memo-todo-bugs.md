@@ -3,7 +3,7 @@
 > 작성일: 2026-02-05
 > 우선순위: P0 (Critical)
 > **상태: 🔄 진행 중 (2026-02-06)**
-> **최신 커밋: 0581fac** (시행착오 포함: a613b87 → … → 9fb154b → 84bdbfb → 0581fac)
+> **최신 커밋: e9fca7f** (시행착오 포함: a613b87 → … → 0845e35 → e9fca7f)
 >
 > **현재 상황**:
 > - Bug 2: ✅ 완료 (filterStore에 memoType !== 'todo' 필터 추가)
@@ -1049,3 +1049,26 @@ registerAuthListener() → INITIAL_SESSION 대기 → user 설정 → memosStore
    memosStore.init()       ← fetchFromSupabase() 인증 상태에서 실행
    registerAuthListener()  ← 이후 auth 변경만 처리 (reinit은 setTimeout)
    ```
+
+### 12차 결과: ❌ 실패 (0845e35)
+
+**테스트 로그 (2026-02-06 16:54)**:
+```
+[AuthStore] initialize() - getUser result: {userId: '7206e84e-...', error: undefined}  ← getUser 성공 ✅
+[MemosStore] init() called - isAuthenticated: true user: 7206e84e-...                  ← auth 확인 ✅
+[MemosStore] fetchFromSupabase() - querying for user: 7206e84e-...
+[AuthStore] onAuthStateChange: INITIAL_SESSION wasLoggedIn: true                       ← deadlock 없음 ✅
+[MemosStore] fetchFromSupabase() - result: {dataLength: 0, error: undefined}           ← 여전히 0건 ❌
+```
+
+**개선된 점**: deadlock 없음, INITIAL_SESSION 정상 발생, getUser() 성공
+**미해결**: `fetchFromSupabase()` 여전히 0건 반환 (에러 없음)
+
+**새로운 분석**:
+- Supabase PostgREST의 `_getAccessToken()`은 매번 `this.auth.getSession()`을 호출 (소스 확인)
+- `getSession()`은 세션을 반환하므로 access_token은 DB 쿼리에 포함되어야 함
+- 그런데 0건 → **가설**: DB 쿼리 시점에 `getSession()` 내부가 다른 결과를 반환하거나, JWT `sub`와 `user_id` 불일치
+
+**다음 진단 (e9fca7f)**: `fetchFromSupabase()` 직전에 `getSession()` 결과와 access_token prefix 로그 추가
+- access_token 존재 여부 확인 → auth 헤더 포함 여부 판별
+- 수동 새로고침 시와 비교하여 차이점 식별
