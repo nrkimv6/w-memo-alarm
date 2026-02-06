@@ -194,12 +194,13 @@
 			sessionStorage.setItem("login_success", "true");
 		}
 
-		// Auth store 초기화 (onAuthStateChange 리스너 등록)
-		await authStore.initialize();
+		// Auth store 세션 동기화: setSession() 후 onAuthStateChange 타이밍에
+		// 의존하지 않고 Supabase에서 직접 세션을 읽어 user 상태를 확정
+		// (initialize()는 layout에서 이미 호출되어 리스너 등록 완료)
+		await authStore.refreshSession();
 
-		// 스토어 초기화 보장: onAuthStateChange의 reinit()이 경쟁 상태로
-		// 스킵될 수 있으므로 명시적으로 재초기화
-		// reinit()은 Promise 기반이므로 진행 중인 초기화가 있으면 완료를 대기함
+		// 스토어 재초기화: authStore.user가 확정된 후 실행하여
+		// init()이 인증된 경로(서버 fetch)를 타도록 보장
 		await memosStore.reinit();
 		await foldersStore.reinit();
 		filterStore.init();
