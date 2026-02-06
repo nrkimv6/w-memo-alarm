@@ -199,41 +199,10 @@
 		}
 
 		// Auth store 초기화: 이미 확보된 세션을 직접 전달.
-		// signInWithIdToken/setSession 직후 Supabase 내부 lock 경쟁으로
-		// getSession()이 AbortError를 발생시키므로, initialize() 대신 사용.
 		authStore.initializeWithSession(session);
 
-		// Supabase 내부 lock이 완전히 해제될 때까지 짧은 지연
-		// (signInWithIdToken/setSession 후처리 완료 대기)
-		await new Promise(resolve => setTimeout(resolve, 100));
-
-		// 스토어 재초기화: authStore.user가 확정된 후 실행하여
-		// init()이 인증된 경로(서버 fetch)를 타도록 보장
-		await memosStore.reinit();
-		await foldersStore.reinit();
-		filterStore.init();
-
-		// 방어: reinit 완료 후 initialized 상태 확인
-		if (!memosStore.initialized) {
-			console.warn('[Auth Callback] memosStore not initialized after reinit, retrying...');
-			await memosStore.reinit();
-		}
-
-		// 메모 로드 완료 후 알림 관련 초기화
-		notificationStore.registerRemindersToServiceWorker();
-
-		// FCM 초기화 (웹 푸시 알림)
-		if (authStore.user?.id) {
-			registerFCMToken(authStore.user.id).then((result) => {
-				if (result) {
-					setupForegroundMessageListener();
-				}
-			}).catch((err) => {
-				console.error('[Auth Callback] FCM registration error:', err);
-			});
-		}
-
-		// SPA 네비게이션으로 이동 (스토어 초기화 완료 후)
+		// SPA 네비게이션으로 즉시 이동 (Supabase lock 경쟁 회피)
+		// 스토어 초기화는 페이지 이동 후 layout의 일반 경로에서 수행됨
 		goto(returnTo, { replaceState: true });
 	}
 </script>

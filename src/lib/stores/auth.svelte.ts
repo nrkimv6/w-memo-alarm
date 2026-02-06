@@ -39,34 +39,13 @@ function createAuthStore() {
 		hasShownLoginToast: false
 	});
 
-	// 초기화
-	async function initialize() {
-		if (state.initialized || state.initializing || !browser) {
-			return;
-		}
+	let listenerRegistered = false;
 
-		state.initializing = true;
+	// onAuthStateChange 리스너 등록 (별도 함수)
+	function registerAuthListener() {
+		if (listenerRegistered || !browser) return;
+		listenerRegistered = true;
 
-		try {
-			const { data: { session: currentSession }, error } = await supabase.auth.getSession();
-
-			if (error) {
-				console.error('Auth initialization error:', error);
-				state.error = error.message;
-			} else if (currentSession) {
-				state.session = currentSession;
-				state.user = currentSession.user;
-			}
-		} catch (e) {
-			console.error('Auth initialization failed:', e);
-			state.error = e instanceof Error ? e.message : 'Unknown error';
-		} finally {
-			state.loading = false;
-			state.initialized = true;
-			state.initializing = false;
-		}
-
-		// 인증 상태 변경 리스너
 		supabase.auth.onAuthStateChange(async (event, newSession) => {
 			const wasLoggedIn = !!state.user;
 			state.session = newSession;
@@ -97,6 +76,37 @@ function createAuthStore() {
 				toastStore.info('로그아웃되었습니다');
 			}
 		});
+	}
+
+	// 초기화
+	async function initialize() {
+		if (state.initialized || state.initializing || !browser) {
+			return;
+		}
+
+		state.initializing = true;
+
+		try {
+			const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+
+			if (error) {
+				console.error('Auth initialization error:', error);
+				state.error = error.message;
+			} else if (currentSession) {
+				state.session = currentSession;
+				state.user = currentSession.user;
+			}
+		} catch (e) {
+			console.error('Auth initialization failed:', e);
+			state.error = e instanceof Error ? e.message : 'Unknown error';
+		} finally {
+			state.loading = false;
+			state.initialized = true;
+			state.initializing = false;
+		}
+
+		// 인증 상태 변경 리스너 등록
+		registerAuthListener();
 	}
 
 	// Google 로그인 (Auth Worker 사용)
@@ -172,6 +182,7 @@ function createAuthStore() {
 	// 이미 확보된 세션으로 직접 초기화 (auth callback 전용)
 	// signInWithIdToken/setSession 직후 Supabase 내부 lock 경쟁으로
 	// getSession()이 AbortError를 발생시키므로, 세션을 직접 전달받아 설정.
+	// onAuthStateChange 리스너는 등록하지 않음 (layout의 정상 경로에서 등록됨).
 	function initializeWithSession(session: Session) {
 		if (!browser) return;
 		state.session = session;
@@ -179,37 +190,7 @@ function createAuthStore() {
 		state.loading = false;
 		state.initialized = true;
 		state.initializing = false;
-
-		// onAuthStateChange 리스너 등록을 비동기로 지연 (Supabase lock 해제 대기)
-		// signInWithIdToken/setSession이 내부적으로 onAuthStateChange를 이미 트리거하므로,
-		// 추가 리스너 등록은 약간의 지연 후 안전하게 수행
-		setTimeout(() => {
-			supabase.auth.onAuthStateChange(async (event, newSession) => {
-				const wasLoggedIn = !!state.user;
-				state.session = newSession;
-				state.user = newSession?.user || null;
-
-				if (event === 'SIGNED_IN' && newSession?.user) {
-					await memosStore.reinit();
-					await foldersStore.reinit();
-					if (!wasLoggedIn && !state.hasShownLoginToast) {
-						state.hasShownLoginToast = true;
-						toastStore.success('로그인되었습니다');
-					}
-				} else if (event === 'SIGNED_OUT') {
-					if (state.user?.id) {
-						deactivateAllFCMTokens(state.user.id);
-					}
-					state.user = null;
-					state.session = null;
-					state.hasShownLoginToast = false;
-					memosStore.cleanup();
-					foldersStore.cleanup();
-					notificationStore.cleanup();
-					toastStore.info('로그아웃되었습니다');
-				}
-			});
-		}, 200);
+		// 리스너 등록하지 않음 — goto() 후 layout이 일반 페이지 로드 경로로 처리
 	}
 
 	return {
@@ -221,6 +202,7 @@ function createAuthStore() {
 
 		initialize,
 		initializeWithSession,
+		ensureListenerRegistered: registerAuthListener,
 		refreshSession,
 		signInWithGoogle,
 		signInWithKakao,
