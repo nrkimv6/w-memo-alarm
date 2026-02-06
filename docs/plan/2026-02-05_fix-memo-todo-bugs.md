@@ -3,14 +3,14 @@
 > 작성일: 2026-02-05
 > 우선순위: P0 (Critical)
 > **상태: 🔄 진행 중 (2026-02-06)**
-> **최신 커밋: 84bdbfb** (시행착오 포함: a613b87 → … → 9fb154b → 84bdbfb)
+> **최신 커밋: 0581fac** (시행착오 포함: a613b87 → … → 9fb154b → 84bdbfb → 0581fac)
 >
 > **현재 상황**:
 > - Bug 2: ✅ 완료 (filterStore에 memoType !== 'todo' 필터 추가)
-> - Bug 1: ❌ 미해결 — 10차 수정(`window.location.href` 전체 페이지 리로드)에서도 메모 0건 표시
->   - 전체 페이지 리로드는 성공 (AbortError 해소)
->   - 그러나 `memosStore.memos.length = 0`, `initialized = true` → **fetchFromSupabase()가 0건 반환하거나 경쟁 상태로 실패**
->   - 84bdbfb에서 디버그 로그 추가하여 원인 추적 중
+> - Bug 1: 11차 수정 배포 대기 중
+>   - 10차: 전체 페이지 리로드 성공 (AbortError 해소), 하지만 `fetchFromSupabase()` 0건 반환
+>   - 원인: `getSession()`은 localStorage에서 읽기만 하고, Supabase client의 내부 auth 컨텍스트는 `INITIAL_SESSION` 이벤트에서 설정됨. DB 쿼리가 `INITIAL_SESSION` 이전에 실행 → RLS가 인증 없이 0건 반환
+>   - 11차(0581fac): `initialize()`를 `INITIAL_SESSION` 이벤트 대기 방식으로 변경
 
 ---
 
@@ -949,8 +949,47 @@ recentMemos = memos.filter(m => m.memoType !== 'todo').slice(0, 5);
 2. `getSession()`은 성공했지만 DB 쿼리 시 세션 토큰이 아직 유효하지 않음
 3. `fetchFromSupabase()` 쿼리 자체가 0건 반환 (user_id 불일치?)
 
-**다음 단계**: 84bdbfb 디버그 로그 배포 후 확인
-- `[AuthStore] initialize()` — getSession 결과
-- `[AuthStore] onAuthStateChange` — SIGNED_IN 이벤트 발생 시점
-- `[MemosStore] init()` / `reinit()` — 호출 순서 및 횟수
-- `[MemosStore] fetchFromSupabase()` — dataLength, error 값
+**디버그 결과 (84bdbfb)**:
+```
+[AuthStore] initialize() - getSession result: {hasSession: true, userId: '7206e84e-...'}
+[MemosStore] fetchFromSupabase() - querying for user: 7206e84e-...
+[AuthStore] onAuthStateChange: INITIAL_SESSION  ← DB 쿼리 시작 후에 발생!
+[MemosStore] fetchFromSupabase() - result: {dataLength: 0, error: undefined}
+```
+
+**확정된 원인**: `getSession()`은 localStorage에서 세션을 읽기만 하고, Supabase client의 내부 auth 컨텍스트(DB 쿼리의 Authorization 헤더)는 `INITIAL_SESSION` 이벤트 처리 시점에 설정됨. `memosStore.init()` → `fetchFromSupabase()`가 `INITIAL_SESSION` 이전에 실행되어 **인증 없는 쿼리** → RLS가 0건 반환 (에러 없이).
+
+추가 발견: ~1분 후 `SIGNED_IN` 이벤트 발생 → `reinit()` → `fetchFromSupabase()` 호출되지만 result 로그 없음 (무한 대기 — 토큰 리프레시 관련 lock?).
+
+---
+
+## 11차 수정: INITIAL_SESSION 대기 방식 (0581fac)
+
+### 핵심 변경
+
+`authStore.initialize()`를 `getSession()` 기반 → `onAuthStateChange` `INITIAL_SESSION` 대기 방식으로 변경.
+
+**이전 (문제)**:
+```
+getSession() → user 설정 → registerAuthListener() → memosStore.init() → fetchFromSupabase()
+                                                        ↑ INITIAL_SESSION 아직 미발생 → auth 헤더 없음
+```
+
+**이후 (수정)**:
+```
+registerAuthListener() → INITIAL_SESSION 대기 → user 설정 → memosStore.init() → fetchFromSupabase()
+                          ↑ auth 컨텍스트 확정                                    ↑ auth 헤더 포함
+```
+
+수정 내용:
+1. `initialize()`에서 `getSession()` 제거
+2. `registerAuthListener()`를 먼저 호출하고 `INITIAL_SESSION` 이벤트를 Promise로 대기
+3. `INITIAL_SESSION` 핸들러에서 state 업데이트 (loading, initialized 등)
+4. 5초 타임아웃 (safety net)
+
+### 이것이 이전 시도와 다른 점
+
+| 시도 | 초기화 시점 | DB 쿼리 시 auth 상태 |
+|------|-----------|---------------------|
+| 5~10차 | `getSession()` 반환 직후 | ❌ Supabase client auth 미설정 |
+| 11차 | `INITIAL_SESSION` 이벤트 후 | ✅ Supabase client auth 설정 완료 |
