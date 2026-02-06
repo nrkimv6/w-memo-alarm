@@ -828,3 +828,55 @@ recentMemos = memos.filter(m => m.memoType !== 'todo').slice(0, 5);
 - Supabase client의 전역 lock 문제는 **타임아웃으로만 회피 가능**
 - 근본 해결책(복수 client 인스턴스)은 Supabase 설계상 권장 안 됨
 - 경험적 타이밍(500ms)이 불완전해 보이지만, **실용적인 유일한 방법**
+
+---
+
+## Bug 1 재발 (8차): 로그인 후 메모 여전히 0개 (2026-02-06)
+
+> **상태: 🔍 진단 중 (2026-02-06)**
+> **커밋: 899fd99 (회귀), 7a9f66e, 4b0dee9 (디버그 로그)**
+
+### 현상 (899fd99 배포 후)
+
+- 로그인 성공: AbortError 없음 ✅
+- `authStore.isAuthenticated = true` ✅
+- **하지만 `memos.length = 0`, `initialized = true`** ❌
+- 새로고침하면 1초 안에 정상 표시
+
+### 분석 (로그 기반)
+
+**1단계: 인증 상태 확인 (7a9f66e)**
+```
+[MemosStore] init() - isAuthenticated: true user: Proxy(Object) {...}
+```
+→ `authStore.isAuthenticated`는 `true`. 비인증 경로가 아님.
+
+**2단계: 서버 fetch 결과 확인 (4b0dee9 - 배포 대기 중)**
+
+`fetchFromSupabase()` 실행되고 있는지, `data.length`가 얼마인지 확인 필요.
+
+### 추측
+
+1. **AbortError 여전히 발생 (조용히)**: 500ms로도 부족, `fetchFromSupabase()` 실패
+2. **DB에 실제로 메모 없음**: user_id가 잘못 전달되거나, 다른 계정
+3. **캐시-병합 로직 문제**: `fetchFromSupabase()` 성공했지만 `memos` 배열 업데이트 안 됨
+4. **Svelte 리액티비티 타이밍**: `memos = ...` 업데이트가 UI에 반영 안 됨
+
+### 다음 단계
+
+- 4b0dee9 배포 후 로그인하여 `[MemosStore] fetchFromSupabase() - result:` 로그 확인
+- `dataLength`, `error` 값으로 원인 특정
+
+### 무한 "동기화 중" 메시지 문제
+
+사용자 보고:
+> 로그인 후 2초쯤 기다리면 "서버에서 동기화중" 메시지 표시되지만 무한히 사라지지 않음.
+> 새로고침하면 1초 안에 해결됨.
+
+**원인**: `syncingFromServer` 상태가 `true`로 고정됨.
+
+**추측**:
+- `fetchFromSupabase()` await가 완료되지 않음 (AbortError 또는 무한 대기)
+- `syncingFromServer = false` 실행 안 됨
+
+**확인 필요**: 4b0dee9 로그에서 `fetchFromSupabase()` 종료 여부
