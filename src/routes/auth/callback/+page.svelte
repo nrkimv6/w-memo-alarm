@@ -1,13 +1,6 @@
 <script lang="ts">
 	import { onMount } from "svelte";
-	import { goto } from "$app/navigation";
 	import { supabase } from "$lib/services/supabase";
-	import { authStore } from "$lib/stores/auth.svelte";
-	import { memosStore } from "$lib/stores/memos.svelte";
-	import { foldersStore } from "$lib/stores/folders.svelte";
-	import { filterStore } from "$lib/stores/filter.svelte";
-	import { notificationStore } from "$lib/stores/notifications.svelte";
-	import { registerFCMToken, setupForegroundMessageListener } from "$lib/fcm";
 	import { browser } from "$app/environment";
 	import { Loader2 } from "lucide-svelte";
 
@@ -128,7 +121,7 @@
 					console.log("[Auth Callback] Using existing session");
 					const safeReturnTo =
 						tokens?.returnTo === "/login" ? "/" : tokens?.returnTo || "/";
-					await finishLogin(safeReturnTo, session);
+					await finishLogin(safeReturnTo);
 					return;
 				}
 
@@ -138,10 +131,9 @@
 			status = "인증 처리 중...";
 
 			// 카카오는 Supabase 토큰 직접 사용 (setSession)
-			let session;
 			if (tokens.supabase_access_token && tokens.supabase_refresh_token) {
 				console.log("[Auth Callback] Using Supabase tokens (Kakao)");
-				const { data, error: sessionError } = await supabase.auth.setSession({
+				const { error: sessionError } = await supabase.auth.setSession({
 					access_token: tokens.supabase_access_token,
 					refresh_token: tokens.supabase_refresh_token,
 				});
@@ -149,7 +141,6 @@
 					console.error("[Auth Callback] setSession error:", sessionError);
 					throw sessionError;
 				}
-				session = data.session;
 			} else if (tokens.id_token && tokens.access_token) {
 				// 구글은 기존 방식 (signInWithIdToken)
 				console.log("[Auth Callback] Using signInWithIdToken (Google)");
@@ -168,19 +159,17 @@
 					throw signInError;
 				}
 
-				session = data.session;
+				if (!data.session) {
+					throw new Error("세션 생성에 실패했습니다.");
+				}
 			} else {
 				throw new Error("유효한 토큰을 찾을 수 없습니다.");
-			}
-
-			if (!session) {
-				throw new Error("세션 생성에 실패했습니다.");
 			}
 
 			console.log("[Auth Callback] Session created successfully");
 			const safeReturnTo =
 				tokens.returnTo === "/login" ? "/" : tokens.returnTo || "/";
-			await finishLogin(safeReturnTo, session);
+			await finishLogin(safeReturnTo);
 		} catch (err) {
 			console.error("[Auth Callback] Error:", err);
 			error =
@@ -190,36 +179,15 @@
 		}
 	});
 
-	async function finishLogin(returnTo: string, session: import('@supabase/supabase-js').Session) {
+	async function finishLogin(returnTo: string) {
 		status = "로그인 완료...";
 
-		// Auth store 초기화: 이미 확보된 세션을 직접 전달.
-		authStore.initializeWithSession(session);
-
-		// Supabase lock 완전 해제 대기
-		await new Promise(resolve => setTimeout(resolve, 500));
-
-		// Stores 재초기화 (서버 데이터 fetch)
-		await memosStore.reinit();
-		await foldersStore.reinit();
-		filterStore.init();
-
-		// 알림 관련 초기화
-		notificationStore.registerRemindersToServiceWorker();
-
-		// FCM 초기화
-		if (authStore.user?.id) {
-			registerFCMToken(authStore.user.id).then((result) => {
-				if (result) {
-					setupForegroundMessageListener();
-				}
-			}).catch((err) => {
-				console.error('[Auth Callback] FCM registration error:', err);
-			});
-		}
-
-		// SPA 네비게이션으로 이동 (스토어 초기화 완료 후)
-		goto(returnTo, { replaceState: true });
+		// 전체 페이지 리로드로 이동.
+		// signInWithIdToken 후 Supabase client의 전역 lock이 걸려 있어
+		// 같은 페이지 내에서 어떤 Supabase 작업도 AbortError/무한대기 발생.
+		// 새 페이지 로드 시 Supabase client가 새로 생성되므로 lock 문제 없음.
+		// (새로고침하면 정상 작동하는 것과 동일한 원리)
+		window.location.href = returnTo;
 	}
 </script>
 
