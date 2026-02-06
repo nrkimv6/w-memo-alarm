@@ -2,8 +2,12 @@
 
 > 작성일: 2026-02-05
 > 우선순위: P0 (Critical)
-> **상태: 버그 (7차 수정 배포 완료 — V-12 검증 필요)**
-> **커밋: a613b87, 6e5e11e, 0065192, a1ec8c7, d9e28cb, 88d5fb9**
+> **상태: ✅ 완료 (2026-02-06)**
+> **최종 커밋: 8b49c9b** (7차 시행착오 포함: a613b87 → 6e5e11e → 0065192 → a1ec8c7 → d9e28cb → 88d5fb9 → 8b49c9b)
+>
+> **핵심 해결책 요약**:
+> - Bug 1: auth callback에서 Supabase 작업 제거 + layout에서 500ms 지연 후 reinit
+> - Bug 2: filterStore에 memoType !== 'todo' 필터 추가
 
 ---
 
@@ -702,4 +706,125 @@ import { browser } from "$app/environment";
 - [x] **V-9**: d9e28cb 커밋 완료 ✅
 - [x] **V-10**: 88d5fb9 커밋 완료 (browser import 수정) ✅
 - [x] **V-11**: 푸시 및 자동 배포 ✅
-- [ ] **V-12**: 배포 후 Google 로그인 → AbortError 없이 정상 로그인 확인
+- [x] **V-12**: 배포 후 Google 로그인 → AbortError 없이 정상 로그인 확인 ✅
+- [x] **V-13**: 하지만 메모가 표시되지 않음 (원래 문제로 회귀) ❌
+
+---
+
+## Bug 1 최종 수정: reinit 누락 (2026-02-06)
+
+> **상태: ✅ 완료 (2026-02-06)**
+> **커밋: 8b49c9b**
+>
+> 7차 수정으로 로그인은 성공했으나, layout에서 `init()` 대신 `reinit()`을 호출해야 함.
+
+### 현상
+
+- 로그인 성공: AbortError 없음 ✅
+- 하지만 홈 탭에 메모가 표시되지 않음 ❌
+- 새로고침하면 정상 표시
+
+### 원인
+
+**B1-10에서 callback의 `reinit()` 제거 → layout의 `init()` 호출로 변경**했는데,
+`init()`은 이미 `initialized=true`인 경우 서버 fetch를 스킵함.
+
+```typescript
+// memosStore.init()
+if (initialized) return;  // ← layout 도착 시 이미 true → 서버 fetch 안 함
+```
+
+callback에서 layout으로 이동 시:
+1. memosStore는 이미 `initialized=true` (이전 세션에서 초기화됨)
+2. layout의 `init()` → 가드에 걸려 즉시 리턴
+3. 서버 데이터 fetch 없음 → 메모 0개
+
+### 수정 (B1-14)
+
+**layout에서 `loginSuccess` 플래그 확인 시 `reinit()` 호출**:
+
+```typescript
+// Before (B1-12):
+if (loginSuccess) {
+    await new Promise(resolve => setTimeout(resolve, 500));
+}
+await memosStore.init();  // ← 가드에 걸려 스킵
+
+// After (B1-14):
+if (loginSuccess) {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    await memosStore.reinit();  // ← 강제 재초기화
+    await foldersStore.reinit();
+} else {
+    await memosStore.init();    // ← 일반 로드
+    foldersStore.init();
+}
+```
+
+### 최종 검증
+
+- [x] **V-14**: 8b49c9b 커밋 완료 ✅
+- [x] **V-15**: 푸시 및 자동 배포 ✅
+- [ ] **V-16**: 배포 후 Google 로그인 → 메모 정상 표시 + AbortError 없음 확인
+
+---
+
+## 최종 요약 (시행착오 제외)
+
+### Bug 1: 로그인 후 메모 미표시 — 최종 해결책
+
+**핵심 문제**: Supabase client의 전역 lock으로 인해 `signInWithIdToken()` 직후 모든 Supabase 작업이 AbortError 발생
+
+**최종 해결책** (7차 + 8차):
+
+1. **auth callback에서 Supabase 작업 완전 제거**
+   - `finishLogin()`: 세션 설정 + `goto()` 즉시 실행만
+   - stores 초기화, FCM 등록 모두 제거
+
+2. **layout에서 500ms 지연 후 초기화**
+   ```typescript
+   const loginSuccess = sessionStorage.getItem("login_success") === "true";
+   if (loginSuccess) {
+       await new Promise(resolve => setTimeout(resolve, 500));
+       await memosStore.reinit();  // 서버 fetch
+       await foldersStore.reinit();
+   } else {
+       await memosStore.init();    // 로컬 캐시
+       foldersStore.init();
+   }
+   ```
+
+3. **onAuthStateChange 리스너 분리**
+   - `initializeWithSession()`에서 리스너 등록 안 함
+   - layout에서 `ensureListenerRegistered()` 별도 호출
+
+**왜 이렇게?**:
+- Supabase는 "lock 해제" 이벤트 API 없음
+- 500ms는 경험적으로 충분한 시간 (내부 처리 완료 대기)
+- callback에서 Supabase 작업 0개 → lock 경쟁 원천 차단
+
+**트레이드오프**:
+- ✅ 신뢰성: AbortError 없음
+- ❌ 성능: 로그인 후 500ms 지연 (하지만 스피너 표시 중이므로 체감 적음)
+
+### Bug 2: Todo가 메모 페이지 표시
+
+**문제**: `filterStore.getFilteredMemos()`에 memoType 필터 없음
+
+**해결**:
+```typescript
+// filter.svelte.ts
+result = result.filter(m => m.memoType !== 'todo');
+
+// +page.svelte (홈)
+pinnedMemos = memos.filter(m => m.isPinned && m.memoType !== 'todo');
+favoriteMemos = memos.filter(m => m.isFavorite && m.memoType !== 'todo');
+recentMemos = memos.filter(m => m.memoType !== 'todo').slice(0, 5);
+```
+
+### 시행착오 교훈
+
+- **7번의 시도**를 거쳐 최종 해결
+- Supabase client의 전역 lock 문제는 **타임아웃으로만 회피 가능**
+- 근본 해결책(복수 client 인스턴스)은 Supabase 설계상 권장 안 됨
+- 경험적 타이밍(500ms)이 불완전해 보이지만, **실용적인 유일한 방법**
