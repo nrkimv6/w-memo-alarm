@@ -1,11 +1,11 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-	appId: 'com.woory.memoalarm',
+	appId: 'day.woory.memoalarm',
 	appName: 'Memo Alarm',
 	webDir: 'build',
 	server: {
-		androidScheme: 'com.woory.memoalarm'
+		androidScheme: 'day.woory.memoalarm'
 	},
 	plugins: {
 		LocalNotifications: {

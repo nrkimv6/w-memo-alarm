@@ -276,8 +276,8 @@ async function checkPendingShareIntent(
 function parseShareIntentUrl(url: string): ShareIntentData | null {
 	try {
 		// URL scheme 형태로 전달된 경우
-		if (url.startsWith('com.woory.memoalarm://share')) {
-			const urlObj = new URL(url.replace('com.woory.memoalarm://', 'https://app/'));
+		if (url.startsWith('day.woory.memoalarm://share')) {
+			const urlObj = new URL(url.replace('day.woory.memoalarm://', 'https://app/'));
 			const params = urlObj.searchParams;
 
 			return {
@@ -288,7 +288,7 @@ function parseShareIntentUrl(url: string): ShareIntentData | null {
 		}
 
 		// text/plain 공유의 경우 URL 자체가 공유 텍스트일 수 있음
-		if (url && !url.startsWith('com.woory.memoalarm://')) {
+		if (url && !url.startsWith('day.woory.memoalarm://')) {
 			const { url: extractedUrl, cleanText } = extractUrlFromText(url);
 			return {
 				text: cleanText || url,

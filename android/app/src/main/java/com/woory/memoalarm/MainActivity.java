@@ -1,4 +1,4 @@
-package com.woory.memoalarm;
+package day.woory.memoalarm;
 
 import com.getcapacitor.BridgeActivity;
 
