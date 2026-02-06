@@ -28,7 +28,7 @@ _현재 진행 중인 계획이 없습니다._
 - [x] `auth-worker/src/config.ts`에 `memo-alarm` 설정 완료
   - appId: `memo-alarm`
   - origins: `https://memo.woory.day`, `http://localhost:5179`
-  - android.scheme: `com.woory.memoalarm`
+  - android.scheme: `day.woory.memoalarm`
 
 #### 2. Supabase 설정 ✅
 - [x] `src/lib/services/supabase.ts` 생성
@@ -65,7 +65,7 @@ _현재 진행 중인 계획이 없습니다._
   - D1 코드 제거 (`sync.svelte.ts`, `api/sync/+server.ts`)
 
 #### 7. Native 설정 ✅
-- [x] `capacitor.config.ts`: `androidScheme: 'com.woory.memoalarm'` 설정
+- [x] `capacitor.config.ts`: `androidScheme: 'day.woory.memoalarm'` 설정
 - [x] Deep Link 설정 완료
 
 #### 8. 테스트 ✅

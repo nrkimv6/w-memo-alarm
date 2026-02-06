@@ -171,7 +171,7 @@ export const APP_CONFIGS = {
       'http://localhost:5173'
     ],
     android: {
-      scheme: 'com.woory.memoalarm'
+      scheme: 'day.woory.memoalarm'
     }
   }
 };
@@ -182,9 +182,9 @@ export const APP_CONFIGS = {
 **capacitor.config.ts**:
 ```typescript
 {
-  appId: 'com.woory.memoalarm',
+  appId: 'day.woory.memoalarm',
   server: {
-    androidScheme: 'com.woory.memoalarm'
+    androidScheme: 'day.woory.memoalarm'
   }
 }
 ```
@@ -196,7 +196,7 @@ export const APP_CONFIGS = {
     <action android:name="android.intent.action.VIEW" />
     <category android:name="android.intent.category.DEFAULT" />
     <category android:name="android.intent.category.BROWSABLE" />
-    <data android:scheme="com.woory.memoalarm" />
+    <data android:scheme="day.woory.memoalarm" />
   </intent-filter>
 </activity>
 ```
@@ -339,7 +339,7 @@ export const APP_CONFIGS = {
 1. Android 앱 실행
 2. 로그인 버튼 클릭 → In-App Browser 열림
 3. Auth Worker에서 Google 로그인
-4. Deep Link로 앱 복귀 (`com.woory.memoalarm://auth/callback#...`)
+4. Deep Link로 앱 복귀 (`day.woory.memoalarm://auth/callback#...`)
 5. 콜백 페이지에서 토큰 파싱 (Hash fragment)
 6. 로그인 완료
 
