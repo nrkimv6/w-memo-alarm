@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from "svelte";
 	import { onNavigate, goto } from "$app/navigation";
+	import { browser } from "$app/environment";
 	import "../app.css";
 	import type { Snippet } from "svelte";
 	import { themeStore } from "$lib/stores/theme.svelte";
