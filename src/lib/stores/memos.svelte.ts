@@ -238,8 +238,11 @@ function createMemosStore() {
 	async function init() {
 		if (initialized) return;
 
+		console.log('[MemosStore] init() - isAuthenticated:', authStore.isAuthenticated, 'user:', authStore.user);
+
 		if (!authStore.isAuthenticated) {
 			// 비로그인: localStorage 캐시 읽기 (오프라인)
+			console.log('[MemosStore] init() - 비인증 경로, 로컬 캐시 로드');
 			memos = loadCacheFromStorage();
 			loading = false;
 			initialized = true;
