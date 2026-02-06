@@ -315,21 +315,47 @@ function createMemosStore() {
 		if (!authStore.user) return;
 
 		try {
-			// DB 쿼리 직전 세션 상태 확인 — auth 헤더가 포함되는지 진단
+			// DB 쿼리 직전 세션/JWT 진단
 			const { data: { session: currentSession } } = await supabase.auth.getSession();
-			console.log('[MemosStore] fetchFromSupabase() - session check:', {
-				hasSession: !!currentSession,
-				hasAccessToken: !!currentSession?.access_token,
-				tokenPrefix: currentSession?.access_token?.substring(0, 20),
-				userId: authStore.user.id
-			});
-			const { data, error } = await supabase
+			if (currentSession?.access_token) {
+				try {
+					const payload = JSON.parse(atob(currentSession.access_token.split('.')[1]));
+					console.log('[MemosStore] JWT payload:', { sub: payload.sub, role: payload.role, exp: payload.exp, aud: payload.aud, iss: payload.iss });
+				} catch { console.log('[MemosStore] JWT decode failed'); }
+			} else {
+				console.log('[MemosStore] No access_token!');
+			}
+
+			let { data, error } = await supabase
 				.from('ma_memos')
 				.select('*')
 				.eq('user_id', authStore.user.id)
 				.order('created_at', { ascending: false });
 
 			console.log('[MemosStore] fetchFromSupabase() - result:', { dataLength: data?.length, error: error?.message });
+
+			// 0건이면 토큰 갱신 후 재시도 (JWT가 PostgREST에서 인증 안 될 수 있음)
+			if (!error && data?.length === 0) {
+				console.log('[MemosStore] 0 results - trying refreshSession() and retry');
+				const { data: refreshData } = await supabase.auth.refreshSession();
+				if (refreshData.session?.access_token) {
+					try {
+						const payload2 = JSON.parse(atob(refreshData.session.access_token.split('.')[1]));
+						console.log('[MemosStore] Refreshed JWT payload:', { sub: payload2.sub, role: payload2.role, exp: payload2.exp });
+					} catch { /* ignore */ }
+				}
+				const retry = await supabase
+					.from('ma_memos')
+					.select('*')
+					.eq('user_id', authStore.user.id)
+					.order('created_at', { ascending: false });
+				console.log('[MemosStore] fetchFromSupabase() - retry result:', { dataLength: retry.data?.length, error: retry.error?.message });
+				if (!retry.error && retry.data && retry.data.length > 0) {
+					data = retry.data;
+					error = retry.error;
+				}
+			}
+
 			if (error) {
 				console.error('Failed to load memos:', error);
 				toastStore.error('메모 로드 실패');
