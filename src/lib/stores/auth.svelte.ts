@@ -41,7 +41,10 @@ function createAuthStore() {
 
 	let listenerRegistered = false;
 
-	// onAuthStateChange 리스너 등록 (별도 함수)
+	// onAuthStateChange 리스너 등록
+	// initialSessionResolve: initialize()가 INITIAL_SESSION까지 대기하기 위한 콜백
+	let initialSessionResolve: (() => void) | null = null;
+
 	function registerAuthListener() {
 		if (listenerRegistered || !browser) return;
 		listenerRegistered = true;
@@ -52,12 +55,19 @@ function createAuthStore() {
 			state.session = newSession;
 			state.user = newSession?.user || null;
 
-			if (event === 'SIGNED_IN' && newSession?.user) {
+			if (event === 'INITIAL_SESSION') {
+				// INITIAL_SESSION 시점에 Supabase client 내부 auth 컨텍스트가 확정됨.
+				// 이후 DB 쿼리에 올바른 auth 헤더가 포함됨.
+				state.loading = false;
+				state.initialized = true;
+				state.initializing = false;
+				initialSessionResolve?.();
+				initialSessionResolve = null;
+			} else if (event === 'SIGNED_IN' && newSession?.user) {
 				// Store 재초기화 (비인증 모드로 먼저 초기화된 경우에도 서버 데이터 로드)
 				await memosStore.reinit();
 				await foldersStore.reinit();
 				// 실제 로그인(이전에 로그아웃 상태)인 경우에만 토스트 표시
-				// 외부 링크 복귀, 페이지 새로고침 등에서는 토스트 미표시
 				if (!wasLoggedIn && !state.hasShownLoginToast) {
 					state.hasShownLoginToast = true;
 					toastStore.success('로그인되었습니다');
@@ -70,7 +80,6 @@ function createAuthStore() {
 				state.user = null;
 				state.session = null;
 				state.hasShownLoginToast = false;
-				// Store 클린업 (메모/폴더 데이터 + 알림 스케줄 전체 초기화)
 				memosStore.cleanup();
 				foldersStore.cleanup();
 				notificationStore.cleanup();
@@ -79,7 +88,11 @@ function createAuthStore() {
 		});
 	}
 
-	// 초기화
+	// 초기화: onAuthStateChange의 INITIAL_SESSION 이벤트까지 대기.
+	// INITIAL_SESSION 시점에 Supabase client의 auth 컨텍스트가 확정되므로,
+	// 이후 DB 쿼리(memosStore.init 등)가 올바른 인증 헤더로 실행됨.
+	// 기존 getSession() 방식은 localStorage에서 읽기만 하고 client auth를 설정하지 않아
+	// RLS가 적용된 쿼리에서 0건을 반환하는 문제가 있었음.
 	async function initialize() {
 		if (state.initialized || state.initializing || !browser) {
 			return;
@@ -87,29 +100,27 @@ function createAuthStore() {
 
 		state.initializing = true;
 
-		try {
-			console.log('[AuthStore] initialize() - calling getSession()');
-			const { data: { session: currentSession }, error } = await supabase.auth.getSession();
-			console.log('[AuthStore] initialize() - getSession result:', { hasSession: !!currentSession, userId: currentSession?.user?.id, error: error?.message });
+		// 리스너 먼저 등록 (INITIAL_SESSION을 받기 위해)
+		const initialSessionPromise = new Promise<void>((resolve) => {
+			initialSessionResolve = resolve;
+		});
+		registerAuthListener();
 
-			if (error) {
-				console.error('Auth initialization error:', error);
-				state.error = error.message;
-			} else if (currentSession) {
-				state.session = currentSession;
-				state.user = currentSession.user;
-			}
+		// INITIAL_SESSION 이벤트 대기 (타임아웃 5초)
+		try {
+			await Promise.race([
+				initialSessionPromise,
+				new Promise<void>((_, reject) =>
+					setTimeout(() => reject(new Error('INITIAL_SESSION timeout')), 5000)
+				)
+			]);
+			console.log('[AuthStore] initialize() - INITIAL_SESSION received, user:', state.user?.id);
 		} catch (e) {
-			console.error('Auth initialization failed:', e);
-			state.error = e instanceof Error ? e.message : 'Unknown error';
-		} finally {
+			console.error('[AuthStore] initialize() - timeout waiting for INITIAL_SESSION');
 			state.loading = false;
 			state.initialized = true;
 			state.initializing = false;
 		}
-
-		// 인증 상태 변경 리스너 등록
-		registerAuthListener();
 	}
 
 	// Google 로그인 (Auth Worker 사용)
