@@ -165,8 +165,8 @@ function getFilteredMemos(): Memo[] {
 ### Bug 1 후속: Layout ↔ Callback Supabase auth 레이스 컨디션 (AbortError)
 
 - [x] **B1-4**: `+layout.svelte` — `authStore.initialize()`를 `!isAuthCallback` 블록 안으로 이동 ✅
-- [x] **B1-5**: `auth/callback/+page.svelte` — `finishLogin()`에서 `refreshSession()` → `initialize()`로 변경 ✅
-  - B1-4로 layout이 initialize()를 스킵하므로, callback이 직접 호출하여 `onAuthStateChange` 리스너 등록 + 세션 동기화를 모두 수행
+- [ ] **B1-5**: (계획만 존재, 실제 구현 안 됨) — `finishLogin()`에서 `refreshSession()` → `initialize()`로 변경
+  - **실제로는 B1-6/B1-7에서 `initializeWithSession()` 방식으로 직접 구현됨**
 
 #### 현상
 
@@ -219,24 +219,11 @@ if (!isAuthCallback) {
 }
 ```
 
-**B1-5**: `finishLogin()`에서 `refreshSession()` → `initialize()`로 변경:
+**B1-5**: (계획만 존재, 구현 안 됨)
 
-```typescript
-// Before (3차 수정 당시): layout이 initialize()를 먼저 호출 → initialized=true
-await authStore.refreshSession();  // ← initialize() 가드를 피해 세션만 읽음
-
-// After (B1-4 적용 후): layout이 initialize()를 스킵 → initialized=false
-await authStore.initialize();      // ← 가드 통과, 세션 확정 + 리스너 등록 모두 수행
-```
-
-B1-4로 layout이 auth callback에서 `initialize()`를 스킵하므로, callback의 `initialize()`가
-가드(`initialized || initializing`)를 통과하여 정상 실행됨.
-이로써 3차 수정의 `refreshSession()` 우회 방식이 불필요해지고,
-`initialize()`가 리스너 등록과 세션 동기화를 모두 수행하는 정석 경로로 복원됨.
-
-> **참고**: 이 수정은 아래 "Bug 1 재발" 섹션의 user=null 문제도 함께 해결함.
-> layout이 미리 `initialized=true`로 잠그지 않으므로, callback의 `initialize()`가
-> `getSession()`으로 세션을 정상 읽어 `authStore.user`를 확정함.
+B1-4만 적용 후 `finishLogin()`에서 `authStore.initialize()` → `getSession()` 호출 시
+여전히 `signInWithIdToken` 내부 lock과 충돌하여 AbortError 발생.
+→ B1-5 대신 **B1-6/B1-7 (initializeWithSession)** 방식으로 직접 구현됨 (아래 참조).
 
 ---
 
@@ -249,13 +236,12 @@ B1-4로 layout이 auth callback에서 `initialize()`를 스킵하므로, callbac
 
 ## Bug 1 재발: authStore.user null 상태에서 reinit 실행 (2026-02-06)
 
-> **상태: ✅ 완료 (2026-02-06)** → **B1-4/B1-5로 접근 방식 변경됨**
-> **커밋: 6e5e11e**
+> **상태: ⚠️ 부분 해결 → B1-6/B1-7/B1-8/B1-9로 완전 대체됨**
+> **커밋: 6e5e11e (3차 수정, refreshSession 추가)**
 >
-> **⚠️ 대체됨**: 이 섹션의 `refreshSession()` 접근 방식은 위 B1-4/B1-5 수정으로 대체됨.
-> B1-4가 layout의 `initialize()` 호출을 제거하여 근본 원인(`initialized=true` 조기 잠금)이 사라졌으므로,
-> callback이 `initialize()`를 직접 호출하는 정석 경로로 복원됨.
-> `refreshSession()` 메서드는 코드에 잔존하나, auth callback 플로우에서는 더 이상 사용되지 않음.
+> **⚠️ 대체됨**: 이 섹션의 `refreshSession()` 접근 방식은 B1-4 이후 재검토되었고,
+> 최종적으로 **B1-6/B1-7 (initializeWithSession)** + **B1-8/B1-9 (타임아웃 지연)** 방식으로 대체됨.
+> `refreshSession()` 메서드는 코드에 잔존하나, auth callback 플로우에서는 사용되지 않음.
 
 ### 현상 (2차 수정 이후에도 동일)
 
@@ -439,9 +425,9 @@ callback의 `onMount`에서 `signInWithIdToken`/`setSession` 결과의 `data.ses
 | 차수 | 커밋 | 해결 대상 | 방식 |
 |------|------|----------|------|
 | 2차 (B1-1~B1-3) | a613b87 | reinit 동시 호출 경쟁 | `reinitPromise` 대기 패턴 |
-| 3차 (Bug 1 재발) | 6e5e11e | user=null 상태에서 reinit | `refreshSession()`으로 user 확정 |
-| 4차 (B1-4/B1-5) | — | layout ↔ callback 동시 getSession | layout에서 callback일 때 initialize 스킵 |
-| **5차 (B1-6/B1-7)** | **0065192** | **signInWithIdToken 내부 lock ↔ getSession 경쟁** | **`initializeWithSession()`으로 getSession 완전 제거** |
+| 3차 (Bug 1 재발) | 6e5e11e | user=null 상태에서 reinit | `refreshSession()`으로 user 확정 (나중에 대체됨) |
+| 4차 (B1-4) | (B1-4 일부 적용) | layout ↔ callback 동시 getSession | layout에서 callback일 때 initialize 스킵 |
+| **5차 (B1-6/B1-7)** | **0065192** | **signInWithIdToken 내부 lock ↔ callback의 작업** | **`initializeWithSession()`으로 getSession 제거 + 세션 직접 설정** |
 
 ### 안전성 분석
 
@@ -457,4 +443,117 @@ callback의 `onMount`에서 `signInWithIdToken`/`setSession` 결과의 `data.ses
 
 - [x] **V-3**: `svelte-check` — auth 관련 타입 에러 없음 ✅
 - [x] **V-4**: 커밋 완료 (0065192) ✅
-- [ ] **V-5**: 배포 후 Google 로그인 → 설정 페이지 정상 도착 확인
+- [x] **V-5**: 배포 후 Google 로그인 → **여전히 AbortError 발생** ❌
+
+---
+
+## Bug 1 재재재발: onAuthStateChange도 lock 경쟁 유발 (2026-02-06)
+
+> **상태: ✅ 완료 (2026-02-06)**
+> **커밋: a1ec8c7**
+>
+> B1-6/B1-7 수정 이후에도 `memosStore.reinit()`, `foldersStore.reinit()`, FCM 등록 모두 AbortError 발생.
+> `onAuthStateChange` 리스너 등록 자체가 Supabase 내부 lock을 트리거함을 발견.
+
+### 현상 (0065192 배포 후)
+
+B1-6/B1-7 적용 후에도 로그인 시:
+```
+[Auth Callback] Session created successfully
+Failed to load memos: AbortError: signal is aborted without reason
+Failed to load folders: AbortError: signal is aborted without reason
+Failed to save FCM token: AbortError: signal is aborted without reason
+Uncaught (in promise) AbortError: signal is aborted without reason (×3)
+```
+
+`initializeWithSession`이 `getSession()`을 호출하지 않는데도 불구하고 여전히 AbortError 발생.
+
+### 근본 원인: onAuthStateChange 리스너 등록 시 lock 획득
+
+Supabase의 `onAuthStateChange()`는 내부적으로:
+1. 리스너 배열에 콜백 추가
+2. **현재 세션을 읽어 INITIAL_SESSION 이벤트 발생** (내부 `getSession()` 호출)
+3. 이 과정에서 lock 획득 시도 → signInWithIdToken의 lock과 충돌
+
+```
+[타임라인]
+1. signInWithIdToken() 완료 → 세션 생성
+   └── Supabase 내부: lock 보유 중...
+
+2. initializeWithSession(session) 즉시 실행
+   └── supabase.auth.onAuthStateChange(...) ← 리스너 등록
+       └── 내부적으로 getSession() 호출 (INITIAL_SESSION 이벤트용)
+           └── lock 획득 시도 → AbortError! ★
+
+3. memosStore.reinit() 실행
+   └── supabase.from('memos').select() 호출
+       └── Supabase client 내부 lock 여전히 점유 상태
+           └── AbortError 전파! ★
+```
+
+### B1-6/B1-7이 부족했던 이유
+
+`getSession()` 호출은 제거했지만, `onAuthStateChange()` 리스너 등록이 내부적으로 `getSession()`을 호출하여 동일한 lock 경쟁 발생.
+
+### 수정 내용
+
+**핵심 아이디어**: Supabase의 내부 lock이 완전히 해제될 때까지 **모든 Supabase 작업을 지연**.
+
+**B1-8**: `auth/callback/+page.svelte` — `finishLogin()`에서 100ms 지연 추가:
+
+```typescript
+// Supabase 내부 lock이 완전히 해제될 때까지 짧은 지연
+await new Promise(resolve => setTimeout(resolve, 100));
+
+// 이후 reinit/FCM 등록 진행
+await memosStore.reinit();  // ← 이제 안전
+await foldersStore.reinit();
+```
+
+**B1-9**: `auth.svelte.ts` — `onAuthStateChange` 리스너 등록을 200ms 지연:
+
+```typescript
+// Before:
+supabase.auth.onAuthStateChange(...);  // ← 즉시 lock 경쟁
+
+// After:
+setTimeout(() => {
+    supabase.auth.onAuthStateChange(...);  // ← lock 해제 후 등록
+}, 200);
+```
+
+### 수정 레이어 최종 비교
+
+| 차수 | 커밋 | 해결 대상 | 방식 | 상태 |
+|------|------|----------|------|------|
+| 2차 (B1-1~B1-3) | a613b87 | reinit 동시 호출 경쟁 | `reinitPromise` 대기 패턴 | ✅ 유효 |
+| 3차 (Bug 1 재발) | 6e5e11e | user=null 상태에서 reinit | `refreshSession()` 추가 | ⚠️ 대체됨 |
+| 4차 (B1-4) | (일부 적용) | layout ↔ callback 동시 getSession | layout에서 callback일 때 initialize 스킵 | ✅ 유효 |
+| 5차 (B1-6/B1-7) | 0065192 | signInWithIdToken 내부 lock | `initializeWithSession()`으로 getSession 제거 | ⚠️ 불충분 |
+| **6차 (B1-8/B1-9)** | **a1ec8c7** | **onAuthStateChange/reinit lock 경쟁** | **100ms + 200ms 타임아웃 지연** | **✅ 최종** |
+
+### 왜 타임아웃 방식인가?
+
+**이상적인 해결책**:
+- Supabase가 "lock 해제 완료" 이벤트를 제공하면 await할 수 있지만, 그런 API 없음
+- `signInWithIdToken`의 Promise 완료가 "모든 내부 처리 완료"를 보장하지 않음
+
+**실용적 선택**:
+- 100ms/200ms는 경험적으로 충분한 시간 (네트워크 I/O가 아닌 내부 상태 동기화)
+- 사용자 UX에 "로그인 처리 중..." 스피너가 표시되므로 300ms 추가는 눈에 띄지 않음
+- AbortError 발생 시 사용자가 로그인 실패로 인식하는 것보다 나음
+
+### 트레이드오프
+
+| 관점 | 장점 | 단점 |
+|------|------|------|
+| 신뢰성 | AbortError 회피 가능 | 타이밍 의존적 (100ms가 부족할 수도) |
+| 성능 | 300ms 추가 지연 (acceptable) | — |
+| 유지보수 | 간단한 코드 | Supabase 내부 구현 변경 시 재검토 필요 |
+| 대안 비용 | — | 더 나은 해결책 찾기 어려움 |
+
+### 검증
+
+- [x] **V-6**: 커밋 완료 (a1ec8c7) ✅
+- [x] **V-7**: 푸시 및 자동 배포 ✅
+- [ ] **V-8**: 배포 후 Google 로그인 → 설정 페이지 정상 도착 + AbortError 없음 확인
