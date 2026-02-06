@@ -47,6 +47,7 @@ function createAuthStore() {
 		listenerRegistered = true;
 
 		supabase.auth.onAuthStateChange(async (event, newSession) => {
+			console.log('[AuthStore] onAuthStateChange:', event, 'wasLoggedIn:', !!state.user, 'newUser:', newSession?.user?.id);
 			const wasLoggedIn = !!state.user;
 			state.session = newSession;
 			state.user = newSession?.user || null;
@@ -87,7 +88,9 @@ function createAuthStore() {
 		state.initializing = true;
 
 		try {
+			console.log('[AuthStore] initialize() - calling getSession()');
 			const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+			console.log('[AuthStore] initialize() - getSession result:', { hasSession: !!currentSession, userId: currentSession?.user?.id, error: error?.message });
 
 			if (error) {
 				console.error('Auth initialization error:', error);

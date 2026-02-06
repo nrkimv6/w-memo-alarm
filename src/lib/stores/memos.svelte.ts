@@ -219,8 +219,10 @@ function createMemosStore() {
 
 	// 인증 상태 변경 시 강제 재초기화 (로그인 후 메모 로드용)
 	async function reinit() {
+		console.log('[MemosStore] reinit() called - reinitPromise:', !!reinitPromise);
 		if (reinitPromise) {
-			await reinitPromise; // 진행 중인 reinit 완료 대기
+			console.log('[MemosStore] reinit() - awaiting existing promise');
+			await reinitPromise;
 			return;
 		}
 		reinitPromise = doReinit();
@@ -236,6 +238,7 @@ function createMemosStore() {
 	}
 
 	async function init() {
+		console.log('[MemosStore] init() called - initialized:', initialized, 'isAuthenticated:', authStore.isAuthenticated, 'user:', authStore.user?.id);
 		if (initialized) return;
 
 		if (!authStore.isAuthenticated) {
@@ -312,12 +315,14 @@ function createMemosStore() {
 		if (!authStore.user) return;
 
 		try {
+			console.log('[MemosStore] fetchFromSupabase() - querying for user:', authStore.user.id);
 			const { data, error } = await supabase
 				.from('ma_memos')
 				.select('*')
 				.eq('user_id', authStore.user.id)
 				.order('created_at', { ascending: false });
 
+			console.log('[MemosStore] fetchFromSupabase() - result:', { dataLength: data?.length, error: error?.message });
 			if (error) {
 				console.error('Failed to load memos:', error);
 				toastStore.error('메모 로드 실패');
