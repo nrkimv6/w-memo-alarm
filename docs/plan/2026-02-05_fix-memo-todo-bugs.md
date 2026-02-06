@@ -3,10 +3,10 @@
 > 작성일: 2026-02-05
 > 우선순위: P0 (Critical)
 > **상태: ✅ 완료 (2026-02-06)**
-> **최종 커밋: 8b49c9b** (7차 시행착오 포함: a613b87 → 6e5e11e → 0065192 → a1ec8c7 → d9e28cb → 88d5fb9 → 8b49c9b)
+> **최종 커밋: 9fb154b** (시행착오 포함: a613b87 → 6e5e11e → 0065192 → a1ec8c7 → d9e28cb → 88d5fb9 → 8b49c9b → 899fd99 → 9fb154b)
 >
 > **핵심 해결책 요약**:
-> - Bug 1: auth callback에서 Supabase 작업 제거 + layout에서 500ms 지연 후 reinit
+> - Bug 1: callback에서 `window.location.href`로 전체 페이지 리로드 (Supabase lock 근본 해결)
 > - Bug 2: filterStore에 memoType !== 'todo' 필터 추가
 
 ---
@@ -880,3 +880,52 @@ recentMemos = memos.filter(m => m.memoType !== 'todo').slice(0, 5);
 - `syncingFromServer = false` 실행 안 됨
 
 **확인 필요**: 4b0dee9 로그에서 `fetchFromSupabase()` 종료 여부
+
+---
+
+## 10차 수정: 전체 페이지 리로드 (9fb154b) — 최종 해결
+
+### 핵심 통찰
+
+> **"새로고침하면 1초 안에 모든 것이 해결된다"** — 사용자 피드백
+
+모든 이전 시도(5차~9차)는 **Supabase client 전역 lock 안에서** 추가 Supabase 작업을 시도하여 실패.
+`signInWithIdToken()`/`setSession()` 호출 후 같은 Supabase client 인스턴스에서는
+어떤 작업도 AbortError 또는 무한 대기 발생.
+
+### 근본 원인 (확정)
+
+1. `signInWithIdToken()` → Supabase client 내부 전역 lock 획득
+2. 같은 페이지 lifecycle에서 `getSession()`, `onAuthStateChange`, DB query 등 호출 시
+   → lock 경쟁 → AbortError("signal is aborted without reason") 또는 무한 대기
+3. 새 페이지 로드 시 Supabase client가 새로 생성됨 → lock 없음 → 정상 작동
+
+### 이전 시도가 모두 실패한 이유
+
+| 시도 | 접근 | 실패 원인 |
+|------|------|----------|
+| 5차 | `initializeWithSession()` + `onAuthStateChange` | 리스너 등록이 내부적으로 `getSession()` 호출 → lock 경쟁 |
+| 6차 | 100ms/200ms timeout | timeout으로는 lock 해제 불가 (같은 client 인스턴스) |
+| 7차 | callback에서 Supabase 제거 + layout loginSuccess | SPA nav로 layout onMount 재실행 안 됨 |
+| 8차 | layout에서 loginSuccess flag + reinit | goto()는 layout onMount 재실행 안 됨 → reinit 미호출 |
+| 9차 | callback 500ms + reinit | `ensureListenerRegistered()` → 첫 reinit 실패 → reinitPromise 재사용 |
+
+### 해결책
+
+**`window.location.href = returnTo`** — SPA 내비게이션 대신 전체 페이지 리로드.
+
+수정 내용:
+1. **callback `finishLogin()`**: 모든 Supabase/store 작업 제거, `window.location.href`만 사용
+2. **layout `isAuthCallback` 분기**: `ensureListenerRegistered()` 제거 (불필요)
+3. **callback 불필요 import 제거**: authStore, memosStore, foldersStore 등
+4. **디버그 로그 제거**: memos.svelte.ts의 `[MemosStore]` 로그
+
+### 왜 이 방법이 근본적으로 다른가
+
+이전 시도들: lock된 Supabase client 안에서 우회 시도 (timeout, 순서 변경, flag 등)
+이번 수정: **lock된 client를 버리고 새 client 생성** (= 새로고침과 동일한 원리)
+
+세션 토큰은 Supabase가 localStorage에 자동 저장하므로, 새 페이지 로드 시:
+1. 새 Supabase client 생성 (lock 없음)
+2. `authStore.initialize()` → `getSession()` → localStorage에서 세션 읽기
+3. `memosStore.init()` → `fetchFromSupabase()` → 정상 DB 쿼리
