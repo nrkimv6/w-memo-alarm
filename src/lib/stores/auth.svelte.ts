@@ -180,32 +180,36 @@ function createAuthStore() {
 		state.initialized = true;
 		state.initializing = false;
 
-		// onAuthStateChange 리스너 등록
-		supabase.auth.onAuthStateChange(async (event, newSession) => {
-			const wasLoggedIn = !!state.user;
-			state.session = newSession;
-			state.user = newSession?.user || null;
+		// onAuthStateChange 리스너 등록을 비동기로 지연 (Supabase lock 해제 대기)
+		// signInWithIdToken/setSession이 내부적으로 onAuthStateChange를 이미 트리거하므로,
+		// 추가 리스너 등록은 약간의 지연 후 안전하게 수행
+		setTimeout(() => {
+			supabase.auth.onAuthStateChange(async (event, newSession) => {
+				const wasLoggedIn = !!state.user;
+				state.session = newSession;
+				state.user = newSession?.user || null;
 
-			if (event === 'SIGNED_IN' && newSession?.user) {
-				await memosStore.reinit();
-				await foldersStore.reinit();
-				if (!wasLoggedIn && !state.hasShownLoginToast) {
-					state.hasShownLoginToast = true;
-					toastStore.success('로그인되었습니다');
+				if (event === 'SIGNED_IN' && newSession?.user) {
+					await memosStore.reinit();
+					await foldersStore.reinit();
+					if (!wasLoggedIn && !state.hasShownLoginToast) {
+						state.hasShownLoginToast = true;
+						toastStore.success('로그인되었습니다');
+					}
+				} else if (event === 'SIGNED_OUT') {
+					if (state.user?.id) {
+						deactivateAllFCMTokens(state.user.id);
+					}
+					state.user = null;
+					state.session = null;
+					state.hasShownLoginToast = false;
+					memosStore.cleanup();
+					foldersStore.cleanup();
+					notificationStore.cleanup();
+					toastStore.info('로그아웃되었습니다');
 				}
-			} else if (event === 'SIGNED_OUT') {
-				if (state.user?.id) {
-					deactivateAllFCMTokens(state.user.id);
-				}
-				state.user = null;
-				state.session = null;
-				state.hasShownLoginToast = false;
-				memosStore.cleanup();
-				foldersStore.cleanup();
-				notificationStore.cleanup();
-				toastStore.info('로그아웃되었습니다');
-			}
-		});
+			});
+		}, 200);
 	}
 
 	return {

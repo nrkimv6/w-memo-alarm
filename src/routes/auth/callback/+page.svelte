@@ -203,6 +203,10 @@
 		// getSession()이 AbortError를 발생시키므로, initialize() 대신 사용.
 		authStore.initializeWithSession(session);
 
+		// Supabase 내부 lock이 완전히 해제될 때까지 짧은 지연
+		// (signInWithIdToken/setSession 후처리 완료 대기)
+		await new Promise(resolve => setTimeout(resolve, 100));
+
 		// 스토어 재초기화: authStore.user가 확정된 후 실행하여
 		// init()이 인증된 경로(서버 fetch)를 타도록 보장
 		await memosStore.reinit();
