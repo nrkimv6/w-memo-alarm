@@ -2,8 +2,8 @@
 
 > 작성일: 2026-02-05
 > 우선순위: P0 (Critical)
-> **상태: ✅ 완료 (2026-02-06)**
-> **커밋: a613b87, + 후속 수정 (2026-02-06)**
+> **상태: 버그 (5차 수정 진행 중 — 배포 검증 필요)**
+> **커밋: a613b87, 6e5e11e, 0065192**
 
 ---
 
@@ -342,3 +342,119 @@ await memosStore.reinit();         // ← isAuthenticated === true 보장
 | 보완 관계 | 3차 없이는 user=null 문제 미해결 | 2차 없이는 동시 호출 문제 미해결 |
 
 두 수정은 서로 다른 레이어의 문제를 해결하며, 함께 적용되어야 완전한 수정이 됨.
+
+---
+
+## Bug 1 재재발: getSession() AbortError로 로그인 실패 (2026-02-06)
+
+> **상태: ✅ 완료 (2026-02-06)**
+> **커밋: 0065192**
+>
+> B1-4/B1-5 수정 이후에도 `getSession()` 호출 자체가 AbortError로 실패하는 문제.
+> `initializeWithSession()` 방식으로 `getSession()` 호출을 완전히 제거하여 해결.
+
+### 현상
+
+B1-4/B1-5 적용 후에도 로그인 시:
+1. 스피너가 돌고
+2. "Session created successfully" 로그 출력 후
+3. **로그인 안 된 상태**로 설정 페이지(`/settings`)에 도착
+
+콘솔 에러:
+```
+[Auth Callback] Session created successfully
+Auth initialization failed: AbortError: signal is aborted without reason
+Uncaught (in promise) AbortError: signal is aborted without reason (×3)
+```
+
+### 근본 원인: Supabase 내부 lock 경쟁
+
+B1-4는 layout의 `initialize()` 호출을 auth callback에서 스킵하여 **layout ↔ callback 간** 동시 호출 문제를 해결했지만,
+`signInWithIdToken()` **직후** Supabase 내부에서 lock을 잡고 있는 상태에서 `finishLogin()`의 `authStore.initialize()` → `getSession()`이 동일한 lock을 요청하여 AbortError 발생.
+
+```
+[타임라인]
+1. signInWithIdToken() 완료 → 세션 생성
+   └── Supabase 내부: auth 상태 변경 처리, lock 보유 중...
+
+2. finishLogin() 즉시 실행
+   └── authStore.initialize()
+       └── getSession() → lock 획득 시도
+           └── Supabase가 진행 중인 요청의 AbortController.abort() 호출
+               └── AbortError 발생!
+
+3. initialize()의 catch 블록:
+   └── state.error = "AbortError..." (로그만 남기고 계속 진행)
+   └── state.user = null (getSession 실패로 세션 못 읽음)
+   └── state.initialized = true ★
+
+4. finishLogin() 계속 진행:
+   └── memosStore.reinit() → isAuthenticated=false → 빈 캐시
+   └── goto('/settings') → 미인증 상태로 도착
+```
+
+### B1-4/B1-5가 부족했던 이유
+
+B1-4는 **layout과 callback 사이**의 동시 호출을 제거했으나,
+**signInWithIdToken 내부 처리**와 **callback의 initialize()** 사이의 lock 경쟁은 해결하지 못함.
+`signInWithIdToken`이 반환된 직후에도 Supabase 내부적으로 세션 저장, 이벤트 발행 등 후처리가 비동기로 진행되며 lock을 계속 보유함.
+
+### 수정 내용
+
+**핵심 아이디어**: `signInWithIdToken`/`setSession`은 이미 세션을 반환함. `getSession()`을 다시 호출할 이유가 없음.
+
+**B1-6**: `auth.svelte.ts` — `initializeWithSession(session)` 메서드 추가:
+
+```typescript
+// getSession() 호출 없이, 이미 확보된 세션으로 직접 초기화
+function initializeWithSession(session: Session) {
+    if (!browser) return;
+    state.session = session;
+    state.user = session.user;
+    state.loading = false;
+    state.initialized = true;
+    state.initializing = false;
+
+    // onAuthStateChange 리스너 등록 (initialize()와 동일)
+    supabase.auth.onAuthStateChange(async (event, newSession) => {
+        // ... (initialize()의 리스너와 동일한 로직)
+    });
+}
+```
+
+**B1-7**: `auth/callback/+page.svelte` — `finishLogin()`에서 세션 직접 전달:
+
+```typescript
+// Before (B1-5):
+await authStore.initialize();  // ← getSession() 호출 → AbortError
+
+// After (B1-6/B1-7):
+authStore.initializeWithSession(session);  // ← 세션 직접 설정, getSession() 불필요
+```
+
+callback의 `onMount`에서 `signInWithIdToken`/`setSession` 결과의 `data.session`을 `finishLogin(returnTo, session)`으로 전달.
+
+### 수정 레이어 누적 비교
+
+| 차수 | 커밋 | 해결 대상 | 방식 |
+|------|------|----------|------|
+| 2차 (B1-1~B1-3) | a613b87 | reinit 동시 호출 경쟁 | `reinitPromise` 대기 패턴 |
+| 3차 (Bug 1 재발) | 6e5e11e | user=null 상태에서 reinit | `refreshSession()`으로 user 확정 |
+| 4차 (B1-4/B1-5) | — | layout ↔ callback 동시 getSession | layout에서 callback일 때 initialize 스킵 |
+| **5차 (B1-6/B1-7)** | **0065192** | **signInWithIdToken 내부 lock ↔ getSession 경쟁** | **`initializeWithSession()`으로 getSession 완전 제거** |
+
+### 안전성 분석
+
+| 고려사항 | 상태 |
+|---------|------|
+| `onAuthStateChange` 리스너 중복 등록 | 안전 — `initializeWithSession` 후 layout의 `initialize()`는 `initialized=true` 가드로 스킵됨 |
+| SIGNED_IN 이벤트 + finishLogin의 reinit 이중 호출 | 안전 — B1-1의 `reinitPromise` 패턴이 보호 |
+| INITIAL_SESSION 이벤트 | 안전 — SIGNED_IN/SIGNED_OUT 외 이벤트는 무시됨 |
+| 페이지 새로고침 시 | 안전 — layout의 `initialize()` → `getSession()` 정상 경로 (lock 경쟁 없음) |
+| `refreshSession()` 잔존 | 무해 — auth callback에서 더 이상 사용되지 않으나 다른 용도로 활용 가능 |
+
+### 검증
+
+- [x] **V-3**: `svelte-check` — auth 관련 타입 에러 없음 ✅
+- [x] **V-4**: 커밋 완료 (0065192) ✅
+- [ ] **V-5**: 배포 후 Google 로그인 → 설정 페이지 정상 도착 확인
