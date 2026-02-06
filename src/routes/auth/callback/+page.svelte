@@ -193,16 +193,32 @@
 	async function finishLogin(returnTo: string, session: import('@supabase/supabase-js').Session) {
 		status = "로그인 완료...";
 
-		// 로그인 성공 플래그 저장
-		if (browser) {
-			sessionStorage.setItem("login_success", "true");
-		}
-
 		// Auth store 초기화: 이미 확보된 세션을 직접 전달.
 		authStore.initializeWithSession(session);
 
-		// SPA 네비게이션으로 즉시 이동 (Supabase lock 경쟁 회피)
-		// 스토어 초기화는 페이지 이동 후 layout의 일반 경로에서 수행됨
+		// Supabase lock 완전 해제 대기
+		await new Promise(resolve => setTimeout(resolve, 500));
+
+		// Stores 재초기화 (서버 데이터 fetch)
+		await memosStore.reinit();
+		await foldersStore.reinit();
+		filterStore.init();
+
+		// 알림 관련 초기화
+		notificationStore.registerRemindersToServiceWorker();
+
+		// FCM 초기화
+		if (authStore.user?.id) {
+			registerFCMToken(authStore.user.id).then((result) => {
+				if (result) {
+					setupForegroundMessageListener();
+				}
+			}).catch((err) => {
+				console.error('[Auth Callback] FCM registration error:', err);
+			});
+		}
+
+		// SPA 네비게이션으로 이동 (스토어 초기화 완료 후)
 		goto(returnTo, { replaceState: true });
 	}
 </script>

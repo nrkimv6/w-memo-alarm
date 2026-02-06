@@ -105,29 +105,17 @@
 		if (!isAuthCallback) {
 			// authStore 초기화 완료 후 stores 초기화
 			await authStore.initialize();
+
+			// 메모 스토어 초기화 (authStore 상태 확정 후)
+			// 로컬 캐시를 즉시 로드하여 새로고침 시에도 메모가 표시됨
+			await memosStore.init();
+			filterStore.init();
+			foldersStore.init();
 		} else {
-			// auth callback 페이지에서는 callback 페이지가 처리
+			// auth callback 페이지에서는 callback 페이지가 모든 초기화 담당
 			// 단, 리스너는 여기서 등록 (Supabase lock 해제 후)
 			authStore.ensureListenerRegistered();
 		}
-
-		// 로그인 성공 플래그 확인 (auth callback에서 설정)
-		const loginSuccess = browser && sessionStorage.getItem("login_success") === "true";
-		if (loginSuccess) {
-			sessionStorage.removeItem("login_success");
-			// auth callback → goto() 후 도착 시: 약간의 지연 후 stores 재초기화
-			// Supabase lock이 완전히 해제될 때까지 대기
-			await new Promise(resolve => setTimeout(resolve, 500));
-			// reinit으로 서버에서 데이터 fetch
-			await memosStore.reinit();
-			await foldersStore.reinit();
-		} else {
-			// 일반 페이지 로드: 로컬 캐시 먼저 로드
-			await memosStore.init();
-			foldersStore.init();
-		}
-
-		filterStore.init();
 
 		// 메모 로드 완료 후 Service Worker에 알림 스케줄 등록
 		notificationStore.registerRemindersToServiceWorker();
