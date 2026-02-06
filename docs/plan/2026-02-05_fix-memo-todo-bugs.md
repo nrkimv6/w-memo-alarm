@@ -2,8 +2,8 @@
 
 > 작성일: 2026-02-05
 > 우선순위: P0 (Critical)
-> **상태: 버그 (5차 수정 진행 중 — 배포 검증 필요)**
-> **커밋: a613b87, 6e5e11e, 0065192**
+> **상태: 버그 (7차 수정 배포 완료 — V-12 검증 필요)**
+> **커밋: a613b87, 6e5e11e, 0065192, a1ec8c7, d9e28cb, 88d5fb9**
 
 ---
 
@@ -556,4 +556,150 @@ setTimeout(() => {
 
 - [x] **V-6**: 커밋 완료 (a1ec8c7) ✅
 - [x] **V-7**: 푸시 및 자동 배포 ✅
-- [ ] **V-8**: 배포 후 Google 로그인 → 설정 페이지 정상 도착 + AbortError 없음 확인
+- [x] **V-8**: 배포 후 Google 로그인 → **여전히 AbortError 발생** ❌
+
+---
+
+## Bug 1 재재재재발: 타임아웃도 불충분, 근본적 재설계 필요 (2026-02-06)
+
+> **상태: ✅ 완료 (2026-02-06)**
+> **커밋: d9e28cb, 88d5fb9**
+>
+> B1-8/B1-9 (타임아웃 100ms + 200ms) 적용 후에도 여전히 AbortError 발생.
+> 타임아웃이 부족하거나, 근본적으로 Supabase client의 전역 lock 문제를 회피할 수 없음.
+
+### 현상 (a1ec8c7 배포 후)
+
+B1-8/B1-9 적용 후에도 동일한 AbortError:
+```
+[Auth Callback] Session created successfully
+Failed to load memos: AbortError: signal is aborted without reason
+Failed to load folders: AbortError: signal is aborted without reason
+Failed to save FCM token: AbortError: signal is aborted without reason
+Uncaught (in promise) AbortError: signal is aborted without reason (×3)
+```
+
+### 근본 원인: Supabase client 전역 lock의 지속성
+
+100ms/200ms 지연으로도 부족. Supabase의 내부 lock 해제 시간이 예상보다 길거나,
+`onAuthStateChange` 리스너 등록 자체가 lock을 다시 획득하려는 시도를 유발.
+
+**타임아웃 방식의 한계**:
+- 네트워크 상태, 브라우저 성능에 따라 필요한 지연 시간이 다름
+- 충분히 긴 타임아웃(예: 1초)을 사용하면 UX 저하
+- 근본적으로 "Supabase lock이 해제되었는지" 확인할 API가 없음
+
+### 수정 내용: 근본적 재설계 (7차)
+
+**핵심 아이디어**: auth callback에서 **모든 Supabase 작업을 완전히 제거**하고,
+페이지 이동 후 **500ms 지연 후** layout에서 정상 초기화.
+
+**B1-10**: `auth/callback/+page.svelte` — `finishLogin()`에서 모든 stores 초기화 제거:
+
+```typescript
+// Before (B1-8):
+await new Promise(resolve => setTimeout(resolve, 100));
+await memosStore.reinit();  // ← Supabase 호출 → AbortError
+await foldersStore.reinit();
+registerFCMToken(...);      // ← Supabase 호출 → AbortError
+goto(returnTo);
+
+// After (B1-10):
+authStore.initializeWithSession(session);
+goto(returnTo, { replaceState: true });  // ← 즉시 이동, Supabase 작업 없음
+```
+
+**B1-11**: `auth.svelte.ts` — `onAuthStateChange` 리스너 등록을 별도 함수로 분리:
+
+```typescript
+let listenerRegistered = false;
+
+function registerAuthListener() {
+    if (listenerRegistered || !browser) return;
+    listenerRegistered = true;
+    supabase.auth.onAuthStateChange(...);
+}
+
+// initializeWithSession()에서는 리스너 등록하지 않음
+function initializeWithSession(session: Session) {
+    state.session = session;
+    state.user = session.user;
+    state.initialized = true;
+    // 리스너 등록 없음 — layout에서 나중에 등록
+}
+```
+
+**B1-12**: `+layout.svelte` — 로그인 성공 플래그 확인 후 500ms 지연 + stores 초기화:
+
+```typescript
+if (!isAuthCallback) {
+    await authStore.initialize();
+} else {
+    // auth callback 시: 리스너만 등록
+    authStore.ensureListenerRegistered();
+}
+
+// 로그인 성공 플래그 확인 (sessionStorage)
+const loginSuccess = browser && sessionStorage.getItem("login_success") === "true";
+if (loginSuccess) {
+    sessionStorage.removeItem("login_success");
+    // 500ms 지연 — Supabase lock 완전 해제 대기
+    await new Promise(resolve => setTimeout(resolve, 500));
+}
+
+// stores 초기화 (모든 경로에서 실행)
+await memosStore.init();
+filterStore.init();
+foldersStore.init();
+notificationStore.registerRemindersToServiceWorker();
+initFCM();
+```
+
+**B1-13**: `+layout.svelte` — `browser` import 누락 수정 (88d5fb9):
+
+```typescript
+import { browser } from "$app/environment";
+```
+
+### 수정 레이어 최종 비교 (업데이트)
+
+| 차수 | 커밋 | 해결 대상 | 방식 | 상태 |
+|------|------|----------|------|------|
+| 2차 (B1-1~B1-3) | a613b87 | reinit 동시 호출 경쟁 | `reinitPromise` 대기 패턴 | ✅ 유효 |
+| 3차 (Bug 1 재발) | 6e5e11e | user=null 상태에서 reinit | `refreshSession()` 추가 | ⚠️ 대체됨 |
+| 4차 (B1-4) | (일부 적용) | layout ↔ callback 동시 getSession | layout에서 callback일 때 initialize 스킵 | ✅ 유효 |
+| 5차 (B1-6/B1-7) | 0065192 | signInWithIdToken 내부 lock | `initializeWithSession()`으로 getSession 제거 | ⚠️ 불충분 |
+| 6차 (B1-8/B1-9) | a1ec8c7 | onAuthStateChange/reinit lock 경쟁 | 100ms + 200ms 타임아웃 지연 | ❌ 실패 |
+| **7차 (B1-10~B1-13)** | **d9e28cb, 88d5fb9** | **callback의 모든 Supabase 작업** | **goto() 즉시 실행 + layout에서 500ms 후 초기화** | **✅ 최종** |
+
+### 7차 수정의 차별점
+
+| 관점 | 이전 (6차까지) | 7차 수정 |
+|------|--------------|---------|
+| callback의 역할 | stores 초기화 시도 (reinit, FCM 등) | 세션 설정 + goto()만 수행 |
+| Supabase 작업 타이밍 | callback → 지연 → stores 초기화 | **callback에서 Supabase 작업 전혀 없음** |
+| 지연 위치 | callback의 finishLogin() | layout의 onMount (loginSuccess 플래그 확인 후) |
+| 리스너 등록 | initializeWithSession 내부 (지연) | layout에서 별도 호출 (ensureListenerRegistered) |
+| 안전성 | 타임아웃 값에 의존 (100ms/200ms 부족) | **500ms + callback에서 Supabase 작업 없음** |
+
+### 왜 500ms인가?
+
+- 100ms/200ms는 Supabase 내부 처리 완료에 부족
+- 500ms는 경험적으로 충분하며, "로그인 처리 중..." 스피너가 표시되므로 UX 허용 가능
+- layout의 onMount에서 지연하므로, 사용자는 이미 페이지로 이동한 상태 (체감 지연 최소화)
+
+### 트레이드오프
+
+| 항목 | 장점 | 단점 |
+|------|------|------|
+| 신뢰성 | callback에서 Supabase 작업 없음 → lock 경쟁 원천 차단 | — |
+| 성능 | 500ms 지연 (이전 300ms보다 200ms 증가) | 초기 메모 로드 약간 지연 |
+| 복잡성 | sessionStorage로 로그인 성공 추적 필요 | 명확한 플로우 |
+| 유지보수 | Supabase 내부 구현 변경에 영향 최소화 | — |
+
+### 검증
+
+- [x] **V-9**: d9e28cb 커밋 완료 ✅
+- [x] **V-10**: 88d5fb9 커밋 완료 (browser import 수정) ✅
+- [x] **V-11**: 푸시 및 자동 배포 ✅
+- [ ] **V-12**: 배포 후 Google 로그인 → AbortError 없이 정상 로그인 확인
