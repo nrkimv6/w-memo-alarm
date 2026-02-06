@@ -3,7 +3,7 @@
 > 작성일: 2026-02-05
 > 우선순위: P0 (Critical)
 > **상태: 🔄 진행 중 (2026-02-06)**
-> **최신 커밋: e9fca7f** (시행착오 포함: a613b87 → … → 0845e35 → e9fca7f)
+> **최신 커밋: 1541a45** (시행착오 포함: a613b87 → … → 0845e35 → e9fca7f → 1541a45)
 >
 > **현재 상황**:
 > - Bug 2: ✅ 완료 (filterStore에 memoType !== 'todo' 필터 추가)
@@ -1069,6 +1069,31 @@ registerAuthListener() → INITIAL_SESSION 대기 → user 설정 → memosStore
 - `getSession()`은 세션을 반환하므로 access_token은 DB 쿼리에 포함되어야 함
 - 그런데 0건 → **가설**: DB 쿼리 시점에 `getSession()` 내부가 다른 결과를 반환하거나, JWT `sub`와 `user_id` 불일치
 
-**다음 진단 (e9fca7f)**: `fetchFromSupabase()` 직전에 `getSession()` 결과와 access_token prefix 로그 추가
-- access_token 존재 여부 확인 → auth 헤더 포함 여부 판별
-- 수동 새로고침 시와 비교하여 차이점 식별
+**진단 결과 (e9fca7f → 2026-02-06 17:09)**:
+```
+session check: {hasSession: true, hasAccessToken: true, tokenPrefix: 'eyJhbGciOiJFUzI1NiIs', userId: '7206e84e-...'}
+fetchFromSupabase() - result: {dataLength: 0, error: undefined}
+```
+
+**확정**: 세션 존재 ✅, access_token 존재 ✅, **그런데 0건** ❌
+
+**새로운 발견**: `eyJhbGciOiJFUzI1NiIs` = `{"alg":"ES256"` → **비대칭 JWT (ES256)**
+- Supabase 표준 토큰은 HS256. ES256는 프로젝트 설정에 따라 다름.
+- PostgREST가 ES256 토큰의 `auth.uid()`를 올바르게 추출하지 못할 가능성
+- 또는 JWT의 `sub`/`role` 클레임이 올바르지 않을 가능성
+
+**Supabase PostgREST `_getAccessToken()` 소스 확인** (node_modules):
+```javascript
+// line 327-332: supabase-js/dist/index.mjs
+async _getAccessToken() {
+    const { data } = await _this.auth.getSession();
+    return data.session?.access_token ?? _this.supabaseKey;  // anon key fallback
+}
+```
+→ `getSession()`이 세션을 반환하므로 access_token이 사용됨. anon key는 아님.
+
+**가설**: `signInWithIdToken()` 직후 발급된 access_token이 PostgREST에서 인증 실패 (서명 검증 실패 또는 role/sub 문제) → `auth.uid()` = NULL → RLS 0건. `refreshSession()` 후 갱신된 토큰은 정상일 수 있음.
+
+**다음 진단 (1541a45)**: JWT payload 디코딩 (`sub`, `role`, `exp`) + 0건 시 `refreshSession()` 후 재시도
+- 원본 토큰과 갱신 토큰의 payload 비교
+- 재시도 후 dataLength > 0이면 토큰 문제 확정
