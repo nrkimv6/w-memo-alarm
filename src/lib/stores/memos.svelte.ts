@@ -315,7 +315,14 @@ function createMemosStore() {
 		if (!authStore.user) return;
 
 		try {
-			console.log('[MemosStore] fetchFromSupabase() - querying for user:', authStore.user.id);
+			// DB 쿼리 직전 세션 상태 확인 — auth 헤더가 포함되는지 진단
+			const { data: { session: currentSession } } = await supabase.auth.getSession();
+			console.log('[MemosStore] fetchFromSupabase() - session check:', {
+				hasSession: !!currentSession,
+				hasAccessToken: !!currentSession?.access_token,
+				tokenPrefix: currentSession?.access_token?.substring(0, 20),
+				userId: authStore.user.id
+			});
 			const { data, error } = await supabase
 				.from('ma_memos')
 				.select('*')
