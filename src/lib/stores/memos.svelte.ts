@@ -215,20 +215,24 @@ function createMemosStore() {
 	let initialized = $state(false);
 	let syncingFromServer = $state(false);
 	let subscription: RealtimeChannel | null = null;
-	let isReinitializing = false; // reinit() 동시 실행 방지
+	let reinitPromise: Promise<void> | null = null; // reinit() 동시 호출 대기용
 
 	// 인증 상태 변경 시 강제 재초기화 (로그인 후 메모 로드용)
 	async function reinit() {
-		if (isReinitializing) return; // 동시 호출 방지
-		isReinitializing = true;
-		try {
-			subscription?.unsubscribe();
-			subscription = null;
-			initialized = false;
-			await init();
-		} finally {
-			isReinitializing = false;
+		if (reinitPromise) {
+			await reinitPromise; // 진행 중인 reinit 완료 대기
+			return;
 		}
+		reinitPromise = doReinit();
+		await reinitPromise;
+		reinitPromise = null;
+	}
+
+	async function doReinit() {
+		subscription?.unsubscribe();
+		subscription = null;
+		initialized = false;
+		await init();
 	}
 
 	async function init() {

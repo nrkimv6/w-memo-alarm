@@ -103,6 +103,9 @@ function createFilterStore() {
 	function getFilteredMemos(): Memo[] {
 		let result = [...memosStore.memos];
 
+		// Exclude todos (메모 페이지에서 할일 표시 방지)
+		result = result.filter((m) => m.memoType !== 'todo');
+
 		// Filter by active status
 		if (!showInactive) {
 			result = result.filter((m) => m.isActive !== false);
