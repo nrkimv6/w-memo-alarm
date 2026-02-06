@@ -2,12 +2,15 @@
 
 > 작성일: 2026-02-05
 > 우선순위: P0 (Critical)
-> **상태: ✅ 완료 (2026-02-06)**
-> **최종 커밋: 9fb154b** (시행착오 포함: a613b87 → 6e5e11e → 0065192 → a1ec8c7 → d9e28cb → 88d5fb9 → 8b49c9b → 899fd99 → 9fb154b)
+> **상태: 🔄 진행 중 (2026-02-06)**
+> **최신 커밋: 84bdbfb** (시행착오 포함: a613b87 → … → 9fb154b → 84bdbfb)
 >
-> **핵심 해결책 요약**:
-> - Bug 1: callback에서 `window.location.href`로 전체 페이지 리로드 (Supabase lock 근본 해결)
-> - Bug 2: filterStore에 memoType !== 'todo' 필터 추가
+> **현재 상황**:
+> - Bug 2: ✅ 완료 (filterStore에 memoType !== 'todo' 필터 추가)
+> - Bug 1: ❌ 미해결 — 10차 수정(`window.location.href` 전체 페이지 리로드)에서도 메모 0건 표시
+>   - 전체 페이지 리로드는 성공 (AbortError 해소)
+>   - 그러나 `memosStore.memos.length = 0`, `initialized = true` → **fetchFromSupabase()가 0건 반환하거나 경쟁 상태로 실패**
+>   - 84bdbfb에서 디버그 로그 추가하여 원인 추적 중
 
 ---
 
@@ -929,3 +932,25 @@ recentMemos = memos.filter(m => m.memoType !== 'todo').slice(0, 5);
 1. 새 Supabase client 생성 (lock 없음)
 2. `authStore.initialize()` → `getSession()` → localStorage에서 세션 읽기
 3. `memosStore.init()` → `fetchFromSupabase()` → 정상 DB 쿼리
+
+### 10차 결과: ❌ 실패
+
+**사용자 테스트 (2026-02-06 16:13)**:
+- 전체 페이지 리로드는 정상 작동 (`Navigated to /settings` 두 번째 로드 확인)
+- AbortError 없음 (lock 문제는 해소)
+- **그러나 `memosStore.memos.length = 0`, `initialized = true`, `loading = false`**
+- 즉, `fetchFromSupabase()`가 실행됐지만 결과가 0건
+
+**가능한 원인 (조사 중)**:
+1. `onAuthStateChange` `SIGNED_IN` → `reinit()` 와 layout의 `init()` 경쟁
+   - layout: `authStore.initialize()` → `registerAuthListener()` → `SIGNED_IN` → `reinit()` (비동기)
+   - layout: `memosStore.init()` (동기 순서상 `reinit()` 보다 먼저 실행?)
+   - `init()`의 `if (initialized) return;`과 `reinit()`의 `initialized = false`가 타이밍에 따라 충돌
+2. `getSession()`은 성공했지만 DB 쿼리 시 세션 토큰이 아직 유효하지 않음
+3. `fetchFromSupabase()` 쿼리 자체가 0건 반환 (user_id 불일치?)
+
+**다음 단계**: 84bdbfb 디버그 로그 배포 후 확인
+- `[AuthStore] initialize()` — getSession 결과
+- `[AuthStore] onAuthStateChange` — SIGNED_IN 이벤트 발생 시점
+- `[MemosStore] init()` / `reinit()` — 호출 순서 및 횟수
+- `[MemosStore] fetchFromSupabase()` — dataLength, error 값
