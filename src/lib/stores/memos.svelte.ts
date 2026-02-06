@@ -314,12 +314,16 @@ function createMemosStore() {
 	async function fetchFromSupabase() {
 		if (!authStore.user) return;
 
+		console.log('[MemosStore] fetchFromSupabase() - user.id:', authStore.user.id);
+
 		try {
 			const { data, error } = await supabase
 				.from('ma_memos')
 				.select('*')
 				.eq('user_id', authStore.user.id)
 				.order('created_at', { ascending: false });
+
+			console.log('[MemosStore] fetchFromSupabase() - result:', { dataLength: data?.length, error });
 
 			if (error) {
 				console.error('Failed to load memos:', error);
