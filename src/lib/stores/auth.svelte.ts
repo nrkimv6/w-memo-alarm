@@ -158,6 +158,17 @@ function createAuthStore() {
 		}
 	}
 
+	// 세션 상태를 Supabase에서 명시적으로 다시 읽어 동기화
+	// (onAuthStateChange 타이밍에 의존하지 않고 확실하게 user 상태 반영)
+	async function refreshSession() {
+		if (!browser) return;
+		const { data: { session: currentSession } } = await supabase.auth.getSession();
+		if (currentSession) {
+			state.session = currentSession;
+			state.user = currentSession.user;
+		}
+	}
+
 	return {
 		get user() { return state.user; },
 		get session() { return state.session; },
@@ -166,6 +177,7 @@ function createAuthStore() {
 		get isAuthenticated() { return !!state.user; },
 
 		initialize,
+		refreshSession,
 		signInWithGoogle,
 		signInWithKakao,
 		signOut
