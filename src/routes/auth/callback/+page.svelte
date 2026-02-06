@@ -128,7 +128,7 @@
 					console.log("[Auth Callback] Using existing session");
 					const safeReturnTo =
 						tokens?.returnTo === "/login" ? "/" : tokens?.returnTo || "/";
-					await finishLogin(safeReturnTo);
+					await finishLogin(safeReturnTo, session);
 					return;
 				}
 
@@ -138,9 +138,10 @@
 			status = "인증 처리 중...";
 
 			// 카카오는 Supabase 토큰 직접 사용 (setSession)
+			let session;
 			if (tokens.supabase_access_token && tokens.supabase_refresh_token) {
 				console.log("[Auth Callback] Using Supabase tokens (Kakao)");
-				const { error: sessionError } = await supabase.auth.setSession({
+				const { data, error: sessionError } = await supabase.auth.setSession({
 					access_token: tokens.supabase_access_token,
 					refresh_token: tokens.supabase_refresh_token,
 				});
@@ -148,6 +149,7 @@
 					console.error("[Auth Callback] setSession error:", sessionError);
 					throw sessionError;
 				}
+				session = data.session;
 			} else if (tokens.id_token && tokens.access_token) {
 				// 구글은 기존 방식 (signInWithIdToken)
 				console.log("[Auth Callback] Using signInWithIdToken (Google)");
@@ -166,17 +168,19 @@
 					throw signInError;
 				}
 
-				if (!data.session) {
-					throw new Error("세션 생성에 실패했습니다.");
-				}
+				session = data.session;
 			} else {
 				throw new Error("유효한 토큰을 찾을 수 없습니다.");
+			}
+
+			if (!session) {
+				throw new Error("세션 생성에 실패했습니다.");
 			}
 
 			console.log("[Auth Callback] Session created successfully");
 			const safeReturnTo =
 				tokens.returnTo === "/login" ? "/" : tokens.returnTo || "/";
-			await finishLogin(safeReturnTo);
+			await finishLogin(safeReturnTo, session);
 		} catch (err) {
 			console.error("[Auth Callback] Error:", err);
 			error =
@@ -186,7 +190,7 @@
 		}
 	});
 
-	async function finishLogin(returnTo: string) {
+	async function finishLogin(returnTo: string, session: import('@supabase/supabase-js').Session) {
 		status = "로그인 완료...";
 
 		// 로그인 성공 플래그 저장
@@ -194,10 +198,10 @@
 			sessionStorage.setItem("login_success", "true");
 		}
 
-		// Auth store 초기화: getSession()으로 세션 확정 + onAuthStateChange 리스너 등록.
-		// layout은 auth callback 페이지일 때 initialize()를 스킵하므로(AbortError 방지),
-		// callback이 직접 호출하여 리스너 등록과 세션 동기화를 모두 수행.
-		await authStore.initialize();
+		// Auth store 초기화: 이미 확보된 세션을 직접 전달.
+		// signInWithIdToken/setSession 직후 Supabase 내부 lock 경쟁으로
+		// getSession()이 AbortError를 발생시키므로, initialize() 대신 사용.
+		authStore.initializeWithSession(session);
 
 		// 스토어 재초기화: authStore.user가 확정된 후 실행하여
 		// init()이 인증된 경로(서버 fetch)를 타도록 보장

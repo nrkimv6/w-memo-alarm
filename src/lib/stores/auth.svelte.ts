@@ -169,6 +169,45 @@ function createAuthStore() {
 		}
 	}
 
+	// 이미 확보된 세션으로 직접 초기화 (auth callback 전용)
+	// signInWithIdToken/setSession 직후 Supabase 내부 lock 경쟁으로
+	// getSession()이 AbortError를 발생시키므로, 세션을 직접 전달받아 설정.
+	function initializeWithSession(session: Session) {
+		if (!browser) return;
+		state.session = session;
+		state.user = session.user;
+		state.loading = false;
+		state.initialized = true;
+		state.initializing = false;
+
+		// onAuthStateChange 리스너 등록
+		supabase.auth.onAuthStateChange(async (event, newSession) => {
+			const wasLoggedIn = !!state.user;
+			state.session = newSession;
+			state.user = newSession?.user || null;
+
+			if (event === 'SIGNED_IN' && newSession?.user) {
+				await memosStore.reinit();
+				await foldersStore.reinit();
+				if (!wasLoggedIn && !state.hasShownLoginToast) {
+					state.hasShownLoginToast = true;
+					toastStore.success('로그인되었습니다');
+				}
+			} else if (event === 'SIGNED_OUT') {
+				if (state.user?.id) {
+					deactivateAllFCMTokens(state.user.id);
+				}
+				state.user = null;
+				state.session = null;
+				state.hasShownLoginToast = false;
+				memosStore.cleanup();
+				foldersStore.cleanup();
+				notificationStore.cleanup();
+				toastStore.info('로그아웃되었습니다');
+			}
+		});
+	}
+
 	return {
 		get user() { return state.user; },
 		get session() { return state.session; },
@@ -177,6 +216,7 @@ function createAuthStore() {
 		get isAuthenticated() { return !!state.user; },
 
 		initialize,
+		initializeWithSession,
 		refreshSession,
 		signInWithGoogle,
 		signInWithKakao,
