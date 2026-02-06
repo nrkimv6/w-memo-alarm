@@ -42,38 +42,32 @@ function createAuthStore() {
 	let listenerRegistered = false;
 
 	// onAuthStateChange 리스너 등록
-	// initialSessionResolve: initialize()가 INITIAL_SESSION까지 대기하기 위한 콜백
-	let initialSessionResolve: (() => void) | null = null;
-
+	// 주의: 콜백 안에서 Supabase DB 쿼리를 await하면 deadlock 발생.
+	// reinit()은 setTimeout으로 분리하여 콜백을 즉시 반환해야 함.
 	function registerAuthListener() {
 		if (listenerRegistered || !browser) return;
 		listenerRegistered = true;
 
-		supabase.auth.onAuthStateChange(async (event, newSession) => {
+		supabase.auth.onAuthStateChange((event, newSession) => {
 			console.log('[AuthStore] onAuthStateChange:', event, 'wasLoggedIn:', !!state.user, 'newUser:', newSession?.user?.id);
 			const wasLoggedIn = !!state.user;
 			state.session = newSession;
 			state.user = newSession?.user || null;
 
-			if (event === 'INITIAL_SESSION') {
-				// INITIAL_SESSION 시점에 Supabase client 내부 auth 컨텍스트가 확정됨.
-				// 이후 DB 쿼리에 올바른 auth 헤더가 포함됨.
-				state.loading = false;
-				state.initialized = true;
-				state.initializing = false;
-				initialSessionResolve?.();
-				initialSessionResolve = null;
-			} else if (event === 'SIGNED_IN' && newSession?.user) {
-				// Store 재초기화 (비인증 모드로 먼저 초기화된 경우에도 서버 데이터 로드)
-				await memosStore.reinit();
-				await foldersStore.reinit();
-				// 실제 로그인(이전에 로그아웃 상태)인 경우에만 토스트 표시
+			if (event === 'SIGNED_IN' && newSession?.user) {
+				// 콜백 안에서 await하면 Supabase client lock으로 deadlock 발생.
+				// setTimeout으로 분리하여 콜백을 즉시 반환 → lock 해제 후 DB 쿼리 실행.
+				if (!wasLoggedIn) {
+					setTimeout(async () => {
+						await memosStore.reinit();
+						await foldersStore.reinit();
+					}, 0);
+				}
 				if (!wasLoggedIn && !state.hasShownLoginToast) {
 					state.hasShownLoginToast = true;
 					toastStore.success('로그인되었습니다');
 				}
 			} else if (event === 'SIGNED_OUT') {
-				// FCM 토큰 비활성화 (user 정보가 사라지기 전에 호출)
 				if (state.user?.id) {
 					deactivateAllFCMTokens(state.user.id);
 				}
@@ -88,11 +82,9 @@ function createAuthStore() {
 		});
 	}
 
-	// 초기화: onAuthStateChange의 INITIAL_SESSION 이벤트까지 대기.
-	// INITIAL_SESSION 시점에 Supabase client의 auth 컨텍스트가 확정되므로,
-	// 이후 DB 쿼리(memosStore.init 등)가 올바른 인증 헤더로 실행됨.
-	// 기존 getSession() 방식은 localStorage에서 읽기만 하고 client auth를 설정하지 않아
-	// RLS가 적용된 쿼리에서 0건을 반환하는 문제가 있었음.
+	// 초기화: getUser()로 서버에서 토큰 검증 + auth 컨텍스트 확정.
+	// getSession()은 localStorage에서만 읽고 Supabase client auth 헤더를 설정하지 않음.
+	// getUser()는 서버 API 호출 → 응답 시 client auth 컨텍스트가 확정됨 → 이후 DB 쿼리 인증됨.
 	async function initialize() {
 		if (state.initialized || state.initializing || !browser) {
 			return;
@@ -100,27 +92,31 @@ function createAuthStore() {
 
 		state.initializing = true;
 
-		// 리스너 먼저 등록 (INITIAL_SESSION을 받기 위해)
-		const initialSessionPromise = new Promise<void>((resolve) => {
-			initialSessionResolve = resolve;
-		});
-		registerAuthListener();
-
-		// INITIAL_SESSION 이벤트 대기 (타임아웃 5초)
 		try {
-			await Promise.race([
-				initialSessionPromise,
-				new Promise<void>((_, reject) =>
-					setTimeout(() => reject(new Error('INITIAL_SESSION timeout')), 5000)
-				)
-			]);
-			console.log('[AuthStore] initialize() - INITIAL_SESSION received, user:', state.user?.id);
+			console.log('[AuthStore] initialize() - calling getUser()');
+			const { data: { user }, error } = await supabase.auth.getUser();
+			console.log('[AuthStore] initialize() - getUser result:', { userId: user?.id, error: error?.message });
+
+			if (error) {
+				console.error('Auth initialization error:', error);
+				state.error = error.message;
+			} else if (user) {
+				state.user = user;
+				// getUser() 성공 후 세션도 읽어서 설정
+				const { data: { session } } = await supabase.auth.getSession();
+				state.session = session;
+			}
 		} catch (e) {
-			console.error('[AuthStore] initialize() - timeout waiting for INITIAL_SESSION');
+			console.error('Auth initialization failed:', e);
+			state.error = e instanceof Error ? e.message : 'Unknown error';
+		} finally {
 			state.loading = false;
 			state.initialized = true;
 			state.initializing = false;
 		}
+
+		// 리스너는 초기화 완료 후 등록 (이후 auth 변경 감지용)
+		registerAuthListener();
 	}
 
 	// Google 로그인 (Auth Worker 사용)

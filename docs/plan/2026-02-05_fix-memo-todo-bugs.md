@@ -7,10 +7,11 @@
 >
 > **현재 상황**:
 > - Bug 2: ✅ 완료 (filterStore에 memoType !== 'todo' 필터 추가)
-> - Bug 1: 11차 수정 배포 대기 중
->   - 10차: 전체 페이지 리로드 성공 (AbortError 해소), 하지만 `fetchFromSupabase()` 0건 반환
->   - 원인: `getSession()`은 localStorage에서 읽기만 하고, Supabase client의 내부 auth 컨텍스트는 `INITIAL_SESSION` 이벤트에서 설정됨. DB 쿼리가 `INITIAL_SESSION` 이전에 실행 → RLS가 인증 없이 0건 반환
->   - 11차(0581fac): `initialize()`를 `INITIAL_SESSION` 이벤트 대기 방식으로 변경
+> - Bug 1: ❌ 11차 실패 — 12차 수정 진행 중
+>   - 10차: `window.location.href` 전체 리로드 → `fetchFromSupabase()` 0건 (auth 헤더 미설정)
+>   - 11차: `INITIAL_SESSION` 대기 → **이벤트 자체가 발생하지 않음** (SIGNED_IN만 발생) → 5초 타임아웃
+>   - `onAuthStateChange` SIGNED_IN 콜백 내 `reinit()` → `fetchFromSupabase()` **무한 대기** (deadlock)
+>   - 12차 방안: `getUser()` 사용 (서버 검증 + auth 컨텍스트 확정) + `onAuthStateChange` 콜백 내 비동기 처리
 
 ---
 
@@ -993,3 +994,58 @@ registerAuthListener() → INITIAL_SESSION 대기 → user 설정 → memosStore
 |------|-----------|---------------------|
 | 5~10차 | `getSession()` 반환 직후 | ❌ Supabase client auth 미설정 |
 | 11차 | `INITIAL_SESSION` 이벤트 후 | ✅ Supabase client auth 설정 완료 |
+
+### 11차 결과: ❌ 실패
+
+**테스트 로그 (2026-02-06 16:48)**:
+```
+[AuthStore] onAuthStateChange: SIGNED_IN wasLoggedIn: false newUser: 7206e84e-...
+[MemosStore] reinit() called
+[MemosStore] fetchFromSupabase() - querying for user: 7206e84e-...  ← 결과 로그 없음 (무한 대기)
+[AuthStore] initialize() - timeout waiting for INITIAL_SESSION      ← 5초 후
+[MemosStore] init() called
+[MemosStore] fetchFromSupabase() - querying for user: 7206e84e-...  ← 역시 결과 없음
+```
+
+**발견 사항**:
+1. `INITIAL_SESSION` 이벤트가 발생하지 않음 — `SIGNED_IN`만 발생
+   - Supabase JS 버전에 따라 `INITIAL_SESSION` 미지원 가능성 (v2.39.0+ 필요)
+   - 또는 새 세션(signInWithIdToken 직후 리로드)에서는 `SIGNED_IN`으로 처리
+2. `onAuthStateChange` 콜백 안에서 `await reinit()` → `fetchFromSupabase()` **무한 대기**
+   - Supabase client가 auth state change 처리 중 내부 lock 보유
+   - 같은 client로 DB 쿼리 시 deadlock 발생
+3. 타임아웃 후 layout의 `init()` → `fetchFromSupabase()`도 무한 대기
+   - `SIGNED_IN` 콜백이 아직 완료되지 않아 client lock 유지 중
+
+**핵심 교훈**: `onAuthStateChange` 콜백 안에서 Supabase DB 쿼리를 await하면 deadlock.
+
+---
+
+## 12차 수정 계획
+
+### 문제 2가지
+
+1. **`onAuthStateChange` 콜백 내 DB 쿼리 deadlock**: `await reinit()` → `fetchFromSupabase()` 무한 대기
+2. **초기 auth 컨텍스트 설정**: `getSession()`만으로는 DB 쿼리의 auth 헤더 미설정
+
+### 해결 방안
+
+1. **`onAuthStateChange` 콜백 내 reinit()을 비동기로 분리** (deadlock 방지):
+   ```javascript
+   if (event === 'SIGNED_IN') {
+       // await 없이 비동기 실행 — 콜백 즉시 반환하여 lock 해제
+       setTimeout(() => { memosStore.reinit(); foldersStore.reinit(); }, 0);
+   }
+   ```
+
+2. **`initialize()`에서 `getUser()` 사용** (auth 컨텍스트 확정):
+   - `getUser()`는 서버에 토큰 검증 요청 → 응답 시 auth 컨텍스트 확정
+   - `getSession()`은 localStorage만 읽어 auth 헤더 미설정
+   - `getUser()` 후 DB 쿼리하면 인증된 상태
+
+3. **Layout 흐름**:
+   ```
+   authStore.initialize()  ← getUser()로 auth 확정
+   memosStore.init()       ← fetchFromSupabase() 인증 상태에서 실행
+   registerAuthListener()  ← 이후 auth 변경만 처리 (reinit은 setTimeout)
+   ```
