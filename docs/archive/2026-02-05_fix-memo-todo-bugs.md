@@ -3,7 +3,7 @@
 > 작성일: 2026-02-05
 > 우선순위: P0 (Critical)
 > **상태: ✅ 완료 (2026-02-06)**
-> **커밋: a613b87**
+> **커밋: a613b87, + 후속 수정 (2026-02-06)**
 
 ---
 
@@ -161,6 +161,65 @@ function getFilteredMemos(): Memo[] {
 - [x] **B2-2**: `+page.svelte` (홈) — `pinnedMemos` derived에 `m.memoType !== 'todo'` 조건 추가 ✅
 - [x] **B2-3**: `+page.svelte` (홈) — `favoriteMemos` derived에 `m.memoType !== 'todo'` 조건 추가 ✅
 - [x] **B2-4**: `+page.svelte` (홈) — `recentMemos` derived에 `m.memoType !== 'todo'` 조건 추가 ✅
+
+### Bug 1 후속: Layout ↔ Callback Supabase auth 레이스 컨디션 (AbortError)
+
+- [x] **B1-4**: `+layout.svelte` — `authStore.initialize()`를 `!isAuthCallback` 블록 안으로 이동 ✅
+
+#### 현상
+
+B1-1~B1-3 수정 후에도 로그인 시 콘솔에 다음 에러 발생:
+```
+Auth initialization failed: AbortError: signal is aborted without reason
+[Auth Callback] Error: AbortError: signal is aborted without reason
+Uncaught (in promise) AbortError: signal is aborted without reason (×3)
+```
+
+세션 자체는 생성되지만 (`Session created successfully`), 직후에 AbortError가 발생하여
+callback 페이지의 catch 블록이 실행되고, 사용자에게 에러 UI가 표시될 수 있음.
+
+#### 근본 원인: Layout과 Callback의 Supabase auth 동시 호출
+
+Svelte는 자식 → 부모 순으로 onMount를 실행하므로:
+
+```
+1. [callback +page.svelte onMount] 시작
+   └── signInWithIdToken() 시작 (await, 네트워크 I/O 대기)
+
+2. [+layout.svelte onMount] 시작 (callback의 await 중에 실행)
+   └── authStore.initialize() → getSession() 시작 (await, 네트워크 I/O 대기)
+
+── signInWithIdToken()과 getSession()이 동시에 Supabase auth를 호출 ──
+
+3. signInWithIdToken 완료 → 내부 세션 상태 변경
+   └── Supabase가 진행 중인 getSession()의 AbortController.abort() 호출
+
+4. getSession() → AbortError 발생
+   └── "Auth initialization failed: AbortError: signal is aborted without reason"
+```
+
+B1-1~B1-3은 `reinit()` 경쟁을 해결했지만, 그보다 상위 레벨인
+`authStore.initialize()`와 `signInWithIdToken()`의 동시 실행 문제는 남아있었음.
+
+#### 수정 내용
+
+`+layout.svelte`에서 `authStore.initialize()`를 `!isAuthCallback` 조건 안으로 이동:
+
+```typescript
+// Before (문제)
+await authStore.initialize();        // ← 항상 실행 → getSession() 충돌
+if (!isAuthCallback) { ... }
+
+// After (수정)
+if (!isAuthCallback) {
+    await authStore.initialize();    // ← callback이 아닐 때만 실행
+    ...
+}
+```
+
+callback 페이지가 `signInWithIdToken → authStore.initialize → reinit` 전체 순서를 직접 제어.
+
+---
 
 ### 검증
 
