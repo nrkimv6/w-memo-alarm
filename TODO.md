@@ -8,20 +8,20 @@
 
 ## Pending
 
-### 🔴 메모/할일 버그 수정 (P0) — [계획서](docs/plan/2026-02-05_fix-memo-todo-bugs.md)
-- [ ] **B1-1**: `memos.svelte.ts` — `reinit()` 경쟁 상태 수정 (Promise 기반 동시 호출 대기)
-- [ ] **B1-2**: `folders.svelte.ts` — 동일 reinit 경쟁 조건 수정
-- [ ] **B1-3**: `auth/callback/+page.svelte` — `finishLogin()` 방어 코드 추가
-- [ ] **B2-1**: `filter.svelte.ts` — `getFilteredMemos()`에 todo 제외 필터 추가
-- [ ] **B2-2**: `+page.svelte` (홈) — `pinnedMemos`에서 todo 제외
-- [ ] **B2-3**: `+page.svelte` (홈) — `favoriteMemos`에서 todo 제외
-- [ ] **B2-4**: `+page.svelte` (홈) — `recentMemos`에서 todo 제외
-- [ ] **V-1**: 빌드 성공 확인
-- [ ] **V-2**: 커밋 및 푸시
-
 ---
 
 ## 관련 계획서
+
+### 🔴 메모/할일 버그 수정 (P0) — [계획서](docs/plan/2026-02-05_fix-memo-todo-bugs.md) ✅ 2026-02-06 완료
+- [x] **B1-1**: `memos.svelte.ts` — `reinit()` 경쟁 상태 수정 (Promise 기반 동시 호출 대기) ✅
+- [x] **B1-2**: `folders.svelte.ts` — 동일 reinit 경쟁 조건 수정 ✅
+- [x] **B1-3**: `auth/callback/+page.svelte` — `finishLogin()` 방어 코드 추가 ✅
+- [x] **B2-1**: `filter.svelte.ts` — `getFilteredMemos()`에 todo 제외 필터 추가 ✅
+- [x] **B2-2**: `+page.svelte` (홈) — `pinnedMemos`에서 todo 제외 ✅
+- [x] **B2-3**: `+page.svelte` (홈) — `favoriteMemos`에서 todo 제외 ✅
+- [x] **B2-4**: `+page.svelte` (홈) — `recentMemos`에서 todo 제외 ✅
+- [x] **V-1**: 빌드 성공 확인 ✅
+- [x] **V-2**: 커밋 및 푸시 ✅
 
 ### ⚙️ 코드 정리 (P2)
 - [x] **$derived 패턴 오류 수정** — [2026-02-04_derived-pattern-fix.md](docs/plan/2026-02-04_derived-pattern-fix.md) ✅ 2026-02-04 완료

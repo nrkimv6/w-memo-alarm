@@ -2,6 +2,8 @@
 
 > 작성일: 2026-02-05
 > 우선순위: P0 (Critical)
+> **상태: ✅ 완료 (2026-02-06)**
+> **커밋: a613b87**
 
 ---
 
@@ -147,20 +149,20 @@ function getFilteredMemos(): Memo[] {
 
 ### Bug 1: 로그인 후 메모 미표시 수정
 
-- [ ] **B1-1**: `memos.svelte.ts` — `reinit()` 함수를 Promise 기반 동시 호출 대기 방식으로 변경
+- [x] **B1-1**: `memos.svelte.ts` — `reinit()` 함수를 Promise 기반 동시 호출 대기 방식으로 변경 ✅
   - `isReinitializing` boolean → `reinitPromise: Promise<void> | null` 패턴
   - 이미 진행 중이면 해당 Promise를 await하여 완료 대기
-- [ ] **B1-2**: `folders.svelte.ts` — 동일한 reinit 경쟁 조건이 있으면 같은 방식으로 수정
-- [ ] **B1-3**: `auth/callback/+page.svelte` — `finishLogin()`에서 `goto()` 호출 전 `memosStore.initialized`를 확인하는 방어 코드 추가 (안전장치)
+- [x] **B1-2**: `folders.svelte.ts` — 동일한 reinit 경쟁 조건이 있으면 같은 방식으로 수정 ✅
+- [x] **B1-3**: `auth/callback/+page.svelte` — `finishLogin()`에서 `goto()` 호출 전 `memosStore.initialized`를 확인하는 방어 코드 추가 (안전장치) ✅
 
 ### Bug 2: Todo가 메모로 표시되는 문제 수정
 
-- [ ] **B2-1**: `filter.svelte.ts` — `getFilteredMemos()`에 `memoType !== 'todo'` 필터 추가
-- [ ] **B2-2**: `+page.svelte` (홈) — `pinnedMemos` derived에 `m.memoType !== 'todo'` 조건 추가
-- [ ] **B2-3**: `+page.svelte` (홈) — `favoriteMemos` derived에 `m.memoType !== 'todo'` 조건 추가
-- [ ] **B2-4**: `+page.svelte` (홈) — `recentMemos` derived에 `m.memoType !== 'todo'` 조건 추가
+- [x] **B2-1**: `filter.svelte.ts` — `getFilteredMemos()`에 `memoType !== 'todo'` 필터 추가 ✅
+- [x] **B2-2**: `+page.svelte` (홈) — `pinnedMemos` derived에 `m.memoType !== 'todo'` 조건 추가 ✅
+- [x] **B2-3**: `+page.svelte` (홈) — `favoriteMemos` derived에 `m.memoType !== 'todo'` 조건 추가 ✅
+- [x] **B2-4**: `+page.svelte` (홈) — `recentMemos` derived에 `m.memoType !== 'todo'` 조건 추가 ✅
 
 ### 검증
 
-- [ ] **V-1**: `npm run build` 빌드 성공 확인
-- [ ] **V-2**: 커밋 및 푸시
+- [x] **V-1**: `svelte-check` 타입 에러 없음 확인 ✅
+- [x] **V-2**: 커밋 및 푸시 ✅
