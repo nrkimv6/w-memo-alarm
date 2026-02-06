@@ -166,3 +166,96 @@ function getFilteredMemos(): Memo[] {
 
 - [x] **V-1**: `svelte-check` 타입 에러 없음 확인 ✅
 - [x] **V-2**: 커밋 및 푸시 ✅
+
+---
+
+## Bug 1 재발: authStore.user null 상태에서 reinit 실행 (2026-02-06)
+
+> **상태: ✅ 완료 (2026-02-06)**
+> **커밋: 6e5e11e**
+
+### 현상 (2차 수정 이후에도 동일)
+
+로그인 완료 후 홈/전체 탭에서 메모가 비어있고, 새로고침하면 정상 표시됨.
+
+```
+[Auth Callback] Session created successfully
+[Notification] 📊 memosStore.memos.length = 0   ← reinit 완료됐는데 0개
+[Notification] 📊 memosStore.initialized = true  ← "성공적으로" 완료
+```
+
+### 2차 수정(Promise 기반)이 부족했던 이유
+
+Promise 기반 `reinitPromise`는 **reinit 동시 호출 경쟁**을 해결했지만,
+`init()` 내부에서 `authStore.isAuthenticated`가 `false`인 채로 실행되는 문제는 해결하지 못함.
+
+```typescript
+// memos.svelte.ts init()
+if (!authStore.isAuthenticated) {   // ← user가 null이면 여기로 진입
+    memos = loadCacheFromStorage(); // ← 빈 캐시 로드
+    initialized = true;             // ← 비인증 경로로 "성공" 완료
+    return;
+}
+```
+
+reinit이 아무리 Promise로 잘 대기해도, `authStore.user`가 null이면 서버 fetch 자체를 안 함.
+
+### 근본 원인: authStore.initialize()의 단방향 잠금
+
+```
+[타임라인]
+1. Layout onMount:
+   authStore.initialize()
+   → getSession() → null (세션 아직 없음)
+   → state.user = null, state.initialized = true ★ 잠김
+
+2. Callback onMount:
+   setSession() → 세션 생성
+   → onAuthStateChange 비동기 트리거 (실행 시점 불확실)
+
+3. finishLogin():
+   authStore.initialize()
+   → state.initialized === true → 즉시 return ★ user 갱신 안 됨
+   memosStore.reinit()
+   → init() → authStore.isAuthenticated === false → 빈 캐시 → 0개
+```
+
+`initialize()`는 `initialized=true`이면 재호출 시 세션을 다시 읽지 않음.
+`onAuthStateChange`가 user를 설정해주지만, 이벤트가 비동기이므로 `finishLogin()` 시점에 아직 실행되지 않았을 수 있음.
+
+### 수정 내용
+
+**`authStore.refreshSession()` 메서드 추가** — `onAuthStateChange` 타이밍에 의존하지 않고 Supabase에서 직접 세션을 읽어 user 상태를 확정.
+
+```typescript
+// auth.svelte.ts
+async function refreshSession() {
+    if (!browser) return;
+    const { data: { session: currentSession } } = await supabase.auth.getSession();
+    if (currentSession) {
+        state.session = currentSession;
+        state.user = currentSession.user;
+    }
+}
+```
+
+**callback `finishLogin()`에서 `initialize()` 대신 `refreshSession()` 호출:**
+
+```typescript
+// auth/callback/+page.svelte finishLogin()
+await authStore.refreshSession();  // ← user 확정 (결정적)
+await memosStore.reinit();         // ← isAuthenticated === true 보장
+```
+
+`setSession()` 완료 후 `getSession()`은 반드시 세션을 반환하므로, 이벤트 타이밍과 무관하게 결정적(deterministic)으로 동작함.
+
+### 2차 vs 3차 수정 비교
+
+| 관점 | 2차 (Promise 기반) | 3차 (refreshSession) |
+|------|-------------------|---------------------|
+| 해결 대상 | reinit 동시 호출 경쟁 | authStore.user가 null인 상태에서 reinit 실행 |
+| 방식 | reinitPromise 대기 | setSession 후 getSession으로 user 확정 |
+| onAuthStateChange 의존 | 의존함 | **의존하지 않음** |
+| 보완 관계 | 3차 없이는 user=null 문제 미해결 | 2차 없이는 동시 호출 문제 미해결 |
+
+두 수정은 서로 다른 레이어의 문제를 해결하며, 함께 적용되어야 완전한 수정이 됨.
