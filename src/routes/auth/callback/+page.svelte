@@ -199,9 +199,16 @@
 
 		// 스토어 초기화 보장: onAuthStateChange의 reinit()이 경쟁 상태로
 		// 스킵될 수 있으므로 명시적으로 재초기화
+		// reinit()은 Promise 기반이므로 진행 중인 초기화가 있으면 완료를 대기함
 		await memosStore.reinit();
 		await foldersStore.reinit();
 		filterStore.init();
+
+		// 방어: reinit 완료 후 initialized 상태 확인
+		if (!memosStore.initialized) {
+			console.warn('[Auth Callback] memosStore not initialized after reinit, retrying...');
+			await memosStore.reinit();
+		}
 
 		// 메모 로드 완료 후 알림 관련 초기화
 		notificationStore.registerRemindersToServiceWorker();
@@ -217,7 +224,7 @@
 			});
 		}
 
-		// SPA 네비게이션으로 이동
+		// SPA 네비게이션으로 이동 (스토어 초기화 완료 후)
 		goto(returnTo, { replaceState: true });
 	}
 </script>
