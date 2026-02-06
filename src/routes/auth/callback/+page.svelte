@@ -194,10 +194,10 @@
 			sessionStorage.setItem("login_success", "true");
 		}
 
-		// Auth store 세션 동기화: setSession() 후 onAuthStateChange 타이밍에
-		// 의존하지 않고 Supabase에서 직접 세션을 읽어 user 상태를 확정
-		// (initialize()는 layout에서 이미 호출되어 리스너 등록 완료)
-		await authStore.refreshSession();
+		// Auth store 초기화: getSession()으로 세션 확정 + onAuthStateChange 리스너 등록.
+		// layout은 auth callback 페이지일 때 initialize()를 스킵하므로(AbortError 방지),
+		// callback이 직접 호출하여 리스너 등록과 세션 동기화를 모두 수행.
+		await authStore.initialize();
 
 		// 스토어 재초기화: authStore.user가 확정된 후 실행하여
 		// init()이 인증된 경로(서버 fetch)를 타도록 보장
