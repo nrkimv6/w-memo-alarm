@@ -2,16 +2,15 @@
 
 > 작성일: 2026-02-05
 > 우선순위: P0 (Critical)
-> **상태: 🔄 진행 중 (2026-02-06)**
-> **최신 커밋: 1541a45** (시행착오 포함: a613b87 → … → 0845e35 → e9fca7f → 1541a45)
+> **상태: ✅ 완료 (2026-02-06)**
+> **최종 커밋: 0568995** (시행착오 포함: a613b87 → … → 0845e35 → e9fca7f → 1541a45 → 0568995)
 >
-> **현재 상황**:
+> **결과**:
+> - Bug 1: ✅ 완료 (13차 수정 성공)
+>   - 13차(0568995): fetchFromSupabase()에서 불필요한 getSession()/refreshSession() 디버그 코드 제거
+>   - 이 디버그 코드의 추가 getSession() 호출이 Supabase 내부 lock과 경쟁하여 문제를 악화시킨 원인
+>   - 최종 구조: authStore.initialize()에서 getUser() → memosStore.init() → fetchFromSupabase() (깨끗한 쿼리만)
 > - Bug 2: ✅ 완료 (filterStore에 memoType !== 'todo' 필터 추가)
-> - Bug 1: ❌ 11차 실패 — 12차 수정 진행 중
->   - 10차: `window.location.href` 전체 리로드 → `fetchFromSupabase()` 0건 (auth 헤더 미설정)
->   - 11차: `INITIAL_SESSION` 대기 → **이벤트 자체가 발생하지 않음** (SIGNED_IN만 발생) → 5초 타임아웃
->   - `onAuthStateChange` SIGNED_IN 콜백 내 `reinit()` → `fetchFromSupabase()` **무한 대기** (deadlock)
->   - 12차 방안: `getUser()` 사용 (서버 검증 + auth 컨텍스트 확정) + `onAuthStateChange` 콜백 내 비동기 처리
 
 ---
 
