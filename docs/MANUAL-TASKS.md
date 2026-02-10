@@ -4,6 +4,38 @@
 
 ---
 
+## DB 마이그레이션 - Todo URL & Pung
+
+> 관련 계획서: `docs/plan/2026-02-10_todo-enhancement-features.md`
+> 마이그레이션 파일: `data/migrations/010_todo_urls_and_pung.sql`
+
+### 실행 방법
+
+Supabase Dashboard에서 SQL Editor를 열고 `010_todo_urls_and_pung.sql` 파일 내용을 실행:
+
+```sql
+-- Todo URL 목록 컬럼 추가 (JSONB)
+ALTER TABLE ma_memos ADD COLUMN IF NOT EXISTS todo_urls JSONB DEFAULT '[]'::jsonb;
+
+-- Todo URL 존재 여부 인덱스
+CREATE INDEX IF NOT EXISTS idx_ma_memos_todo_urls_exists
+  ON ma_memos ((todo_urls IS NOT NULL AND todo_urls != '[]'::jsonb))
+  WHERE is_active = true;
+
+-- Pung(자동삭제) 설정 컬럼 추가
+ALTER TABLE ma_memos ADD COLUMN IF NOT EXISTS auto_pung BOOLEAN DEFAULT false;
+ALTER TABLE ma_memos ADD COLUMN IF NOT EXISTS pung_delay INTEGER DEFAULT 0;
+
+-- Pung 활성화 할일 인덱스 (기한 초과 체크용)
+CREATE INDEX IF NOT EXISTS idx_ma_memos_auto_pung
+  ON ma_memos (auto_pung, todo_status, due_date)
+  WHERE auto_pung = true AND is_active = true;
+```
+
+- [ ] Supabase에서 마이그레이션 실행 완료
+
+---
+
 
 
 ## 메모 전체 삭제 (fix-memo-deletion-logout)

@@ -186,6 +186,9 @@ const MEMO_FIELD_MAPPINGS: FieldMapping[] = [
 	{ memo: 'todoInstances', db: 'todo_instances' },
 	{ memo: 'postponeInfo', db: 'postpone_info' },
 	{ memo: 'todoGroupId', db: 'todo_group_id' },
+	{ memo: 'todoUrls', db: 'todo_urls', toMemo: (v) => v || [] },
+	{ memo: 'autoPung', db: 'auto_pung', toMemo: (v) => v || false },
+	{ memo: 'pungDelay', db: 'pung_delay', toMemo: (v) => v || 0 },
 	{ memo: 'version', db: 'version', toMemo: (v) => v || 1 },
 ];
 
@@ -306,6 +309,9 @@ function createMemosStore() {
 
 		// Phase 3: 누락된 반복 할일 인스턴스 복구
 		await recoverAllMissingInstances();
+
+		// Pung: 기한 초과 할일 자동삭제 체크
+		await executePendingPungs();
 	}
 
 	async function fetchFromSupabase() {
@@ -1149,6 +1155,32 @@ function createMemosStore() {
 	}
 
 	/**
+	 * Pung 실행: 기한 초과 Todo 자동삭제
+	 */
+	async function executePung(memoId: string): Promise<Memo | null> {
+		const memo = memos.find(m => m.id === memoId);
+		if (!memo || memo.memoType !== 'todo' || !memo.autoPung) {
+			return null;
+		}
+
+		// 비반복 할일: 비활성화 처리
+		if (!memo.recurrence) {
+			return await update(memoId, {
+				todoStatus: 'skipped',
+				isActive: false
+			});
+		}
+
+		// 반복 할일: 현재 인스턴스 건너뛰기 + 다음 인스턴스 생성
+		const currentInstance = memo.todoInstances?.find(i => i.status === 'pending');
+		if (currentInstance) {
+			return await skipTodoInstance(memoId, currentInstance.id, 'auto-pung');
+		}
+
+		return null;
+	}
+
+	/**
 	 * 앱 시작 시 누락된 인스턴스 복구 (Phase 3)
 	 */
 	async function recoverAllMissingInstances(): Promise<void> {
@@ -1160,6 +1192,38 @@ function createMemosStore() {
 				const updatedInstances = [...(memo.todoInstances || []), ...newInstances];
 				await update(memo.id, { todoInstances: updatedInstances }, { silent: true });
 			}
+		}
+	}
+
+	/**
+	 * 앱 접속 시 Pung 대상 확인 및 실행 (Phase 1 MVP)
+	 */
+	async function executePendingPungs(): Promise<void> {
+		const { isOverdue } = await import('$lib/utils/todo');
+
+		// autoPung = true && overdue 할일 찾기
+		const pungTargets = memos.filter(m =>
+			m.memoType === 'todo' &&
+			m.autoPung === true &&
+			m.todoStatus === 'pending' &&
+			isOverdue(m)
+		);
+
+		for (const memo of pungTargets) {
+			// pungDelay 체크
+			if (memo.pungDelay && memo.pungDelay > 0) {
+				// 기한 초과 시간 계산
+				if (!memo.dueDate) continue;
+				const dueDateTime = new Date(`${memo.dueDate}T${memo.dueTime || '23:59'}`).getTime();
+				const overdueMinutes = (Date.now() - dueDateTime) / 1000 / 60;
+
+				if (overdueMinutes < memo.pungDelay) {
+					continue; // 아직 pungDelay 경과하지 않음
+				}
+			}
+
+			// Pung 실행
+			await executePung(memo.id);
 		}
 	}
 
@@ -1268,6 +1332,9 @@ function createMemosStore() {
 		completeTodoInstance,
 		skipTodoInstance,
 		recoverAllMissingInstances,
+		// Pung (자동삭제) 기능
+		executePung,
+		executePendingPungs,
 		// Phase 4 Section 8: 메모 ↔ 할일 전환
 		convertMemoToTodo,
 		convertTodoToMemo,

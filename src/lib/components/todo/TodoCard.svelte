@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Calendar, Repeat, ChevronDown, ChevronUp } from "lucide-svelte";
+	import { Calendar, Repeat, ChevronDown, ChevronUp, Paperclip } from "lucide-svelte";
 	import type { Memo } from "$lib/types/memo";
 	import { memosStore } from "$lib/stores/memos.svelte";
 	import {
@@ -190,12 +190,32 @@
 					</span>
 				{/if}
 
+				{#if todo.todoUrls && todo.todoUrls.length > 0}
+					<span
+						class="flex items-center gap-1 text-muted-foreground"
+					>
+						<Paperclip class="w-3.5 h-3.5" />
+						{#if todo.todoUrls.length > 1}
+							<span class="text-[10px]">{todo.todoUrls.length}</span>
+						{/if}
+					</span>
+				{/if}
+
 				{#if overdue && !completed}
 					<span
 						class="inline-flex items-center gap-1 text-destructive font-medium px-1.5 py-0.5 rounded bg-destructive/10"
 					>
-						<span>!</span>
-						{getOverdueDays(todo)}일 지남
+						{#if todo.autoPung}
+							<span>💥</span>
+							{#if todo.pungDelay && todo.pungDelay > 0}
+								{Math.floor(todo.pungDelay / 1440)}일 후 삭제
+							{:else}
+								펑 예정
+							{/if}
+						{:else}
+							<span>!</span>
+							{getOverdueDays(todo)}일 지남
+						{/if}
 					</span>
 				{/if}
 

@@ -9,6 +9,7 @@
 		TodoRemindEntry,
 		TodoAlertEntry,
 		Recurrence,
+		TodoUrl,
 	} from "$lib/types/memo";
 	import {
 		Calendar,
@@ -21,6 +22,8 @@
 		ArrowRightLeft,
 		Plus,
 		X,
+		Link2,
+		Trash2,
 	} from "lucide-svelte";
 	import { getRecurrenceDescription } from "$lib/utils/recurrence";
 	import FutureSchedules from "./FutureSchedules.svelte";
@@ -102,6 +105,16 @@
 	let showAlarmSection = $state(!!dueDate || !!memo?.dueDate);
 	let tagInput = $state("");
 
+	// Todo URL state
+	let todoUrls = $state<TodoUrl[]>(memo?.todoUrls || []);
+	let showAddUrl = $state(false);
+	let newUrl = $state("");
+	let newUrlLabel = $state("");
+
+	// Pung state
+	let autoPung = $state(memo?.autoPung || false);
+	let pungDelay = $state(memo?.pungDelay || 0);
+
 	// Computed
 	const globalRemindTime = $derived(
 		settingsStore.settings.todoDefaults.remind.time,
@@ -132,6 +145,43 @@
 
 	function generateId() {
 		return `entry-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+	}
+
+	function addTodoUrl() {
+		const trimmedUrl = newUrl.trim();
+		if (!trimmedUrl) return;
+
+		// URL 유효성 검증
+		try {
+			new URL(trimmedUrl);
+		} catch {
+			alert("올바른 URL을 입력해주세요 (http:// 또는 https://로 시작)");
+			return;
+		}
+
+		const urlEntry: TodoUrl = {
+			id: generateId(),
+			url: trimmedUrl,
+			label: newUrlLabel.trim() || undefined,
+			addedAt: Date.now(),
+		};
+
+		todoUrls = [...todoUrls, urlEntry];
+		newUrl = "";
+		newUrlLabel = "";
+		showAddUrl = false;
+	}
+
+	function removeTodoUrl(id: string) {
+		todoUrls = todoUrls.filter((u) => u.id !== id);
+	}
+
+	function getDomain(url: string): string {
+		try {
+			return new URL(url).hostname.replace("www.", "");
+		} catch {
+			return url;
+		}
 	}
 
 	function handlePriorityChange(priority: TodoPriority) {
@@ -302,6 +352,9 @@
 			todoTiming,
 			recurrence,
 			folderId: selectedFolderId || undefined,
+			todoUrls: todoUrls.length > 0 ? todoUrls : undefined,
+			autoPung,
+			pungDelay,
 		};
 
 		if (isEdit && memo) {
@@ -327,6 +380,14 @@
 
 	async function handleConvertToMemo() {
 		if (!memo) return;
+
+		// 확인 다이얼로그
+		const confirmed = confirm(
+			'할일을 메모로 전환하시겠습니까?\n\n' +
+			'⚠️ 주의: 기한, 우선순위, 반복 설정 등 할일 전용 정보가 삭제됩니다.'
+		);
+
+		if (!confirmed) return;
 
 		// 먼저 현재 변경사항 저장
 		await handleSubmit();
@@ -1010,6 +1071,129 @@
 					{/if}
 				{/if}
 			</div>
+
+			<!-- ============================================ -->
+			<!-- URL 링크 -->
+			<!-- ============================================ -->
+			<div>
+				<label class="block text-sm font-medium text-foreground mb-2">
+					<Link2 class="inline w-4 h-4 mr-1" />
+					관련 링크
+				</label>
+
+				{#if todoUrls.length > 0}
+					<div class="space-y-2 mb-3">
+						{#each todoUrls as urlEntry}
+							<div
+								class="flex items-center justify-between px-3 py-2 bg-card rounded-md border border-border/50"
+							>
+								<a
+									href={urlEntry.url}
+									target="_blank"
+									rel="noopener noreferrer"
+									class="flex-1 text-sm text-primary hover:underline truncate"
+								>
+									{urlEntry.label || getDomain(urlEntry.url)}
+								</a>
+								<button
+									type="button"
+									onclick={() => removeTodoUrl(urlEntry.id)}
+									class="ml-2 text-muted-foreground hover:text-destructive transition-colors p-0.5"
+								>
+									<Trash2 class="w-3.5 h-3.5" />
+								</button>
+							</div>
+						{/each}
+					</div>
+				{/if}
+
+				{#if showAddUrl}
+					<div class="space-y-2 p-3 bg-muted/20 rounded-md border border-border">
+						<input
+							type="url"
+							bind:value={newUrl}
+							placeholder="https://example.com"
+							class="sketchy-input w-full"
+						/>
+						<input
+							type="text"
+							bind:value={newUrlLabel}
+							placeholder="링크 이름 (선택사항)"
+							class="sketchy-input w-full"
+						/>
+						<div class="flex gap-2">
+							<button
+								type="button"
+								onclick={addTodoUrl}
+								class="flex-1 px-3 py-2 bg-primary text-primary-foreground rounded-lg text-sm hover:bg-primary/90"
+							>
+								추가
+							</button>
+							<button
+								type="button"
+								onclick={() => {
+									showAddUrl = false;
+									newUrl = "";
+									newUrlLabel = "";
+								}}
+								class="px-3 py-2 border border-border rounded-lg text-sm hover:bg-muted"
+							>
+								취소
+							</button>
+						</div>
+					</div>
+				{:else}
+					<button
+						type="button"
+						onclick={() => (showAddUrl = true)}
+						class="w-full flex items-center justify-center gap-2 px-3 py-2 border border-border rounded-lg text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+					>
+						<Plus class="w-4 h-4" />
+						URL 추가
+					</button>
+				{/if}
+			</div>
+
+			<!-- ============================================ -->
+			<!-- Pung (자동삭제) 설정 -->
+			<!-- ============================================ -->
+			{#if dueDate}
+				<div class="border border-border rounded-lg p-4 space-y-3 bg-muted/20">
+					<div class="flex items-start gap-2">
+						<input
+							type="checkbox"
+							id="autoPung"
+							bind:checked={autoPung}
+							class="mt-0.5 rounded border-border text-destructive focus:ring-destructive"
+						/>
+						<div class="flex-1">
+							<label for="autoPung" class="text-sm font-medium text-foreground cursor-pointer">
+								💥 기한 초과 시 자동 삭제 (펑)
+							</label>
+							<p class="text-xs text-muted-foreground mt-0.5">
+								기한이 지나면 자동으로 할일이 삭제됩니다
+							</p>
+						</div>
+					</div>
+
+					{#if autoPung}
+						<div class="ml-6 space-y-2">
+							<label class="block text-xs font-medium text-foreground">
+								삭제 시점
+							</label>
+							<select
+								bind:value={pungDelay}
+								class="sketchy-input w-full text-sm"
+							>
+								<option value={0}>즉시</option>
+								<option value={60}>1시간 후</option>
+								<option value={1440}>1일 후</option>
+								<option value={4320}>3일 후</option>
+							</select>
+						</div>
+					{/if}
+				</div>
+			{/if}
 
 			<!-- 폴더 -->
 			{#if folders.length > 0}

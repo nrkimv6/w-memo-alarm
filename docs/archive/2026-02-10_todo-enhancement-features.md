@@ -1,6 +1,8 @@
 # Todo 기능 강화 계획서
 
 > **작성일**: 2026-02-10
+> **완료일**: 2026-02-10
+> **상태**: 구현완료
 > **범위**: 메모↔할일 전환 개선 + Todo URL 속성 + 펑(Pung) 자동삭제
 
 ---
@@ -267,30 +269,30 @@ ALTER TABLE ma_memos ADD COLUMN pung_delay INTEGER DEFAULT 0;
 
 ## 4. 구현 순서 (의존 관계)
 
-```
-Phase A: 데이터 모델 + 마이그레이션
-  ├── Task 2-1: TodoUrl 타입 정의
-  ├── Task 3-1: autoPung/pungDelay 타입 정의
-  └── Task 2-2 + 3-2: DB 마이그레이션 (통합 009)
+- [x] **Phase A: 데이터 모델 + 마이그레이션**
+  - [x] Task 2-1: TodoUrl 타입 정의
+  - [x] Task 3-1: autoPung/pungDelay 타입 정의
+  - [x] Task 2-2 + 3-2: DB 마이그레이션 (통합 010)
 
-Phase B: 스토어 + 비즈니스 로직
-  ├── Task 2-5: 필드 변환 (todoUrls)
-  ├── Task 3-7: 필드 변환 (autoPung, pungDelay)
-  ├── Task 3-3: executePung() 구현
-  └── Task 3-4a: Pung 체크 — 앱 접속 시 (1단계 MVP)
+- [x] **Phase B: 스토어 + 비즈니스 로직**
+  - [x] Task 2-5: 필드 변환 (todoUrls)
+  - [x] Task 3-7: 필드 변환 (autoPung, pungDelay)
+  - [x] Task 3-3: executePung() 구현
+  - [x] Task 3-4a: Pung 체크 — 앱 접속 시 (1단계 MVP)
 
-Phase D: 서버 인프라 (2단계)
-  └── Task 3-4b: Pung 체크 — Supabase pg_cron + Edge Function
+- [ ] **Phase D: 서버 인프라 (2단계)** — 추후 구현
+  - [ ] Task 3-4b: Pung 체크 — Supabase pg_cron + Edge Function
 
-Phase C: UI 구현
-  ├── Task 1-1: MemoDetailModal 전환 버튼
-  ├── Task 1-2: TodoCard 전환 기능
-  ├── Task 1-3: 전환 확인 다이얼로그
-  ├── Task 2-3: TodoForm URL 입력 UI
-  ├── Task 2-4: TodoCard 클립 아이콘
-  ├── Task 3-5: TodoForm 펑 설정 UI
-  └── Task 3-6: TodoCard overdue+pung 통합 표시
-```
+- [x] **Phase C: UI 구현**
+  - [x] Task 1-1: MemoDetailModal 전환 버튼
+  - [x] Task 1-2: TodoForm 전환 기능 (이미 존재)
+  - [x] Task 1-3: 전환 확인 다이얼로그
+  - [x] Task 2-3: TodoForm URL 입력 UI
+  - [x] Task 2-4: TodoCard 클립 아이콘
+  - [x] Task 3-5: TodoForm 펑 설정 UI
+  - [x] Task 3-6: TodoCard overdue+pung 통합 표시
+
+**구현 완료**: Phase A, B, C (Phase D는 향후 구현 예정)
 
 ---
 

@@ -12,7 +12,8 @@
 		Eye,
 		Bell,
 		Folder,
-		Link2
+		Link2,
+		ArrowRightLeft
 	} from 'lucide-svelte';
 	import { goto } from '$app/navigation';
 	import Modal from '$lib/components/ui/Modal.svelte';
@@ -96,6 +97,13 @@
 	function handleShare() {
 		if (memo && onShare) {
 			onShare(memo);
+		}
+	}
+
+	async function handleConvertToTodo() {
+		if (memo) {
+			await memosStore.convertMemoToTodo(memo.id);
+			onClose();
 		}
 	}
 
@@ -266,6 +274,12 @@
 			<Button variant="ghost" onclick={handleShare}>
 				<Share2 class="w-4 h-4" />
 				공유
+			</Button>
+		{/if}
+		{#if memo?.memoType !== 'todo'}
+			<Button variant="ghost" onclick={handleConvertToTodo}>
+				<ArrowRightLeft class="w-4 h-4" />
+				할일로
 			</Button>
 		{/if}
 		<div class="flex-1"></div>

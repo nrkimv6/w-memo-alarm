@@ -2,6 +2,14 @@
 
 > 이 파일은 memo-alarm 프로젝트에서 완료된 작업을 기록합니다.
 
+## 2026-02-10: Todo 기능 강화
+- [x] 완료 — [archive](archive/2026-02-10_todo-enhancement-features.md)
+- **메모↔할일 전환 개선**: MemoDetailModal에 "할일로" 버튼 추가, TodoForm에 확인 다이얼로그 추가
+- **Todo URL 속성**: TodoUrl 타입 정의, DB 마이그레이션(010), TodoForm URL 입력 UI, TodoCard 클립 아이콘 표시
+- **펑(Pung) 자동삭제**: autoPung/pungDelay 필드 추가, executePung() 구현, 앱 접속 시 체크, TodoForm 펑 설정 UI, TodoCard 펑 표시
+- **빌드**: 성공 (31.79s)
+- **수동 작업**: Supabase 마이그레이션 실행 필요 (`data/migrations/010_todo_urls_and_pung.sql`)
+
 ## 2026-02-10: Svelte 5 $derived 패턴 오류 수정
 - [x] 완료 — [archive](archive/2026-02-04_derived-pattern-fix.md)
 - 5개 파일에서 `$derived(() => {...})` → `$derived.by(() => {...})` 변경

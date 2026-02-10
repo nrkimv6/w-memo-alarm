@@ -99,6 +99,14 @@ export interface PostponeInfo {
 	history: PostponeRecord[]; // 미루기 이력
 }
 
+// Todo URL
+export interface TodoUrl {
+	id: string; // nanoid 등
+	url: string; // https://...
+	label?: string; // 선택적 레이블 (표시 이름)
+	addedAt: number; // 추가 시각 timestamp
+}
+
 export interface Memo {
 	id: string;
 	title: string;
@@ -138,6 +146,11 @@ export interface Memo {
 	postponeInfo?: PostponeInfo;
 	// Phase 4: 그룹
 	todoGroupId?: string;
+	// Todo URL 목록
+	todoUrls?: TodoUrl[];
+	// Pung (자동삭제) 설정
+	autoPung?: boolean; // 펑 활성화 여부 (기본 false)
+	pungDelay?: number; // 기한 초과 후 N분 뒤 삭제 (기본 0 = 즉시)
 	// Online-First: 버전 관리 (충돌 감지용)
 	version?: number;
 	// Optimistic UI: 동기화 상태
