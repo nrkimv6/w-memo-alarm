@@ -16,23 +16,17 @@
 
 ## Pending
 
-- [ ] **Todo 기능 Phase 4** ([overview](docs/plan/todo-feature/00-overview.md), [phase-4](docs/plan/todo-feature/phase-4-native-group-stats.md))
-  - Native 강화 + 그룹 + 통계 (Web ✅, Native ⏳ 60%)
+- [ ] [Todo 기능 강화](docs/plan/2026-02-10_todo-enhancement-features.md) — 메모↔할일 전환 개선 + Todo URL + 펑(Pung) 자동삭제
+   - 세부 계획: `docs/plan/todo-feature/phase-4-native-group-stats.md`
+   - 진행률: 60% (Web 완료, Native 진행 중)
+- [ ] [메모 공유 URL null 수정](docs/plan/2026-02-10_fix-memo-share-url-null.md) — SNS 공유 시 URL null 문제 수정
 
 ---
 
 ## 관련 계획서
 
-### 활성 계획
-
-1. **알림 시스템 잔여 이슈**
-   - 파일: `docs/plan/2026-02-04_followup-plan-notification-issues.md`
-   - 우선순위: CRITICAL → MEDIUM → LOW
-
-2. **Todo 기능 Phase 4**
-   - 개요: `docs/plan/todo-feature/00-overview.md`
-   - 세부 계획: `docs/plan/todo-feature/phase-4-native-group-stats.md`
-   - 진행률: 60% (Web 완료, Native 진행 중)
+- [Todo 기능 강화 계획서](docs/plan/2026-02-10_todo-enhancement-features.md)
+- [메모 공유 URL null 수정 계획서](docs/plan/2026-02-10_fix-memo-share-url-null.md)
 
 ---
 
