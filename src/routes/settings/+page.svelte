@@ -490,6 +490,7 @@
 	let todoAutoAlertMinutes = $state(settingsStore.settings.todoDefaults.autoAlert.minutesBefore);
 	let todoShowOverdue = $state(settingsStore.settings.todoDefaults.showOverdue);
 	let todoShowProgress = $state(settingsStore.settings.todoDefaults.showProgress);
+	let todoShowUpcomingOnEmpty = $state(settingsStore.settings.todoDefaults.showUpcomingOnEmpty);
 
 	const todoCount = $derived(memosStore.memos.filter(m => m.memoType === 'todo').length);
 
@@ -523,6 +524,11 @@
 	function handleTodoShowProgressToggle() {
 		todoShowProgress = !todoShowProgress;
 		settingsStore.setTodoShowProgress(todoShowProgress);
+	}
+
+	function handleTodoShowUpcomingOnEmptyToggle() {
+		todoShowUpcomingOnEmpty = !todoShowUpcomingOnEmpty;
+		settingsStore.setTodoShowUpcomingOnEmpty(todoShowUpcomingOnEmpty);
 	}
 
 	function handleExport() {
@@ -885,6 +891,24 @@
 					aria-label="진행률 표시"
 					onclick={handleTodoShowProgressToggle}
 					class={cn('toggle-switch', todoShowProgress && 'active')}
+				>
+					<span class="toggle-switch-thumb"></span>
+				</button>
+			</div>
+
+			<!-- 빈 화면에 다가오는 할일 표시 -->
+			<div class="flex items-center justify-between">
+				<div>
+					<span class="text-sm">빈 화면에 다가오는 할일 표시</span>
+					<p class="text-xs text-muted-foreground">현재 필터에 할일이 없을 때 다음 1-2개 할일을 미리 보여줍니다</p>
+				</div>
+				<button
+					type="button"
+					role="switch"
+					aria-checked={todoShowUpcomingOnEmpty}
+					aria-label="빈 화면에 다가오는 할일 표시"
+					onclick={handleTodoShowUpcomingOnEmptyToggle}
+					class={cn('toggle-switch', todoShowUpcomingOnEmpty && 'active')}
 				>
 					<span class="toggle-switch-thumb"></span>
 				</button>

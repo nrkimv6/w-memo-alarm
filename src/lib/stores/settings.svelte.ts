@@ -18,6 +18,7 @@ export interface TodoDefaultSettings {
 	};
 	showOverdue: boolean;
 	showProgress: boolean;
+	showUpcomingOnEmpty: boolean; // 빈 화면에 다가오는 할일 표시
 }
 
 export interface AppSettings {
@@ -44,7 +45,8 @@ const DEFAULT_SETTINGS: AppSettings = {
 			minutesBefore: 60 // 1시간 전 (기본값)
 		},
 		showOverdue: true,
-		showProgress: true
+		showProgress: true,
+		showUpcomingOnEmpty: true // 기본값: 켜짐
 	}
 };
 
@@ -222,6 +224,14 @@ function createSettingsStore() {
 		saveToStorage(settings);
 	}
 
+	function setTodoShowUpcomingOnEmpty(showUpcomingOnEmpty: boolean) {
+		settings = {
+			...settings,
+			todoDefaults: { ...settings.todoDefaults, showUpcomingOnEmpty }
+		};
+		saveToStorage(settings);
+	}
+
 	return {
 		get settings() {
 			return settings;
@@ -241,7 +251,8 @@ function createSettingsStore() {
 		setTodoAutoAlertEnabled,
 		setTodoAutoAlertMinutes,
 		setTodoShowOverdue,
-		setTodoShowProgress
+		setTodoShowProgress,
+		setTodoShowUpcomingOnEmpty
 	};
 }
 
