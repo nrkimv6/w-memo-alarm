@@ -49,7 +49,7 @@ self.addEventListener('notificationclick', (event) => {
 			for (const client of clientList) {
 				if (client.url.includes(self.location.origin) && 'focus' in client) {
 					return client.focus().then((focusedClient) => {
-						return focusedClient.navigate(appUrl);
+						return focusedClient.navigate(appUrl).catch(() => clients.openWindow(appUrl));
 					});
 				}
 			}

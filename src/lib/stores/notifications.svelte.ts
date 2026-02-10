@@ -146,6 +146,11 @@ function createNotificationStore() {
 					});
 					log.info(`SW notification record: ${event.data.memoTitle} (${event.data.status})`);
 				}
+				// autoOpen으로 외부 URL이 열린 경우 openCount 증가
+				if (event.data.type === 'AUTO_OPEN_TRIGGERED' && event.data.memoId) {
+					memosStore.incrementOpenCount(event.data.memoId);
+					log.info(`Auto-open triggered for memo: ${event.data.memoId}`);
+				}
 			});
 			log.info('SW message listener registered');
 		}
@@ -211,10 +216,7 @@ function createNotificationStore() {
 				if (memo) {
 					log.info(`⏰ Triggering snoozed: ${memo.title}`);
 					showNotification(memo, true);
-					if (memo.url && memo.reminder?.autoOpen) {
-						window.open(memo.url, '_blank');
-						memosStore.incrementOpenCount(memo.id);
-					}
+					// autoOpen 처리는 서비스 워커에서 처리 (notificationclick)
 				}
 				cancelSnooze(snoozed.memoId);
 			}
@@ -261,10 +263,7 @@ function createNotificationStore() {
 			lastNotifiedMap[memo.id] = notifyKey;
 			saveLastNotified();
 
-			if (memo.url && memo.reminder.autoOpen) {
-				window.open(memo.url, '_blank');
-				memosStore.incrementOpenCount(memo.id);
-			}
+			// autoOpen 처리는 서비스 워커에서 처리 (notificationclick)
 
 			if (isOnce) {
 				log.info(`🔕 Disabling one-time: "${memo.title}"`);

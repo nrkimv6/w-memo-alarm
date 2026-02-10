@@ -112,13 +112,30 @@
 				window.history.replaceState({}, '', cleanUrl);
 
 				// memosStore가 초기화될 때까지 대기 후 메모 열기
+				let retryCount = 0;
+				const MAX_RETRY = 15; // 15회 * 200ms = 3초
 				const tryOpenMemo = () => {
 					const memo = memosStore.getById(memoId);
 					if (memo) {
 						viewingMemo = memo;
 						showDetailModal = true;
-					} else if (!memosStore.initialized) {
+					} else if (!memosStore.initialized && retryCount < MAX_RETRY) {
+						retryCount++;
 						setTimeout(tryOpenMemo, 200);
+					} else if (memosStore.initialized && !memo) {
+						// 초기화 완료했는데 메모가 없으면 삭제된 메모
+						console.warn(`Memo ${memoId} not found`);
+						// Toast 메시지 표시 (Toast 컴포넌트가 이미 import됨)
+						const event = new CustomEvent('show-toast', {
+							detail: { message: '해당 메모를 찾을 수 없습니다.', type: 'error' }
+						});
+						window.dispatchEvent(event);
+					} else if (retryCount >= MAX_RETRY) {
+						console.error(`Failed to open memo ${memoId} after ${MAX_RETRY} retries`);
+						const event = new CustomEvent('show-toast', {
+							detail: { message: '메모를 불러오는 데 실패했습니다.', type: 'error' }
+						});
+						window.dispatchEvent(event);
 					}
 				};
 				tryOpenMemo();

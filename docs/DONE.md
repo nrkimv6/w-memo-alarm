@@ -2,6 +2,14 @@
 
 > 이 파일은 memo-alarm 프로젝트에서 완료된 작업을 기록합니다.
 
+## 2026-02-11: 알림 시스템 잔여 이슈 수정
+- [x] 완료 — [archive](archive/2026-02-04_followup-plan-notification-issues.md)
+- **Issue 1**: Capacitor 네이티브 알림 클릭 리스너 연결 (`+layout.svelte`)
+- **Issue 2**: 포그라운드 window.open() 중복 제거 (`notifications.svelte.ts`, `service-worker.ts`)
+- **Issue 4**: navigate() 실패 시 fallback 추가 (`service-worker.ts`, `firebase-messaging-sw.js`)
+- **Issue 5**: ?memo= 파라미터 폴링 로직 개선 (`+page.svelte`)
+- **빌드**: 성공
+
 ## 2026-02-11: 메모 공유 URL null 문제 수정
 - [x] 완료 — [archive](archive/2026-02-10_fix-memo-share-url-null.md)
 - **share.ts 수정**: formatMemoForShare() 주석 명확화, getFacebookShareUrl()/getKakaoShareUrl() URL 없으면 빈 문자열 반환, shareToSNS() 빈 URL 처리 및 toast 안내, getTwitterShareUrl() content 포함

@@ -535,10 +535,17 @@ sw.addEventListener('notificationclick', (event) => {
 					return (client as WindowClient).focus().then((focusedClient) => {
 						if (externalUrl) {
 							// 외부 URL: 새 탭으로 열기
-							return sw.clients.openWindow(externalUrl).then(() => focusedClient);
+							sw.clients.openWindow(externalUrl);
+							// autoOpen 트리거 메시지 전달 (incrementOpenCount 호출용)
+							if (data?.memoId) {
+								focusedClient.postMessage({
+									type: 'AUTO_OPEN_TRIGGERED',
+									memoId: data.memoId
+								});
+							}
 						}
 						// 앱 내 URL: 네비게이트
-						return focusedClient.navigate(appUrl);
+						return focusedClient.navigate(appUrl).catch(() => sw.clients.openWindow(appUrl));
 					});
 				}
 			}

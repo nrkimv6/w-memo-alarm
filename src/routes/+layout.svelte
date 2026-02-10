@@ -13,7 +13,7 @@
 	import { filterStore } from "$lib/stores/filter.svelte";
 	import { foldersStore } from "$lib/stores/folders.svelte";
 	import { registerFCMToken, setupForegroundMessageListener, hasDeactivatedToken, resetFCMToken } from "$lib/fcm";
-	import { setupShareIntentListener, shareIntentToQueryParams, type ShareIntentData } from "$lib/utils/capacitor";
+	import { setupShareIntentListener, setupNotificationListeners, shareIntentToQueryParams, type ShareIntentData } from "$lib/utils/capacitor";
 	import { Toast } from "$lib/components/ui";
 	import UnifiedHeader from "$lib/components/layout/UnifiedHeader.svelte";
 	import BottomNav from "$lib/components/BottomNav.svelte";
@@ -113,6 +113,16 @@
 
 		// Android Share Intent 리스너 설정
 		setupShareIntentListener(handleShareIntent);
+
+		// Capacitor 네이티브 알림 클릭 리스너 설정
+		setupNotificationListeners((memoId, url) => {
+			// 외부 URL이 있으면 새 탭에서 열기
+			if (url) {
+				window.open(url, '_blank');
+			}
+			// 메모 상세로 이동
+			goto(`/?memo=${memoId}`);
+		});
 	});
 </script>
 
