@@ -1,7 +1,11 @@
 # 메모 공유 시 URL null 문제 수정 계획서
 
 > **작성일**: 2026-02-10
+> **완료일**: 2026-02-11
+> **아카이브됨**
 > **심각도**: 기능 불완전 (SNS 공유 동작 불가)
+> **상태**: 구현완료
+> **진행률**: 6/6 (100%)
 
 ---
 
@@ -152,12 +156,12 @@ Supabase에 공개 공유 기능을 추가하여 `https://memo.woory.day/share/[
 
 | Task | 설명 | 파일 | 우선순위 |
 |------|------|------|---------|
-| S-1 | `formatMemoForShare()` 주석 명확화 — `url`이 북마크 URL임을 명시 | `share.ts:22` | P0 |
-| S-2 | `getFacebookShareUrl()` — URL 없으면 빈 문자열 반환 | `share.ts:97-101` | P0 |
-| S-3 | `getKakaoShareUrl()` — URL 없으면 빈 문자열 반환 | `share.ts:103-108` | P0 |
-| S-4 | `shareToSNS()` — 빈 URL 반환 시 toast 안내 + 조기 리턴 | `share.ts:112-136` | P0 |
-| S-5 | ShareModal — Facebook/Kakao 버튼 조건부 비활성화 | `ShareModal.svelte` | P1 |
-| S-6 | `getTwitterShareUrl()` — content 포함하여 텍스트 풍성하게 | `share.ts:84-95` | P1 |
+| [x] S-1 | `formatMemoForShare()` 주석 명확화 — `url`이 북마크 URL임을 명시 | `share.ts:22` | P0 |
+| [x] S-2 | `getFacebookShareUrl()` — URL 없으면 빈 문자열 반환 | `share.ts:97-101` | P0 |
+| [x] S-3 | `getKakaoShareUrl()` — URL 없으면 빈 문자열 반환 | `share.ts:103-108` | P0 |
+| [x] S-4 | `shareToSNS()` — 빈 URL 반환 시 toast 안내 + 조기 리턴 | `share.ts:112-136` | P0 |
+| [x] S-5 | ShareModal — Facebook/Kakao 버튼 조건부 비활성화 | `ShareModal.svelte` | P1 |
+| [x] S-6 | `getTwitterShareUrl()` — content 포함하여 텍스트 풍성하게 | `share.ts:84-95` | P1 |
 
 ---
 
@@ -185,3 +189,7 @@ Supabase에 공개 공유 기능을 추가하여 `https://memo.woory.day/share/[
 | `src/lib/utils/qrcode.ts` | (선택) 주석 명확화 | 낮음 |
 
 **기존 기능 영향 없음**: 클립보드 복사, 이미지 내보내기, 공유 수신은 변경 없음.
+
+---
+
+*상태: 구현완료 | 진행률: 6/6 (100%)*

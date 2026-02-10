@@ -15,7 +15,6 @@
   - **LOW**: navigate() 실패 시 fallback (Issue 3)
   - **LOW**: ?memo= 폴링 로직 개선 (Issue 4)
   - **LOW**: iOS PWA 제한 대응 (Issue 5)
-- [ ] [메모 공유 URL null 수정](docs/plan/2026-02-10_fix-memo-share-url-null.md) — SNS 공유 시 URL null 문제 수정
 
 ---
 

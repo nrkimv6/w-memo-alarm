@@ -211,15 +211,23 @@
 						</button>
 						<button
 							onclick={() => handleSNSShare('facebook')}
-							class="p-2.5 rounded-lg bg-[#4267B2]/10 hover:bg-[#4267B2]/20 text-[#4267B2] transition-colors"
-							title="Facebook"
+							disabled={!memo.url}
+							class={cn(
+								"p-2.5 rounded-lg bg-[#4267B2]/10 text-[#4267B2] transition-colors",
+								memo.url ? "hover:bg-[#4267B2]/20" : "opacity-50 cursor-not-allowed"
+							)}
+							title={memo.url ? "Facebook" : "Facebook (URL이 있는 메모만 공유 가능)"}
 						>
 							<Facebook class="w-5 h-5" />
 						</button>
 						<button
 							onclick={() => handleSNSShare('kakao')}
-							class="p-2.5 rounded-lg bg-[#FEE500]/20 hover:bg-[#FEE500]/30 text-[#3C1E1E] transition-colors"
-							title="Kakao"
+							disabled={!memo.url}
+							class={cn(
+								"p-2.5 rounded-lg bg-[#FEE500]/20 text-[#3C1E1E] transition-colors",
+								memo.url ? "hover:bg-[#FEE500]/30" : "opacity-50 cursor-not-allowed"
+							)}
+							title={memo.url ? "Kakao" : "Kakao (URL이 있는 메모만 공유 가능)"}
 						>
 							<MessageCircle class="w-5 h-5" />
 						</button>

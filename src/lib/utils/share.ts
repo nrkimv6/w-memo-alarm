@@ -7,6 +7,12 @@ export interface ShareData {
 	url?: string;
 }
 
+/**
+ * 메모를 공유용 데이터로 포맷합니다.
+ *
+ * @param memo - 공유할 메모
+ * @returns ShareData - url은 북마크 URL(memo.url)이며, 일반 메모의 경우 undefined입니다.
+ */
 export function formatMemoForShare(memo: Memo): ShareData {
 	let text = memo.title;
 	if (memo.content) {
@@ -19,7 +25,7 @@ export function formatMemoForShare(memo: Memo): ShareData {
 	return {
 		title: memo.title,
 		text,
-		url: memo.url
+		url: memo.url // 북마크 URL (일반 메모는 undefined)
 	};
 }
 
@@ -81,34 +87,75 @@ function canShare(data: ShareData): boolean {
 }
 
 // SNS Share URLs
+/**
+ * Twitter 공유 URL을 생성합니다.
+ * 제목, 내용(최대 200자), 태그를 포함하며, 북마크 URL이 있으면 함께 공유합니다.
+ *
+ * @param memo - 공유할 메모
+ * @returns Twitter 공유 URL
+ */
 export function getTwitterShareUrl(memo: Memo): string {
 	const shareData = formatMemoForShare(memo);
 	let text = shareData.title;
+
+	// 내용 추가 (트위터 글자 제한 고려)
+	if (memo.content) {
+		text += `\n${memo.content.slice(0, 200)}`;
+		if (memo.content.length > 200) {
+			text += '...';
+		}
+	}
+
+	// 태그 추가
 	if (memo.tags.length > 0) {
 		text += ` #${memo.tags.join(' #')}`;
 	}
+
 	const params = new URLSearchParams({ text });
-	if (shareData.url) {
-		params.set('url', shareData.url);
+
+	// 북마크 URL이 있으면 함께 공유
+	if (memo.url) {
+		params.set('url', memo.url);
 	}
+
 	return `https://twitter.com/intent/tweet?${params.toString()}`;
 }
 
+/**
+ * Facebook 공유 URL을 생성합니다.
+ * Facebook은 URL이 필수이므로, memo.url이 없으면 빈 문자열을 반환합니다.
+ *
+ * @param memo - 공유할 메모
+ * @returns Facebook 공유 URL 또는 빈 문자열
+ */
 export function getFacebookShareUrl(memo: Memo): string {
-	const shareData = formatMemoForShare(memo);
-	const url = shareData.url || '';
-	return `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(shareData.title)}`;
+	if (!memo.url) return ''; // URL 없으면 공유 불가
+	return `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(memo.url)}&quote=${encodeURIComponent(memo.title)}`;
 }
 
+/**
+ * Kakao 공유 URL을 생성합니다.
+ * Kakao는 URL이 필수이므로, memo.url이 없으면 빈 문자열을 반환합니다.
+ *
+ * @param memo - 공유할 메모
+ * @returns Kakao 공유 URL 또는 빈 문자열
+ */
 export function getKakaoShareUrl(memo: Memo): string {
-	// Kakao requires SDK, so we'll use the talk share URL
+	if (!memo.url) return ''; // URL 없으면 공유 불가
 	const shareData = formatMemoForShare(memo);
 	const text = encodeURIComponent(shareData.text);
-	return `https://story.kakao.com/share?url=${encodeURIComponent(shareData.url || '')}&text=${text}`;
+	return `https://story.kakao.com/share?url=${encodeURIComponent(memo.url)}&text=${text}`;
 }
 
 export type SharePlatform = 'twitter' | 'facebook' | 'kakao' | 'copy' | 'native';
 
+/**
+ * SNS 플랫폼으로 메모를 공유합니다.
+ * Facebook/Kakao는 URL이 없으면 안내 메시지를 표시하고 공유하지 않습니다.
+ *
+ * @param memo - 공유할 메모
+ * @param platform - 공유 플랫폼
+ */
 export function shareToSNS(memo: Memo, platform: SharePlatform): void {
 	let url: string;
 
@@ -119,10 +166,18 @@ export function shareToSNS(memo: Memo, platform: SharePlatform): void {
 			break;
 		case 'facebook':
 			url = getFacebookShareUrl(memo);
+			if (!url) {
+				toastStore.info('URL이 없는 메모는 Facebook으로 공유할 수 없습니다');
+				return;
+			}
 			window.open(url, '_blank', 'width=600,height=400');
 			break;
 		case 'kakao':
 			url = getKakaoShareUrl(memo);
+			if (!url) {
+				toastStore.info('URL이 없는 메모는 Kakao로 공유할 수 없습니다');
+				return;
+			}
 			window.open(url, '_blank', 'width=600,height=400');
 			break;
 		case 'copy':

@@ -2,6 +2,12 @@
 
 > 이 파일은 memo-alarm 프로젝트에서 완료된 작업을 기록합니다.
 
+## 2026-02-11: 메모 공유 URL null 문제 수정
+- [x] 완료 — [archive](archive/2026-02-10_fix-memo-share-url-null.md)
+- **share.ts 수정**: formatMemoForShare() 주석 명확화, getFacebookShareUrl()/getKakaoShareUrl() URL 없으면 빈 문자열 반환, shareToSNS() 빈 URL 처리 및 toast 안내, getTwitterShareUrl() content 포함
+- **ShareModal.svelte 수정**: Facebook/Kakao 버튼 조건부 비활성화 (memo.url 없을 때)
+- **빌드**: 성공 (기존 타입 에러 있으나 빌드 통과)
+
 ## 2026-02-10: Todo 기능 강화
 - [x] 완료 — [archive](archive/2026-02-10_todo-enhancement-features.md)
 - **메모↔할일 전환 개선**: MemoDetailModal에 "할일로" 버튼 추가, TodoForm에 확인 다이얼로그 추가
