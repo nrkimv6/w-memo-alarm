@@ -2,6 +2,13 @@
 
 > 이 파일은 memo-alarm 프로젝트에서 완료된 작업을 기록합니다.
 
+## 2026-02-10: Svelte 5 $derived 패턴 오류 수정
+- [x] 완료 — [archive](archive/2026-02-04_derived-pattern-fix.md)
+- 5개 파일에서 `$derived(() => {...})` → `$derived.by(() => {...})` 변경
+- 호출부 괄호 제거 (`filteredHistories()` → `filteredHistories`)
+- 영향 파일: `settings/+page.svelte`, `+page.svelte`, `notifications/+page.svelte`
+- 커밋: `1c8ad9a`
+
 ## 2026-02-10: 할일 빈 상태 미리보기 기능
 - [x] 완료 — [archive](../../common/docs/archive/2026-02-10_todo-empty-state-hint.md)
 - 설정: `showUpcomingOnEmpty` 토글 추가 (기본값: 켜짐)
@@ -72,7 +79,6 @@
 
 다음 항목들은 아직 계획 단계이거나 미완료입니다:
 
-- `2026-02-04_derived-pattern-fix.md` - Svelte Runes $derived 패턴 수정
 - `2026-02-04_fix-memo-deletion-logout.md` - 메모 삭제 시 캐시 정리
 - `2026-02-04_fix-report-android-pwa-notification-click.md` - Android PWA 알림 클릭 이슈
 - `2026-02-04_fix-scrollbar-issues.md` - 스크롤바 문제 해결
@@ -82,4 +88,4 @@
 
 ---
 
-*마지막 업데이트: 2026-02-05*
+*마지막 업데이트: 2026-02-10*
