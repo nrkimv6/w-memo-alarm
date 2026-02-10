@@ -89,6 +89,24 @@
 	const showProgress = $derived(
 		settingsStore.settings.todoDefaults.showProgress,
 	);
+	const showUpcomingOnEmpty = $derived(
+		settingsStore.settings.todoDefaults.showUpcomingOnEmpty,
+	);
+
+	// 빈 상태일 때 다가오는 할일 미리보기
+	const upcomingTodos = $derived.by(() => {
+		// 현재 필터에 할일이 있으면 미리보기 불필요
+		if (filteredTodos.length > 0) return [];
+		// 설정이 꺼져있으면 표시 안 함
+		if (!showUpcomingOnEmpty) return [];
+
+		// 미완료 전체 할일에서 날짜순 정렬 후 2개만
+		const allPendingTodos = filterTodos(todos, 'all');
+		return allPendingTodos
+			.filter(todo => todo.dueDate) // 날짜가 있는 것만
+			.sort((a, b) => (a.dueDate || '').localeCompare(b.dueDate || ''))
+			.slice(0, 2);
+	});
 
 	// Get all unique tags from todos
 	const availableTags = $derived.by(() => {
@@ -588,16 +606,43 @@
 				>
 					<CheckSquare class="w-8 h-8 text-muted-foreground" />
 				</div>
-				<p class="text-muted-foreground">
+				<p class="text-muted-foreground mb-6">
 					{selectedFilter === "completed"
 						? "완료된 할일이 없습니다"
 						: "할일이 없습니다"}
 				</p>
+
+				<!-- 다가오는 할일 미리보기 -->
+				{#if upcomingTodos.length > 0}
+					<div class="w-full max-w-md space-y-3">
+						<div class="text-sm text-muted-foreground border-t border-b border-border py-2">
+							── 다가오는 할일 ──
+						</div>
+						<div class="space-y-2">
+							{#each upcomingTodos as todo}
+								<div class="bg-muted/30 rounded-lg p-3 text-left border border-border/50">
+									<div class="flex items-start gap-2">
+										<div class="w-4 h-4 rounded border border-border mt-0.5 flex-shrink-0"></div>
+										<div class="flex-1 min-w-0">
+											<div class="text-sm font-medium truncate">{todo.title}</div>
+											{#if todo.dueDate}
+												<div class="text-xs text-muted-foreground mt-1">
+													{formatDueDate(todo)}
+												</div>
+											{/if}
+										</div>
+									</div>
+								</div>
+							{/each}
+						</div>
+					</div>
+				{/if}
+
 				{#if selectedFilter !== "completed"}
 					<Button
 						variant="default"
 						onclick={() => openTodoForm()}
-						class="mt-4"
+						class="mt-6"
 					>
 						새 할일 만들기
 					</Button>

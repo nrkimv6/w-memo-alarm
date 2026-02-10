@@ -7,10 +7,6 @@
 
 ## In Progress
 
-- [x] [400 에러 수정](../common/docs/plan/2026-02-10_memo-alarm-400-error-fix.md) - DB `reminders` 컬럼 추가 마이그레이션 ✅
-  - 마이그레이션 완료: `008_add_reminders_column.sql`
-  - [ ] 동작 확인 필요 (메모 추가/수정 테스트)
-
 ## Pending
 
 ---

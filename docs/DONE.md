@@ -2,6 +2,20 @@
 
 > 이 파일은 memo-alarm 프로젝트에서 완료된 작업을 기록합니다.
 
+## 2026-02-10: 할일 빈 상태 미리보기 기능
+- [x] 완료 — [archive](../../common/docs/archive/2026-02-10_todo-empty-state-hint.md)
+- 설정: `showUpcomingOnEmpty` 토글 추가 (기본값: 켜짐)
+- 로직: 현재 필터에 할일이 없을 때 다가오는 할일 2개 미리보기
+- UI: 빈 상태 영역에 "다가오는 할일" 섹션 렌더링
+- 빌드: 성공 (타입 에러 1개 수정 - `formatDueDate` 인수)
+
+## 2026-02-10: 400 에러 및 메모 저장 버그 수정
+- [x] 완료 — [보고서](../../common/docs/plan/2026-02-10_memo-alarm-400-error-fix.md)
+- DB 마이그레이션: `reminders`, `priority` 컬럼 추가
+- 타임스탬프 형식 수정: `createdAt`/`updatedAt` toDb 변환 추가
+- ID 덮어쓰기 버그 수정: 객체 스프레드 순서 변경
+- 커밋: `3ad4a54`
+
 ## 2026-02-06: 메모/할일 버그 수정
 - [x] 완료 — [archive](archive/2026-02-05_fix-memo-todo-bugs.md)
 - 로그인 후 메모가 표시되지 않는 버그 수정 (reinit 경쟁 상태 해결)
