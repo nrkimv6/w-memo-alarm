@@ -223,12 +223,20 @@ ALTER TABLE ma_memos ADD COLUMN pung_delay INTEGER DEFAULT 0;
   - 비반복: `update(id, { todoStatus: 'skipped', isActive: false })`
   - 반복: 기존 `skipTodoInstance()` 활용 → 자동으로 다음 인스턴스 생성
 
-#### Task 3-4: Pung 스케줄러 (체크 타이밍)
-- **방안 A** (권장): 앱 진입 시 + 주기적 체크 (setInterval 5분)
-  - 모든 pending+overdue+autoPung 할일을 순회 → pungDelay 경과 확인 → 실행
-- **방안 B**: 서버사이드 cron (Supabase Edge Function)
-  - 장점: 앱이 꺼져 있어도 동작
-  - 단점: 구현 복잡도 ↑
+#### Task 3-4: Pung 스케줄러 (체크 타이밍) — ✅ 결정: 2단계 접근
+
+기존 알림 인프라(`pg_cron` + `send-notifications` Edge Function)와 동일한 패턴 활용.
+
+**1단계 (MVP): 앱 접속 시 체크**
+- 앱 진입(onMount) 시 overdue + autoPung 할일 일괄 체크
+- `recoverAllMissingInstances()`와 유사한 패턴으로 `executePendingPungs()` 실행
+- 장점: 추가 인프라 불필요, 즉시 구현 가능
+
+**2단계: Supabase pg_cron + Edge Function**
+- 기존 `send-notifications` Edge Function에 pung 로직 추가 또는 별도 `execute-pung` 함수 생성
+- `pg_cron`에서 1분~5분 간격으로 호출
+- DB 직접 조회: `SELECT * FROM ma_memos WHERE auto_pung = true AND todo_status = 'pending' AND due_date + pung_delay < NOW()`
+- 장점: 앱이 꺼져 있어도 동작, 알림과 동일한 안정적 인프라
 
 #### Task 3-5: TodoForm에 펑 설정 UI 추가
 - **파일**: `src/lib/components/todo/TodoForm.svelte`
@@ -269,7 +277,10 @@ Phase B: 스토어 + 비즈니스 로직
   ├── Task 2-5: 필드 변환 (todoUrls)
   ├── Task 3-7: 필드 변환 (autoPung, pungDelay)
   ├── Task 3-3: executePung() 구현
-  └── Task 3-4: Pung 스케줄러
+  └── Task 3-4a: Pung 체크 — 앱 접속 시 (1단계 MVP)
+
+Phase D: 서버 인프라 (2단계)
+  └── Task 3-4b: Pung 체크 — Supabase pg_cron + Edge Function
 
 Phase C: UI 구현
   ├── Task 1-1: MemoDetailModal 전환 버튼
@@ -283,12 +294,12 @@ Phase C: UI 구현
 
 ---
 
-## 5. 결정 필요 사항
+## 5. 결정 사항 (확정)
 
-| # | 항목 | 선택지 | 권장 |
-|---|------|--------|------|
-| 1 | 펑 실행 타이밍 | A) 클라이언트 주기 체크 / B) 서버 cron | A (MVP) |
-| 2 | 펑 후 데이터 처리 | A) 완전 삭제 / B) 비활성화(isActive=false) | B (복구 가능) |
-| 3 | pungDelay 기본값 | 0(즉시) / 60(1시간) / 1440(1일) | 0 |
-| 4 | 메모→할일 전환 위치 | A) 상세보기 footer / B) 길게 누르기 메뉴 | A |
-| 5 | TodoUrl.label 필수 여부 | 필수 / 선택 | 선택 (빈 값이면 도메인 표시) |
+| # | 항목 | 결정 | 비고 |
+|---|------|------|------|
+| 1 | 펑 실행 타이밍 | **2단계 접근**: 1차 앱 접속 시 체크 → 2차 Supabase cron | 기존 `pg_cron` + Edge Function 인프라 활용 |
+| 2 | 펑 후 데이터 처리 | **B) 비활성화** (isActive=false) | 복구 가능 |
+| 3 | pungDelay 기본값 | **0** (즉시) | — |
+| 4 | 메모→할일 전환 위치 | **A) 상세보기 footer** | — |
+| 5 | TodoUrl.label 필수 여부 | **선택** | 빈 값이면 도메인 표시 |
