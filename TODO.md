@@ -13,11 +13,15 @@
 
 ## Pending
 
+- [ ] [Todo 기능 강화](docs/plan/2026-02-10_todo-enhancement-features.md) — 메모↔할일 전환 개선 + Todo URL + 펑(Pung) 자동삭제
+- [ ] [메모 공유 URL null 수정](docs/plan/2026-02-10_fix-memo-share-url-null.md) — SNS 공유 시 URL null 문제 수정
+
 ---
 
 ## 관련 계획서
 
-_현재 진행 중인 계획이 없습니다._
+- [Todo 기능 강화 계획서](docs/plan/2026-02-10_todo-enhancement-features.md)
+- [메모 공유 URL null 수정 계획서](docs/plan/2026-02-10_fix-memo-share-url-null.md)
 
 ---
 
