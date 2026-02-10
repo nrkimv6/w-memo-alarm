@@ -24,7 +24,10 @@
       "Bash(Select-Object FullName, PSIsContainer)",
       "Bash(commit *)"
     ],
-    "deny": [],
+    "deny": [
+      "Bash(git commit *)",
+      "Bash(git commit:*)"
+    ],
     "ask": []
   }
 }
