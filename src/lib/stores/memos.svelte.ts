@@ -523,8 +523,8 @@ function createMemosStore() {
 		// 2. 백그라운드에서 서버 동기화
 		const serverId = generateId();
 		const newMemo = memoToSupabase({
-			id: serverId,
 			...data,
+			id: serverId,  // data.id를 덮어쓰기 위해 마지막에 설정
 			isPinned: false,
 			isFavorite: false,
 			isActive: true
