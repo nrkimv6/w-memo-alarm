@@ -2,6 +2,12 @@
 
 > 이 파일은 memo-alarm 프로젝트에서 완료된 작업을 기록합니다.
 
+## 2026-02-11: Android PWA 알림 클릭 수정 검증
+- [x] 완료 — [수정 보고서](plan/2026-02-04_fix-report-android-pwa-notification-click.md)
+- **코드 검증**: service-worker.ts 외부 URL 처리 로직 구현 완료
+- **빌드**: 성공
+- **수동 작업**: Android PWA 실기기 테스트 필요 → MANUAL_TASKS.md
+
 ## 2026-02-11: 알림 시스템 잔여 이슈 수정
 - [x] 완료 — [archive](archive/2026-02-04_followup-plan-notification-issues.md)
 - **Issue 1**: Capacitor 네이티브 알림 클릭 리스너 연결 (`+layout.svelte`)

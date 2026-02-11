@@ -12,6 +12,17 @@
 - [ ] 포그라운드 상태에서 알림 발생 → 클릭 시 URL이 1번만 열리는지 테스트
 - [ ] 백그라운드 상태에서 알림 클릭 시 URL 열기 정상 동작 테스트
 
+## 2026-02-11: Android PWA 외부 URL 알림 테스트
+
+### 수정 보고서 테스트 체크리스트 (from: plan/2026-02-04_fix-report-android-pwa-notification-click)
+- [ ] Android PWA: 알림 탭 → 앱 열림 + 해당 메모 상세 모달 표시
+- [ ] Android PWA: 앱이 이미 열린 상태에서 알림 탭 → 앱 포커스 + 메모 이동
+- [ ] Android PWA: 외부 URL이 있는 메모 알림 탭 → 브라우저에서 외부 URL 열림
+- [ ] Android PWA: 병합 알림(다건) 탭 → 홈 화면으로 이동
+- [ ] Android PWA: FCM 푸시 알림 탭 → 앱 열림 + 해당 메모 표시
+- [ ] 데스크톱 Chrome: 기존 알림 동작이 깨지지 않음
+- [ ] iOS Safari PWA: 알림 동작 확인 (iOS 16.4+ 해당 시)
+
 ---
 
 *마지막 업데이트: 2026-02-11*
