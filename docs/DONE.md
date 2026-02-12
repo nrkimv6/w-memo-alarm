@@ -2,6 +2,14 @@
 
 > 이 파일은 memo-alarm 프로젝트에서 완료된 작업을 기록합니다.
 
+## 2026-02-13: 빠른 메모 추가 (FAB)
+- [x] 완료 — [archive](archive/2026-02-12_quick-add-fab.md)
+- **Phase 1**: FAB 버튼 HTML 추가 (`src/routes/+page.svelte`)
+- **Phase 2**: FAB 호버/액티브 애니메이션 추가
+- **Phase 3**: 스크롤 방향 감지 로직 추가 (아래 스크롤 시 숨기기, 위로 스크롤 시 표시)
+- **Phase 4**: 빌드 성공 확인
+- **기능**: 홈 화면 우하단 플로팅 버튼으로 어디서든 빠른 메모 작성 가능
+
 ## 2026-02-11: Android PWA 알림 클릭 수정 검증
 - [x] 완료 — [수정 보고서](plan/2026-02-04_fix-report-android-pwa-notification-click.md)
 - **코드 검증**: service-worker.ts 외부 URL 처리 로직 구현 완료

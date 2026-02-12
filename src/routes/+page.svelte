@@ -39,6 +39,10 @@
 	let viewingMemo = $state<Memo | null>(null);
 	let sharingMemo = $state<Memo | null>(null);
 
+	// FAB 스크롤 제어
+	let lastScrollY = $state(0);
+	let fabVisible = $state(true);
+
 	// 대시보드용 메모 분류
 	const pinnedMemos = $derived(
 		memosStore.memos
@@ -187,7 +191,33 @@
 		}
 
 		window.addEventListener('keydown', handleKeydown);
-		return () => window.removeEventListener('keydown', handleKeydown);
+
+		// FAB 스크롤 제어 (throttle 적용)
+		let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
+		function handleScroll() {
+			if (scrollTimeout) return;
+			scrollTimeout = setTimeout(() => {
+				const currentScrollY = window.scrollY;
+				const scrollDelta = currentScrollY - lastScrollY;
+
+				// 100px 이상 아래로 스크롤 시 숨기기, 위로 스크롤 시 표시
+				if (scrollDelta > 50) {
+					fabVisible = false;
+				} else if (scrollDelta < -30) {
+					fabVisible = true;
+				}
+
+				lastScrollY = currentScrollY;
+				scrollTimeout = null;
+			}, 100);
+		}
+
+		window.addEventListener('scroll', handleScroll);
+
+		return () => {
+			window.removeEventListener('keydown', handleKeydown);
+			window.removeEventListener('scroll', handleScroll);
+		};
 	});
 
 	function handleCreateNew() {
@@ -520,6 +550,17 @@
 		{/if}
 	</main>
 </div>
+
+<!-- FAB (Floating Action Button) -->
+{#if !showForm}
+	<button
+		onclick={handleCreateNew}
+		class="fixed bottom-24 right-4 z-40 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:scale-110 active:scale-95 transition-transform transition-opacity duration-200 {fabVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}"
+		aria-label="새 메모 작성"
+	>
+		<Plus class="w-6 h-6" />
+	</button>
+{/if}
 
 <!-- Modals -->
 <MemoForm
