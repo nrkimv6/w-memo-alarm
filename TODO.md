@@ -7,7 +7,11 @@
 
 ## In Progress
 
+*현재 없음*
+
 ## Pending
+
+- [ ] **빠른 메모 추가 (FAB)** — [plan](docs/plan/2026-02-12_quick-add-fab.md) (0/5, 0%)
 
 ---
 
