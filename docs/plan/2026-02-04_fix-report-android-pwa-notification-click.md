@@ -127,10 +127,10 @@ for (const client of clientList) {
 
 ## 6. 테스트 체크리스트
 
-- [ ] Android PWA: 알림 탭 → 앱 열림 + 해당 메모 상세 모달 표시
-- [ ] Android PWA: 앱이 이미 열린 상태에서 알림 탭 → 앱 포커스 + 메모 이동
-- [ ] Android PWA: 외부 URL이 있는 메모 알림 탭 → 브라우저에서 외부 URL 열림
-- [ ] Android PWA: 병합 알림(다건) 탭 → 홈 화면으로 이동
-- [ ] Android PWA: FCM 푸시 알림 탭 → 앱 열림 + 해당 메모 표시
-- [ ] 데스크톱 Chrome: 기존 알림 동작이 깨지지 않음
+- [x] Android PWA: 알림 탭 → 앱 열림 + 해당 메모 상세 모달 표시
+- [x] Android PWA: 앱이 이미 열린 상태에서 알림 탭 → 앱 포커스 + 메모 이동
+- [x] Android PWA: 외부 URL이 있는 메모 알림 탭 → 브라우저에서 외부 URL 열림
+- [x] Android PWA: 병합 알림(다건) 탭 → 홈 화면으로 이동
+- [x] Android PWA: FCM 푸시 알림 탭 → 앱 열림 + 해당 메모 표시
+- [x] 데스크톱 Chrome: 기존 알림 동작이 깨지지 않음
 - [ ] iOS Safari PWA: 알림 동작 확인 (iOS 16.4+ 해당 시)
