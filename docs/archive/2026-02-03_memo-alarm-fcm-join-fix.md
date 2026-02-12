@@ -98,9 +98,9 @@ android: {
 
 - [x] Edge Function 배포 확인
 - [x] FCM 알림 발송 성공 (notification_logs 확인)
-- [?] 비활성화된 토큰 Alert 동작 확인
-- [x] 토큰 재설정 후 알림 정상 수신 확인
-- [] 모바일 undefined 버그 수정 및 테스트
+- [ ] 비활성화된 토큰 Alert 동작 확인
+- [ ] 토큰 재설정 후 알림 정상 수신 확인
+- [ ] 모바일 undefined 버그 수정 및 테스트
 
 ## 관련 문서
 
