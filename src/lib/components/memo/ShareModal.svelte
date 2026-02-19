@@ -5,6 +5,7 @@
 		Download,
 		QrCode,
 		Image,
+		Share2,
 		MessageCircle,
 		Twitter,
 		Facebook,
@@ -19,7 +20,8 @@
 		copyToClipboard,
 		shareToSNS,
 		generateMemoQRCode,
-		exportMemoAsImage
+		exportMemoAsImage,
+		shareImage
 	} from '$lib/utils';
 	import { cn } from '$lib/utils';
 
@@ -33,10 +35,14 @@
 
 	let qrCodeDataUrl = $state<string | null>(null);
 	let isGeneratingQR = $state(false);
+	let isExportingImage = $state(false);
 	let copied = $state(false);
 	let cardElement: HTMLDivElement;
 
 	const folder = $derived(null);
+
+	// 네이티브 공유 API 지원 여부
+	const canNativeShare = $derived(typeof navigator !== 'undefined' && !!navigator.share);
 
 	$effect(() => {
 		if (open && memo) {
@@ -77,7 +83,19 @@
 		shareToSNS(memo, platform);
 	}
 
-	async function handleExportImage() {
+	// 이미지 공유: 네이티브 공유 API 지원 시 앱 공유 시트, 미지원 시 다운로드
+	async function handleShareImage() {
+		if (!memo || !cardElement) return;
+		isExportingImage = true;
+		try {
+			await shareImage(cardElement, memo);
+		} finally {
+			isExportingImage = false;
+		}
+	}
+
+	// 이미지 저장: 항상 파일로 다운로드
+	async function handleDownloadImage() {
 		if (!memo || !cardElement) return;
 		await exportMemoAsImage(cardElement, memo);
 	}
@@ -104,7 +122,7 @@
 <Modal bind:open title="메모 공유" size="md">
 	{#if memo}
 		<div class="space-y-6">
-			<!-- Preview Card for Export -->
+			<!-- Preview Card for Export (카드 스타일) -->
 			<div
 				bind:this={cardElement}
 				class="p-5 bg-gradient-to-br from-background to-muted rounded-xl border-2 border-border shadow-md"
@@ -179,23 +197,37 @@
 						<MessageCircle class="w-4 h-4" />
 						공유하기
 					</Button>
+					<!-- 이미지 공유: 네이티브 공유 API 지원 시 앱 공유 시트 표시 -->
 					<Button
 						variant="outline"
-						onclick={handleExportImage}
+						onclick={handleShareImage}
+						disabled={isExportingImage}
 						class="justify-start gap-2"
 					>
-						<Image class="w-4 h-4" />
-						이미지 저장
+						<Share2 class="w-4 h-4" />
+						{isExportingImage ? '처리 중...' : canNativeShare ? '이미지 공유' : '이미지 저장'}
 					</Button>
-					<Button
-						variant="outline"
-						onclick={downloadQRCode}
-						disabled={!qrCodeDataUrl}
-						class="justify-start gap-2"
-					>
-						<Download class="w-4 h-4" />
-						QR 저장
-					</Button>
+					<!-- 이미지 저장: 항상 파일로 다운로드 -->
+					{#if canNativeShare}
+						<Button
+							variant="outline"
+							onclick={handleDownloadImage}
+							class="justify-start gap-2"
+						>
+							<Download class="w-4 h-4" />
+							이미지 저장
+						</Button>
+					{:else}
+						<Button
+							variant="outline"
+							onclick={downloadQRCode}
+							disabled={!qrCodeDataUrl}
+							class="justify-start gap-2"
+						>
+							<Download class="w-4 h-4" />
+							QR 저장
+						</Button>
+					{/if}
 				</div>
 
 				<!-- SNS Share -->
@@ -255,9 +287,23 @@
 							<span class="text-muted-foreground text-sm">QR 생성 실패</span>
 						</div>
 					{/if}
-					<p class="text-xs text-muted-foreground text-center">
-						QR 코드를 스캔하면 메모 내용을 확인할 수 있습니다
-					</p>
+					<div class="flex items-center gap-2">
+						<p class="text-xs text-muted-foreground text-center">
+							QR 코드를 스캔하면 메모 내용을 확인할 수 있습니다
+						</p>
+						{#if canNativeShare}
+							<Button
+								variant="ghost"
+								size="sm"
+								onclick={downloadQRCode}
+								disabled={!qrCodeDataUrl}
+								class="shrink-0 h-7 px-2 text-xs gap-1"
+							>
+								<Download class="w-3 h-3" />
+								QR 저장
+							</Button>
+						{/if}
+					</div>
 				</div>
 			</div>
 		</div>
