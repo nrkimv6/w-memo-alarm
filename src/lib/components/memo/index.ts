@@ -14,3 +14,4 @@ export { default as QuickMemoInput } from './QuickMemoInput.svelte';
 export { default as ScheduledRemindersModal } from './ScheduledRemindersModal.svelte';
 export { default as ChecklistEditor } from './ChecklistEditor.svelte';
 export { default as ShareModal } from './ShareModal.svelte';
+export { default as DuplicateUrlDialog } from './DuplicateUrlDialog.svelte';

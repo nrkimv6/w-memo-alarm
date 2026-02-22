@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { Plus, FileText, CheckSquare, X, Merge, Trash2 } from 'lucide-svelte';
+	import { Plus, FileText, CheckSquare, X, Merge, Trash2, Link2 } from 'lucide-svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import { FilterTabs } from '$lib/components/layout';
 	import {
@@ -11,8 +11,10 @@
 		SearchBar,
 		TagFilter,
 		FolderTabs,
-		ShareModal
+		ShareModal,
+		DuplicateUrlDialog
 	} from '$lib/components/memo';
+	import { findDuplicatesByUrl } from '$lib/utils';
 	import { memosStore } from '$lib/stores/memos.svelte';
 	import { filterStore } from '$lib/stores/filter.svelte';
 	import { foldersStore } from '$lib/stores/folders.svelte';
@@ -26,6 +28,7 @@
 	let showDeleteSelectedDialog = $state(false);
 	let showDetailModal = $state(false);
 	let showShareModal = $state(false);
+	let showDuplicateDialog = $state(false);
 	let editingMemo = $state<Memo | null>(null);
 	let deletingMemo = $state<Memo | null>(null);
 	let viewingMemo = $state<Memo | null>(null);
@@ -37,6 +40,7 @@
 	const hasFolders = $derived(foldersStore.folders.length > 0);
 	const isSelectionMode = $derived(selectionStore.isSelectionMode);
 	const selectedCount = $derived(selectionStore.selectedCount);
+	const duplicateCount = $derived(findDuplicatesByUrl().size);
 
 	onMount(() => {
 		// memosStore, filterStore, foldersStore 초기화는 +layout.svelte에서 수행됨
@@ -202,6 +206,19 @@
 					</div>
 				{:else}
 					<div class="flex items-center gap-2">
+						{#if duplicateCount > 0}
+							<Button
+								variant="ghost"
+								onclick={() => (showDuplicateDialog = true)}
+								class="shrink-0 relative"
+								title="중복 URL 감지"
+							>
+								<Link2 class="w-4 h-4 text-warning" />
+								<span class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-warning text-warning-foreground text-xs flex items-center justify-center font-bold">
+									{duplicateCount}
+								</span>
+							</Button>
+						{/if}
 						<Button variant="ghost" onclick={handleStartSelection} class="shrink-0" title="선택 모드">
 							<CheckSquare class="w-4 h-4" />
 						</Button>
@@ -306,4 +323,9 @@
 	bind:open={showShareModal}
 	memo={sharingMemo}
 	onClose={handleShareClose}
+/>
+
+<DuplicateUrlDialog
+	bind:open={showDuplicateDialog}
+	onClose={() => (showDuplicateDialog = false)}
 />
