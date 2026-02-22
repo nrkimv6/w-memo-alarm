@@ -131,7 +131,8 @@ function loadCacheFromStorage(): Memo[] {
 	try {
 		const cached = localStorage.getItem(CACHE_KEY);
 		return cached ? JSON.parse(cached) : [];
-	} catch {
+	} catch (e) {
+		console.warn('Failed to load memo cache from localStorage:', e);
 		return [];
 	}
 }
@@ -145,12 +146,49 @@ function saveCacheToStorage(memos: Memo[]): void {
 	}
 }
 
+// Supabase DB 행 타입 (supabase_to_memo 매핑용)
+interface SupabaseMemoRow {
+	id: string;
+	title: string;
+	content?: string;
+	tags?: string[];
+	is_pinned?: boolean;
+	is_favorite?: boolean;
+	is_active?: boolean;
+	created_at: string;
+	updated_at: string;
+	url?: string;
+	emoji?: string;
+	open_count?: number;
+	reminder?: unknown;
+	reminders?: unknown;
+	folder_id?: string;
+	checklist?: unknown;
+	memo_type?: string;
+	due_date?: string;
+	priority?: string;
+	todo_status?: string;
+	todo_priority?: string;
+	due_time?: string;
+	todo_timing?: unknown;
+	completed_at?: string;
+	recurrence?: unknown;
+	todo_instances?: unknown;
+	postpone_info?: unknown;
+	todo_group_id?: string;
+	todo_urls?: unknown;
+	auto_pung?: boolean;
+	pung_delay?: number;
+	version?: number;
+	[key: string]: unknown;
+}
+
 // Supabase ↔ Memo 필드 매핑 설정
 interface FieldMapping {
 	memo: string;
 	db: string;
-	toMemo?: (val: any) => any;
-	toDb?: (val: any) => any;
+	toMemo?: (val: unknown) => unknown;
+	toDb?: (val: unknown) => unknown;
 }
 
 const MEMO_FIELD_MAPPINGS: FieldMapping[] = [
@@ -193,18 +231,18 @@ const MEMO_FIELD_MAPPINGS: FieldMapping[] = [
 ];
 
 // 매핑 기반 타입 변환 함수
-function supabaseToMemo(row: any): Memo {
-	const memo = {} as Record<string, any>;
+function supabaseToMemo(row: SupabaseMemoRow): Memo {
+	const memo = {} as Record<string, unknown>;
 	for (const { memo: key, db, toMemo } of MEMO_FIELD_MAPPINGS) {
 		memo[key] = toMemo ? toMemo(row[db]) : row[db];
 	}
 	return migrateToMultipleReminders(memo as Memo);
 }
 
-function memoToSupabase(memo: Partial<Memo>): any {
-	const result: any = {};
+function memoToSupabase(memo: Partial<Memo>): Record<string, unknown> {
+	const result: Record<string, unknown> = {};
 	for (const { memo: key, db, toDb } of MEMO_FIELD_MAPPINGS) {
-		const val = (memo as any)[key];
+		const val = (memo as Record<string, unknown>)[key];
 		if (val !== undefined) {
 			result[db] = toDb ? toDb(val) : val;
 		}

@@ -9,3 +9,9 @@ binding = "ASSETS"
 
 # 알림은 Supabase Edge Function + FCM으로 처리
 # 참고: docs/ARCHITECTURE_FCM.md
+
+# Environment variables
+# These are placeholders - actual values should be set in .dev.vars (local) or Cloudflare dashboard (production)
+[vars]
+PUBLIC_SUPABASE_URL = "https://your-project.supabase.co"
+PUBLIC_SUPABASE_ANON_KEY = "your-anon-key-here"
