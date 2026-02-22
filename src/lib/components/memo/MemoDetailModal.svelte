@@ -13,7 +13,10 @@
 		Bell,
 		Folder,
 		Link2,
-		ArrowRightLeft
+		ArrowRightLeft,
+		Sparkles,
+		ChevronDown,
+		ChevronUp
 	} from 'lucide-svelte';
 	import { goto } from '$app/navigation';
 	import Modal from '$lib/components/ui/Modal.svelte';
@@ -24,6 +27,7 @@
 	import { foldersStore } from '$lib/stores/folders.svelte';
 	import { notificationHistoryStore } from '$lib/stores/notificationHistory.svelte';
 	import { cn, formatRelativeTime, formatSmartDate } from '$lib/utils';
+	import { findRelatedMemos, generateSummary } from '$lib/utils/ai';
 
 	interface Props {
 		open: boolean;
@@ -37,6 +41,17 @@
 	let { open = $bindable(false), memo, onClose, onEdit, onDelete, onShare }: Props = $props();
 
 	const folder = $derived(memo?.folderId ? foldersStore.getById(memo.folderId) : null);
+
+	// Phase 15: AI 기능
+	const relatedMemos = $derived(
+		memo ? findRelatedMemos(memo, memosStore.memos.filter(m => m.isActive !== false && m.memoType !== 'todo'), 3) : []
+	);
+	const contentSummary = $derived(
+		memo && memo.content && memo.content.length > 150 ? generateSummary(memo.content, 80) : ''
+	);
+
+	// 관련 메모 섹션 상태
+	let showRelated = $state(false);
 
 	function formatDate(timestamp: number): string {
 		return new Date(timestamp).toLocaleDateString('ko-KR', {
@@ -219,6 +234,56 @@
 				</div>
 			{/if}
 
+			<!-- AI: 메모 요약 (긴 내용일 때만 표시) -->
+			{#if contentSummary}
+				<div class="flex items-start gap-2 p-3 bg-primary/5 rounded-lg border border-primary/10">
+					<Sparkles class="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+					<div>
+						<span class="text-xs text-primary font-medium">AI 요약</span>
+						<p class="text-sm text-muted-foreground mt-0.5">{contentSummary}</p>
+					</div>
+				</div>
+			{/if}
+
+			<!-- AI: 관련 메모 추천 -->
+			{#if relatedMemos.length > 0}
+				<div class="border border-border rounded-lg overflow-hidden">
+					<button
+						onclick={() => showRelated = !showRelated}
+						class="w-full flex items-center justify-between px-3 py-2 text-sm font-medium hover:bg-muted/50 transition-colors"
+					>
+						<span class="flex items-center gap-2">
+							<Sparkles class="w-4 h-4 text-primary" />
+							관련 메모 {relatedMemos.length}개
+						</span>
+						{#if showRelated}
+							<ChevronUp class="w-4 h-4 text-muted-foreground" />
+						{:else}
+							<ChevronDown class="w-4 h-4 text-muted-foreground" />
+						{/if}
+					</button>
+					{#if showRelated}
+						<div class="border-t border-border divide-y divide-border">
+							{#each relatedMemos as related}
+								<div class="px-3 py-2 hover:bg-muted/30 transition-colors">
+									<p class="text-sm font-medium text-foreground truncate">{related.title || '제목 없음'}</p>
+									{#if related.content}
+										<p class="text-xs text-muted-foreground truncate mt-0.5">{related.content}</p>
+									{/if}
+									{#if related.tags.length > 0}
+										<div class="flex flex-wrap gap-1 mt-1">
+											{#each related.tags.slice(0, 3) as tag}
+												<span class="px-1.5 py-0.5 text-[10px] rounded bg-muted text-muted-foreground">{tag}</span>
+											{/each}
+										</div>
+									{/if}
+								</div>
+							{/each}
+						</div>
+					{/if}
+				</div>
+			{/if}
+
 			<!-- Meta info -->
 			<div class="grid grid-cols-2 gap-4 text-sm">
 				<!-- Folder -->
@@ -261,7 +326,7 @@
 						<Clock class="w-4 h-4" />
 						<span>최근 열람: {formatRelativeTime(memo.openHistory[0])}</span>
 						{#if memo.openHistory.length > 1}
-							<span class="text-xs">({memo.openHistory.length}회)</span>
+							<span class="text-xs">({memo.openHistory.length}회</span>
 						{/if}
 					</div>
 				{/if}

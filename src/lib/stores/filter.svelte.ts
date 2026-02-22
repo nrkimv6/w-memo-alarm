@@ -1,5 +1,6 @@
 import type { FilterType, SortType, ViewMode, Memo } from '$lib/types/memo';
 import { memosStore } from './memos.svelte';
+import { extractKeywords } from '$lib/utils/ai';
 
 const VIEW_MODE_KEY = 'memo-alarm-view-mode';
 
@@ -123,15 +124,30 @@ function createFilterStore() {
 			result = result.filter((m) => m.isFavorite);
 		}
 
-		// Filter by search query
+		// Filter by search query (스마트 검색: 텍스트 매칭 + 키워드 매칭)
 		if (searchQuery.trim()) {
 			const query = searchQuery.toLowerCase();
-			result = result.filter(
-				(m) =>
+			const queryKeywords = extractKeywords(query, 5);
+
+			result = result.filter((m) => {
+				// 1. 기본 텍스트 포함 검색
+				const textMatch =
 					m.title.toLowerCase().includes(query) ||
 					m.content.toLowerCase().includes(query) ||
-					m.tags.some((t) => t.toLowerCase().includes(query))
-			);
+					m.tags.some((t) => t.toLowerCase().includes(query));
+
+				if (textMatch) return true;
+
+				// 2. 스마트 검색: 쿼리 키워드가 메모에 포함되는지 확인
+				if (queryKeywords.length > 1) {
+					const memoText = `${m.title} ${m.content} ${m.tags.join(' ')}`.toLowerCase();
+					const matchCount = queryKeywords.filter(kw => memoText.includes(kw)).length;
+					// 쿼리 키워드의 절반 이상 일치하면 포함
+					return matchCount >= Math.ceil(queryKeywords.length / 2);
+				}
+
+				return false;
+			});
 		}
 
 		// Filter by selected tags (AND/OR mode)
