@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-02-23
+
+### Added
+- 마크다운 렌더링: marked 라이브러리 사용, 마크다운 문법 자동 감지 후 렌더링, 설정에서 토글
+- 통계 대시보드: /stats 페이지, 7일 활동 막대 차트, 30일 히트맵, 태그/폴더/유형별 통계, 하단 네비게이션 추가
+- 메모 잠금(PIN): PIN 설정/변경/제거, 개별 메모 잠금 토글, 잠금 해제 세션(30분), 힌트 기능
+- 오디오 녹음: MediaRecorder API, WebM/MP4 녹음, 인라인 재생 플레이어, 최대 3개/5분
+- 메모 표시 설정 섹션 추가 (설정 페이지)
+- PIN 잠금 관리 섹션 추가 (설정 페이지)
+
 ## [0.5.0] - 2026-02-23
 
 ### Added

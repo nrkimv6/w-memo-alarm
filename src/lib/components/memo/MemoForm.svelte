@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { X, Plus, Link, ListChecks, Sparkles, ArrowRightLeft } from 'lucide-svelte';
+	import { X, Plus, Link, ListChecks, Sparkles, ArrowRightLeft, Lock, LockOpen } from 'lucide-svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Textarea from '$lib/components/ui/Textarea.svelte';
@@ -12,12 +12,16 @@
 	import ChecklistEditor from './ChecklistEditor.svelte';
 	import VoiceInput from './VoiceInput.svelte';
 	import ImageAttachment from './ImageAttachment.svelte';
+	import AudioRecorder from './AudioRecorder.svelte';
 	import type { Memo, ChecklistItem, Reminder } from '$lib/types/memo';
 	import { memosStore } from '$lib/stores/memos.svelte';
 	import { foldersStore } from '$lib/stores/folders.svelte';
 	import { toastStore } from '$lib/stores/toast.svelte';
 	import { settingsStore } from '$lib/stores/settings.svelte';
 	import { suggestTags } from '$lib/utils/ai';
+	import { hasPinSet } from '$lib/utils/memoPinLock';
+	import { cn } from '$lib/utils';
+	import PinLockModal from './PinLockModal.svelte';
 
 	function generateReminderId(): string {
 		return `rem_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
@@ -43,6 +47,10 @@
 	let checklist = $state<ChecklistItem[]>([]);
 	let showChecklist = $state(false);
 	let images = $state<string[]>([]);
+	let isLocked = $state(false);
+	let lockHint = $state('');
+	let showPinSetup = $state(false);
+	let audioUrls = $state<string[]>([]);
 
 	// Phase 15: AI 태그 추천
 	let suggestedTags = $state<string[]>([]);
@@ -121,6 +129,9 @@
 			checklist = memo.checklist ? [...memo.checklist] : [];
 			showChecklist = (memo.checklist?.length || 0) > 0;
 			images = memo.images ? [...memo.images] : [];
+			isLocked = memo.isLocked ?? false;
+			lockHint = memo.lockHint ?? '';
+			audioUrls = memo.audioUrls ? [...memo.audioUrls] : [];
 		} else if (open && !memo) {
 			title = '';
 			content = '';
@@ -132,6 +143,9 @@
 			checklist = [];
 			showChecklist = false;
 			images = [];
+			isLocked = false;
+			lockHint = '';
+			audioUrls = [];
 			// Apply default reminder settings if autoReminderOnCreate is enabled
 			if (settingsStore.settings.autoReminderOnCreate) {
 				const defaultReminderSettings = settingsStore.getDefaultReminder();
@@ -199,7 +213,10 @@
 			reminders: reminders.length > 0 ? reminders : undefined,
 			folderId,
 			checklist: checklist.length > 0 ? checklist : undefined,
-			images: images.length > 0 ? images : undefined
+			images: images.length > 0 ? images : undefined,
+			audioUrls: audioUrls.length > 0 ? audioUrls : undefined,
+			isLocked: isLocked || undefined,
+			lockHint: isLocked && lockHint.trim() ? lockHint.trim() : undefined
 		};
 
 		const isEdit = !!memo;
@@ -389,9 +406,52 @@
 		<!-- 이미지 첨부 -->
 		<ImageAttachment {images} onImagesChange={(imgs) => images = imgs} />
 
+		<!-- 오디오 녹음 -->
+		<AudioRecorder {audioUrls} onAudioChange={(a) => audioUrls = a} />
+
 		<!-- 알림 설정 -->
 		<ReminderSettings {reminders} onRemindersChange={(r) => reminders = r} />
+
+		<!-- 잠금 설정 (PIN이 설정된 경우만 표시) -->
+		{#if hasPinSet()}
+			<div class="border border-border rounded-lg p-3 space-y-2">
+				<div class="flex items-center justify-between">
+					<div class="flex items-center gap-2">
+						{#if isLocked}
+							<Lock class="w-4 h-4 text-primary" />
+						{:else}
+							<LockOpen class="w-4 h-4 text-muted-foreground" />
+						{/if}
+						<span class="text-sm">메모 잠금</span>
+					</div>
+					<button
+						type="button"
+						role="switch"
+						aria-checked={isLocked}
+						onclick={() => (isLocked = !isLocked)}
+						class={cn('toggle-switch', isLocked && 'active')}
+					>
+						<span class="toggle-switch-thumb"></span>
+					</button>
+				</div>
+				{#if isLocked}
+					<input
+						type="text"
+						placeholder="힌트 (선택 사항)"
+						bind:value={lockHint}
+						class="w-full px-2 py-1.5 text-sm border border-input bg-background rounded focus:outline-none focus:ring-1 focus:ring-ring"
+					/>
+				{/if}
+			</div>
+		{/if}
 	</form>
+
+	<PinLockModal
+		bind:open={showPinSetup}
+		mode="setup"
+		onSuccess={() => (showPinSetup = false)}
+		onClose={() => (showPinSetup = false)}
+	/>
 
 	{#snippet footer()}
 		<div class="flex items-center justify-between w-full">

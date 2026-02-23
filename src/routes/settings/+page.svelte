@@ -1,6 +1,6 @@
 <script lang="ts">
 
-	import { Download, Upload, Trash2, Sun, Moon, Monitor, Bell, Cloud, LogIn, LogOut, Info, RefreshCw, Bug, BellRing, CheckCircle, XCircle, Smartphone, Radio, FileText, Settings2, CheckSquare } from 'lucide-svelte';
+	import { Download, Upload, Trash2, Sun, Moon, Monitor, Bell, Cloud, LogIn, LogOut, Info, RefreshCw, Bug, BellRing, CheckCircle, XCircle, Smartphone, Radio, FileText, Settings2, CheckSquare, Lock, LockOpen, KeyRound } from 'lucide-svelte';
 	import AlarmManager from '$lib/components/settings/AlarmManager.svelte';
 	import { APP_VERSION } from '$lib/config';
 	import Button from '$lib/components/ui/Button.svelte';
@@ -14,6 +14,8 @@
 	import { devLogStore, type DevLog } from '$lib/stores/devLogs.svelte';
 	import { downloadFullBackup, importFullBackup, clearAllData } from '$lib/utils/data';
 	import { cn } from '$lib/utils';
+	import { hasPinSet, lockSession } from '$lib/utils/memoPinLock';
+	import PinLockModal from '$lib/components/memo/PinLockModal.svelte';
 	import { getUserDisplayName, getUserEmail } from '$lib/utils/user';
 	import {
 		isNative,
@@ -452,6 +454,39 @@
 
 	const memoCount = $derived(memosStore.memos.length);
 
+	// PIN 잠금 설정
+	let pinIsSet = $state(hasPinSet());
+	let showPinModal = $state(false);
+	let pinModalMode = $state<'setup' | 'change' | 'remove'>('setup');
+
+	function handlePinSetup() {
+		pinModalMode = 'setup';
+		showPinModal = true;
+	}
+
+	function handlePinChange() {
+		pinModalMode = 'change';
+		showPinModal = true;
+	}
+
+	function handlePinRemove() {
+		pinModalMode = 'remove';
+		showPinModal = true;
+	}
+
+	function handlePinSuccess() {
+		showPinModal = false;
+		pinIsSet = hasPinSet();
+	}
+
+	// 메모 표시 설정
+	let useMarkdown = $state(settingsStore.settings.useMarkdown ?? false);
+
+	function handleMarkdownToggle() {
+		useMarkdown = !useMarkdown;
+		settingsStore.setUseMarkdown(useMarkdown);
+	}
+
 	// 기본 알림 설정
 	const dayLabels = ['일', '월', '화', '수', '목', '금', '토'];
 	let defaultTime = $state(settingsStore.settings.defaultReminder.time);
@@ -774,6 +809,94 @@
 					{/if}
 				</div>
 			{/if}
+		</div>
+	</section>
+
+	<!-- PIN 잠금 설정 -->
+	<section class="space-y-4">
+		<div class="flex items-center gap-2 text-primary">
+			<KeyRound class="w-5 h-5" />
+			<h2 class="font-semibold">메모 잠금 (PIN)</h2>
+		</div>
+
+		<div class="bg-card rounded-xl border border-border p-5 space-y-3">
+			<div class="flex items-center gap-3">
+				{#if pinIsSet}
+					<Lock class="w-5 h-5 text-primary" />
+					<div class="flex-1">
+						<p class="text-sm font-medium">PIN이 설정되어 있습니다</p>
+						<p class="text-xs text-muted-foreground">잠긴 메모는 PIN 입력 후 열람 가능합니다</p>
+					</div>
+				{:else}
+					<LockOpen class="w-5 h-5 text-muted-foreground" />
+					<div class="flex-1">
+						<p class="text-sm font-medium">PIN이 설정되어 있지 않습니다</p>
+						<p class="text-xs text-muted-foreground">PIN을 설정하면 개별 메모를 잠글 수 있습니다</p>
+					</div>
+				{/if}
+			</div>
+			<div class="flex gap-2">
+				{#if pinIsSet}
+					<button
+						type="button"
+						onclick={handlePinChange}
+						class="flex-1 py-2 px-3 text-sm border border-border rounded-lg hover:bg-muted/50 transition-colors"
+					>
+						PIN 변경
+					</button>
+					<button
+						type="button"
+						onclick={handlePinRemove}
+						class="flex-1 py-2 px-3 text-sm border border-destructive/30 text-destructive rounded-lg hover:bg-destructive/10 transition-colors"
+					>
+						PIN 제거
+					</button>
+				{:else}
+					<button
+						type="button"
+						onclick={handlePinSetup}
+						class="w-full py-2 px-3 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+					>
+						PIN 설정하기
+					</button>
+				{/if}
+			</div>
+		</div>
+	</section>
+
+	<PinLockModal
+		bind:open={showPinModal}
+		mode={pinModalMode}
+		onSuccess={handlePinSuccess}
+		onClose={() => (showPinModal = false)}
+	/>
+
+	<!-- 메모 표시 설정 -->
+	<section class="space-y-4">
+		<div class="flex items-center gap-2 text-primary">
+			<FileText class="w-5 h-5" />
+			<h2 class="font-semibold">메모 표시 설정</h2>
+		</div>
+
+		<div class="bg-card rounded-xl border border-border p-5 space-y-4">
+			<!-- 마크다운 렌더링 -->
+			<div class="flex items-center justify-between gap-4">
+				<div>
+					<span class="text-sm">마크다운 렌더링</span>
+					<p class="text-xs text-muted-foreground">메모 내용에서 마크다운 문법을 감지하면 서식을 적용합니다</p>
+					<p class="text-xs text-muted-foreground mt-0.5">예: **굵게**, *기울임*, # 제목, - 목록, `코드`</p>
+				</div>
+				<button
+					type="button"
+					role="switch"
+					aria-checked={useMarkdown}
+					aria-label="마크다운 렌더링 토글"
+					onclick={handleMarkdownToggle}
+					class={cn('toggle-switch', useMarkdown && 'active')}
+				>
+					<span class="toggle-switch-thumb"></span>
+				</button>
+			</div>
 		</div>
 	</section>
 

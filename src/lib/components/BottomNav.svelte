@@ -1,6 +1,6 @@
 <script lang="ts">
     import { page } from "$app/stores";
-    import { Home, StickyNote, CheckSquare, Settings } from "lucide-svelte";
+    import { Home, StickyNote, CheckSquare, Settings, BarChart3 } from "lucide-svelte";
     import { memosStore } from '$lib/stores/memos.svelte';
     import { isOverdue } from '$lib/utils/todo';
 
@@ -8,6 +8,7 @@
         { path: "/", icon: Home, label: "홈" },
         { path: "/memos", icon: StickyNote, label: "메모" },
         { path: "/todos", icon: CheckSquare, label: "할일" },
+        { path: "/stats", icon: BarChart3, label: "통계" },
         { path: "/settings", icon: Settings, label: "설정" },
     ];
 

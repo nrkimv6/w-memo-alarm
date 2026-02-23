@@ -158,6 +158,11 @@ export interface Memo {
 	localId?: string; // 서버 ID 확정 전 로컬 임시 ID
 	// Phase 16: 이미지 첨부
 	images?: string[]; // base64 data URLs
+	// Phase 25: 오디오 녹음
+	audioUrls?: string[]; // base64 data URLs (WebM/MP4)
+	// Phase 21: 메모 잠금
+	isLocked?: boolean; // 잠금 여부
+	lockHint?: string; // 힌트 (선택)
 }
 
 export type MemoCreate = Omit<Memo, 'id' | 'createdAt' | 'updatedAt' | 'isPinned' | 'isFavorite' | 'isActive' | 'openCount' | 'openHistory'>;

@@ -25,6 +25,7 @@ export interface AppSettings {
 	defaultReminder: DefaultReminderSettings;
 	autoReminderOnCreate: boolean;
 	todoDefaults: TodoDefaultSettings;
+	useMarkdown: boolean; // 마크다운 렌더링 활성화
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -35,6 +36,7 @@ const DEFAULT_SETTINGS: AppSettings = {
 		autoOpen: false
 	},
 	autoReminderOnCreate: false,
+	useMarkdown: false, // 기본값: 마크다운 비활성화
 	todoDefaults: {
 		remind: {
 			enabled: true,
@@ -232,6 +234,11 @@ function createSettingsStore() {
 		saveToStorage(settings);
 	}
 
+	function setUseMarkdown(useMarkdown: boolean) {
+		settings = { ...settings, useMarkdown };
+		saveToStorage(settings);
+	}
+
 	return {
 		get settings() {
 			return settings;
@@ -252,7 +259,8 @@ function createSettingsStore() {
 		setTodoAutoAlertMinutes,
 		setTodoShowOverdue,
 		setTodoShowProgress,
-		setTodoShowUpcomingOnEmpty
+		setTodoShowUpcomingOnEmpty,
+		setUseMarkdown
 	};
 }
 

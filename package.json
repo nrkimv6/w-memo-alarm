@@ -1,6 +1,6 @@
 {
 	"name": "memo-alarm",
-	"version": "0.5.0",
+	"version": "0.6.0",
 	"private": true,
 	"scripts": {
 		"dev": "vite dev",
@@ -36,6 +36,7 @@
 		"firebase": "^12.8.0",
 		"html2canvas": "^1.4.1",
 		"lucide-svelte": "^0.469.0",
+		"marked": "^17.0.3",
 		"qrcode": "^1.5.4",
 		"tailwind-merge": "^2.6.0",
 		"tailwind-variants": "^0.3.1"

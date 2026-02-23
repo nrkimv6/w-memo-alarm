@@ -24,11 +24,16 @@
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import type { Memo } from '$lib/types/memo';
 	import ImageAttachment from './ImageAttachment.svelte';
+	import AudioRecorder from './AudioRecorder.svelte';
 	import { memosStore } from '$lib/stores/memos.svelte';
 	import { foldersStore } from '$lib/stores/folders.svelte';
 	import { notificationHistoryStore } from '$lib/stores/notificationHistory.svelte';
 	import { cn, formatRelativeTime, formatSmartDate } from '$lib/utils';
 	import { findRelatedMemos, generateSummary } from '$lib/utils/ai';
+	import { renderMarkdown, hasMarkdownSyntax } from '$lib/utils/markdown';
+	import { settingsStore } from '$lib/stores/settings.svelte';
+	import { isSessionUnlocked, hasPinSet } from '$lib/utils/memoPinLock';
+	import PinLockModal from './PinLockModal.svelte';
 
 	interface Props {
 		open: boolean;
@@ -53,6 +58,24 @@
 
 	// 관련 메모 섹션 상태
 	let showRelated = $state(false);
+
+	// 메모 잠금
+	let showPinModal = $state(false);
+	const isLockedMemo = $derived(memo?.isLocked === true && hasPinSet() && !isSessionUnlocked());
+
+	function handlePinUnlocked() {
+		showPinModal = false;
+	}
+
+	// 마크다운 렌더링
+	const useMarkdown = $derived(settingsStore.settings.useMarkdown);
+	const renderedContent = $derived(
+		memo?.content
+			? useMarkdown && hasMarkdownSyntax(memo.content)
+				? renderMarkdown(memo.content)
+				: null
+			: null
+	);
 
 	function formatDate(timestamp: number): string {
 		return new Date(timestamp).toLocaleDateString('ko-KR', {
@@ -145,6 +168,36 @@
 
 <Modal bind:open title="" size="lg">
 	{#if memo}
+		{#if isLockedMemo}
+			<!-- 잠긴 메모: PIN 입력 요청 -->
+			<div class="text-center space-y-4 py-8">
+				<div class="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto">
+					<svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+				</div>
+				<div>
+					<h3 class="font-semibold text-foreground">{memo.title || '잠긴 메모'}</h3>
+					<p class="text-sm text-muted-foreground mt-1">이 메모는 잠겨있습니다</p>
+					{#if memo.lockHint}
+						<p class="text-xs text-muted-foreground/60 mt-0.5 italic">힌트: {memo.lockHint}</p>
+					{/if}
+				</div>
+				<button
+					type="button"
+					onclick={() => (showPinModal = true)}
+					class="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
+				>
+					PIN으로 잠금 해제
+				</button>
+			</div>
+
+			<PinLockModal
+				bind:open={showPinModal}
+				mode="unlock"
+				hint={memo.lockHint}
+				onSuccess={handlePinUnlocked}
+				onClose={() => (showPinModal = false)}
+			/>
+		{:else}
 		<div class="space-y-6">
 			<!-- Header with actions -->
 			<header class="flex items-start justify-between gap-4">
@@ -187,16 +240,27 @@
 
 			<!-- Content -->
 			{#if memo.content}
-				<div class="prose prose-sm max-w-none">
-					<p class="text-foreground whitespace-pre-wrap leading-relaxed">
-						{memo.content}
-					</p>
+				<div class="prose prose-sm max-w-none dark:prose-invert">
+					{#if renderedContent}
+						<!-- 마크다운 렌더링 -->
+						<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+						{@html renderedContent}
+					{:else}
+						<p class="text-foreground whitespace-pre-wrap leading-relaxed">
+							{memo.content}
+						</p>
+					{/if}
 				</div>
 			{/if}
 
 			<!-- Images -->
 			{#if memo.images && memo.images.length > 0}
 				<ImageAttachment images={memo.images} onImagesChange={() => {}} readonly={true} />
+			{/if}
+
+			<!-- Audio -->
+			{#if memo.audioUrls && memo.audioUrls.length > 0}
+				<AudioRecorder audioUrls={memo.audioUrls} onAudioChange={() => {}} readonly={true} />
 			{/if}
 
 			<!-- URL -->
@@ -338,6 +402,7 @@
 				{/if}
 			</div>
 		</div>
+		{/if}
 	{/if}
 
 	{#snippet footer()}

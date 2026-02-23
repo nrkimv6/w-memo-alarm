@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Pin, Star, Edit3, Trash2, ExternalLink, Folder, EyeOff, Eye, CheckSquare, Check, MoreVertical, Link2, RefreshCw, AlertTriangle, CloudOff, Bell, Image } from 'lucide-svelte';
+	import { Pin, Star, Edit3, Trash2, ExternalLink, Folder, EyeOff, Eye, CheckSquare, Check, MoreVertical, Link2, RefreshCw, AlertTriangle, CloudOff, Bell, Image, Lock } from 'lucide-svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import KebabMenu from '$lib/components/memo/KebabMenu.svelte';
@@ -205,9 +205,16 @@
 
 	<!-- Content -->
 	{#if !compact && memo.content}
-		<p class="text-muted-foreground text-sm line-clamp-3 mb-3">
-			{memo.content}
-		</p>
+		{#if memo.isLocked}
+			<div class="flex items-center gap-2 text-sm text-muted-foreground mb-3 p-2 rounded-lg bg-muted/30">
+				<Lock class="w-3.5 h-3.5 flex-shrink-0" />
+				<span class="italic">잠긴 메모</span>
+			</div>
+		{:else}
+			<p class="text-muted-foreground text-sm line-clamp-3 mb-3">
+				{memo.content}
+			</p>
+		{/if}
 	{/if}
 
 	<!-- URL (북마크) -->
