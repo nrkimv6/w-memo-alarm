@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { Plus, Search, Pin, Star, Bell, Clock, ChevronRight, CheckSquare } from 'lucide-svelte';
+	import { Plus, Search, ChevronRight } from 'lucide-svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import { filterTodos, isOverdue } from '$lib/utils/todo';
-		import {
+	import {
 		MemoForm,
 		MemoCard,
 		MemoDetailModal,
@@ -15,6 +15,11 @@
 	} from '$lib/components/memo';
 	import SwipeGuideModal from '$lib/components/memo/SwipeGuideModal.svelte';
 	import OnboardingModal from '$lib/components/OnboardingModal.svelte';
+	import PinnedMemosSection from '$lib/components/dashboard/PinnedMemosSection.svelte';
+	import TodayTodosSection from '$lib/components/dashboard/TodayTodosSection.svelte';
+	import FavoriteMemosSection from '$lib/components/dashboard/FavoriteMemosSection.svelte';
+	import UpcomingRemindersSection from '$lib/components/dashboard/UpcomingRemindersSection.svelte';
+	import RecentMemosSection from '$lib/components/dashboard/RecentMemosSection.svelte';
 	import { memosStore } from '$lib/stores/memos.svelte';
 	import { filterStore } from '$lib/stores/filter.svelte';
 	import { foldersStore } from '$lib/stores/folders.svelte';
@@ -104,20 +109,16 @@
 	const filteredMemos = $derived(filterStore.getFilteredMemos());
 
 	onMount(() => {
-		// memosStore, filterStore, foldersStore 초기화는 +layout.svelte에서 수행됨
-
 		// 알림 클릭으로 진입 시 ?memo= 파라미터 처리
 		if (typeof window !== 'undefined') {
 			const params = new URLSearchParams(window.location.search);
 			const memoId = params.get('memo');
 			if (memoId) {
-				// URL에서 ?memo= 파라미터 제거 (뒤로가기 시 재진입 방지)
 				const cleanUrl = window.location.pathname;
 				window.history.replaceState({}, '', cleanUrl);
 
-				// memosStore가 초기화될 때까지 대기 후 메모 열기
 				let retryCount = 0;
-				const MAX_RETRY = 15; // 15회 * 200ms = 3초
+				const MAX_RETRY = 15;
 				const tryOpenMemo = () => {
 					const memo = memosStore.getById(memoId);
 					if (memo) {
@@ -127,9 +128,7 @@
 						retryCount++;
 						setTimeout(tryOpenMemo, 200);
 					} else if (memosStore.initialized && !memo) {
-						// 초기화 완료했는데 메모가 없으면 삭제된 메모
 						console.warn(`Memo ${memoId} not found`);
-						// Toast 메시지 표시 (Toast 컴포넌트가 이미 import됨)
 						const event = new CustomEvent('show-toast', {
 							detail: { message: '해당 메모를 찾을 수 없습니다.', type: 'error' }
 						});
@@ -200,7 +199,6 @@
 				const currentScrollY = window.scrollY;
 				const scrollDelta = currentScrollY - lastScrollY;
 
-				// 100px 이상 아래로 스크롤 시 숨기기, 위로 스크롤 시 표시
 				if (scrollDelta > 50) {
 					fabVisible = false;
 				} else if (scrollDelta < -30) {
@@ -365,177 +363,29 @@
 				</Button>
 			</div>
 		{:else}
-			<!-- 고정된 메모 -->
 			{#if pinnedMemos.length > 0}
-				<section>
-					<div class="flex items-center justify-between mb-3">
-						<h2 class="text-base font-semibold flex items-center gap-2">
-							<Pin class="w-4 h-4 text-primary" />
-							고정된 메모
-						</h2>
-						<a href="/memos?filter=pinned" class="text-sm text-muted-foreground hover:text-primary flex items-center gap-1">
-							더보기 <ChevronRight class="w-4 h-4" />
-						</a>
-					</div>
-					<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-						{#each pinnedMemos as memo (memo.id)}
-							<MemoCard
-								{memo}
-								compact
-								onClick={handleView}
-								onEdit={handleEdit}
-								onDelete={handleDelete}
-								onTogglePin={(id) => memosStore.togglePin(id)}
-								onToggleFavorite={(id) => memosStore.toggleFavorite(id)}
-								onToggleActive={(id) => memosStore.toggleActive(id)}
-							/>
-						{/each}
-					</div>
-				</section>
+				<PinnedMemosSection memos={pinnedMemos} onView={handleView} onEdit={handleEdit} onDelete={handleDelete} />
 			{/if}
 
-			<!-- 오늘의 할일 -->
 			{#if todayTodos.length > 0}
-				<section>
-					<div class="flex items-center justify-between mb-3">
-						<h2 class="text-base font-semibold flex items-center gap-2">
-							<CheckSquare class="w-4 h-4 text-blue-600" />
-							오늘의 할일
-						</h2>
-						<a href="/todos" class="text-sm text-muted-foreground hover:text-primary flex items-center gap-1">
-							더보기 <ChevronRight class="w-4 h-4" />
-						</a>
-					</div>
-					<div class="space-y-2">
-						{#each todayTodos as todo (todo.id)}
-							<div class="bg-card border rounded-lg p-3 {isOverdue(todo) ? 'border-red-300 bg-red-50 dark:border-red-700 dark:bg-red-900/20' : ''}">
-								<div class="flex items-start gap-3">
-									<input
-										type="checkbox"
-										checked={todo.todoStatus === 'completed'}
-										onchange={() => memosStore.update(todo.id, {
-											todoStatus: todo.todoStatus === 'completed' ? 'pending' : 'completed',
-											completedAt: todo.todoStatus === 'completed' ? undefined : Date.now()
-										})}
-										class="mt-1 w-4 h-4 rounded border-gray-300 text-blue-600"
-									/>
-									<div class="flex-1 min-w-0">
-										<h3 class="font-medium text-sm {todo.todoStatus === 'completed' ? 'line-through opacity-60' : ''} {isOverdue(todo) ? 'text-red-700 dark:text-red-300' : 'text-foreground'}">
-											{todo.title}
-										</h3>
-										{#if todo.dueDate}
-											<p class="text-xs mt-1 {isOverdue(todo) ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'}">
-												{isOverdue(todo) ? '⚠️ 기한초과' : '📅'}
-												{new Date(todo.dueDate).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric', weekday: 'short' })}
-												{#if todo.dueTime && todo.dueTime !== '23:59'}
-													{todo.dueTime}
-												{/if}
-											</p>
-										{:else}
-											<p class="text-xs text-muted-foreground mt-1">기한 없음</p>
-										{/if}
-									</div>
-								</div>
-							</div>
-						{/each}
-					</div>
-				</section>
+				<TodayTodosSection todos={todayTodos} />
 			{/if}
 
-			<!-- 즐겨찾기 -->
 			{#if favoriteMemos.length > 0}
-				<section>
-					<div class="flex items-center justify-between mb-3">
-						<h2 class="text-base font-semibold flex items-center gap-2">
-							<Star class="w-4 h-4 text-yellow-500" />
-							즐겨찾기
-						</h2>
-						<a href="/memos?filter=favorites" class="text-sm text-muted-foreground hover:text-primary flex items-center gap-1">
-							더보기 <ChevronRight class="w-4 h-4" />
-						</a>
-					</div>
-					<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-						{#each favoriteMemos as memo (memo.id)}
-							<MemoCard
-								{memo}
-								compact
-								onClick={handleView}
-								onEdit={handleEdit}
-								onDelete={handleDelete}
-								onTogglePin={(id) => memosStore.togglePin(id)}
-								onToggleFavorite={(id) => memosStore.toggleFavorite(id)}
-								onToggleActive={(id) => memosStore.toggleActive(id)}
-							/>
-						{/each}
-					</div>
-				</section>
+				<FavoriteMemosSection memos={favoriteMemos} onView={handleView} onEdit={handleEdit} onDelete={handleDelete} />
 			{/if}
 
-			<!-- 알림 예정 -->
 			{#if upcomingReminders.length > 0}
-				<section>
-					<div class="flex items-center justify-between mb-3">
-						<h2 class="text-base font-semibold flex items-center gap-2">
-							<Bell class="w-4 h-4 text-orange-500" />
-							알림 예정
-						</h2>
-						<button
-							onclick={() => showRemindersModal = true}
-							class="text-sm text-muted-foreground hover:text-primary flex items-center gap-1"
-						>
-							더보기 <ChevronRight class="w-4 h-4" />
-						</button>
-					</div>
-					<div class="space-y-2">
-						{#each upcomingReminders as memo (memo.id)}
-							<button
-								onclick={() => handleView(memo)}
-								class="w-full flex items-center gap-3 p-3 rounded-lg bg-card border border-border hover:border-primary/50 transition-colors text-left"
-							>
-								<div class="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center shrink-0">
-									<Bell class="w-5 h-5 text-orange-500" />
-								</div>
-								<div class="flex-1 min-w-0">
-									<p class="font-medium truncate">{memo.title || '제목 없음'}</p>
-									<p class="text-sm text-muted-foreground">
-										{formatReminderTime(memo.reminder!.datetime!)}
-									</p>
-								</div>
-								<ChevronRight class="w-4 h-4 text-muted-foreground shrink-0" />
-							</button>
-						{/each}
-					</div>
-				</section>
+				<UpcomingRemindersSection
+					reminders={upcomingReminders}
+					onView={handleView}
+					onShowAll={() => showRemindersModal = true}
+					{formatReminderTime}
+				/>
 			{/if}
 
-			<!-- 최신 메모 -->
 			{#if recentMemos.length > 0}
-				<section>
-					<div class="flex items-center justify-between mb-3">
-						<h2 class="text-base font-semibold flex items-center gap-2">
-							<Clock class="w-4 h-4 text-muted-foreground" />
-							최신 메모
-						</h2>
-						<a href="/memos" class="text-sm text-muted-foreground hover:text-primary flex items-center gap-1">
-							전체 보기 <ChevronRight class="w-4 h-4" />
-						</a>
-					</div>
-					<div class="space-y-2">
-						{#each recentMemos as memo (memo.id)}
-							<MemoCard
-								{memo}
-								compact
-								ultraCompact
-								onClick={handleView}
-								onEdit={handleEdit}
-								onDelete={handleDelete}
-								onTogglePin={(id) => memosStore.togglePin(id)}
-								onToggleFavorite={(id) => memosStore.toggleFavorite(id)}
-								onToggleActive={(id) => memosStore.toggleActive(id)}
-							/>
-						{/each}
-					</div>
-				</section>
+				<RecentMemosSection memos={recentMemos} onView={handleView} onEdit={handleEdit} onDelete={handleDelete} />
 			{/if}
 
 			<!-- 메모는 있지만 모든 섹션이 비어있는 경우 -->
