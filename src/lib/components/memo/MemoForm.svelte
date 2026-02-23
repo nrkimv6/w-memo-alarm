@@ -10,6 +10,7 @@
 	import ReminderSettings from './ReminderSettings.svelte';
 	import FolderSelector from './FolderSelector.svelte';
 	import ChecklistEditor from './ChecklistEditor.svelte';
+	import VoiceInput from './VoiceInput.svelte';
 	import type { Memo, ChecklistItem, Reminder } from '$lib/types/memo';
 	import { memosStore } from '$lib/stores/memos.svelte';
 	import { foldersStore } from '$lib/stores/folders.svelte';
@@ -254,7 +255,12 @@
 		</div>
 
 		<div class="space-y-2">
-			<label for="memo-content" class="text-sm font-medium">내용</label>
+			<div class="flex items-center justify-between">
+				<label for="memo-content" class="text-sm font-medium">내용</label>
+				<VoiceInput onTranscript={(text) => {
+					content = content ? content + ' ' + text : text;
+				}} />
+			</div>
 			<Textarea
 				id="memo-content"
 				placeholder="내용을 입력하세요..."

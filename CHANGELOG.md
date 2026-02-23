@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-02-23
+
+### Added
+- 음성 메모: Web Speech API 기반 STT로 음성 → 텍스트 변환, 메모 폼에 마이크 버튼 통합
+
 ## [0.3.0] - 2026-02-23
 
 ### Added
