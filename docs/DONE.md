@@ -3,6 +3,13 @@
 $ENTRY
 > 이 파일은 memo-alarm 프로젝트에서 완료된 작업을 기록합니다.
 
+## 2026-02-23: 미래 기능 구현 (마크다운, 통계, PIN 잠금, 오디오 녹음)
+- [x] 완료 — [archive](archive/2026-02-04_idea_future-features.md)
+- **마크다운 렌더링**: marked 라이브러리, 자동 감지, 설정 토글
+- **통계 대시보드**: /stats 페이지, 7일 차트, 30일 히트맵, 태그/폴더 통계
+- **메모 잠금(PIN)**: PIN 설정/변경/제거, 개별 메모 잠금, 세션 기반 잠금 해제
+- **오디오 녹음**: MediaRecorder API, 최대 3개/5분, 인라인 재생
+
 ## 2026-02-13: 빠른 메모 추가 (FAB)
 - [x] 완료 — [archive](archive/2026-02-12_quick-add-fab.md)
 - **Phase 1**: FAB 버튼 HTML 추가 (`src/routes/+page.svelte`)
