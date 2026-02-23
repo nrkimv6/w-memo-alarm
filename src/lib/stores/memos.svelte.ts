@@ -10,9 +10,16 @@ import { syncQueue } from '$lib/services/syncQueue';
 import { settingsStore } from './settings.svelte';
 import { notificationStore } from './notifications.svelte';
 import { createNextInstance, recoverMissingInstances } from '$lib/utils/recurrence';
+import { generateId, generateLocalId, generateReminderId } from '$lib/utils/memoIdGenerator';
+import { migrateToMultipleReminders, getRemindersFromMemo, getDefaultReminderFromMemo, getAdditionalRemindersFromMemo } from '$lib/utils/reminderHelpers';
+import { supabaseToMemo, memoToSupabase, type SupabaseMemoRow } from '$lib/services/memoMapper';
 
 const CACHE_KEY = 'memo-alarm-memos-cache';
 const INITIALIZED_KEY = 'memo-alarm-initialized';
+
+// ID 생성 함수는 $lib/utils/memoIdGenerator 에서 import됨
+// Reminder 헬퍼 함수는 $lib/utils/reminderHelpers 에서 import됨
+// Supabase 매핑 함수는 $lib/services/memoMapper 에서 import됨
 
 const SAMPLE_MEMOS: Omit<Memo, 'id' | 'createdAt' | 'updatedAt'>[] = [
 	{
@@ -42,67 +49,6 @@ const SAMPLE_MEMOS: Omit<Memo, 'id' | 'createdAt' | 'updatedAt'>[] = [
 		isActive: true
 	}
 ];
-
-function generateId(): string {
-	return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-}
-
-function generateLocalId(): string {
-	return `local_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-}
-
-function generateReminderId(): string {
-	return `rem_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-}
-
-// 기존 단일 reminder를 reminders 배열로 마이그레이션
-function migrateToMultipleReminders(memo: Memo): Memo {
-	// 이미 reminders가 있으면 스킵
-	if (memo.reminders && memo.reminders.length > 0) {
-		return memo;
-	}
-
-	// reminder가 있으면 reminders로 변환
-	if (memo.reminder) {
-		return {
-			...memo,
-			reminders: [{
-				...memo.reminder,
-				id: memo.reminder.id || generateReminderId(),
-				isDefault: memo.reminder.isDefault ?? true
-			}],
-			reminder: undefined // 기존 필드 제거
-		};
-	}
-
-	return memo;
-}
-
-// 메모의 알림 목록 가져오기 (하위 호환성 지원)
-function getRemindersFromMemo(memo: Memo): Reminder[] {
-	if (memo.reminders && memo.reminders.length > 0) {
-		return memo.reminders;
-	}
-	if (memo.reminder) {
-		return [{
-			...memo.reminder,
-			id: memo.reminder.id || generateReminderId()
-		}];
-	}
-	return [];
-}
-
-// 기본 알림 가져오기
-function getDefaultReminderFromMemo(memo: Memo): Reminder | undefined {
-	const reminders = getRemindersFromMemo(memo);
-	return reminders.find(r => r.isDefault);
-}
-
-// 추가 알림 목록 가져오기
-function getAdditionalRemindersFromMemo(memo: Memo): Reminder[] {
-	const reminders = getRemindersFromMemo(memo);
-	return reminders.filter(r => !r.isDefault);
-}
 
 // 동기화 실패 로그 (localStorage에 저장, 사용자에게 토스트 표시하지 않음)
 const SYNC_ERROR_LOG_KEY = 'memo-alarm-sync-errors';
@@ -146,109 +92,8 @@ function saveCacheToStorage(memos: Memo[]): void {
 	}
 }
 
-// Supabase DB 행 타입 (supabase_to_memo 매핑용)
-interface SupabaseMemoRow {
-	id: string;
-	title: string;
-	content?: string;
-	tags?: string[];
-	is_pinned?: boolean;
-	is_favorite?: boolean;
-	is_active?: boolean;
-	created_at: string;
-	updated_at: string;
-	url?: string;
-	emoji?: string;
-	open_count?: number;
-	reminder?: unknown;
-	reminders?: unknown;
-	folder_id?: string;
-	checklist?: unknown;
-	memo_type?: string;
-	due_date?: string;
-	priority?: string;
-	todo_status?: string;
-	todo_priority?: string;
-	due_time?: string;
-	todo_timing?: unknown;
-	completed_at?: string;
-	recurrence?: unknown;
-	todo_instances?: unknown;
-	postpone_info?: unknown;
-	todo_group_id?: string;
-	todo_urls?: unknown;
-	auto_pung?: boolean;
-	pung_delay?: number;
-	version?: number;
-	[key: string]: unknown;
-}
-
-// Supabase ↔ Memo 필드 매핑 설정
-interface FieldMapping {
-	memo: string;
-	db: string;
-	toMemo?: (val: unknown) => unknown;
-	toDb?: (val: unknown) => unknown;
-}
-
-const MEMO_FIELD_MAPPINGS: FieldMapping[] = [
-	{ memo: 'id', db: 'id' },
-	{ memo: 'title', db: 'title' },
-	{ memo: 'content', db: 'content', toMemo: (v) => v || '' },
-	{ memo: 'tags', db: 'tags', toMemo: (v) => v || [] },
-	{ memo: 'isPinned', db: 'is_pinned', toMemo: (v) => v || false },
-	{ memo: 'isFavorite', db: 'is_favorite', toMemo: (v) => v || false },
-	{ memo: 'isActive', db: 'is_active', toMemo: (v) => v !== false },
-	{ memo: 'createdAt', db: 'created_at', toMemo: (v) => new Date(v).getTime(), toDb: (v) => v ? new Date(v).toISOString() : null },
-	{ memo: 'updatedAt', db: 'updated_at', toMemo: (v) => new Date(v).getTime(), toDb: (v) => v ? new Date(v).toISOString() : null },
-	{ memo: 'url', db: 'url' },
-	{ memo: 'emoji', db: 'emoji' },
-	{ memo: 'openCount', db: 'open_count', toMemo: (v) => v || 0 },
-	{ memo: 'reminder', db: 'reminder' },
-	{ memo: 'reminders', db: 'reminders' },
-	{ memo: 'folderId', db: 'folder_id' },
-	{ memo: 'checklist', db: 'checklist' },
-	{ memo: 'memoType', db: 'memo_type' },
-	{ memo: 'dueDate', db: 'due_date' },
-	{ memo: 'priority', db: 'priority' },
-	{ memo: 'todoStatus', db: 'todo_status' },
-	{ memo: 'todoPriority', db: 'todo_priority' },
-	{ memo: 'dueTime', db: 'due_time' },
-	{ memo: 'todoTiming', db: 'todo_timing' },
-	{
-		memo: 'completedAt', db: 'completed_at',
-		toMemo: (v) => v ? new Date(v).getTime() : undefined,
-		toDb: (v) => v ? new Date(v).toISOString() : null
-	},
-	{ memo: 'recurrence', db: 'recurrence' },
-	{ memo: 'todoInstances', db: 'todo_instances' },
-	{ memo: 'postponeInfo', db: 'postpone_info' },
-	{ memo: 'todoGroupId', db: 'todo_group_id' },
-	{ memo: 'todoUrls', db: 'todo_urls', toMemo: (v) => v || [] },
-	{ memo: 'autoPung', db: 'auto_pung', toMemo: (v) => v || false },
-	{ memo: 'pungDelay', db: 'pung_delay', toMemo: (v) => v || 0 },
-	{ memo: 'version', db: 'version', toMemo: (v) => v || 1 },
-];
-
-// 매핑 기반 타입 변환 함수
-function supabaseToMemo(row: SupabaseMemoRow): Memo {
-	const memo = {} as Record<string, unknown>;
-	for (const { memo: key, db, toMemo } of MEMO_FIELD_MAPPINGS) {
-		memo[key] = toMemo ? toMemo(row[db]) : row[db];
-	}
-	return migrateToMultipleReminders(memo as Memo);
-}
-
-function memoToSupabase(memo: Partial<Memo>): Record<string, unknown> {
-	const result: Record<string, unknown> = {};
-	for (const { memo: key, db, toDb } of MEMO_FIELD_MAPPINGS) {
-		const val = (memo as Record<string, unknown>)[key];
-		if (val !== undefined) {
-			result[db] = toDb ? toDb(val) : val;
-		}
-	}
-	return result;
-}
+// SupabaseMemoRow, FieldMapping, MEMO_FIELD_MAPPINGS, supabaseToMemo, memoToSupabase
+// 는 $lib/services/memoMapper 에서 import됨
 
 function createMemosStore() {
 	let memos = $state<Memo[]>([]);
@@ -410,7 +255,7 @@ function createMemosStore() {
 					filter: `user_id=eq.${authStore.user.id}`
 				},
 				(payload) => {
-					const newMemo = supabaseToMemo(payload.new);
+					const newMemo = supabaseToMemo(payload.new as SupabaseMemoRow);
 					// Optimistic UI: 이미 로컬에 있으면 교체, 없으면 추가
 					const existingIndex = memos.findIndex((m) => m.id === newMemo.id || m.localId === newMemo.id);
 					if (existingIndex !== -1) {
@@ -434,7 +279,7 @@ function createMemosStore() {
 					filter: `user_id=eq.${authStore.user.id}`
 				},
 				(payload) => {
-					const updated = supabaseToMemo(payload.new);
+					const updated = supabaseToMemo(payload.new as SupabaseMemoRow);
 					updated.syncStatus = 'synced';
 					memos = memos.map((m) => (m.id === updated.id ? updated : m));
 					saveCacheToStorage(memos);
