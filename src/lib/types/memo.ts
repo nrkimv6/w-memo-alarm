@@ -156,6 +156,8 @@ export interface Memo {
 	// Optimistic UI: 동기화 상태
 	syncStatus?: SyncStatus;
 	localId?: string; // 서버 ID 확정 전 로컬 임시 ID
+	// Phase 16: 이미지 첨부
+	images?: string[]; // base64 data URLs
 }
 
 export type MemoCreate = Omit<Memo, 'id' | 'createdAt' | 'updatedAt' | 'isPinned' | 'isFavorite' | 'isActive' | 'openCount' | 'openHistory'>;

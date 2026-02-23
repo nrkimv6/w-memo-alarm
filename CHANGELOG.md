@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-02-23
+
+### Added
+- 이미지 첨부: 메모에 이미지 추가 (파일 선택, 붙여넣기, 드래그앤드롭), canvas 기반 압축 (최대 800px, JPEG 75%), 라이트박스 뷰어, 카드 썸네일 표시
+
 ## [0.4.0] - 2026-02-23
 
 ### Added

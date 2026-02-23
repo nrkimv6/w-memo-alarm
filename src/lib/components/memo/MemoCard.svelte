@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Pin, Star, Edit3, Trash2, ExternalLink, Folder, EyeOff, Eye, CheckSquare, Check, MoreVertical, Link2, RefreshCw, AlertTriangle, CloudOff, Bell } from 'lucide-svelte';
+	import { Pin, Star, Edit3, Trash2, ExternalLink, Folder, EyeOff, Eye, CheckSquare, Check, MoreVertical, Link2, RefreshCw, AlertTriangle, CloudOff, Bell, Image } from 'lucide-svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import KebabMenu from '$lib/components/memo/KebabMenu.svelte';
@@ -259,6 +259,22 @@
 				></div>
 			</div>
 			<span>{checklistComplete}/{checklistTotal}</span>
+		</div>
+	{/if}
+
+	<!-- Images -->
+	{#if !compact && memo.images && memo.images.length > 0}
+		<div class="flex gap-1.5 mb-3">
+			{#each memo.images.slice(0, 3) as src, i}
+				<div class="relative w-16 h-16 rounded-md overflow-hidden flex-shrink-0">
+					<img {src} alt={`이미지 ${i + 1}`} class="w-full h-full object-cover" />
+				</div>
+			{/each}
+			{#if memo.images.length > 3}
+				<div class="w-16 h-16 rounded-md bg-muted flex items-center justify-center flex-shrink-0 text-sm text-muted-foreground font-medium">
+					+{memo.images.length - 3}
+				</div>
+			{/if}
 		</div>
 	{/if}
 

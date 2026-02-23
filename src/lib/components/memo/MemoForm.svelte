@@ -11,6 +11,7 @@
 	import FolderSelector from './FolderSelector.svelte';
 	import ChecklistEditor from './ChecklistEditor.svelte';
 	import VoiceInput from './VoiceInput.svelte';
+	import ImageAttachment from './ImageAttachment.svelte';
 	import type { Memo, ChecklistItem, Reminder } from '$lib/types/memo';
 	import { memosStore } from '$lib/stores/memos.svelte';
 	import { foldersStore } from '$lib/stores/folders.svelte';
@@ -41,6 +42,7 @@
 	let folderId = $state<string | undefined>(undefined);
 	let checklist = $state<ChecklistItem[]>([]);
 	let showChecklist = $state(false);
+	let images = $state<string[]>([]);
 
 	// Phase 15: AI 태그 추천
 	let suggestedTags = $state<string[]>([]);
@@ -118,6 +120,7 @@
 			folderId = memo.folderId;
 			checklist = memo.checklist ? [...memo.checklist] : [];
 			showChecklist = (memo.checklist?.length || 0) > 0;
+			images = memo.images ? [...memo.images] : [];
 		} else if (open && !memo) {
 			title = '';
 			content = '';
@@ -128,6 +131,7 @@
 			folderId = undefined;
 			checklist = [];
 			showChecklist = false;
+			images = [];
 			// Apply default reminder settings if autoReminderOnCreate is enabled
 			if (settingsStore.settings.autoReminderOnCreate) {
 				const defaultReminderSettings = settingsStore.getDefaultReminder();
@@ -194,7 +198,8 @@
 			emoji: url.trim() ? emoji : undefined,
 			reminders: reminders.length > 0 ? reminders : undefined,
 			folderId,
-			checklist: checklist.length > 0 ? checklist : undefined
+			checklist: checklist.length > 0 ? checklist : undefined,
+			images: images.length > 0 ? images : undefined
 		};
 
 		const isEdit = !!memo;
@@ -227,6 +232,7 @@
 		folderId = undefined;
 		checklist = [];
 		showChecklist = false;
+		images = [];
 		onClose();
 	}
 
@@ -379,6 +385,9 @@
 				체크리스트 추가
 			</button>
 		{/if}
+
+		<!-- 이미지 첨부 -->
+		<ImageAttachment {images} onImagesChange={(imgs) => images = imgs} />
 
 		<!-- 알림 설정 -->
 		<ReminderSettings {reminders} onRemindersChange={(r) => reminders = r} />

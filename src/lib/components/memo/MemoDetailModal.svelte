@@ -23,6 +23,7 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import type { Memo } from '$lib/types/memo';
+	import ImageAttachment from './ImageAttachment.svelte';
 	import { memosStore } from '$lib/stores/memos.svelte';
 	import { foldersStore } from '$lib/stores/folders.svelte';
 	import { notificationHistoryStore } from '$lib/stores/notificationHistory.svelte';
@@ -191,6 +192,11 @@
 						{memo.content}
 					</p>
 				</div>
+			{/if}
+
+			<!-- Images -->
+			{#if memo.images && memo.images.length > 0}
+				<ImageAttachment images={memo.images} onImagesChange={() => {}} readonly={true} />
 			{/if}
 
 			<!-- URL -->
