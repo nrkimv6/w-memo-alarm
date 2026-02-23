@@ -128,6 +128,11 @@ tools:
    - 순서 최적화
    - todo를 원자단위로 세분화(초보개발자게에 분배가능한 단위)
    - **추상적 계획일 경우**: Phase 구조로 나누고 체크박스 TODO 생성
+   - **Python/백엔드 plan인 경우**: 테스트 수행 task를 TODO 체크박스에 반드시 포함:
+     - `- ☐ 유닛테스트 수행 및 수정` — 항상 포함
+     - `- ☐ e2e 테스트 수행` — e2e 테스트가 존재하는 프로젝트만
+     - 위치: 마지막 Phase 또는 각 Phase 끝
+     - TC 작성이 아닌 기존 테스트 **실행 + 실패 시 수정** task
 6. **보완 완료 후, plan 문서 헤더의 상태를 `검토완료`로 변경** (Edit 도구 사용)
    - `> 상태: 초안` 또는 `> 상태: 검토대기` 또는 `> 상태: 수정필요` → `> 상태: 검토완료` 으로 변경
    - **주의**: `구현중`, `구현완료`, `보류` 상태는 절대 변경하지 않는다 (step 2에서 이미 스킵됨)
@@ -195,7 +200,7 @@ ENHANCED-PLAN:
 
 이 agent는 다음 두 실행 방법 모두와 호환됩니다:
 
-1. **Python 버전 (권장)**: `python -m auto_next run --plan-file <파일>`
-2. **PowerShell 버전 (deprecated)**: `.\auto-next-sequential.ps1 -PlanFile <파일>`
+1. **Python 버전 (권장)**: `python -m plan_runner run --plan-file <파일>`
+2. **PowerShell 버전 (deprecated)**: `.\plan-runner-sequential.ps1 -PlanFile <파일>`
 
 출력 형식 (`===AUTO-PLAN-RESULT===`)은 두 버전 모두에서 동일하게 파싱됩니다.

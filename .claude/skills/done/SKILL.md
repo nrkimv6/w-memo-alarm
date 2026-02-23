@@ -168,9 +168,9 @@ docs/DONE.md 상단에 추가:
 - [x] 2026-01-08: 캘린더 내보내기
 ```
 
-### 5단계: DONE.md 아카이브 (5개 초과 시)
+### 5단계: DONE.md 아카이브 (10개 초과 시)
 
-docs/DONE.md 항목이 5개를 초과하면:
+docs/DONE.md 항목이 10개를 초과하면:
 1. 오래된 항목 → `{project}/docs/archive/DONE-YYYY-MM.md`로 이동
 2. docs/DONE.md는 최근 5개만 유지
 
@@ -198,11 +198,11 @@ wtools/TODO.md를 열어 해당 프로젝트 섹션을 갱신합니다:
 
 누락된 항목이 있으면 돌아가서 처리합니다.
 
-### 대안: auto-done.ps1 스크립트 (auto-next 전용)
+### 대안: auto-done.ps1 스크립트 (plan-runner 전용)
 
-**auto-next 워크플로우**에서는 `common/tools/auto-done.ps1 -PlanFile <경로>`로 1~8단계를 자동 처리합니다.
+**plan-runner 워크플로우**에서는 `common/tools/auto-done.ps1 -PlanFile <경로>`로 1~8단계를 자동 처리합니다.
 
-- **사용 시점**: auto-next가 plan 완료를 감지했을 때 (Phase 3.5)
+- **사용 시점**: plan-runner가 plan 완료를 감지했을 때 (Phase 3.5)
 - **처리 범위**: plan 상태 갱신, 아카이브 이동, TODO→DONE, wtools/TODO.md 동기화, 커밋
 - **수동 실행**: `powershell -File "common\tools\auto-done.ps1" -PlanFile "path/to/plan.md"`
 
