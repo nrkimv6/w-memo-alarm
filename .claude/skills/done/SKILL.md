@@ -77,7 +77,20 @@ plan 문서의 모든 체크박스가 `[x]`이면:
 1. **프로젝트 특정 plan**: `common/docs/plan/{파일}.md` (wtools만) → `{proj.path}/docs/archive/{파일}.md`
 2. **공통/복수 프로젝트 plan**: `common/docs/plan/{파일}.md` (wtools만) → `common/docs/archive/{파일}.md`
 3. **외부 프로젝트 plan**: `{proj.path}/docs/plan/{파일}.md` → `{proj.path}/docs/archive/{파일}.md`
-4. 아카이브 헤더 추가:
+4. **아카이브 이동 시 반드시 `git mv` 사용** (git 히스토리 보존):
+
+```powershell
+# ✅ 올바른 방법 — git mv로 이동 (히스토리 추적 가능)
+git mv -f "{plan경로}" "{archive경로}"
+# 이동 후 archive 헤더 추가 (Set-Content 또는 Edit 도구)
+git add "{archive경로}"
+
+# ❌ FORBIDDEN: Move-Item / Remove-Item — 히스토리 유실
+# Move-Item -Path "{plan경로}" -Destination "{archive경로}"
+# Remove-Item -Path "{plan경로}" -Force
+```
+
+5. 아카이브 헤더 추가 (`git mv` 이동 후 Edit 도구 또는 Set-Content로 파일 상단에 삽입):
 
 ```markdown
 # {제목}
@@ -85,6 +98,7 @@ plan 문서의 모든 체크박스가 `[x]`이면:
 > 완료일: YYYY-MM-DD
 > 아카이브됨
 > 진행률: N/N (100%)
+> 요약: {원본 plan에서 복사}
 ```
 
 ### 4단계: TODO → DONE 이동 (수동 검증 항목 분리)
@@ -101,8 +115,9 @@ B. 각 항목 텍스트에 수동 작업 판단 키워드가 포함되어 있는
 C. 매칭된 항목을 추출하여 리스트로 수집
 
 **수동 작업 판단 키워드**: `common/docs/guide/project-management/manual-tasks-format.md` 참조
-- 한국어: `브라우저`, `UI`, `디자인`, `육안`, `시각`, `레이아웃`, `가독성`, `실기기`, `모바일`, `대시보드`, `로그인 테스트`, `배포 확인`, `스크린샷`, `스타일`, `색상`, `폰트`
-- 영어: `Android`, `iOS`, `Firebase Console`, `Supabase Dashboard`, `Google.*인증`, `Kakao.*인증`, `Play Store`
+- 한국어: `브라우저`, `UI`, `디자인`, `육안`, `시각`, `레이아웃`, `가독성`, `실기기`, `모바일`, `스크린샷`, `스타일`, `색상`, `폰트`
+- 영어: `Android`, `iOS`
+- CLI/curl로 검증 가능한 것은 수동 아님: `배포 확인`, `Firebase Console`, `Supabase Dashboard`, `로그인 테스트` 등
 
 **MANUAL_TASKS.md 생성/갱신:**
 
@@ -272,6 +287,7 @@ git commit -m "..."
 - [ ] 구현 코드가 완료되었는가?
 - [ ] 테스트가 통과했는가?
 - [ ] 빌드가 성공했는가?
+- [ ] DB 마이그레이션 SQL 파일을 생성했다면 실행했는가? (미실행 시 API 장애)
 
 실행 후 확인사항:
 
