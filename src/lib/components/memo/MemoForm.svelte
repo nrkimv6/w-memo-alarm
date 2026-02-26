@@ -120,7 +120,7 @@
 		if (open && memo) {
 			title = memo.title;
 			content = memo.content;
-			tags = [...memo.tags];
+			tags = [...(memo.tags ?? [])];
 			url = memo.url || '';
 			emoji = memo.emoji || '🔗';
 			showUrlInput = !!memo.url;

@@ -71,12 +71,24 @@ function logSyncError(action: string, entityId: string, error: any): void {
 	}
 }
 
+// 구버전 호환: localStorage에서 로드한 메모의 필수 필드 정규화
+function normalizeMemo(m: unknown): Memo {
+	const raw = m as Record<string, unknown>;
+	return {
+		...(raw as unknown as Memo),
+		tags: Array.isArray(raw.tags) ? raw.tags : [],
+		isActive: raw.isActive !== undefined ? Boolean(raw.isActive) : true,
+		isPinned: Boolean(raw.isPinned),
+		isFavorite: Boolean(raw.isFavorite),
+	};
+}
+
 // localStorage 캐시 (오프라인 폴백용)
 function loadCacheFromStorage(): Memo[] {
 	if (!browser) return [];
 	try {
 		const cached = localStorage.getItem(CACHE_KEY);
-		return cached ? JSON.parse(cached) : [];
+		return cached ? (JSON.parse(cached) as unknown[]).map(normalizeMemo) : [];
 	} catch (e) {
 		console.warn('Failed to load memo cache from localStorage:', e);
 		return [];

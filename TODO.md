@@ -11,7 +11,7 @@
 
 ## Pending
 
-*현재 없음*
+- [ ] **메모 수정 시 undefined tags 크래시 수정** — [plan](docs/plan/2026-02-27_fix-memo-edit-undefined-tags.md) (0/5, 0%)
 
 ---
 

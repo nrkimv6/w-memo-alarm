@@ -296,9 +296,9 @@
 			{/if}
 
 			<!-- Tags -->
-			{#if memo.tags.length > 0}
+			{#if (memo.tags ?? []).length > 0}
 				<div class="flex flex-wrap gap-2">
-					{#each memo.tags as tag}
+					{#each (memo.tags ?? []) as tag}
 						<Badge variant="sketchy">{tag}</Badge>
 					{/each}
 				</div>
@@ -340,9 +340,9 @@
 									{#if related.content}
 										<p class="text-xs text-muted-foreground truncate mt-0.5">{related.content}</p>
 									{/if}
-									{#if related.tags.length > 0}
+									{#if (related.tags ?? []).length > 0}
 										<div class="flex flex-wrap gap-1 mt-1">
-											{#each related.tags.slice(0, 3) as tag}
+											{#each (related.tags ?? []).slice(0, 3) as tag}
 												<span class="px-1.5 py-0.5 text-[10px] rounded bg-muted text-muted-foreground">{tag}</span>
 											{/each}
 										</div>
