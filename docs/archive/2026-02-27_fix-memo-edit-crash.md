@@ -1,6 +1,8 @@
 # 메모 수정 버튼 클릭 시 crash 수정
 
-- **상태**: 미시작
+- **상태**: 구현완료
+> 완료일: 2026-02-27
+> 아카이브됨
 - **날짜**: 2026-02-27
 - **프로젝트**: memo-alarm
 - **심각도**: 높음 (기능 불가)
@@ -31,18 +33,18 @@ return reminder.days.map(getDayLabel).join(', ');
 
 ### TODO
 
-- [ ] **1. MemoDetailModal.svelte:119 — null guard 추가**
+- [x] **1. MemoDetailModal.svelte:119 — null guard 추가**
   - `reminder.days` 접근 전 방어 코드 추가
   - `return (reminder.days ?? []).map(getDayLabel).join(', ');`
   - once 타입에서 date 없는 경우도 처리: `if (reminder.type === 'once') return reminder.date ? ... : '';`
 
-- [ ] **2. ReminderCard.svelte — formatDays 방어 강화**
+- [x] **2. ReminderCard.svelte — formatDays 방어 강화**
   - `formatDays()` 함수 내부에 `if (!days || days.length === 0) return '';` 추가
   - 현재는 call site에서 guard하지만, 함수 자체가 방어적이어야 함
 
-- [ ] **3. memos.svelte.ts — normalizeMemo에서 reminder 마이그레이션 호출**
+- [x] **3. memos.svelte.ts — normalizeMemo에서 reminder 마이그레이션 호출**
   - `normalizeMemo()` 내부에서 `migrateToMultipleReminders()` 호출 추가
   - localStorage 캐시 메모도 새 구조로 정규화되도록 보장
 
-- [ ] **4. 빌드 확인**
+- [x] **4. 빌드 확인**
   - `npm run build` 성공 확인

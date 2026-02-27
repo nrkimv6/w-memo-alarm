@@ -74,13 +74,14 @@ function logSyncError(action: string, entityId: string, error: any): void {
 // 구버전 호환: localStorage에서 로드한 메모의 필수 필드 정규화
 function normalizeMemo(m: unknown): Memo {
 	const raw = m as Record<string, unknown>;
-	return {
+	const memo: Memo = {
 		...(raw as unknown as Memo),
 		tags: Array.isArray(raw.tags) ? raw.tags : [],
 		isActive: raw.isActive !== undefined ? Boolean(raw.isActive) : true,
 		isPinned: Boolean(raw.isPinned),
 		isFavorite: Boolean(raw.isFavorite),
 	};
+	return migrateToMultipleReminders(memo);
 }
 
 // localStorage 캐시 (오프라인 폴백용)

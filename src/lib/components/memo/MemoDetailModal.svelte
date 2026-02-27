@@ -101,7 +101,8 @@
 
 	function formatReminderSchedule(reminder: NonNullable<typeof memo>['reminder']): string {
 		if (!reminder) return '';
-		if (reminder.type === 'once' && reminder.date) {
+		if (reminder.type === 'once') {
+			if (!reminder.date) return '날짜 미설정';
 			const date = new Date(reminder.date);
 			const today = new Date();
 			const tomorrow = new Date();
@@ -116,6 +117,7 @@
 				weekday: 'short'
 			});
 		}
+		if (!reminder.days || reminder.days.length === 0) return '요일 미선택';
 		return reminder.days.map(getDayLabel).join(', ');
 	}
 

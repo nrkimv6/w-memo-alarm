@@ -24,6 +24,7 @@
 	}
 
 	function formatDays(days: number[]): string {
+		if (!days || days.length === 0) return '요일 미선택';
 		if (days.length === 7) return '매일';
 		if (days.length === 5 && !days.includes(0) && !days.includes(6)) return '평일';
 		if (days.length === 2 && days.includes(0) && days.includes(6)) return '주말';

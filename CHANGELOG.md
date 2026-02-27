@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.2] - 2026-02-27
+
+### Fixed
+- 메모 수정 버튼 클릭 시 crash 수정 (reminder.days undefined → null guard)
+- normalizeMemo에서 migrateToMultipleReminders 호출 추가 (localStorage 캐시 메모 정규화)
+- ReminderCard.formatDays 방어 코드 강화
+
 ## [0.6.1] - 2026-02-27
 
 ### Fixed
