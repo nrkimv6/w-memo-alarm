@@ -117,7 +117,11 @@ C. 매칭된 항목을 추출하여 리스트로 수집
 **수동 작업 판단 키워드**: `common/docs/guide/project-management/manual-tasks-format.md` 참조
 - 한국어: `브라우저`, `UI`, `디자인`, `육안`, `시각`, `레이아웃`, `가독성`, `실기기`, `모바일`, `스크린샷`, `스타일`, `색상`, `폰트`
 - 영어: `Android`, `iOS`
-- CLI/curl로 검증 가능한 것은 수동 아님: `배포 확인`, `Firebase Console`, `Supabase Dashboard`, `로그인 테스트` 등
+- **수동이 아닌 것** (CLI/curl/에이전트로 검증 가능):
+  - 배포 확인, Firebase Console, Supabase Dashboard, 로그인 테스트
+  - E2E 테스트, HTTP 통합 테스트, API 응답 확인 → `auto-test-e2e` 에이전트 전담
+  - 스크립트 실행 확인, 빌드 확인, pytest, npm test
+- **판별 원칙**: 사람의 눈/판단이 필수인 경우만 수동. CLI로 실행+검증 가능하면 수동 아님
 
 **MANUAL_TASKS.md 생성/갱신:**
 
@@ -204,12 +208,22 @@ wtools/TODO.md를 열어 해당 프로젝트 섹션을 갱신합니다:
 
 ### 7단계: 완료 검증
 
+**전제 조건 확인 (먼저 실행):**
+
+- plan 헤더에 `> branch:` 필드가 있으면 → **⚠️ 워크트리 머지가 아직 완료되지 않았습니다.**
+  먼저 `/merge-test`를 실행하여 머지 + 통합테스트를 완료하세요. 이후 단계 중단.
+- plan 상태가 `구현완료`가 아니면 → 경고 출력:
+  - 상태가 `구현중`이고 `> branch:` 없으면 → 계속 진행 (worktree 미사용 직접 구현)
+  - 그 외 상태 → "현재 상태: {상태}. `/merge-test` 또는 `/implement` 먼저 완료하세요." + 중단
+
 커밋 전 실제로 정리가 되었는지 확인합니다:
 
 1. **plan 문서 확인**: `common/docs/plan/`, `{project}/docs/plan/`에 완료된 작업의 plan이 남아있지 않은지 확인
 2. **프로젝트 TODO 확인**: `{project}/TODO.md`에서 완료 항목이 제거되었는지 확인
 3. **wtools/TODO.md 확인**: 해당 프로젝트 섹션 진행률이 갱신되었는지 확인
 4. **DONE.md 확인**: 완료 항목이 추가되었는지 확인
+
+5. **워크트리/브랜치 정리 확인**: `git worktree list`에 `impl-` 패턴 없음, `git branch --list 'impl/*'`에 현재 plan 관련 브랜치 없음
 
 누락된 항목이 있으면 돌아가서 처리합니다.
 
