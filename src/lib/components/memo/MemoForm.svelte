@@ -220,11 +220,12 @@
 		};
 
 		const isEdit = !!memo;
+		const memoId = memo?.id;
 		// 먼저 모달 닫기 (낙관적 UI)
 		handleClose();
 
 		if (isEdit) {
-			const result = await memosStore.update(memo.id, data);
+			const result = await memosStore.update(memoId!, data);
 			if (result) {
 				toastStore.success('메모가 수정되었습니다');
 			}
@@ -255,14 +256,13 @@
 
 	async function handleConvertToTodo() {
 		if (!memo) return;
+		const memoId = memo.id;
 
-		// 먼저 현재 변경사항 저장
+		// 먼저 현재 변경사항 저장 (내부에서 handleClose 호출)
 		await handleSubmit();
 
 		// 할일로 전환
-		await memosStore.convertMemoToTodo(memo.id);
-
-		handleClose();
+		await memosStore.convertMemoToTodo(memoId);
 	}
 </script>
 
