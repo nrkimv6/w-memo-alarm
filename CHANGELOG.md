@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.4] - 2026-03-10
+
+### Fixed
+
+- 메모 수정 시 `handleClose()` 호출 후 `memo.id` null 접근 TypeError 수정 (`memoId` 사전 캡처)
+- 할일 변환 시 동일 null 에러 수정 + `handleClose()` 중복 호출 제거
+
 ## [0.6.3] - 2026-03-10
 
 ### Fixed

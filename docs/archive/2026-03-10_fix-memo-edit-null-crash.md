@@ -1,9 +1,13 @@
 # 메모 수정 시 null.id TypeError 수정
 
+> 완료일: 2026-03-10
+> 아카이브됨
 > 작성일: 2026-03-10
 > 대상 프로젝트: memo-alarm
-> 상태: 초안
-> 진행률: 0/7 (0%)
+> 상태: 구현완료
+> 반영일: 2026-03-10 11:12
+> 머지커밋: f3f0421
+> 진행률: 7/7 (100%)
 > 요약: MemoForm.svelte에서 handleClose()가 Svelte 5 반응성으로 memo prop을 즉시 null로 만들어 memo.id 접근 시 TypeError 발생. handleSubmit + handleConvertToTodo 두 곳 수정.
 
 ---
@@ -36,22 +40,22 @@
 
 ### Phase 1: handleSubmit 수정
 
-1. - [ ] **handleSubmit에서 memo.id를 handleClose 전에 로컬 변수로 캡처**
-   - [ ] `src/lib/components/memo/MemoForm.svelte:222`: `const isEdit = !!memo;` 바로 아래에 `const memoId = memo?.id;` 추가
-   - [ ] `src/lib/components/memo/MemoForm.svelte:227`: `memosStore.update(memo.id, data)` → `memosStore.update(memoId!, data)` 변경
+1. - [x] **handleSubmit에서 memo.id를 handleClose 전에 로컬 변수로 캡처**
+   - [x] `src/lib/components/memo/MemoForm.svelte:222`: `const isEdit = !!memo;` 바로 아래에 `const memoId = memo?.id;` 추가
+   - [x] `src/lib/components/memo/MemoForm.svelte:227`: `memosStore.update(memo.id, data)` → `memosStore.update(memoId!, data)` 변경
 
 ### Phase 2: handleConvertToTodo 수정
 
-2. - [ ] **handleConvertToTodo에서 memo.id 사전 캡처 + 중복 handleClose 제거**
-   - [ ] `src/lib/components/memo/MemoForm.svelte:257`: `if (!memo) return;` 아래에 `const memoId = memo.id;` 추가
-   - [ ] `src/lib/components/memo/MemoForm.svelte:263`: `memosStore.convertMemoToTodo(memo.id)` → `memosStore.convertMemoToTodo(memoId)` 변경
-   - [ ] `src/lib/components/memo/MemoForm.svelte:265`: `handleClose();` 삭제 (handleSubmit 내부에서 이미 호출됨)
+2. - [x] **handleConvertToTodo에서 memo.id 사전 캡처 + 중복 handleClose 제거**
+   - [x] `src/lib/components/memo/MemoForm.svelte:257`: `if (!memo) return;` 아래에 `const memoId = memo.id;` 추가
+   - [x] `src/lib/components/memo/MemoForm.svelte:263`: `memosStore.convertMemoToTodo(memo.id)` → `memosStore.convertMemoToTodo(memoId)` 변경
+   - [x] `src/lib/components/memo/MemoForm.svelte:265`: `handleClose();` 삭제 (handleSubmit 내부에서 이미 호출됨)
 
 ### Phase 3: 빌드 검증
 
-3. - [ ] **빌드 확인** — `npm run build` 성공 확인
-   - [ ] `memo-alarm` 디렉토리에서 `npm run build` 실행, 에러 없음 확인
+3. - [x] **빌드 확인** — `npm run build` 성공 확인
+   - [x] `memo-alarm` 디렉토리에서 `npm run build` 실행, 에러 없음 확인
 
 ---
 
-*상태: 초안 | 진행률: 0/7 (0%)*
+*상태: 구현완료 | 진행률: 7/7 (100%)*
