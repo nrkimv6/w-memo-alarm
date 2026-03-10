@@ -3,12 +3,12 @@
 	import { cn } from '$lib/utils';
 
 	interface Props {
-		audioDataUrls: string[];
+		audioUrls: string[];
 		onAudioChange: (audios: string[]) => void;
 		readonly?: boolean;
 	}
 
-	let { audioDataUrls, onAudioChange, readonly = false }: Props = $props();
+	let { audioUrls, onAudioChange, readonly = false }: Props = $props();
 
 	// 녹음 상태
 	let isRecording = $state(false);
@@ -59,7 +59,7 @@
 				const reader = new FileReader();
 				reader.onloadend = () => {
 					const dataUrl = reader.result as string;
-					onAudioChange([...audioDataUrls, dataUrl]);
+					onAudioChange([...audioUrls, dataUrl]);
 				};
 				reader.readAsDataURL(blob);
 				audioChunks = [];
@@ -105,7 +105,7 @@
 			audioElements[index]?.pause();
 			playingIndex = null;
 		}
-		const newAudios = audioDataUrls.filter((_, i) => i !== index);
+		const newAudios = audioUrls.filter((_, i) => i !== index);
 		onAudioChange(newAudios);
 	}
 
@@ -135,7 +135,7 @@
 		return formatDuration(Math.floor(el.duration));
 	}
 
-	const canRecord = $derived(!readonly && audioDataUrls.length < MAX_RECORDINGS);
+	const canRecord = $derived(!readonly && audioUrls.length < MAX_RECORDINGS);
 </script>
 
 <div class="space-y-3">
@@ -158,15 +158,15 @@
 					onclick={startRecording}
 					class={cn(
 						'flex items-center gap-2 px-3 py-2 rounded-lg text-sm border transition-colors',
-						audioDataUrls.length === 0
+						audioUrls.length === 0
 							? 'border-border hover:bg-muted/50 text-foreground'
 							: 'border-dashed border-muted-foreground/30 hover:bg-muted/30 text-muted-foreground'
 					)}
 				>
 					<Mic class="w-4 h-4" />
-					{audioDataUrls.length === 0 ? '음성 녹음' : '녹음 추가'}
-					{#if audioDataUrls.length > 0}
-						<span class="text-xs">({audioDataUrls.length}/{MAX_RECORDINGS})</span>
+					{audioUrls.length === 0 ? '음성 녹음' : '녹음 추가'}
+					{#if audioUrls.length > 0}
+						<span class="text-xs">({audioUrls.length}/{MAX_RECORDINGS})</span>
 					{/if}
 				</button>
 			{/if}
@@ -179,9 +179,9 @@
 	{/if}
 
 	<!-- 녹음 목록 -->
-	{#if audioDataUrls.length > 0}
+	{#if audioUrls.length > 0}
 		<div class="space-y-2">
-			{#each audioDataUrls as dataUrl, i}
+			{#each audioUrls as dataUrl, i}
 				<!-- eslint-disable-next-line svelte/no-unused-svelte-ignore -->
 				<!-- svelte-ignore element_invalid_self_closing_tag -->
 				<audio
