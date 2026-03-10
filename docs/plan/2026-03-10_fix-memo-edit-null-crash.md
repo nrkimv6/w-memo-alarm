@@ -3,7 +3,7 @@
 > 작성일: 2026-03-10
 > 대상 프로젝트: memo-alarm
 > 상태: 초안
-> 진행률: 0/4 (0%)
+> 진행률: 0/7 (0%)
 > 요약: MemoForm.svelte에서 handleClose()가 Svelte 5 반응성으로 memo prop을 즉시 null로 만들어 memo.id 접근 시 TypeError 발생. handleSubmit + handleConvertToTodo 두 곳 수정.
 
 ---
@@ -34,22 +34,24 @@
 
 ## TODO
 
-### Phase 1: handleSubmit / handleConvertToTodo 수정
+### Phase 1: handleSubmit 수정
 
-1. - [ ] **handleSubmit에서 memo 데이터 사전 캡처** — handleClose 전에 id 저장
-   - [ ] `src/lib/components/memo/MemoForm.svelte:222-227`: `const memoId = memo.id;` 추가, `memo.id` → `memoId` 변경
+1. - [ ] **handleSubmit에서 memo.id를 handleClose 전에 로컬 변수로 캡처**
+   - [ ] `src/lib/components/memo/MemoForm.svelte:222`: `const isEdit = !!memo;` 바로 아래에 `const memoId = memo?.id;` 추가
+   - [ ] `src/lib/components/memo/MemoForm.svelte:227`: `memosStore.update(memo.id, data)` → `memosStore.update(memoId!, data)` 변경
+
+### Phase 2: handleConvertToTodo 수정
 
 2. - [ ] **handleConvertToTodo에서 memo.id 사전 캡처 + 중복 handleClose 제거**
-   - [ ] `src/lib/components/memo/MemoForm.svelte:256-263`: `const memoId = memo.id;` 추가, `memo.id` → `memoId` 변경, 마지막 `handleClose()` 제거 (handleSubmit 내부에서 이미 호출)
+   - [ ] `src/lib/components/memo/MemoForm.svelte:257`: `if (!memo) return;` 아래에 `const memoId = memo.id;` 추가
+   - [ ] `src/lib/components/memo/MemoForm.svelte:263`: `memosStore.convertMemoToTodo(memo.id)` → `memosStore.convertMemoToTodo(memoId)` 변경
+   - [ ] `src/lib/components/memo/MemoForm.svelte:265`: `handleClose();` 삭제 (handleSubmit 내부에서 이미 호출됨)
 
-### Phase 2: 빌드 검증
+### Phase 3: 빌드 검증
 
 3. - [ ] **빌드 확인** — `npm run build` 성공 확인
    - [ ] `memo-alarm` 디렉토리에서 `npm run build` 실행, 에러 없음 확인
 
-4. - [ ] **수동 검증 항목**
-   - [ ] 브라우저에서 메모 수정 후 저장 시 에러 없이 정상 동작 확인 (→ MANUAL_TASKS)
-
 ---
 
-*상태: 초안 | 진행률: 0/4 (0%)*
+*상태: 초안 | 진행률: 0/7 (0%)*
