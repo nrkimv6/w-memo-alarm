@@ -11,12 +11,13 @@
 
 ## Pending
 
-*현재 없음*
+- [ ] 메모 수정 시 null.id TypeError 수정 — [plan](docs/plan/2026-03-10_fix-memo-edit-null-crash.md) (0/4, 0%)
 
 ---
 
 ## 관련 계획서
 
+- [메모 수정 시 null.id TypeError 수정](docs/plan/2026-03-10_fix-memo-edit-null-crash.md)
 - [메모 공유 URL null 수정 계획서](docs/plan/2026-02-10_fix-memo-share-url-null.md)
 
 ---
