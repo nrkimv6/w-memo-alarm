@@ -11,7 +11,7 @@
 
 ## Pending
 
-- [ ] **새메모 버튼 에러 + 설정 네비게이션 수정** — [plan](docs/plan/2026-03-10_fix-new-memo-and-settings-nav.md) (0/5, 0%)
+*현재 없음*
 
 ---
 

@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.3] - 2026-03-10
+
+### Fixed
+
+- AudioRecorder prop명 불일치(`audioDataUrls` → `audioUrls`) 수정으로 새메모 버튼 TypeError 해결
+- 새메모 에러로 인한 설정 네비게이션 미작동 연쇄 버그 해결
+
 ## [0.6.2] - 2026-02-27
 
 ### Fixed
