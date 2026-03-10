@@ -23,6 +23,24 @@ tools:
 - "일단 돌아가면 OK" 편향 → 독립 에이전트가 냉정하게 진단
 - 구현 컨텍스트가 쌓인 상태에서 테스트 판단 흐려짐 → 깨끗한 세션
 
+## dev_runner TC 특별 규칙 (monitor-page)
+
+> **dev_runner 모듈(`tests/dev_runner/`) TC 작성 시 반드시 준수.**
+
+1. `RunRequest()` 사용 시 **`test_source` 필수**:
+   ```python
+   RunRequest(test_source="tc_파일명_약어", engine="gemini", ...)
+   ```
+   `test_source` 없으면 runner_id 추적 불가 → Redis 고아 러너 잔류.
+
+2. 하드코딩 runner_id는 **`t-{tc약어}-{식별자}` 형식** 필수:
+   ```python
+   runner_id = "t-execsvc-abc1"   # ✅
+   runner_id = "abc12345"          # ❌
+   ```
+
+3. `redis_cleanup` fixture는 `autouse=True` — 별도 선언 불필요.
+
 ## 실행 흐름
 
 1. plan 문서를 읽는다
@@ -58,6 +76,8 @@ DETAIL:
 ## 워크트리 격리 제약
 
 ⚠ 이 에이전트는 **워크트리 내에서** 실행됩니다:
+
+> **참고**: `tests/conftest.py`가 editable install의 MAPPING을 워크트리 경로로 자동 패치함 — plan-runner pytest 실행 시 별도 조치 불필요.
 
 - ❌ 서버 기동 금지 (`uvicorn`, `npm run dev`, `npm start`)
 - ❌ HTTP 요청 금지 (`curl`, `httpx`, `requests.get`)
