@@ -7,7 +7,7 @@
 
 ## In Progress
 
-- [ ] **상하 스크롤 시 좌우 스와이프 오동작 방지** — [plan](docs/plan/2026-03-30_fix-swipe-scroll-conflict.md) (0/9, 0%)
+*현재 없음*
 
 ## Pending
 
