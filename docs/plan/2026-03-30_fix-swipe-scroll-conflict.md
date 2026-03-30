@@ -3,7 +3,7 @@
 > 작성일: 2026-03-30
 > 대상 프로젝트: memo-alarm
 > 상태: 초안
-> 진행률: 0/4 (0%)
+> 진행률: 0/9 (0%)
 > 요약: 모바일에서 상하 스크롤 시 손가락의 미세한 좌우 이동이 스와이프(핀/삭제)를 트리거하는 문제. SwipeableCard에 방향 잠금(direction lock) 로직을 추가하여 스크롤과 스와이프를 분리한다.
 
 ---
@@ -18,7 +18,7 @@
 
 - `touch-action: pan-y`는 브라우저 기본 수직 스크롤을 허용하지만, JS 레벨에서 `currentX` 업데이트를 막지는 않음 → JS 방향 잠금 필수
 - 방향 결정 임계값 10px는 기존 코드에서 이미 사용 중인 값으로 일관성 유지
-- `directionLocked`를 `$state`로 관리하여 Svelte 5 반응성 유지
+- `directionLocked`는 템플릿에서 참조하지 않으므로 일반 `let` 변수로 선언 (`$state` 불필요)
 
 ---
 
@@ -26,16 +26,22 @@
 
 ### Phase 1: 방향 잠금 구현
 
-1. - [ ] **SwipeableCard에 direction lock 로직 추가** — 수직 스크롤 시 스와이프 차단
-   - [ ] `src/lib/components/memo/SwipeableCard.svelte`: `directionLocked` 상태 변수 추가 (`'none' | 'horizontal' | 'vertical'`)
-   - [ ] `src/lib/components/memo/SwipeableCard.svelte`: `handleTouchStart`에서 `directionLocked = 'none'` 초기화
-   - [ ] `src/lib/components/memo/SwipeableCard.svelte`: `handleTouchMove`에서 방향 감지 로직 — 10px 이상 이동 시 우세 방향으로 잠금, `vertical`이면 `currentX` 업데이트 스킵, `horizontal`이면 기존 스와이프 처리
-   - [ ] `src/lib/components/memo/SwipeableCard.svelte`: `handleTouchEnd`에서 `directionLocked = 'none'` 초기화
+1. - [ ] **direction lock 상태 변수 추가** — 터치 세션별 방향 기록
+   - [ ] `src/lib/components/memo/SwipeableCard.svelte:16`: `let isDragging` 선언 뒤에 `let directionLocked: 'none' | 'horizontal' | 'vertical' = 'none';` 추가 (일반 `let`, `$state` 아님)
+
+2. - [ ] **handleTouchStart 수정** — 터치 시작 시 방향 잠금 초기화
+   - [ ] `src/lib/components/memo/SwipeableCard.svelte:22-26`: `handleTouchStart` 함수 내 `isDragging = true;` 뒤에 `directionLocked = 'none';` 추가
+
+3. - [ ] **handleTouchMove 수정** — 방향 감지 후 잠금, 수직이면 스와이프 무시
+   - [ ] `src/lib/components/memo/SwipeableCard.svelte:28-45`: `handleTouchMove` 함수 전면 교체. before: deltaX/deltaY 비교 후 항상 `currentX` 갱신. after: (1) `directionLocked === 'none'`일 때 `abs(delta) > 10`이면 우세 방향으로 잠금 후 `return` (2) `directionLocked === 'vertical'`이면 즉시 `return` (3) `directionLocked === 'horizontal'`이면 `e.preventDefault()` + `currentX` 갱신 + MAX_DRAG 제한
+
+4. - [ ] **handleTouchEnd 수정** — 터치 종료 시 방향 잠금 초기화
+   - [ ] `src/lib/components/memo/SwipeableCard.svelte:47-63`: `handleTouchEnd` 함수의 초기화 블록(L60-62)에 `directionLocked = 'none';` 추가
 
 ### Phase 2: 빌드 검증
 
-2. - [ ] **빌드 성공 확인** — `npm run build` 에러 없음
-   - [ ] 빌드 실행 후 에러 없이 완료 확인
+5. - [ ] **빌드 성공 확인** — `npm run build` 에러 없음
+   - [ ] `npm run build` 실행 후 에러 없이 완료 확인
 
 ---
 
@@ -55,4 +61,4 @@ npm run build
 
 ---
 
-*상태: 초안 | 진행률: 0/4 (0%)*
+*상태: 초안 | 진행률: 0/9 (0%)*
