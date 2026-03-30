@@ -1,8 +1,9 @@
 <script lang="ts">
-	import { X } from 'lucide-svelte';
+	import { X, EyeOff } from 'lucide-svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import { memosStore } from '$lib/stores/memos.svelte';
 	import { filterStore } from '$lib/stores/filter.svelte';
+	import { tagMetaStore } from '$lib/stores/tagMeta.svelte';
 	import { cn } from '$lib/utils';
 
 	const allTags = $derived(memosStore.getAllTags());
@@ -16,13 +17,17 @@
 			<button
 				onclick={() => filterStore.toggleTag(tag)}
 				class={cn(
-					'px-2.5 py-1 text-xs rounded-full border transition-colors',
+					'flex items-center gap-1 px-2.5 py-1 text-xs rounded-full border transition-colors',
 					selectedTags.includes(tag)
 						? 'bg-primary text-primary-foreground border-primary'
-						: 'bg-background border-border hover:border-primary/50'
+						: 'bg-background border-border hover:border-primary/50',
+					!tagMetaStore.isTagVisible(tag) && 'opacity-50'
 				)}
 			>
 				{tag}
+				{#if !tagMetaStore.isTagVisible(tag)}
+					<EyeOff class="w-3 h-3" />
+				{/if}
 			</button>
 		{/each}
 

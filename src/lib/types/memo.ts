@@ -7,6 +7,11 @@ export interface Folder {
 	createdAt: number;
 }
 
+export interface TagMeta {
+	name: string;
+	alwaysVisible: boolean;
+}
+
 export interface ChecklistItem {
 	id: string;
 	text: string;
@@ -182,7 +187,7 @@ export interface NotificationHistory {
 	readAt?: string; // ISO datetime string (P2)
 }
 
-export type FilterType = 'all' | 'pinned' | 'favorites' | 'archived';
+export type FilterType = 'all' | 'pinned' | 'favorites' | 'bookmarked' | 'archived';
 
 export type SortType = 'recent' | 'oldest' | 'title' | 'updated';
 

@@ -12,6 +12,7 @@
 	import { memosStore } from "$lib/stores/memos.svelte";
 	import { filterStore } from "$lib/stores/filter.svelte";
 	import { foldersStore } from "$lib/stores/folders.svelte";
+	import { tagMetaStore } from "$lib/stores/tagMeta.svelte";
 	import { registerFCMToken, setupForegroundMessageListener, hasDeactivatedToken, resetFCMToken } from "$lib/fcm";
 	import { setupShareIntentListener, setupNotificationListeners, shareIntentToQueryParams, type ShareIntentData } from "$lib/utils/capacitor";
 	import { Toast } from "$lib/components/ui";
@@ -103,6 +104,7 @@
 			await memosStore.init();
 			filterStore.init();
 			foldersStore.init();
+			tagMetaStore.init();
 		}
 
 		// 메모 로드 완료 후 Service Worker에 알림 스케줄 등록

@@ -1,5 +1,6 @@
 import type { FilterType, SortType, ViewMode, Memo } from '$lib/types/memo';
 import { memosStore } from './memos.svelte';
+import { tagMetaStore } from './tagMeta.svelte';
 import { extractKeywords } from '$lib/utils/ai';
 
 const VIEW_MODE_KEY = 'memo-alarm-view-mode';
@@ -104,8 +105,11 @@ function createFilterStore() {
 	function getFilteredMemos(): Memo[] {
 		let result = [...memosStore.memos];
 
-		// Exclude todos (메모 페이지에서 할일 표시 방지)
-		result = result.filter((m) => m.memoType !== 'todo');
+		// Exclude todos (메모 페이지에서 할일 표시 방지) — 북마크 필터에서는 todo 포함
+		const bookmarkFilters: FilterType[] = ['pinned', 'favorites', 'bookmarked'];
+		if (!bookmarkFilters.includes(filter)) {
+			result = result.filter((m) => m.memoType !== 'todo');
+		}
 
 		// Filter by active status
 		if (!showInactive) {
@@ -122,6 +126,8 @@ function createFilterStore() {
 			result = result.filter((m) => m.isPinned);
 		} else if (filter === 'favorites') {
 			result = result.filter((m) => m.isFavorite);
+		} else if (filter === 'bookmarked') {
+			result = result.filter((m) => m.isPinned || m.isFavorite);
 		}
 
 		// Filter by search query (스마트 검색: 텍스트 매칭 + 키워드 매칭)
@@ -148,6 +154,13 @@ function createFilterStore() {
 
 				return false;
 			});
+		}
+
+		// 기본보기에서 alwaysVisible=false 전용 태그 메모 숨김
+		if (filter === 'all' && selectedTags.length === 0) {
+			result = result.filter((m) =>
+				m.tags.length === 0 || m.tags.some((t) => tagMetaStore.isTagVisible(t))
+			);
 		}
 
 		// Filter by selected tags (AND/OR mode)

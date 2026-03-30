@@ -3,7 +3,7 @@
 > 작성일: 2026-03-30
 > 대상 프로젝트: memo-alarm
 > 상태: 초안
-> 진행률: 0/18 (0%)
+> 진행률: 0/22 (0%)
 > 요약: 메모→할일 전환 시 북마크가 사라지는 문제 수정, 북마크 전용 필터 추가, 태그에 항상표시 속성을 도입하여 기본보기/필터보기 가시성 제어
 
 ---
@@ -36,59 +36,67 @@
 ### Phase 1: 타입 전환 시 북마크 가시성 수정
 
 1. - [ ] **대시보드 북마크 뷰에서 todo 제외 조건 완화**
-   - [ ] `src/routes/+page.svelte`: pinnedMemos 필터에서 `m.memoType !== 'todo'` 조건 제거
-   - [ ] `src/routes/+page.svelte`: favoriteMemos 필터에서 `m.memoType !== 'todo'` 조건 제거
+   - [ ] `src/routes/+page.svelte:52-56`: pinnedMemos의 `.filter((m) => m.isPinned && m.isActive && m.memoType !== 'todo')` → `m.memoType !== 'todo'` 조건 제거하여 `.filter((m) => m.isPinned && m.isActive)`로 변경
+   - [ ] `src/routes/+page.svelte:58-62`: favoriteMemos의 `.filter((m) => m.isFavorite && m.isActive && !m.isPinned && m.memoType !== 'todo')` → `m.memoType !== 'todo'` 조건 제거하여 `.filter((m) => m.isFavorite && m.isActive && !m.isPinned)`로 변경
 
-2. - [ ] **메모 페이지 필터에서 북마크 선택 시 todo 포함**
-   - [ ] `src/lib/stores/filter.svelte.ts`: `getFilteredMemos()`에서 `filter === 'pinned'` 또는 `filter === 'favorites'` 일 때 todo 제외 조건 스킵하도록 수정 (기본 'all'에서는 기존 유지)
+2. - [ ] **메모 페이지 필터에서 북마크/즐겨찾기 선택 시 todo 포함**
+   - [ ] `src/lib/stores/filter.svelte.ts:104-108`: `getFilteredMemos()` 상단의 하드코딩 `result = result.filter((m) => m.memoType !== 'todo')` 를 조건부로 변경 — `filter`가 `'pinned'`, `'favorites'`, `'bookmarked'` 중 하나이면 todo 제외 스킵, 그 외(`'all'`, `'archived'`)에서는 기존대로 todo 제외
 
 ### Phase 2: 북마크 필터 추가
 
-3. - [ ] **FilterType에 'bookmarked' 추가**
-   - [ ] `src/lib/types/memo.ts:185`: FilterType에 `'bookmarked'` 추가 → `'all' | 'pinned' | 'favorites' | 'bookmarked' | 'archived'`
+3. - [ ] **FilterType 확장**
+   - [ ] `src/lib/types/memo.ts:185`: `export type FilterType = 'all' | 'pinned' | 'favorites' | 'archived'` → `'all' | 'pinned' | 'favorites' | 'bookmarked' | 'archived'`로 변경
 
-4. - [ ] **필터 로직에 bookmarked 처리 추가**
-   - [ ] `src/lib/stores/filter.svelte.ts`: getFilteredMemos()에 `filter === 'bookmarked'` 분기 추가 — `m.isPinned || m.isFavorite` (todo 포함)
+4. - [ ] **필터 로직에 bookmarked 분기 추가**
+   - [ ] `src/lib/stores/filter.svelte.ts:121-125`: 기존 pinned/favorites 분기 뒤에 `else if (filter === 'bookmarked') { result = result.filter((m) => m.isPinned || m.isFavorite); }` 분기 추가
 
 5. - [ ] **FilterTabs UI에 북마크 탭 추가**
-   - [ ] `src/lib/components/layout/FilterTabs.svelte`: tabs 배열에 `{ id: 'bookmarked', label: '북마크', icon: Bookmark }` 추가, Bookmark 아이콘 import
+   - [ ] `src/lib/components/layout/FilterTabs.svelte:3`: import에 `Bookmark` 추가 — `import { Pin, Star, Bookmark, Grid, List, EyeOff, LayoutList } from 'lucide-svelte'`
+   - [ ] `src/lib/components/layout/FilterTabs.svelte:8-12`: tabs 배열에 `{ id: 'bookmarked', label: '북마크', icon: Bookmark }` 항목 추가 (favorites 뒤에)
 
 ### Phase 3: 태그 항상표시 속성 — 데이터 모델 & 저장소
 
 6. - [ ] **TagMeta 인터페이스 정의**
-   - [ ] `src/lib/types/memo.ts`: `TagMeta` 인터페이스 추가 (`name: string`, `alwaysVisible: boolean`)
+   - [ ] `src/lib/types/memo.ts`: Folder 인터페이스(line 1-8) 근처에 `export interface TagMeta { name: string; alwaysVisible: boolean; }` 추가
 
-7. - [ ] **태그 메타 저장소 생성**
-   - [ ] `src/lib/stores/tagMeta.svelte.ts`: 새 store 생성
-     - `tagMetaMap: Record<string, TagMeta>` 상태
-     - `getTagMeta(tag)` — 없으면 `{ name: tag, alwaysVisible: true }` 기본값 반환
-     - `setAlwaysVisible(tag, value)` — 토글
-     - `loadFromStorage()` / `saveToStorage()` — localStorage 'memo-alarm-tag-meta' 키 사용
-     - `isTagVisible(tag)` — alwaysVisible 여부 반환
+7. - [ ] **태그 메타 저장소 생성** — `settings.svelte.ts` 패턴 따름
+   - [ ] `src/lib/stores/tagMeta.svelte.ts`: 새 파일 생성. 구조:
+     - 상수: `const STORAGE_KEY = 'memo-alarm-tag-meta'`
+     - 상태: `let metaMap = $state<Record<string, TagMeta>>({})`, `let initialized = $state(false)`
+     - `loadFromStorage()` → `typeof window === 'undefined'` SSR 체크 + `try/catch` + `JSON.parse` + 기본값 `{}`
+     - `saveToStorage()` → `JSON.stringify(metaMap)` 저장
+     - `init()` → `if (initialized) return; metaMap = loadFromStorage(); initialized = true;`
+     - `getTagMeta(tag: string): TagMeta` → `metaMap[tag] ?? { name: tag, alwaysVisible: true }`
+     - `isTagVisible(tag: string): boolean` → `getTagMeta(tag).alwaysVisible`
+     - `setAlwaysVisible(tag: string, value: boolean): void` → `metaMap = { ...metaMap, [tag]: { name: tag, alwaysVisible: value } }; saveToStorage()`
+     - export: `getTagMeta`, `isTagVisible`, `setAlwaysVisible`, `init`, getter `metaMap`
 
 ### Phase 4: 태그 항상표시 — 필터 로직
 
-8. - [ ] **기본보기에서 alwaysVisible=false 태그 메모 숨김 처리**
-   - [ ] `src/lib/stores/filter.svelte.ts`: getFilteredMemos()에서 기본 보기(filter='all', 태그 선택 없음)일 때 — 메모의 모든 태그가 `alwaysVisible=false`이면 해당 메모 숨김. 하나라도 `alwaysVisible=true`인 태그가 있거나 태그가 없으면 표시
-   - [ ] `src/lib/stores/filter.svelte.ts`: 태그 필터 선택 시(`selectedTags.length > 0`)에는 alwaysVisible 무관하게 모든 메모 표시
+8. - [ ] **기본보기에서 alwaysVisible=false 전용 태그 메모 숨김**
+   - [ ] `src/lib/stores/filter.svelte.ts:1-3`: import에 `import { tagMetaStore } from './tagMeta.svelte'` 추가
+   - [ ] `src/lib/stores/filter.svelte.ts`: `getFilteredMemos()`에서 태그 필터 적용 전(line ~153 부근), `filter === 'all'` AND `selectedTags.length === 0` 일 때 추가 필터: `result = result.filter((m) => m.tags.length === 0 || m.tags.some((t) => tagMetaStore.isTagVisible(t)))` — 태그 없는 메모는 항상 표시, 태그 있는 메모는 하나라도 alwaysVisible인 태그가 있어야 표시
 
 ### Phase 5: 태그 항상표시 — UI
 
-9. - [ ] **TagFilter에 숨겨진 태그 표시 처리**
-   - [ ] `src/lib/components/memo/TagFilter.svelte`: alwaysVisible=false 태그는 반투명 스타일로 구분 표시 (EyeOff 아이콘 또는 opacity 50%)
+9. - [ ] **TagFilter에 숨겨진 태그 시각적 구분**
+   - [ ] `src/lib/components/memo/TagFilter.svelte:1-6`: import에 `import { tagMetaStore } from '$lib/stores/tagMeta.svelte'` 추가
+   - [ ] `src/lib/components/memo/TagFilter.svelte:16-27`: 각 태그 button의 기본 스타일에 `!tagMetaStore.isTagVisible(tag)` 조건 추가 — 비활성 태그는 `opacity-50` 클래스 추가 및 `EyeOff` 아이콘(이미 import됨→아님, `X`만 import됨) → `import { X, EyeOff } from 'lucide-svelte'`로 변경 후 비활성 태그 버튼 내에 `<EyeOff class="w-3 h-3 inline ml-0.5" />` 추가
 
-10. - [ ] **MemoForm 고급 속성에 태그 항상표시 토글 추가**
-    - [ ] `src/lib/components/memo/MemoForm.svelte`: 태그 목록(line 371-386) 내 각 태그 Badge 옆에 눈 아이콘(Eye/EyeOff) 토글 버튼 추가
-    - [ ] 토글 클릭 시 `tagMetaStore.setAlwaysVisible(tag, !current)` 호출
+10. - [ ] **MemoForm 태그 목록에 항상표시 토글 추가**
+    - [ ] `src/lib/components/memo/MemoForm.svelte:2`: import에 `Eye, EyeOff` 추가 — `import { X, Plus, Link, ListChecks, Sparkles, ArrowRightLeft, Lock, LockOpen, Eye, EyeOff } from 'lucide-svelte'`
+    - [ ] `src/lib/components/memo/MemoForm.svelte`: import 섹션에 `import { tagMetaStore } from '$lib/stores/tagMeta.svelte'` 추가
+    - [ ] `src/lib/components/memo/MemoForm.svelte:371-386`: 태그 Badge 내부, 삭제 버튼(`removeTag`) 앞에 눈 토글 버튼 추가 — `<button type="button" onclick={() => tagMetaStore.setAlwaysVisible(tag, !tagMetaStore.isTagVisible(tag))} class="ml-1 p-0.5 hover:bg-black/10 rounded-full" title={tagMetaStore.isTagVisible(tag) ? '기본보기에서 숨기기' : '기본보기에서 표시'}>{#if tagMetaStore.isTagVisible(tag)}<Eye class="w-3 h-3" />{:else}<EyeOff class="w-3 h-3 text-muted-foreground" />{/if}</button>`
 
-### Phase 6: 초기화 & 통합
+### Phase 6: 초기화 & 빌드 검증
 
 11. - [ ] **tagMeta store 초기화 연결**
-    - [ ] `src/routes/+layout.svelte`: onMount에서 `tagMetaStore.loadFromStorage()` 호출 추가
+    - [ ] `src/routes/+layout.svelte`: import 섹션에 `import { tagMetaStore } from '$lib/stores/tagMeta.svelte'` 추가
+    - [ ] `src/routes/+layout.svelte:105`: `foldersStore.init()` 뒤에 `tagMetaStore.init()` 호출 추가
 
 12. - [ ] **빌드 검증**
-    - [ ] `npm run build` 성공 확인
+    - [ ] `npm run build` 실행하여 타입 에러 없이 성공 확인
 
 ---
 
-*상태: 초안 | 진행률: 0/18 (0%)*
+*상태: 초안 | 진행률: 0/22 (0%)*
