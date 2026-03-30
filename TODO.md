@@ -11,7 +11,7 @@
 
 ## Pending
 
-*현재 없음*
+- [ ] **북마크 가시성 & 필터 & 태그 항상표시** — [plan](docs/plan/2026-03-30_bookmark-visibility-filter.md) (0/18, 0%)
 
 ---
 
