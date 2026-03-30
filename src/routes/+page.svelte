@@ -51,13 +51,13 @@
 	// 대시보드용 메모 분류
 	const pinnedMemos = $derived(
 		memosStore.memos
-			.filter((m) => m.isPinned && m.isActive && m.memoType !== 'todo')
+			.filter((m) => m.isPinned && m.isActive)
 			.slice(0, MAX_ITEMS_PER_SECTION)
 	);
 
 	const favoriteMemos = $derived(
 		memosStore.memos
-			.filter((m) => m.isFavorite && m.isActive && !m.isPinned && m.memoType !== 'todo')
+			.filter((m) => m.isFavorite && m.isActive && !m.isPinned)
 			.slice(0, MAX_ITEMS_PER_SECTION)
 	);
 

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { cn } from '$utils';
-	import { Pin, Star, Grid, List, EyeOff, LayoutList } from 'lucide-svelte';
+	import { Pin, Star, Bookmark, Grid, List, EyeOff, LayoutList } from 'lucide-svelte';
 	import { filterStore } from '$stores/filter.svelte';
 	import SortDropdown from './SortDropdown.svelte';
 	import type { FilterType } from '$types/memo';
@@ -8,7 +8,8 @@
 	const tabs: { id: FilterType; label: string; icon?: typeof Pin }[] = [
 		{ id: 'all', label: '전체' },
 		{ id: 'pinned', label: '핀', icon: Pin },
-		{ id: 'favorites', label: '즐겨찾기', icon: Star }
+		{ id: 'favorites', label: '즐겨찾기', icon: Star },
+		{ id: 'bookmarked', label: '북마크', icon: Bookmark }
 	];
 
 	const currentFilter = $derived(filterStore.filter);

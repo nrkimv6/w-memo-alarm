@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { X, Plus, Link, ListChecks, Sparkles, ArrowRightLeft, Lock, LockOpen } from 'lucide-svelte';
+	import { X, Plus, Link, ListChecks, Sparkles, ArrowRightLeft, Lock, LockOpen, Eye, EyeOff } from 'lucide-svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Textarea from '$lib/components/ui/Textarea.svelte';
@@ -17,6 +17,7 @@
 	import { memosStore } from '$lib/stores/memos.svelte';
 	import { foldersStore } from '$lib/stores/folders.svelte';
 	import { toastStore } from '$lib/stores/toast.svelte';
+	import { tagMetaStore } from '$lib/stores/tagMeta.svelte';
 	import { settingsStore } from '$lib/stores/settings.svelte';
 	import { suggestTags } from '$lib/utils/ai';
 	import { hasPinSet } from '$lib/utils/memoPinLock';
@@ -373,6 +374,18 @@
 					{#each tags as tag}
 						<Badge variant="sketchy" class="pr-1">
 							{tag}
+							<button
+								type="button"
+								onclick={() => tagMetaStore.setAlwaysVisible(tag, !tagMetaStore.isTagVisible(tag))}
+								class="ml-1 p-0.5 hover:bg-black/10 rounded-full"
+								title={tagMetaStore.isTagVisible(tag) ? '기본보기에서 숨기기' : '기본보기에서 표시'}
+							>
+								{#if tagMetaStore.isTagVisible(tag)}
+									<Eye class="w-3 h-3" />
+								{:else}
+									<EyeOff class="w-3 h-3 text-muted-foreground" />
+								{/if}
+							</button>
 							<button
 								type="button"
 								onclick={() => removeTag(tag)}
