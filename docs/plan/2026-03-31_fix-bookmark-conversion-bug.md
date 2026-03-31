@@ -3,7 +3,7 @@
 > 작성일: 2026-03-31
 > 대상 프로젝트: memo-alarm
 > 상태: 초안
-> 진행률: 0/7 (0%)
+> 진행률: 0/14 (0%)
 > 요약: 메모에 북마크(isPinned/isFavorite)를 추가하고 할일로 전환하면 북마크가 사라지는 버그 수정. Race condition으로 인한 데이터 소실 방지 + TodoCard에 북마크 인디케이터 추가
 
 ---
@@ -41,29 +41,40 @@
 ### Phase 1: convertMemoToTodo/convertTodoToMemo 북마크 명시 전달
 
 1. - [ ] **convertMemoToTodo에 북마크 필드 추가** — race condition 방지
-   - [ ] `src/lib/stores/memos.svelte.ts:1133-1136`: `update()` 호출에 `isPinned: memo.isPinned, isFavorite: memo.isFavorite` 추가
+   - [ ] `src/lib/stores/memos.svelte.ts:1133-1136`: `update()` 호출의 객체에 `isPinned: memo.isPinned, isFavorite: memo.isFavorite` 2줄 추가. before: `{ memoType: 'todo', todoStatus: 'pending' }` → after: `{ memoType: 'todo', todoStatus: 'pending', isPinned: memo.isPinned, isFavorite: memo.isFavorite }`
 
 2. - [ ] **convertTodoToMemo에 북마크 필드 추가** — 대칭성 보장
-   - [ ] `src/lib/stores/memos.svelte.ts:1153-1164`: `update()` 호출에 `isPinned: todo.isPinned, isFavorite: todo.isFavorite` 추가
+   - [ ] `src/lib/stores/memos.svelte.ts:1153-1164`: `update()` 호출의 객체에 `isPinned: todo.isPinned, isFavorite: todo.isFavorite` 2줄 추가. 기존 `memoType: 'note'` 등과 함께 전달
+
+### Phase R: 재발 경로 분석 (fix: plan 필수)
+
+3. - [ ] **수정 대상의 모든 호출/참조 경로 열거**
+   - [ ] Grep으로 `convertMemoToTodo`/`convertTodoToMemo` 호출처 검색 (현재 3곳: `MemoDetailModal.svelte:146`, `MemoForm.svelte:266`, `TodoForm.svelte:396`)
+   - [ ] 각 호출 경로별 "이 경로에서 동일 버그가 발생할 수 있는가?" 판정
+   - [ ] 방어됨/미방어 증명을 표로 작성 (경로 | 방어여부 | 근거)
+
+4. - [ ] **미방어 경로 수정**
+   - [ ] 미방어 경로가 있으면 해당 경로에 방어 코드 추가
+   - [ ] 모든 경로 방어 완료 확인 ("전체 방어 완료" 명시)
 
 ### Phase 2: TodoCard 북마크 인디케이터 추가
 
-3. - [ ] **TodoCard에 Pin/Star import 추가**
-   - [ ] `src/lib/components/todo/TodoCard.svelte:2`: lucide-svelte import에 `Pin`, `Star` 추가
+5. - [ ] **TodoCard에 Pin/Star import 추가**
+   - [ ] `src/lib/components/todo/TodoCard.svelte:2`: lucide-svelte import 변경. before: `import { Calendar, Repeat, ChevronDown, ChevronUp, Paperclip } from "lucide-svelte"` → after: `import { Calendar, Repeat, ChevronDown, ChevronUp, Paperclip, Pin, Star } from "lucide-svelte"`
 
-4. - [ ] **TodoCard에 핀 배지 표시** — MemoCard:111-114 패턴 참고
-   - [ ] `src/lib/components/todo/TodoCard.svelte`: 카드 root `<div>` 직후에 `{#if todo.isPinned}` 핀 배지 추가 (absolute position, -top-2 -right-2)
-   - [ ] `src/lib/components/todo/TodoCard.svelte:106`: 카드 root div class에 `todo.isPinned ? 'memo-card-pinned' : ''` 조건 추가
+6. - [ ] **TodoCard에 핀 배지 표시** — MemoCard:111-114 패턴 복제
+   - [ ] `src/lib/components/todo/TodoCard.svelte:112`: `<div class="flex items-start gap-3">` 직전(line 112과 113 사이)에 핀 배지 블록 삽입: `{#if todo.isPinned}<div class="absolute -top-2 -right-2 w-7 h-7 bg-secondary rounded-full flex items-center justify-center shadow-md z-10"><Pin class="w-3.5 h-3.5 text-white fill-white" /></div>{/if}`
+   - [ ] `src/lib/components/todo/TodoCard.svelte:106`: 카드 root div의 class 문자열 끝에 `{todo.isPinned ? 'memo-card-pinned' : ''}` 조건부 클래스 추가
 
-5. - [ ] **TodoCard에 즐겨찾기 별 표시** — MemoCard:158-159 패턴 참고
-   - [ ] `src/lib/components/todo/TodoCard.svelte`: title 영역(`h3` 부근)에 `{#if todo.isFavorite}` Star 아이콘 추가
+7. - [ ] **TodoCard에 즐겨찾기 별 표시** — MemoCard:158-159 패턴 참고
+   - [ ] `src/lib/components/todo/TodoCard.svelte:159-168`: Priority Badge 영역(`{#if todo.todoPriority ...}`) 직전에 `{#if todo.isFavorite}<Star class="w-4 h-4 text-warning fill-warning flex-shrink-0" />{/if}` 삽입
 
 ### Phase 3: 빌드 검증
 
-6. - [ ] **타입 체크 및 빌드 확인**
+8. - [ ] **타입 체크 및 빌드 확인**
    - [ ] `npm run build` 에러 없이 성공 확인
 
-7. - [ ] **시나리오 검증 체크리스트** (수동)
+9. - [ ] **시나리오 검증 체크리스트** (수동)
    - [ ] 메모에 핀 추가 → 할일 전환 → TodoCard에 핀 배지 표시
    - [ ] 메모에 즐겨찾기 추가 → 할일 전환 → TodoCard에 별 아이콘 표시
    - [ ] 핀 추가된 할일 → 메모 전환 → MemoCard에 핀 유지
@@ -71,4 +82,4 @@
 
 ---
 
-*상태: 초안 | 진행률: 0/7 (0%)*
+*상태: 초안 | 진행률: 0/14 (0%)*
