@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.6] - 2026-03-31
+
+### Fixed
+
+- 메모→할일 전환 시 북마크(isPinned/isFavorite) 소실 방지 — race condition에서도 북마크 명시 전달
+- TodoCard에 핀 배지 및 즐겨찾기 별 아이콘 표시 추가
+
 ## [0.6.5] - 2026-03-30
 
 ### Fixed

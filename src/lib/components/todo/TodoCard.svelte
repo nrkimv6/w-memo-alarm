@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Calendar, Repeat, ChevronDown, ChevronUp, Paperclip } from "lucide-svelte";
+	import { Calendar, Repeat, ChevronDown, ChevronUp, Paperclip, Pin, Star } from "lucide-svelte";
 	import type { Memo } from "$lib/types/memo";
 	import { memosStore } from "$lib/stores/memos.svelte";
 	import {
@@ -108,8 +108,14 @@
 		? 'bg-destructive/5 border-destructive/30'
 		: ''} {completed ? 'opacity-50' : ''} {isSelected
 		? 'ring-2 ring-primary border-primary bg-primary/5'
-		: ''}"
+		: ''} {todo.isPinned ? 'memo-card-pinned' : ''}"
 >
+	<!-- Pin indicator -->
+	{#if todo.isPinned}
+		<div class="absolute -top-2 -right-2 w-7 h-7 bg-secondary rounded-full flex items-center justify-center shadow-md z-10">
+			<Pin class="w-3.5 h-3.5 text-white fill-white" />
+		</div>
+	{/if}
 	<div class="flex items-start gap-3">
 		<!-- Checkbox -->
 		{#if isMultiSelectMode}
@@ -155,6 +161,11 @@
 						</p>
 					{/if}
 				</button>
+
+				<!-- Favorite indicator -->
+				{#if todo.isFavorite}
+					<Star class="w-4 h-4 text-warning fill-warning flex-shrink-0" />
+				{/if}
 
 				<!-- Priority Badge -->
 				{#if todo.todoPriority && !completed && todo.todoPriority !== "none"}

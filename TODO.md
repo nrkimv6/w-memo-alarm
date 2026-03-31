@@ -12,6 +12,7 @@
 ## Pending
 
 - [ ] **북마크 필터에서 할일 카드 렌더링 개선** — [plan](docs/plan/2026-03-30_bookmark-filter-todo-card.md) (0/6, 0%)
+- [ ] **fire-and-forget update() race condition 방지** — [plan](docs/plan/2026-03-31_fire-and-forget-update-race.md) (0/3, 0%)
 
 ---
 
