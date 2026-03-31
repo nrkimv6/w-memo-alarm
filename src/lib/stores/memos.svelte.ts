@@ -1133,6 +1133,14 @@ function createMemosStore() {
 		const result = await update(memoId, {
 			memoType: 'todo',
 			todoStatus: 'pending',
+			todoPriority: 'medium',
+			todoTiming: {
+				useGlobalRemind: true,
+				remindTimes: [],
+				useGlobalAutoAlert: true,
+				alertTimes: [],
+				showOverdue: true
+			},
 			isPinned: memo.isPinned,
 			isFavorite: memo.isFavorite
 		});

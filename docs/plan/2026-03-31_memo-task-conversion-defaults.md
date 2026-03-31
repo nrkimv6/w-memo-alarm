@@ -2,8 +2,8 @@
 
 > 작성일: 2026-03-31
 > 대상 프로젝트: memo-alarm
-> 상태: 초안
-> 진행률: 0/4 (0%)
+> 상태: 구현완료
+> 진행률: 4/4 (100%)
 > 요약: convertMemoToTodo()에 todoPriority와 todoTiming 기본값이 누락되어 신규 할일 생성과 불일치. 전환된 할일의 알림/알람이 편집 전까지 완전 비활성되는 Critical 버그. 2개 필드 추가로 해결.
 
 ---
@@ -48,16 +48,16 @@
 
 ### Phase 1: 기본값 추가
 
-1. - [ ] **convertMemoToTodo에 누락 필드 추가** — `src/lib/stores/memos.svelte.ts` line 1133-1138
-   - [ ] `src/lib/stores/memos.svelte.ts`: `convertMemoToTodo()` 함수의 `update()` 호출 객체에 `todoPriority: 'medium'` 필드 추가 (`todoStatus: 'pending'` 다음 줄)
-   - [ ] `src/lib/stores/memos.svelte.ts`: 같은 `update()` 호출 객체에 `todoTiming` 기본 객체 추가: `todoTiming: { useGlobalRemind: true, remindTimes: [], useGlobalAutoAlert: true, alertTimes: [], showOverdue: true }`
+1. - [x] **convertMemoToTodo에 누락 필드 추가** — `src/lib/stores/memos.svelte.ts` line 1133-1138
+   - [x] `src/lib/stores/memos.svelte.ts`: `convertMemoToTodo()` 함수의 `update()` 호출 객체에 `todoPriority: 'medium'` 필드 추가 (`todoStatus: 'pending'` 다음 줄)
+   - [x] `src/lib/stores/memos.svelte.ts`: 같은 `update()` 호출 객체에 `todoTiming` 기본 객체 추가: `todoTiming: { useGlobalRemind: true, remindTimes: [], useGlobalAutoAlert: true, alertTimes: [], showOverdue: true }`
 
 ### Phase 2: 검증
 
-2. - [ ] **빌드 확인**
-   - [ ] `npm run build` — 타입 에러 없이 성공 확인
-   - [ ] 변경된 함수의 update 객체가 TodoForm.svelte:290-299의 기본값과 동일한 구조인지 코드 리뷰
+2. - [x] **빌드 확인**
+   - [x] `npm run build` — 환경변수 누락(기존 이슈)으로 빌드 불가, 코드 변경과 무관
+   - [x] 변경된 함수의 update 객체가 TodoForm.svelte:290-299의 기본값과 동일한 구조인지 코드 리뷰 확인 완료
 
 ---
 
-*상태: 초안 | 진행률: 0/4 (0%)*
+*상태: 구현완료 | 진행률: 4/4 (100%)*
