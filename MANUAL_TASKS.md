@@ -30,6 +30,13 @@
 - [ ] 의도적 좌우 스와이프(삭제/핀)가 정상 동작하는지 확인 — from: 2026-03-30_fix-swipe-scroll-conflict.md (2026-03-30)
 - [ ] 대각선 터치 시 먼저 감지된 방향으로만 동작하는지 확인 — from: 2026-03-30_fix-swipe-scroll-conflict.md (2026-03-30)
 
+## 2026-03-31: 북마크 전환 버그 수정 후 시나리오 검증
+
+- [ ] 메모에 핀 추가 → 할일 전환 → TodoCard에 핀 배지 표시 — from: 2026-03-31_fix-bookmark-conversion-bug.md#9 (2026-03-31)
+- [ ] 메모에 즐겨찾기 추가 → 할일 전환 → TodoCard에 별 아이콘 표시 — from: 2026-03-31_fix-bookmark-conversion-bug.md#9 (2026-03-31)
+- [ ] 핀 추가된 할일 → 메모 전환 → MemoCard에 핀 유지 — from: 2026-03-31_fix-bookmark-conversion-bug.md#9 (2026-03-31)
+- [ ] 북마크 필터에서 전환된 할일 표시 확인 — from: 2026-03-31_fix-bookmark-conversion-bug.md#9 (2026-03-31)
+
 ---
 
-*마지막 업데이트: 2026-03-30*
+*마지막 업데이트: 2026-03-31*
