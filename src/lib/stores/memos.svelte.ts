@@ -1132,7 +1132,9 @@ function createMemosStore() {
 
 		const result = await update(memoId, {
 			memoType: 'todo',
-			todoStatus: 'pending'
+			todoStatus: 'pending',
+			isPinned: memo.isPinned,
+			isFavorite: memo.isFavorite
 		});
 
 		if (result) {
@@ -1160,7 +1162,9 @@ function createMemosStore() {
 			recurrence: undefined,
 			todoInstances: undefined,
 			postponeInfo: undefined,
-			todoGroupId: undefined
+			todoGroupId: undefined,
+			isPinned: todo.isPinned,
+			isFavorite: todo.isFavorite
 		});
 
 		if (result) {
