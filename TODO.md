@@ -13,6 +13,7 @@
 
 - [ ] **북마크 필터에서 할일 카드 렌더링 개선** — [plan](docs/plan/2026-03-30_bookmark-filter-todo-card.md) (0/6, 0%)
 - [ ] **fire-and-forget update() race condition 방지** — [plan](docs/plan/2026-03-31_fire-and-forget-update-race.md) (0/3, 0%)
+- [ ] **메모→할일 전환 시 기본값 불일치 수정** — [plan](docs/plan/2026-03-31_memo-task-conversion-defaults.md) (0/3, 0%)
 
 ---
 
