@@ -11,6 +11,7 @@
 
 ## Pending
 
+- [ ] **북마크 전환 버그 수정 (isPinned/isFavorite 소실 방지)** — [plan](docs/plan/2026-03-31_fix-bookmark-conversion-bug.md) (0/7, 0%)
 - [ ] **북마크 필터에서 할일 카드 렌더링 개선** — [plan](docs/plan/2026-03-30_bookmark-filter-todo-card.md) (0/6, 0%)
 
 ---
