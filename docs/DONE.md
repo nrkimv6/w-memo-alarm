@@ -1,14 +1,9 @@
 # memo-alarm - 완료된 작업
 
+> 이전 기록: [DONE-2026-03.md](archive/DONE-2026-03.md)
+
+- [x] 2026-03-31: 메모→할일 전환 시 기본값 불일치 수정 — [archive](archive/2026-03-31_memo-task-conversion-defaults.md)
 - [x] 2026-03-31: 북마크 전환 버그 수정 (3개 경로 방어 완료) — [archive](archive/2026-03-31_fix-bookmark-conversion-bug.md)
 - [x] 2026-03-30: 북마크 가시성 유지, 북마크 필터 추가, 태그 항상표시 속성 구현 — [archive](archive/2026-03-30_bookmark-visibility-filter.md)
 - [x] 2026-03-30: 상하 스크롤 시 좌우 스와이프 오동작 방지 (direction lock) — [archive](archive/2026-03-30_fix-swipe-scroll-conflict.md)
 - [x] 2026-03-10: 메모 수정 시 null.id TypeError 수정 — [archive](archive/2026-03-10_fix-memo-edit-null-crash.md)
-- [x] 2026-03-10: 새메모 버튼 TypeError + 설정 네비게이션 수정 — [archive](archive/2026-03-10_fix-new-memo-and-settings-nav.md)
-- [x] 2026-02-27: 메모 수정 버튼 클릭 시 crash 수정 (reminder.days undefined) — [archive](archive/2026-02-27_fix-memo-edit-crash.md)
-- [x] 2026-03-05: 메모 수정 시 undefined tags 크래시 수정 — [archive](archive/2026-02-27_fix-memo-edit-undefined-tags.md)
-- [x] 2026-02-27: Memo Alarm - 미래 개선 아이디어
-- [x] 완료 — [archive](archive/2026-02-04_idea_future-features.md)
-- [x] 완료 — [archive](archive/2026-02-12_quick-add-fab.md)
-- [x] 완료 — [수정 보고서](plan/2026-02-04_fix-report-android-pwa-notification-click.md)
-- [x] 완료 — [archive](archive/2026-02-04_followup-plan-notification-issues.md)
