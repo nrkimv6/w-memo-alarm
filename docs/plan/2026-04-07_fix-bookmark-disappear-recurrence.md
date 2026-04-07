@@ -37,6 +37,11 @@
 **3. `convertTodoToMemo` 누락 필드**
 `dueDate`, `todoUrls`, `autoPung`, `pungDelay` 가 cleanup 대상에서 빠져있음.
 
+### 흡수된 선행 plan
+
+- `docs/archive/2026-03-31_fix-todo-to-memo-field-cleanup.md` — Phase 2가 동일 cleanup. 단, 매퍼 미수정으로 실제 동작 안 함을 본 plan Phase 1로 보강.
+- `docs/archive/2026-03-31_fire-and-forget-update-race.md` — Phase 4 PGRST116 재시도 동일 + Phase 3 per-memo 큐로 근본 해결 강화.
+
 ### 의도된 결과
 
 - 메모↔할일 전환 시 race condition으로 인한 롤백 제거
@@ -107,6 +112,7 @@
 10. - [ ] **수동 시나리오: race condition 회귀 방지**
     - [ ] 핀 토글 → 즉시 할일 전환 (1초 이내) → 두 변경 모두 반영 확인
     - [ ] 메모 상세 모달 열고 즉시 전환 → 전환 성공 확인 (이전엔 `addOpenHistory`와 경합)
+    - [ ] 체크리스트 토글 → 즉시 메모 저장(MemoForm) → 체크리스트 상태와 저장 내용 모두 보존 확인 (`toggleChecklistItem` fire-and-forget 회귀)
 
 ---
 
