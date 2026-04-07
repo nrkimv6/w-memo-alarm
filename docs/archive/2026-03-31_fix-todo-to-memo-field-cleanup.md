@@ -1,8 +1,11 @@
 # 할일→메모 전환 시 할일 전용 필드 클리어 누락 수정
 
+> ⚠️ **SUPERSEDED by [2026-04-07_fix-bookmark-disappear-recurrence.md](../plan/2026-04-07_fix-bookmark-disappear-recurrence.md)**
+> cleanup 필드만 추가했으나 `memoToSupabase()`가 `undefined`를 스킵하여 DB에 실제 적용되지 않음. 04-07 plan에서 매퍼 수정 + cleanup을 함께 처리.
+>
 > 작성일: 2026-03-31
 > 대상 프로젝트: memo-alarm
-> 상태: 초안
+> 상태: superseded
 > 진행률: 0/3 (0%)
 > 요약: convertTodoToMemo()에서 dueDate, todoUrls, autoPung, pungDelay를 클리어하지 않아 메모로 전환 후에도 할일 전용 데이터가 잔존. /review에서 자동 생성.
 > 출처: /review에서 자동 생성

@@ -1,8 +1,11 @@
 # fire-and-forget update() 호출의 잠재적 race condition 방지
 
+> ⚠️ **SUPERSEDED by [2026-04-07_fix-bookmark-disappear-recurrence.md](../plan/2026-04-07_fix-bookmark-disappear-recurrence.md)**
+> PGRST116 단건 재시도 + per-memo 큐로 근본 해결을 04-07 plan에 통합. 체크리스트 토글 회귀 시나리오도 흡수.
+>
 > 작성일: 2026-03-31
 > 대상 프로젝트: memo-alarm
-> 상태: 초안
+> 상태: superseded
 > 진행률: 0/3 (0%)
 > 요약: memos store에서 `update()`를 await 없이 호출하는 6개 함수가 다른 awaited update와 동시 호출 시 version conflict를 일으킬 수 있음. 북마크 전환 버그(v0.6.6)와 동일 패턴.
 > 출처: /reflect에서 자동 생성

@@ -124,7 +124,11 @@ export async function importFullBackup(
 			if (existing) {
 				// Compare updatedAt and keep newer
 				if (memo.updatedAt > existing.updatedAt) {
-					memosStore.update(memo.id, memo);
+					// undefined 키 제거: Phase 1 매퍼 변경으로 undefined→null 전송 방지 (기존 DB 값 보호)
+					const cleaned = Object.fromEntries(
+						Object.entries(memo).filter(([, v]) => v !== undefined)
+					) as typeof memo;
+					memosStore.update(memo.id, cleaned);
 					importedMemos++;
 				} else {
 					skippedMemos++;

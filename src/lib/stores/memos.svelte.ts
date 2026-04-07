@@ -115,6 +115,8 @@ function createMemosStore() {
 	let syncingFromServer = $state(false);
 	let subscription: RealtimeChannel | null = null;
 	let reinitPromise: Promise<void> | null = null; // reinit() 동시 호출 대기용
+	// Per-memo 직렬화 큐: 동일 메모에 대한 update() 호출을 직렬화하여 race condition 방지
+	const pendingUpdates = new Map<string, Promise<Memo | null>>();
 
 	// 인증 상태 변경 시 강제 재초기화 (로그인 후 메모 로드용)
 	async function reinit() {
@@ -503,10 +505,28 @@ function createMemosStore() {
 	}
 
 	async function update(id: string, changes: MemoUpdate, options?: { silent?: boolean }): Promise<Memo | null> {
+		// Per-memo 큐: 이전 update() 완료 후 실행하여 version 경합 방지
+		const pending = pendingUpdates.get(id);
+		if (pending) {
+			await pending.catch(() => {}); // 이전 업데이트 완료 대기 (실패 무시)
+		}
+
+		const promise = _doUpdate(id, changes, options);
+		pendingUpdates.set(id, promise);
+		try {
+			return await promise;
+		} finally {
+			if (pendingUpdates.get(id) === promise) {
+				pendingUpdates.delete(id);
+			}
+		}
+	}
+
+	async function _doUpdate(id: string, changes: MemoUpdate, options?: { silent?: boolean }): Promise<Memo | null> {
 		const index = memos.findIndex((m) => m.id === id);
 		if (index === -1) return null;
 
-		const originalMemo = memos[index];
+		let originalMemo = memos[index]; // let: 큐 대기 후 재조회 위해 재할당 가능
 
 		// 1. 즉시 로컬에서 업데이트 (낙관적 업데이트)
 		const optimisticUpdate: Memo = {
@@ -534,6 +554,11 @@ function createMemosStore() {
 		// 2. 백그라운드에서 서버 동기화
 		const updateData = memoToSupabase(changes);
 
+		// 빈 업데이트 차단: 매핑되지 않은 필드만 있을 경우(예: openHistory) Supabase 호출 스킵
+		if (Object.keys(updateData).length === 0) {
+			return optimisticUpdate;
+		}
+
 		const { data, error } = await supabase
 			.from('ma_memos')
 			.update(updateData)
@@ -544,7 +569,51 @@ function createMemosStore() {
 
 		if (error) {
 			if (error.code === 'PGRST116') {
-				// 버전 불일치 → 충돌! 서버 데이터로 롤백
+				// 버전 불일치 → 충돌 감지
+				// 크로스 디바이스 가드: updated_at 차이가 5초 이상이면 다른 기기의 변경으로 판단
+				const { data: freshRow } = await supabase
+					.from('ma_memos')
+					.select('version, updated_at')
+					.eq('id', id)
+					.single();
+
+				const isCrossDevice = freshRow &&
+					freshRow.updated_at &&
+					originalMemo.updatedAt &&
+					(new Date(freshRow.updated_at).getTime() - originalMemo.updatedAt) > 5000;
+
+				if (isCrossDevice) {
+					// 크로스 디바이스 충돌: 자동 덮어쓰기 금지, 사용자에게 알리고 폴백
+					if (!options?.silent) {
+						toastStore.warning('다른 기기에서 수정됨. 최신 데이터로 새로고침합니다.');
+					}
+					await fetchFromSupabase();
+					return null;
+				}
+
+				// 동일 세션 race condition으로 판단 → 단 1회 재시도
+				if (freshRow) {
+					const { data: retryData, error: retryError } = await supabase
+						.from('ma_memos')
+						.update(updateData)
+						.eq('id', id)
+						.eq('version', freshRow.version)
+						.select()
+						.single();
+
+					if (!retryError && retryData) {
+						const retryResult = supabaseToMemo(retryData);
+						retryResult.syncStatus = 'synced';
+						const retryIndex = memos.findIndex((m) => m.id === id);
+						if (retryIndex !== -1) {
+							memos = [...memos.slice(0, retryIndex), retryResult, ...memos.slice(retryIndex + 1)];
+							saveCacheToStorage(memos);
+						}
+						return retryResult;
+					}
+				}
+
+				// 재시도 실패 시 폴백
 				if (!options?.silent) {
 					toastStore.warning('다른 기기에서 수정됨. 최신 데이터로 새로고침합니다.');
 				}
@@ -1164,6 +1233,7 @@ function createMemosStore() {
 			memoType: 'note',
 			todoStatus: undefined,
 			todoPriority: undefined,
+			dueDate: undefined,
 			dueTime: undefined,
 			todoTiming: undefined,
 			completedAt: undefined,
@@ -1171,6 +1241,9 @@ function createMemosStore() {
 			todoInstances: undefined,
 			postponeInfo: undefined,
 			todoGroupId: undefined,
+			todoUrls: undefined,
+			autoPung: undefined,
+			pungDelay: undefined,
 			isPinned: todo.isPinned,
 			isFavorite: todo.isFavorite
 		});

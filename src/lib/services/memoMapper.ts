@@ -100,9 +100,13 @@ export function supabaseToMemo(row: SupabaseMemoRow): Memo {
 
 export function memoToSupabase(memo: Partial<Memo>): Record<string, unknown> {
 	const result: Record<string, unknown> = {};
+	const memoRecord = memo as Record<string, unknown>;
 	for (const { memo: key, db, toDb } of MEMO_FIELD_MAPPINGS) {
-		const val = (memo as Record<string, unknown>)[key];
-		if (val !== undefined) {
+		if (!(key in memoRecord)) continue; // 필드 부재 → 스킵
+		const val = memoRecord[key];
+		if (val === undefined) {
+			result[db] = null; // 명시적 undefined → DB에 null 전송
+		} else {
 			result[db] = toDb ? toDb(val) : val;
 		}
 	}
