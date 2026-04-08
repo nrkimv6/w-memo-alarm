@@ -131,8 +131,6 @@ export interface Memo {
 	reminders?: Reminder[]; // 다중 알림 지원
 	// Phase 7: 폴더
 	folderId?: string;
-	// Phase 8: 열람 이력
-	openHistory?: number[];
 	// Phase 12: 체크리스트 & 태스크
 	memoType?: MemoType;
 	checklist?: ChecklistItem[];
@@ -170,7 +168,7 @@ export interface Memo {
 	lockHint?: string; // 힌트 (선택)
 }
 
-export type MemoCreate = Omit<Memo, 'id' | 'createdAt' | 'updatedAt' | 'isPinned' | 'isFavorite' | 'isActive' | 'openCount' | 'openHistory'>;
+export type MemoCreate = Omit<Memo, 'id' | 'createdAt' | 'updatedAt' | 'isPinned' | 'isFavorite' | 'isActive' | 'openCount'>;
 
 export type MemoUpdate = Partial<Omit<Memo, 'id' | 'createdAt'>>;
 

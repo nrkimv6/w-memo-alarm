@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.8] - 2026-04-09
+
+### Fixed
+
+- `addOpenHistory()` dead code 제거 — DB 매핑 없이 로컬 state만 업데이트하던 열람 이력 기능 삭제 (새로고침 시 소실되는 혼란 해소)
+- `openHistory?: number[]` 타입 정의 및 `MemoCreate` Omit 항목 제거
+- `MemoDetailModal.svelte`에서 `Clock` import, 열람 이력 UI 블록, `addOpenHistory` 호출 제거
+
 ## [0.6.7] - 2026-03-31
 
 ### Fixed

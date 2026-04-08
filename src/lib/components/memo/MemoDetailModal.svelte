@@ -7,7 +7,6 @@
 		Pin,
 		Star,
 		ExternalLink,
-		Clock,
 		Calendar,
 		Eye,
 		Bell,
@@ -151,7 +150,6 @@
 	function handleUrlClick() {
 		if (memo) {
 			memosStore.incrementOpenCount(memo.id);
-			memosStore.addOpenHistory(memo.id);
 		}
 	}
 
@@ -392,16 +390,7 @@
 					{/if}
 				{/if}
 
-				<!-- Open history -->
-				{#if memo.openHistory && memo.openHistory.length > 0}
-					<div class="flex items-center gap-2 text-muted-foreground col-span-2">
-						<Clock class="w-4 h-4" />
-						<span>최근 열람: {formatRelativeTime(memo.openHistory[0])}</span>
-						{#if memo.openHistory.length > 1}
-							<span class="text-xs">({memo.openHistory.length}회</span>
-						{/if}
-					</div>
-				{/if}
+
 			</div>
 		</div>
 		{/if}

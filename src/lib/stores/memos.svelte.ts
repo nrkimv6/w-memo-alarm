@@ -554,7 +554,7 @@ function createMemosStore() {
 		// 2. 백그라운드에서 서버 동기화
 		const updateData = memoToSupabase(changes);
 
-		// 빈 업데이트 차단: 매핑되지 않은 필드만 있을 경우(예: openHistory) Supabase 호출 스킵
+		// 빈 업데이트 차단: 매핑되지 않은 필드만 있을 경우 Supabase 호출 스킵
 		if (Object.keys(updateData).length === 0) {
 			return optimisticUpdate;
 		}
@@ -759,16 +759,6 @@ function createMemosStore() {
 
 	function setFolder(id: string, folderId: string | undefined): void {
 		update(id, { folderId });
-	}
-
-	function addOpenHistory(id: string): void {
-		const memo = memos.find((m) => m.id === id);
-		if (memo) {
-			const history = memo.openHistory || [];
-			const newHistory = [Date.now(), ...history].slice(0, 10);
-			// 열람 이력은 중요하지 않으므로 silent 모드로 업데이트
-			update(id, { openHistory: newHistory }, { silent: true });
-		}
 	}
 
 	function incrementOpenCount(id: string): void {
@@ -1289,7 +1279,6 @@ function createMemosStore() {
 		toggleFavorite,
 		toggleActive,
 		setFolder,
-		addOpenHistory,
 		incrementOpenCount,
 		getById,
 		toggleChecklistItem,
