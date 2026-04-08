@@ -2,8 +2,10 @@
 
 > 작성일: 2026-04-07
 > 대상 프로젝트: memo-alarm
-> 상태: 초안
-> 진행률: 0/0 (0%)
+> 상태: 검토대기
+> branch: plan/2026-04-07_fix-openhistory-dead-code
+> worktree: .worktrees/2026-04-07_fix-openhistory-dead-code
+> 진행률: 0/5 (0%)
 > 출처: /reflect에서 자동 생성
 > 요약: addOpenHistory()가 로컬 state만 업데이트하고 DB에 저장되지 않음. Phase 5(빈 업데이트 차단)로 PGRST116 부작용은 제거됐으나, "최근 열람" UI가 새로고침 시 소실되는 혼란을 줌. 기능을 살릴지(DB 컬럼 추가) 제거할지 결정 필요.
 
@@ -28,18 +30,19 @@
 2. "최근 열람: {시간}" UI 표시 → 사용자는 저장된 것으로 인식
 3. 페이지 새로고침 → 로컬 state 초기화 → "최근 열람" 사라짐 → 사용자 혼란
 
-### 의사결정 필요
+### 의사결정 결과: Option A (기능 제거) 채택
 
-**Option A: 기능 제거 (권장)**
-- `addOpenHistory()`, `incrementOpenCount()` 함수 제거
-- `MemoDetailModal.svelte`에서 openHistory UI 제거
-- `Memo` 타입에서 `openHistory?: number[]` 제거
-- 코드 간소화, 실수로 인한 혼란 제거
+**코드베이스 분석 추가 결과:**
+- `openCount` / `incrementOpenCount()` → `memoMapper.ts:65`에 `open_count` DB 컬럼 매핑 확인 → **정상 작동, 제거 대상 아님**
+- `openHistory` → DB 매핑 없음 → dead code 확정
+- `Clock` 아이콘 (`lucide-svelte`) → `openHistory` UI 블록에서만 사용 → 함께 제거 필요
+- `MemoCreate` 타입 Omit에 `'openHistory'` 포함 → 제거 후 해당 Omit 항목도 삭제
 
-**Option B: 기능 구현 (구현 비용 높음)**
-- DB 마이그레이션: `open_history JSONB` 컬럼 추가
-- `MEMO_FIELD_MAPPINGS`에 매핑 추가
-- RLS 정책 검토
+**제거 범위 (openHistory만, openCount는 유지):**
+- `addOpenHistory()` 함수 제거
+- `openHistory` UI 제거
+- `openHistory?: number[]` 타입 제거
+- `Clock` import 제거 (openHistory UI만의 사용처)
 
 ### 관련 파일
 
@@ -53,8 +56,37 @@
 
 ## TODO
 
-*(의사결정 후 채운다)*
+### Phase 1: openHistory dead code 제거
+
+1. - [ ] **`src/lib/stores/memos.svelte.ts` — addOpenHistory 함수 제거**
+   - [ ] `memos.svelte.ts` 764~772줄: `addOpenHistory()` 함수 블록 전체 삭제
+   - [ ] `memos.svelte.ts` 1292줄: 스토어 export에서 `addOpenHistory` 제거
+
+2. - [ ] **`src/lib/types/memo.ts` — openHistory 타입 정의 제거**
+   - [ ] `memo.ts` 135줄: `openHistory?: number[];` 라인 삭제 (Phase 8 주석 포함)
+   - [ ] `memo.ts` 173줄: `MemoCreate` Omit에서 `| 'openHistory'` 항목 제거
+
+3. - [ ] **`src/lib/components/memo/MemoDetailModal.svelte` — 호출/UI/import 제거**
+   - [ ] `MemoDetailModal.svelte` 154줄: `memosStore.addOpenHistory(memo.id);` 라인 삭제
+   - [ ] `MemoDetailModal.svelte` 396~403줄: `<!-- Open history -->` 블록 전체 삭제
+   - [ ] `MemoDetailModal.svelte` 10줄: import에서 `Clock,` 항목 제거 (openHistory UI에서만 사용 확인)
 
 ---
 
-*상태: 초안 | 진행률: 0/0 (0%)*
+### Phase R: 재발 경로 분석 (fix: plan 필수)
+
+4. - [ ] **수정 대상(`addOpenHistory`)의 모든 호출/참조 경로 열거**
+   - [ ] Grep으로 `addOpenHistory` 참조 파일 전체 검색 (`src/` 범위)
+   - [ ] 각 호출 경로별 "이 경로에서 동일 dead code 문제가 발생할 수 있는가?" 판정
+   - [ ] 방어됨/미방어 증명을 표로 작성 (경로 | 방어여부 | 근거)
+
+5. - [ ] **미방어 경로 확인 및 마무리**
+   - [ ] `incrementOpenCount` 호출 경로 검증 — DB 매핑(`open_count`) 정상 동작 재확인
+   - [ ] `openHistory` 관련 문자열/주석이 남아 있는지 전체 검색 후 정리
+   - [ ] 모든 경로 방어 완료 확인 명시
+
+🔴 fix: plan인데 Phase R이 없으면 /done과 /merge-test에서 차단된다.
+
+---
+
+*상태: 검토대기 | 진행률: 0/5 (0%)*
