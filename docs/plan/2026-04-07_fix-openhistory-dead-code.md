@@ -2,9 +2,7 @@
 
 > 작성일: 2026-04-07
 > 대상 프로젝트: memo-alarm
-> 상태: 머지대기
-> branch: plan/2026-04-07_fix-openhistory-dead-code
-> worktree: .worktrees/2026-04-07_fix-openhistory-dead-code
+> 상태: 구현완료
 > 진행률: 5/5 (100%)
 > 출처: /reflect에서 자동 생성
 > 요약: addOpenHistory()가 로컬 state만 업데이트하고 DB에 저장되지 않음. Phase 5(빈 업데이트 차단)로 PGRST116 부작용은 제거됐으나, "최근 열람" UI가 새로고침 시 소실되는 혼란을 줌. 기능을 살릴지(DB 컬럼 추가) 제거할지 결정 필요.
@@ -95,4 +93,4 @@
 
 ---
 
-*상태: 머지대기 | 진행률: 5/5 (100%)*
+*상태: 구현완료 | 진행률: 5/5 (100%)*
