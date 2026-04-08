@@ -2,7 +2,7 @@
 
 > 작성일: 2026-04-07
 > 대상 프로젝트: memo-alarm
-> 상태: 테스트중
+> 상태: 머지대기
 > branch: plan/2026-04-07_fix-openhistory-dead-code
 > worktree: .worktrees/2026-04-07_fix-openhistory-dead-code
 > 진행률: 5/5 (100%)
@@ -95,4 +95,4 @@
 
 ---
 
-*상태: 테스트중 | 진행률: 5/5 (100%)*
+*상태: 머지대기 | 진행률: 5/5 (100%)*
