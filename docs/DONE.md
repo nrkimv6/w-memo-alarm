@@ -2,6 +2,7 @@
 
 > 이전 기록: [DONE-2026-03.md](archive/DONE-2026-03.md)
 
+- [x] 2026-04-09: openHistory dead code 제거 (DB 미저장 기능 정리, 3개 경로 방어 완료) — [archive](archive/2026-04-07_fix-openhistory-dead-code.md)
 - [x] 2026-04-07: 메모↔할일 전환 시 북마크 소실 재발 수정 — [plan](plan/2026-04-07_fix-bookmark-disappear-recurrence.md) (매퍼 undefined→null, per-memo 큐, PGRST116 크로스 디바이스 가드, 빈 업데이트 차단)
 - [x] 2026-03-31: 메모→할일 전환 시 기본값 불일치 수정 — [archive](archive/2026-03-31_memo-task-conversion-defaults.md)
 - [x] 2026-03-31: 북마크 전환 버그 수정 (3개 경로 방어 완료) — [archive](archive/2026-03-31_fix-bookmark-conversion-bug.md)

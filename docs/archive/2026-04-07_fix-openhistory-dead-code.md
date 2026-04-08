@@ -1,8 +1,14 @@
 # fix: openHistory 기능 정리 (DB 미저장 dead code)
 
+> 완료일: 2026-04-09
+> 아카이브됨
+> 진행률: 5/5 (100%)
+> 요약: addOpenHistory()가 로컬 state만 업데이트하고 DB에 저장되지 않음. Option A(기능 제거) 채택 — openHistory dead code 전체 제거, openCount는 유지.
+
 > 작성일: 2026-04-07
 > 대상 프로젝트: memo-alarm
 > 상태: 구현완료
+> 반영일시: 2026-04-09 01:20
 > 진행률: 5/5 (100%)
 > 출처: /reflect에서 자동 생성
 > 요약: addOpenHistory()가 로컬 state만 업데이트하고 DB에 저장되지 않음. Phase 5(빈 업데이트 차단)로 PGRST116 부작용은 제거됐으나, "최근 열람" UI가 새로고침 시 소실되는 혼란을 줌. 기능을 살릴지(DB 컬럼 추가) 제거할지 결정 필요.
