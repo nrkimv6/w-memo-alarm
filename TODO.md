@@ -11,6 +11,7 @@
 
 ## Pending
 
+- [ ] **FCM 권한 오류 및 중복 cron으로 인한 notification 미발생 수정** — [plan](docs/plan/2026-04-22_fix-notification-fcm-permission-and-duplicate-cron.md) (0/5, 0%)
 - [ ] **북마크 필터에서 할일 카드 렌더링 개선** — [plan](docs/plan/2026-03-30_bookmark-filter-todo-card.md) (0/6, 0%)
 - [x] **메모↔할일 전환 시 북마크 소실 재발 이슈 수정** — [plan](docs/plan/2026-04-07_fix-bookmark-disappear-recurrence.md) — 구현완료 (Phase 6 수동 검증 별도)
 
