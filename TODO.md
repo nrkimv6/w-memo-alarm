@@ -7,7 +7,7 @@
 
 ## In Progress
 
-- [ ] **FCM 권한 오류 및 중복 cron으로 인한 notification 미발생 수정** — [plan](docs/plan/2026-04-22_fix-notification-fcm-permission-and-duplicate-cron.md) (5/6, 83%)
+- [ ] **FCM 프로젝트 원복: wservice-crossnoti 기준으로 설정·토큰·발송 경로 재정렬** — [plan](docs/plan/2026-04-22_realign-fcm-to-wservice-crossnoti.md) (0/6, 0%)
 
 ## Pending
 
