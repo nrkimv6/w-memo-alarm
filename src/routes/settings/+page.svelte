@@ -76,15 +76,54 @@
 		return logs.filter(l => l.source === logFilter).slice(-100);
 	});
 
+	type FcmNotificationLog = {
+		status: string;
+		error_message: string | null;
+		sent_at: string | null;
+	};
+
+	type FcmProjectComparison = 'match' | 'mismatch' | 'unknown';
+
+	function formatDevDateTime(value: string | null) {
+		if (!value) return '없음';
+		return new Date(value).toLocaleString();
+	}
+
+	function extractProjectIdFromMessage(message: string | null) {
+		if (!message) return null;
+
+		const patterns = [
+			/service_account_project_id["'=:\s]+([a-z0-9-]+)/i,
+			/env_project_id["'=:\s]+([a-z0-9-]+)/i,
+			/project_id["'=:\s]+([a-z0-9-]+)/i,
+			/projects\/([a-z0-9-]+)/i
+		];
+
+		for (const pattern of patterns) {
+			const match = message.match(pattern);
+			if (match?.[1]) {
+				return match[1];
+			}
+		}
+
+		return null;
+	}
+
 	// FCM 상태 (개발자 모드용)
 	let fcmStatus = $state<{
 		envConfigured: boolean;
 		hasApiKey: boolean;
 		hasVapidKey: boolean;
 		projectId: string | null;
+		envProjectId: string | null;
+		messagingSenderId: string | null;
 		fcmToken: string | null;
 		userDevices: Array<{fcm_token: string; is_active: boolean; updated_at: string}>;
 		alarmSchedules: Array<{id: string; alarm_time: string; notification_title: string; is_enabled: boolean}>;
+		notificationLogs: FcmNotificationLog[];
+		lastSuccessAt: string | null;
+		lastFailedAt: string | null;
+		lastErrorMessage: string | null;
 		loading: boolean;
 		error: string | null;
 	}>({
@@ -92,13 +131,43 @@
 		hasApiKey: false,
 		hasVapidKey: false,
 		projectId: null,
+		envProjectId: null,
+		messagingSenderId: null,
 		fcmToken: null,
 		userDevices: [],
 		alarmSchedules: [],
+		notificationLogs: [],
+		lastSuccessAt: null,
+		lastFailedAt: null,
+		lastErrorMessage: null,
 		loading: false,
 		error: null
 	});
 	let fcmRegistering = $state(false);
+
+	const activeFcmTokenCount = $derived.by(() => {
+		return fcmStatus.userDevices.filter((device) => device.is_active).length;
+	});
+
+	const serverProjectId = $derived.by(() => {
+		return extractProjectIdFromMessage(fcmStatus.lastErrorMessage);
+	});
+
+	const projectIdComparison = $derived.by((): FcmProjectComparison => {
+		if (!fcmStatus.projectId || !serverProjectId) {
+			return 'unknown';
+		}
+
+		return fcmStatus.projectId === serverProjectId ? 'match' : 'mismatch';
+	});
+
+	const notificationLogsPermissionIssue = $derived.by(() => {
+		if (!fcmStatus.error?.startsWith('notification_logs 조회 실패:')) {
+			return false;
+		}
+
+		return /permission denied|forbidden|not allowed|rls/i.test(fcmStatus.error);
+	});
 
 	// 초기화 - 페이지 로드 시 네이티브 체크
 	$effect(() => {
@@ -225,6 +294,13 @@
 	async function checkFCMStatus() {
 		fcmStatus.loading = true;
 		fcmStatus.error = null;
+		fcmStatus.userDevices = [];
+		fcmStatus.alarmSchedules = [];
+		fcmStatus.notificationLogs = [];
+		fcmStatus.fcmToken = null;
+		fcmStatus.lastSuccessAt = null;
+		fcmStatus.lastFailedAt = null;
+		fcmStatus.lastErrorMessage = null;
 
 		try {
 			// 1. 환경 변수 확인
@@ -232,6 +308,8 @@
 			fcmStatus.hasApiKey = configStatus.hasApiKey;
 			fcmStatus.hasVapidKey = configStatus.hasVapidKey;
 			fcmStatus.projectId = configStatus.projectId;
+			fcmStatus.envProjectId = configStatus.envProjectId;
+			fcmStatus.messagingSenderId = configStatus.messagingSenderId;
 			fcmStatus.envConfigured = configStatus.isConfigured;
 
 			// 2. 로그인 확인 및 Supabase 데이터 조회
@@ -250,7 +328,9 @@
 					fcmStatus.userDevices = devices || [];
 					// 활성 토큰이 있으면 저장
 					const activeDevice = devices?.find(d => d.is_active);
-					fcmStatus.fcmToken = activeDevice?.fcm_token?.substring(0, 20) + '...' || null;
+					fcmStatus.fcmToken = activeDevice?.fcm_token
+						? activeDevice.fcm_token.substring(0, 20) + '...'
+						: null;
 				}
 
 				// alarm_schedules 조회
@@ -266,6 +346,31 @@
 					console.error('Failed to fetch alarm_schedules:', schedulesError);
 				} else {
 					fcmStatus.alarmSchedules = schedules || [];
+				}
+
+				const { data: notificationLogs, error: notificationLogsError } = await supabase
+					.from('notification_logs')
+					.select('status, error_message, sent_at')
+					.eq('user_id', authStore.user.id)
+					.eq('app_name', 'memo-alarm')
+					.order('sent_at', { ascending: false })
+					.limit(10);
+
+				if (notificationLogsError) {
+					console.error('Failed to fetch notification_logs:', notificationLogsError);
+					const baseMessage = `notification_logs 조회 실패: ${notificationLogsError.message}`;
+					fcmStatus.error = /permission denied|forbidden|not allowed|rls/i.test(notificationLogsError.message)
+						? `${baseMessage} (notification_logs RLS 정책이 user_id 매칭 SELECT를 허용해야 합니다.)`
+						: baseMessage;
+				} else {
+					fcmStatus.notificationLogs = (notificationLogs || []) as FcmNotificationLog[];
+
+					const lastSuccessLog = fcmStatus.notificationLogs.find((log) => log.status === 'success');
+					const lastFailedLog = fcmStatus.notificationLogs.find((log) => log.status === 'failed');
+
+					fcmStatus.lastSuccessAt = lastSuccessLog?.sent_at || null;
+					fcmStatus.lastFailedAt = lastFailedLog?.sent_at || null;
+					fcmStatus.lastErrorMessage = lastFailedLog?.error_message || null;
 				}
 			}
 		} catch (error) {
@@ -1486,6 +1591,8 @@
 								{/if}
 							</p>
 							<p>Project ID: <span class="font-mono">{fcmStatus.projectId || 'N/A'}</span></p>
+							<p>Env Project ID: <span class="font-mono">{fcmStatus.envProjectId || 'N/A'}</span></p>
+							<p>Messaging Sender ID: <span class="font-mono">{fcmStatus.messagingSenderId || 'N/A'}</span></p>
 						</div>
 
 						<!-- 로그인 상태 -->
@@ -1548,6 +1655,81 @@
 								<p class="text-muted-foreground">로그인 필요</p>
 							{/if}
 						</div>
+
+						<div class="text-xs space-y-2 p-2 rounded bg-muted">
+							<p class="font-semibold">서버측 FCM 상태</p>
+							<p>마지막 성공: <span class="font-mono">{formatDevDateTime(fcmStatus.lastSuccessAt)}</span></p>
+							<p>마지막 실패: <span class="font-mono">{formatDevDateTime(fcmStatus.lastFailedAt)}</span></p>
+							<p class="break-all">
+								마지막 오류:
+								<span class="font-mono">{fcmStatus.lastErrorMessage || '없음'}</span>
+							</p>
+							<p>활성 토큰 수: <span class="font-mono">{activeFcmTokenCount}개</span></p>
+							<p class="flex items-center gap-2">
+								클라이언트 ↔ 서버 Project ID 비교:
+								{#if projectIdComparison === 'match'}
+									<span class="rounded bg-green-500/15 px-2 py-0.5 text-green-600">일치</span>
+								{:else if projectIdComparison === 'mismatch'}
+									<span class="rounded bg-orange-500/15 px-2 py-0.5 text-orange-600">불일치</span>
+								{:else}
+									<span class="rounded bg-gray-500/15 px-2 py-0.5 text-muted-foreground">판별 불가</span>
+								{/if}
+							</p>
+							{#if serverProjectId}
+								<p>서버 오류 기준 Project ID: <span class="font-mono">{serverProjectId}</span></p>
+							{/if}
+
+							{#if fcmStatus.notificationLogs.length > 0}
+								<div class="space-y-1 border-t border-border/50 pt-2">
+									<p class="font-semibold">최근 10건 notification_logs</p>
+									<div class="max-h-40 space-y-2 overflow-y-auto">
+										{#each fcmStatus.notificationLogs as log}
+											<div class="flex items-start gap-2">
+												{#if log.status === 'success'}
+													<CheckCircle class="mt-0.5 h-3 w-3 flex-shrink-0 text-green-500" />
+												{:else}
+													<XCircle class="mt-0.5 h-3 w-3 flex-shrink-0 text-red-500" />
+												{/if}
+												<div class="min-w-0 space-y-0.5">
+													<p class="font-mono">{formatDevDateTime(log.sent_at)}</p>
+													<p class="text-muted-foreground">{log.status}</p>
+													{#if log.error_message}
+														<p class="break-all font-mono">{log.error_message}</p>
+													{/if}
+												</div>
+											</div>
+										{/each}
+									</div>
+								</div>
+							{:else if authStore.isAuthenticated}
+								<p class="text-muted-foreground">notification_logs 기록 없음</p>
+							{:else}
+								<p class="text-muted-foreground">로그인 필요</p>
+							{/if}
+						</div>
+
+						{#if projectIdComparison === 'mismatch'}
+							<div class="space-y-1 rounded bg-orange-500/10 p-2 text-xs text-orange-700">
+								<p class="font-semibold">프로젝트 불일치 경고</p>
+								<p>클라이언트 env와 서버 오류에 남은 Project ID가 다릅니다.</p>
+								<p>서버 서비스 계정이 다른 Firebase 프로젝트를 가리키고 있을 수 있습니다.</p>
+							</div>
+						{/if}
+
+						{#if fcmStatus.lastErrorMessage?.startsWith('[PERMISSION_DENIED]')}
+							<div class="space-y-1 rounded bg-blue-500/10 p-2 text-xs text-blue-700">
+								<p class="font-semibold">서버 권한 오류</p>
+								<p>클라이언트 key 문제가 아니라 `send-notifications` 서비스 계정 권한 부족 가능성이 큽니다.</p>
+							</div>
+						{/if}
+
+						{#if notificationLogsPermissionIssue}
+							<!-- `009_fcm_notifications.sql`에서 user_id 기반 SELECT 정책이 있어야 devMode 로그 조회가 가능하다. -->
+							<div class="space-y-1 rounded bg-yellow-500/10 p-2 text-xs text-yellow-700">
+								<p class="font-semibold">notification_logs 조회 권한 확인 필요</p>
+								<p>RLS나 인증 컨텍스트 문제로 최근 서버 발송 로그를 읽지 못하고 있습니다.</p>
+							</div>
+						{/if}
 
 						<!-- FCM 토큰 수동 등록 -->
 						{#if authStore.isAuthenticated}
@@ -1632,10 +1814,10 @@
 
 						<!-- 로그 목록 -->
 						<div class="text-xs font-mono bg-black text-green-400 p-3 rounded-lg max-h-80 overflow-y-auto space-y-1">
-							{#if filteredLogs().length === 0}
+							{#if filteredLogs.length === 0}
 								<p class="text-gray-500">로그가 없습니다.</p>
 							{:else}
-								{#each filteredLogs().reverse() as log}
+								{#each filteredLogs.slice().reverse() as log}
 									<div class={cn(
 										"border-b border-gray-800 pb-1",
 										log.level === 'error' && 'text-red-400',

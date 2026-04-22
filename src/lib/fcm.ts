@@ -31,11 +31,14 @@ if (browser && !firebaseConfig.apiKey) {
 }
 
 // FCM 환경 상태 조회 (개발자 모드용)
+// settings devMode 비교용 식별자만 노출하며 API/VAPID 키 원문은 반환하지 않는다.
 export function getFCMConfigStatus() {
 	return {
 		hasApiKey: !!PUBLIC_FIREBASE_API_KEY,
 		hasVapidKey: !!PUBLIC_FIREBASE_VAPID_KEY,
 		projectId: PUBLIC_FIREBASE_PROJECT_ID || null,
+		envProjectId: PUBLIC_FIREBASE_PROJECT_ID || null,
+		messagingSenderId: PUBLIC_FIREBASE_MESSAGING_SENDER_ID || null,
 		isConfigured: !!PUBLIC_FIREBASE_API_KEY && !!PUBLIC_FIREBASE_VAPID_KEY && !!PUBLIC_FIREBASE_PROJECT_ID
 	};
 }

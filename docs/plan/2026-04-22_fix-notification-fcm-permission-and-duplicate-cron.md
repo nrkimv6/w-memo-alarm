@@ -3,9 +3,13 @@
 > 작성일시: 2026-04-22 11:24
 > 기준커밋: 34b8d3a
 > 대상 프로젝트: memo-alarm, gifticon-manager
-> 상태: 확장완료
-> 진행률: 0/6 (0%)
+> 상태: 구현중
+> 진행률: 5/6 (83%)
 > 요약: 2026-04-22 운영 DB와 `notification_logs`, `cron.job` 실조회 결과 현재 알림 미발생의 주원인은 브라우저 Firebase key가 아니라 `send-notifications` Edge Function의 FCM 권한 부재와 중복 cron 호출이다. 서버 자격증명 정합성, cron 단일화, 앱 내 진단 노출을 함께 정리해 같은 오진이 반복되지 않도록 한다.
+>
+> **실행 TODO:**
+> - [gifticon-manager: Phase 1~2, R, 5](./2026-04-22_fix-notification-fcm-permission-and-duplicate-cron_todo-1.md) — child, 선행조건 없음
+> - [memo-alarm: Phase 3~4, R, 5](./2026-04-22_fix-notification-fcm-permission-and-duplicate-cron_todo-2.md) — parent, 선행조건: `2026-04-22_fix-notification-fcm-permission-and-duplicate-cron_todo-1.md`
 
 ---
 
@@ -178,4 +182,4 @@ group by jobname;
 
 총 12개 상위 작업 / 31개 원자 작업
 
-*상태: 확장완료 | 진행률: 0/6 (0%)*
+*상태: 구현중 | 진행률: 5/6 (83%)*
