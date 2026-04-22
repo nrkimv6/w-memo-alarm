@@ -5,6 +5,7 @@
 > 대상 프로젝트: gifticon-manager, memo-alarm
 > 상태: 초안
 > 진행률: 0/6 (0%)
+> 선행 plan: [`2026-04-22_fix-notification-fcm-permission-and-duplicate-cron`](./2026-04-22_fix-notification-fcm-permission-and-duplicate-cron.md) (진행중) — Phase 1~4와 Phase R이 이미 추가해둔 `NormalizedFcmErrorCode`, `normalizeFcmError()`, `[CODE]` 정규화, `FCM_PROJECT_ID_MISMATCH` 가드, settings "서버측 FCM 상태" 카드 위에서 본 plan이 동작한다. **선행 plan의 Phase 5(운영 secret 교체)는 `lineminder-23489` 방향으로 명시되어 있는데, 본 plan이 그 방향을 `wservice-crossnoti`로 뒤집는다.** 선행 plan의 Phase 5는 본 plan 완료 시점에 "대체됨"으로 정리한다 — 정리 시점은 본 plan의 Phase 5가 운영 반영될 때.
 > 요약: 사용자 기준 canonical 이름은 `wservice-crossnoti`이며, 제공된 Google Console URL·서비스계정 JSON의 literal project id는 `wservice-cross-noti`다. 이 계획은 임시로 되돌아간 `lineminder-23489` 경로를 정답으로 간주하지 않고, `wservice-crossnoti` 기준으로 서버 secret, 클라이언트 Firebase 식별자, 기존 토큰 재등록 흐름을 다시 맞춘다.
 >
 > **실행 TODO:**
@@ -33,11 +34,22 @@
 
 ## 기술적 고려사항
 
-- provided 서비스계정 JSON은 서버용 자격증명이다. 클라이언트 전환에는 `apiKey`, `authDomain`, `storageBucket`, `messagingSenderId`, `appId`, `VAPID key`가 별도로 필요하다. 현재 확인된 `wservice-crossnoti` artifact에는 `project_id`, `project_number`, Android API key만 있고 web `appId`와 VAPID key는 별도 수집이 필요하다.
-- `memo-alarm/.env`는 `common/.env.shared` 심볼릭 링크이므로, shared 파일을 그대로 바꾸면 `line-minder` 등 다른 앱도 함께 영향을 받는다. 이번 plan은 memo-alarm 전용 env override 또는 shared env 분리를 포함해야 한다.
+- provided 서비스계정 JSON은 서버용 자격증명이다. 클라이언트 전환에는 `apiKey`, `authDomain`, `storageBucket`, `messagingSenderId`, `appId`, `VAPID key`가 별도로 필요하다. 현재 확인된 `wservice-crossnoti` artifact에는 `project_id`, `project_number`, Android API key만 있고 web `appId`와 VAPID key는 별도 수집이 필요하다. **web artifact 미수집 상태에서 Phase 3을 실행하면 브라우저 토큰 발급이 실패하므로, 구현 전에 web appId/VAPID key를 확보했는지 체크한 뒤 진행한다.**
+- `memo-alarm/.env`는 `common/.env.shared` 심볼릭 링크이므로, shared 파일을 그대로 바꾸면 `line-minder` 등 다른 앱도 함께 영향을 받는다. 본 plan은 **memo-alarm 전용 `.env.local` override** 경로를 기본으로 선택한다(shared 파일은 건드리지 않음). 구현 중 override로는 해결 불가능하다는 게 드러나면 shared env 분리로 전환하되, 전환 판단을 개별 체크박스 단위로 흩뜨리지 않는다.
 - `memo-alarm/static/firebase-messaging-sw.js`는 public env와 별개로 Firebase 식별자를 하드코딩한다. sender cutover 이후 이 파일이 남아 있으면 브라우저 토큰 발급 프로젝트와 서비스워커 수신 프로젝트가 다시 어긋날 수 있다.
 - 현재 `+layout.svelte`는 로그인 후 자동으로 `registerFCMToken()`을 호출한다. 이 자동 흐름을 이용하면 cutover 직후 "project marker mismatch"를 감지해 `resetFCMToken()` 또는 강제 재등록으로 연결할 수 있다.
-- 운영 cron 중복은 이미 정리돼 있으므로 이번 계획의 주초점은 권한보다 sender 정합성 복구다. 다만 cutover 동안 `send-fcm-notifications-every-minute` 1개만 유지되는지는 계속 확인한다.
+- 운영 cron 중복은 선행 plan(`fix-notification-fcm-permission-and-duplicate-cron`)의 Phase 2에서 이미 정리돼 있으므로 이번 계획의 주초점은 권한보다 sender 정합성 복구다. 다만 cutover 동안 `send-fcm-notifications-every-minute` 1개만 유지되는지는 선행 plan의 013 migration 확인 쿼리로 계속 확인한다.
+- 선행 plan의 `settings/+page.svelte` "서버측 FCM 상태" 카드와 `notification_logs` 조회 로직은 본 plan이 재활용한다. 본 plan은 그 위에 `project marker` 카드와 `SENDER_ID_MISMATCH` 필터만 덧붙이며, 기존 카드를 제거하거나 로직을 대체하지 않는다.
+
+### 재검토 보강 (2026-04-22, /review-plan)
+
+- 🟡 **선행 plan Phase 5 충돌**: 선행 plan(`fix-notification-fcm-permission-and-duplicate-cron`)의 Phase 5 step 11이 "`lineminder-23489`(또는 현 운영 project_id) 대상 service account로 교체"를 명시한다. 본 plan이 `wservice-crossnoti`로 방향을 뒤집으므로, 본 plan의 Phase 5 완료 후 선행 plan의 Phase 5는 더 이상 유효하지 않다. 선행 plan 쪽 체크박스 정리는 **본 plan을 운영 반영까지 마친 뒤** `/done` 또는 `/review-plan` 재실행 시 수동으로 "대체됨" 메모와 함께 체크 처리한다. 본 plan에서는 선행 plan 파일을 수정하지 않는다(외부 수정 임의 되돌리기 금지 규칙).
+- 🟡 **web artifact 공백**: web `appId`와 `VAPID key`가 현재 확인된 artifact에 없다. Phase 3.2를 시작하기 전에 Firebase Console > Project Settings > Your apps(web)에서 web `appId`와 Cloud Messaging > Web Push certificates에서 VAPID key를 수집했는지 명시적으로 체크한다. 미수집 상태로 구현에 진입하면 브라우저 토큰 발급이 `messaging/installation-token-errors` 계열로 실패한다.
+- 🟡 **이름 혼선 (crossnoti vs cross-noti)**: canonical 표기는 `wservice-crossnoti`(하이픈 없음), literal project id는 `wservice-cross-noti`(하이픈 있음)로 공존한다. 코드/설정 파일에서는 literal `wservice-cross-noti`만 사용하고, 로그/문서/UI 표기에서는 `wservice-crossnoti`를 사용한다. 두 형태를 상수로 분리해 하드코딩이 흩어지지 않게 한다.
+- 🟡 **`.env.local` vs shared 분리 선택**: Phase 3.1에서 override/분리 두 경로를 열어 두면 구현 중 혼선이 생긴다. 본 plan은 **override를 기본 경로로 고정**하고, override 실패 시에만 shared 분리로 전환하도록 todo-2 Phase 3.1에서 명시했다.
+- 🟡 **settings UI 중복 렌더링 리스크**: 선행 plan이 `settings/+page.svelte`에 이미 "서버측 FCM 상태" 카드를 추가했고 진행률 29/33으로 대부분 완료 상태다. 본 plan의 "project marker" 카드는 그 아래에 **추가**하며, 동일 `notification_logs` 조회를 중복 수행하지 않고 기존 `fcmStatus.notificationLogs` 배열을 필터해 재활용한다.
+- 🟢 **Phase T1~T5 미적용 사유**: 본 plan은 Deno Edge Function(TypeScript) + Svelte/TS + 운영 SQL/.env만 수정하며 Python/FastAPI 백엔드 변경이 없으므로 expand-todo의 5-Phase 테스트 블록은 필수 대상이 아니다. 대신 todo-1 "운영 실행 순서"와 todo-2 "최종 수동 검증 순서"를 유지한다.
+- 🟢 **main drift**: 기준커밋 `7d9cc88` 이후 gifticon-manager/memo-alarm 두 레포의 `send-notifications/index.ts`, `settings/+page.svelte`, `fcm.ts`, `+layout.svelte`에 선행 plan의 Phase 1~4/R 작업이 반영돼 있다. 본 plan 구현 직전 `git status` + `git log --since` 교차 확인으로 선행 plan 커밋 이외의 예기치 않은 변경이 없는지 재점검한다.
 
 ---
 
