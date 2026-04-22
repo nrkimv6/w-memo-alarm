@@ -1,4 +1,4 @@
-# FCM 프로젝트 원복: wservice-crossnoti 기준 재정렬 — TODO 2
+# FCM 프로젝트 원복: wservice-cross-noti 기준 재정렬 — TODO 2
 
 > 계획서: [plan](./2026-04-22_realign-fcm-to-wservice-crossnoti.md)
 > 대상 프로젝트: memo-alarm
@@ -6,16 +6,16 @@
 > 선행조건: ../../../../../tools/gifticon-manager/docs/plan/2026-04-22_realign-fcm-to-wservice-crossnoti_todo-1.md
 > 테스트명령: `npm run check` + 개발자 모드 FCM 재등록/로그 확인
 > 진행률: 0/3 (0%)
-> 요약: memo-alarm의 Firebase public config를 `wservice-crossnoti` 기준으로 되돌리고, 자동 FCM 등록 흐름에 project marker 기반 강제 재등록 단계를 추가한다.
+> 요약: memo-alarm의 Firebase public config를 `wservice-cross-noti` 기준으로 되돌리고, 자동 FCM 등록 흐름에 project marker 기반 강제 재등록 단계를 추가한다.
 
 > **선행 plan 전제**: 본 todo는 `2026-04-22_fix-notification-fcm-permission-and-duplicate-cron` plan이 이미 `settings/+page.svelte`에 추가해둔 "서버측 FCM 상태" 카드, `notificationLogs`/`lastErrorMessage` 상태, `[CODE]` 접두 표시 위에서 동작한다. 이번 todo는 같은 파일에 **추가 카드/배지**를 붙이는 형태이며, 기존 카드를 제거하거나 대체하지 않는다.
 
 ## Phase 3: memo-alarm public Firebase 설정 원복
 
 1. - [ ] **memo-alarm을 shared Firebase 설정에서 분리한다** — `line-minder`와 같은 값을 계속 물고 있지 않게 한다.
-   - [ ] `D:\work\project\service\wtools\common\.env.shared`: `memo-alarm`이 shared Firebase 블록에 묶여 있는 현재 구조를 해제할지, 아니면 memo-alarm 전용 `.env.local` override를 둘지 **구현 전에 한 가지만 선택한다**. 기본 경로는 후자(override) — shared 파일은 `line-minder` 값을 유지하고, memo-alarm이 로컬 override로 `wservice-crossnoti` 값을 덮어쓴다. 이때 shared 파일에서 memo-alarm 전용 주석 블록은 삭제한다.
-   - [ ] `D:\work\project\service\wtools\memo-alarm\.env`: 현재 `common/.env.shared`를 가리키는 심볼릭 링크를 유지한 채, 같은 디렉토리에 `.env.local`을 신규 생성하고 `PUBLIC_FIREBASE_PROJECT_ID`, `PUBLIC_FIREBASE_API_KEY`, `PUBLIC_FIREBASE_AUTH_DOMAIN`, `PUBLIC_FIREBASE_STORAGE_BUCKET`, `PUBLIC_FIREBASE_MESSAGING_SENDER_ID`, `PUBLIC_FIREBASE_APP_ID`, `PUBLIC_FIREBASE_VAPID_KEY`를 `wservice-crossnoti` 기준(literal project id `wservice-cross-noti`)으로 채운다. SvelteKit은 `.env.local`이 `.env`보다 우선 적용된다는 규칙을 주석으로 남긴다.
-   - [ ] `D:\work\project\service\wtools\memo-alarm\static\firebase-messaging-sw.js`: 하드코딩된 `lineminder-23489` 식별자와 `"line-minder와 동일한 프로젝트"` 주석을 제거하고, memo-alarm이 실제 사용하는 `wservice-crossnoti` web config(apiKey, authDomain, projectId=`wservice-cross-noti`, messagingSenderId, appId)로 맞춘다. VAPID key는 service worker 쪽에서 사용하지 않으므로 제외.
+   - [ ] `D:\work\project\service\wtools\common\.env.shared`: `memo-alarm`이 shared Firebase 블록에 묶여 있는 현재 구조를 해제할지, 아니면 memo-alarm 전용 `.env.local` override를 둘지 **구현 전에 한 가지만 선택한다**. 기본 경로는 후자(override) — shared 파일은 `line-minder` 값을 유지하고, memo-alarm이 로컬 override로 `wservice-cross-noti` 값을 덮어쓴다. 이때 shared 파일에서 memo-alarm 전용 주석 블록은 삭제한다.
+   - [ ] `D:\work\project\service\wtools\memo-alarm\.env`: 현재 `common/.env.shared`를 가리키는 심볼릭 링크를 유지한 채, 같은 디렉토리에 `.env.local`을 신규 생성하고 `PUBLIC_FIREBASE_PROJECT_ID`, `PUBLIC_FIREBASE_API_KEY`, `PUBLIC_FIREBASE_AUTH_DOMAIN`, `PUBLIC_FIREBASE_STORAGE_BUCKET`, `PUBLIC_FIREBASE_MESSAGING_SENDER_ID`, `PUBLIC_FIREBASE_APP_ID`, `PUBLIC_FIREBASE_VAPID_KEY`를 `wservice-cross-noti` 기준으로 채운다. SvelteKit은 `.env.local`이 `.env`보다 우선 적용된다는 규칙을 주석으로 남긴다.
+   - [ ] `D:\work\project\service\wtools\memo-alarm\static\firebase-messaging-sw.js`: 하드코딩된 `lineminder-23489` 식별자와 `"line-minder와 동일한 프로젝트"` 주석을 제거하고, memo-alarm이 실제 사용하는 `wservice-cross-noti` web config(apiKey, authDomain, projectId=`wservice-cross-noti`, messagingSenderId, appId)로 맞춘다. VAPID key는 service worker 쪽에서 사용하지 않으므로 제외.
 
 ## Phase 4: sender 전환 시 토큰을 강제 재등록한다
 
