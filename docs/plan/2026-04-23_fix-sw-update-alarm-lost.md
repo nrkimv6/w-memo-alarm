@@ -118,7 +118,7 @@ notificationStore.registerRemindersToServiceWorker();  // 1회 호출
 ### Phase 2: SW "activating" race 공통 방어
 
 3. - [ ] **`notifications.svelte.ts`에 activated SW 확보 helper를 추가한다**
-   - [ ] `src/lib/stores/notifications.svelte.ts`: `navigator.serviceWorker.ready` 이후 `registration.active`를 반환하는 공통 helper(`awaitActivatedServiceWorker()` 등)를 추가한다.
+   - [ ] `src/lib/stores/notifications.svelte.ts`: 모듈 최상단(`createNotificationStore()` 바깥)에 `async function awaitActivatedServiceWorker(): Promise<ServiceWorker | null>` helper를 정의한다 — `navigator.serviceWorker.ready`로 registration을 얻은 뒤 `active`를 반환하는 module-level 유틸리티다.
    - [ ] `src/lib/stores/notifications.svelte.ts`: helper에서 `registration.active`가 없으면 `null`을 반환하고, 기존 caller가 동일하게 early return 할 수 있게 계약을 고정한다.
    - [ ] `src/lib/stores/notifications.svelte.ts`: helper에서 `active.state === 'activating'`이면 `statechange` once listener로 `activated`가 될 때까지 대기하고, 이미 `activated`면 즉시 반환한다.
    - [ ] `src/lib/stores/notifications.svelte.ts`: `statechange` 대기에 8초 timeout을 추가한다 — timeout 초과 시 `null`을 반환해 무한 pending을 방지한다. SW activation이 실패하거나 SW가 terminated된 경우 caller는 early return하도록 한다.
@@ -202,13 +202,13 @@ notificationStore.registerRemindersToServiceWorker();  // 1회 호출
 
 - Phase 0: Worktree 준비 — 1개 상위 작업 / 3개 원자 작업
 - Phase 1: FCM 도메인 미승인 에러 처리 개선 — 2개 상위 작업 / 6개 원자 작업
-- Phase 2: SW "activating" race 공통 방어 — 2개 상위 작업 / 7개 원자 작업
+- Phase 2: SW "activating" race 공통 방어 — 2개 상위 작업 / 8개 원자 작업
 - Phase 3: layout 기반 전체 재등록 보강 — 5개 상위 작업 / 15개 원자 작업
-- Phase 4: 수동 검증 (앱 업데이트 + same-count 변경) — 3개 상위 작업 / 9개 원자 작업
+- Phase 4: 수동 검증 (앱 업데이트 + same-count 변경) — 3개 상위 작업 / 10개 원자 작업
 - Phase R: 재발 경로 분석 — 2개 상위 작업 / 6개 원자 작업
 - Phase Z: Post-Merge Cleanup — 1개 상위 작업 / 6개 원자 작업
 
-총 16개 상위 작업 / 52개 원자 작업
+총 16개 상위 작업 / 54개 원자 작업
 
 ---
 
