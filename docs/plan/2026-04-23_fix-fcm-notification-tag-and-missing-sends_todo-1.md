@@ -4,7 +4,9 @@
 > 대상 프로젝트: memo-alarm
 > 실행순서: 1
 > 선행조건: 없음
-> 상태: 구현중
+> 상태: 구현완료
+> 반영일시: 2026-04-23 21:21
+> 머지커밋: 9b94bc6
 > branch: impl/fix-fcm-notification-tag-and-missing-sends
 > worktree: .worktrees/impl-fix-fcm-notification-tag-and-missing-sends
 > worktree-owner: D:/work/project/service/wtools/memo-alarm/docs/plan/2026-04-23_fix-fcm-notification-tag-and-missing-sends.md
