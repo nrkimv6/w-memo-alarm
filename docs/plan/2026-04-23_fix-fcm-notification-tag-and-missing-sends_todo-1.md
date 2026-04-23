@@ -8,7 +8,7 @@
 > branch:
 > worktree:
 > worktree-owner:
-> 진행률: 0/15 (0%)
+> 진행률: 0/42 (0%)
 
 ---
 
@@ -54,20 +54,34 @@
 
 ### Phase R: 재발 경로 분석 (fix: plan 필수)
 
-7. - [ ] **수정 대상의 모든 호출/참조 경로 열거**
+8. - [ ] **수정 대상의 모든 호출/참조 경로 열거**
    - [ ] `firebase-messaging-sw.js`를 참조하는 모든 파일 Grep 확인 (`importScripts`, `firebase-messaging-sw` 키워드)
    - [ ] `_fcmPending`, `_flushFcmNotifications`, `_fcmMergeTimer` 심볼이 다른 파일에서 충돌하는지 확인 (SW global scope)
    - [ ] 각 경로별 "동일 버그(tag 덮어쓰기)가 발생할 수 있는가?" 판정
 
-8. - [ ] **미방어 경로 수정**
+9. - [ ] **미방어 경로 수정**
    - [ ] 단일 알림 경로: schedule_id 없을 때 `Date.now()` fallback → tag 중복 없음 확인
    - [ ] 병합 알림 경로: `_fcmPending`가 0이면 early return → 빈 알림 표시 방지 확인
    - [ ] `onBackgroundMessage`가 동시에 여러 번 호출될 때: 타이머 clear/reset으로 마지막 handler만 실제 flush 실행 확인 (이전 handler Promise는 독립적으로 flush 완료 후 resolve)
    - [ ] 모든 경로 방어 완료 표로 기록 (경로 \| 방어여부 \| 근거)
 
+### Phase T: 통합 테스트
+
+> T1~T2 해당 없음: memo-alarm은 단위 테스트 프레임워크가 구성되어 있지 않다(Glob `src/**/*.test.ts`, `tests/**/*` 0건, `package.json`에 `"test"` 스크립트 없음). Service Worker 병합 동작은 실브라우저 알림 생명주기에 의존해 Node mock으로 재현 가치가 낮다.
+> T3 재현 TC 해당 없음: SW `onBackgroundMessage` 동작은 브라우저 FCM push가 필요하며, 동일 분 N건 push 시나리오는 deploy 후 수동 재현으로만 검증 가능하다. 자동화된 integration 테스트 하네스가 프로젝트에 없다.
+> T4 E2E 해당 없음: Glob `**/*e2e*`, `**/*integration*` 결과 node_modules 외 0건. 프로젝트에 Playwright/e2e 하네스 없음. SW push는 실기기/실브라우저 + FCM 서버에 의존.
+> T5 HTTP 해당 없음: SvelteKit FE 프로젝트로 send-notifications 같은 HTTP 서버를 이 레포에 호스팅하지 않는다. Glob `**/*http*`, `**/*api*` 결과 node_modules 외 0건.
+
+10. - [ ] **수동 브라우저 검증 시나리오 기록** — 배포 후 `/merge-test` 또는 main deploy 직후 수행
+    - [ ] 동일 분에 예약된 메모 2건 이상 등록 후, 앱을 백그라운드로 두고 FCM push 수신 → "N개의 메모 알림" 1건만 표시되는지 확인
+    - [ ] 단일 FCM push 수신 → 개별 tag `memo-alarm-{schedule_id}`로 표시, 이전 알림과 교체되지 않는지 확인
+    - [ ] 병합 알림 클릭 → `memoIds[0]` 메모 상세로 네비게이트 확인
+    - [ ] 개별 알림 클릭 → 기존 `memoId` 경로 유지 확인
+    - [ ] 시나리오별 결과를 `docs/DONE.md` 또는 plan 말미에 기록
+
 ### Phase Z: Post-Merge Cleanup (/merge-test owner)
 
-9. - [ ] **main merge + 정리**
+11. - [ ] **main merge + 정리**
    - [ ] `/merge-test`로 main 머지
    - [ ] worktree remove + branch remove
    - [ ] plan 헤더 meta 제거 (`> branch:`, `> worktree:`, `> worktree-owner:`)
@@ -77,4 +91,4 @@
 
 ---
 
-*상태: 초안 | 진행률: 0/15 (0%)*
+*상태: 초안 | 진행률: 0/42 (0%)*
