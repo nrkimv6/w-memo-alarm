@@ -7,10 +7,7 @@
 > 상태: 구현완료
 > 반영일시: 2026-04-23 21:21
 > 머지커밋: 9b94bc6
-> branch: impl/fix-fcm-notification-tag-and-missing-sends
-> worktree: .worktrees/impl-fix-fcm-notification-tag-and-missing-sends
-> worktree-owner: D:/work/project/service/wtools/memo-alarm/docs/plan/2026-04-23_fix-fcm-notification-tag-and-missing-sends.md
-> 진행률: 31/42 (74%)
+> 진행률: 35/42 (83%)
 
 ---
 
@@ -85,14 +82,14 @@
 
 ### Phase Z: Post-Merge Cleanup (/merge-test owner)
 
-11. - [ ] **main merge + 정리**
-   - [ ] `/merge-test`로 main 머지
-   - [ ] worktree remove + branch remove
-   - [ ] plan 헤더 meta 제거 (`> branch:`, `> worktree:`, `> worktree-owner:`)
+11. - [x] **main merge + 정리**
+   - [x] `/merge-test`로 main 머지
+   - [x] worktree remove + branch remove
+   - [x] plan 헤더 meta 제거 (`> branch:`, `> worktree:`, `> worktree-owner:`)
 
 > merge resolve: 충돌 발생 시 `static/firebase-messaging-sw.js` 기준으로 수동 해결
 > stash-pop resolve: root dirty 있을 경우 `/merge-test` 절차에 따라 처리
 
 ---
 
-*상태: 구현중 | 진행률: 31/42 (74%)*
+*상태: 구현완료 | 진행률: 35/42 (83%)*
