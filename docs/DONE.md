@@ -2,6 +2,9 @@
 
 > 이전 기록: [DONE-2026-03.md](archive/DONE-2026-03.md)
 
+- [x] 2026-04-24: foreground 경로 동일 시간대 알림 병합 추가 (collect→merge→dispatch, SW 로직과 대칭, buildMergedTitle/Body 유틸) — [archive](archive/2026-04-24_fix-notification-merge-in-foreground.md)
+- [x] 2026-04-24: 설정 페이지 cold load 토글 디싱크 수정 ($state→$derived, QuickMemoInput sessionOverride 패턴) — [archive](archive/2026-04-24_fix-settings-state-desync-on-cold-load.md)
+- [x] 2026-04-24: 메모→할일 전환 시 URL 양방향 마이그레이션 (convertMemoToTodo: url→todoUrls, convertTodoToMemo: todoUrls[0]→url 역복원, 다중 URL 경고 다이얼로그) — [archive](archive/2026-04-24_fix-memo-to-todo-url-ui-hide.md)
 - [x] 2026-04-23: FCM 알림 merge window 구현 — 동시 push 병합 알림, SW keepalive 보장, 포그라운드 tag 개별화 — [archive](archive/2026-04-23_fix-fcm-notification-tag-and-missing-sends_todo-1.md)
 - [x] 2026-04-23: SW 업데이트 후 알림 소실 수정 (activated wait helper, reminder fingerprint reactive sync, controllerchange early hook, FCM 도메인 승인) — [archive](archive/2026-04-23_fix-sw-update-alarm-lost.md)
 - [x] 2026-04-22: FCM 프로젝트 원복 — wservice-cross-noti 기준 public config/토큰/발송 경로 재정렬 (Cloudflare env 7종, Firebase 도메인 승인, project marker 기반 강제 재등록) — [archive](archive/2026-04-22_realign-fcm-to-wservice-crossnoti.md)
