@@ -612,18 +612,17 @@
 	}
 
 	// 메모 표시 설정
-	let useMarkdown = $state(settingsStore.settings.useMarkdown ?? false);
+	const useMarkdown = $derived(settingsStore.settings.useMarkdown ?? false);
 
 	function handleMarkdownToggle() {
-		useMarkdown = !useMarkdown;
-		settingsStore.setUseMarkdown(useMarkdown);
+		settingsStore.setUseMarkdown(!useMarkdown);
 	}
 
 	// 기본 알림 설정
 	const dayLabels = ['일', '월', '화', '수', '목', '금', '토'];
-	let defaultTime = $state(settingsStore.settings.defaultReminder.time);
-	let defaultDays = $state<number[]>([...settingsStore.settings.defaultReminder.days]);
-	let autoReminderOnCreate = $state(settingsStore.settings.autoReminderOnCreate);
+	const defaultTime = $derived(settingsStore.settings.defaultReminder.time);
+	const defaultDays = $derived(settingsStore.settings.defaultReminder.days);
+	const autoReminderOnCreate = $derived(settingsStore.settings.autoReminderOnCreate);
 
 	// 기본알림을 사용하는 메모 개수
 	const defaultReminderMemoCount = $derived(
@@ -631,71 +630,60 @@
 	);
 
 	function toggleDefaultDay(day: number) {
-		if (defaultDays.includes(day)) {
-			defaultDays = defaultDays.filter((d) => d !== day);
-		} else {
-			defaultDays = [...defaultDays, day].sort();
-		}
-		settingsStore.setDefaultReminderDays(defaultDays);
+		const next = defaultDays.includes(day)
+			? defaultDays.filter((d) => d !== day)
+			: [...defaultDays, day].sort();
+		settingsStore.setDefaultReminderDays(next);
 	}
 
 	function handleTimeChange(e: Event) {
 		const target = e.target as HTMLInputElement;
-		defaultTime = target.value;
 		settingsStore.setDefaultReminderTime(target.value);
 	}
 
 	function handleAutoReminderToggle() {
-		autoReminderOnCreate = !autoReminderOnCreate;
-		settingsStore.setAutoReminderOnCreate(autoReminderOnCreate);
+		settingsStore.setAutoReminderOnCreate(!autoReminderOnCreate);
 	}
 
 	// 할일 기본설정
-	let todoRemindEnabled = $state(settingsStore.settings.todoDefaults.remind.enabled);
-	let todoRemindTime = $state(settingsStore.settings.todoDefaults.remind.time);
-	let todoAutoAlertEnabled = $state(settingsStore.settings.todoDefaults.autoAlert.enabled);
-	let todoAutoAlertMinutes = $state(settingsStore.settings.todoDefaults.autoAlert.minutesBefore);
-	let todoShowOverdue = $state(settingsStore.settings.todoDefaults.showOverdue);
-	let todoShowProgress = $state(settingsStore.settings.todoDefaults.showProgress);
-	let todoShowUpcomingOnEmpty = $state(settingsStore.settings.todoDefaults.showUpcomingOnEmpty);
+	const todoRemindEnabled = $derived(settingsStore.settings.todoDefaults.remind.enabled);
+	const todoRemindTime = $derived(settingsStore.settings.todoDefaults.remind.time);
+	const todoAutoAlertEnabled = $derived(settingsStore.settings.todoDefaults.autoAlert.enabled);
+	const todoAutoAlertMinutes = $derived(settingsStore.settings.todoDefaults.autoAlert.minutesBefore);
+	const todoShowOverdue = $derived(settingsStore.settings.todoDefaults.showOverdue);
+	const todoShowProgress = $derived(settingsStore.settings.todoDefaults.showProgress);
+	const todoShowUpcomingOnEmpty = $derived(settingsStore.settings.todoDefaults.showUpcomingOnEmpty);
 
 	const todoCount = $derived(memosStore.memos.filter(m => m.memoType === 'todo').length);
 
 	function handleTodoRemindToggle() {
-		todoRemindEnabled = !todoRemindEnabled;
-		settingsStore.setTodoRemindEnabled(todoRemindEnabled);
+		settingsStore.setTodoRemindEnabled(!todoRemindEnabled);
 	}
 
 	function handleTodoRemindTimeChange(e: Event) {
 		const target = e.target as HTMLInputElement;
-		todoRemindTime = target.value;
 		settingsStore.setTodoRemindTime(target.value);
 	}
 
 	function handleTodoAutoAlertToggle() {
-		todoAutoAlertEnabled = !todoAutoAlertEnabled;
-		settingsStore.setTodoAutoAlertEnabled(todoAutoAlertEnabled);
+		settingsStore.setTodoAutoAlertEnabled(!todoAutoAlertEnabled);
 	}
 
 	function handleTodoAutoAlertMinutesChange(e: Event) {
 		const target = e.target as HTMLSelectElement;
-		todoAutoAlertMinutes = parseInt(target.value);
-		settingsStore.setTodoAutoAlertMinutes(todoAutoAlertMinutes);
+		settingsStore.setTodoAutoAlertMinutes(parseInt(target.value));
 	}
 
 	function handleTodoShowOverdueToggle() {
-		todoShowOverdue = !todoShowOverdue;
-		settingsStore.setTodoShowOverdue(todoShowOverdue);
+		settingsStore.setTodoShowOverdue(!todoShowOverdue);
 	}
 
 	function handleTodoShowProgressToggle() {
-		todoShowProgress = !todoShowProgress;
-		settingsStore.setTodoShowProgress(todoShowProgress);
+		settingsStore.setTodoShowProgress(!todoShowProgress);
 	}
 
 	function handleTodoShowUpcomingOnEmptyToggle() {
-		todoShowUpcomingOnEmpty = !todoShowUpcomingOnEmpty;
-		settingsStore.setTodoShowUpcomingOnEmpty(todoShowUpcomingOnEmpty);
+		settingsStore.setTodoShowUpcomingOnEmpty(!todoShowUpcomingOnEmpty);
 	}
 
 	function handleExport() {
