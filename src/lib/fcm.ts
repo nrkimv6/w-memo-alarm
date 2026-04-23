@@ -190,10 +190,11 @@ export function setupForegroundMessageListener() {
 	onMessage(messaging, (payload) => {
 		// 포그라운드에서 알림 표시
 		if (Notification.permission === 'granted' && payload.notification) {
+			const scheduleId = (payload.data as Record<string, string> | undefined)?.schedule_id;
 			new Notification(payload.notification.title || 'Notification', {
 				body: payload.notification.body,
 				icon: '/favicon.png',
-				tag: 'memo-alarm-notification',
+				tag: 'memo-alarm-' + (scheduleId || 'fg'),
 				requireInteraction: false
 			});
 		}

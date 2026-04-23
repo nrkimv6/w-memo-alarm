@@ -24,20 +24,69 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// 백그라운드 메시지 핸들러
+// 동일 분에 도착하는 FCM push를 모아 병합 알림으로 표시하기 위한 buffer/timer
+// _fcmPendingResolves: 각 push handler의 Promise.resolve를 모아 flush 시 일괄 해제 (SW keepalive 보장)
+let _fcmPending = [];
+let _fcmMergeTimer = null;
+let _fcmPendingResolves = [];
+
+// 버퍼에 쌓인 payload를 꺼내 단일/병합 알림으로 표시하고 모든 handler Promise를 resolve
+function _flushFcmNotifications() {
+	try {
+		const items = _fcmPending.splice(0, _fcmPending.length);
+		_fcmPending = [];
+		_fcmMergeTimer = null;
+
+		if (items.length === 0) return;
+
+		if (items.length === 1) {
+			const payload = items[0];
+			const scheduleId = payload.data?.schedule_id || String(Date.now());
+			const title = payload.notification?.title || 'memo-alarm';
+			const body = payload.notification?.body || '';
+			self.registration.showNotification(title, {
+				body,
+				icon: '/favicon.png',
+				tag: 'memo-alarm-' + scheduleId,
+				requireInteraction: false,
+				data: {
+					memo_id: payload.data?.memo_id,
+					memoId: payload.data?.memoId,
+					type: 'single'
+				}
+			});
+		} else {
+			const mergeKey = items[0].data?.schedule_id || String(Date.now());
+			const titleLines = items.map((p) => '• ' + (p.notification?.title || 'memo-alarm'));
+			const memoIds = items.map((p) => p.data?.memo_id || p.data?.memoId).filter(Boolean);
+			self.registration.showNotification(items.length + '개의 메모 알림', {
+				body: titleLines.join('\n'),
+				icon: '/favicon.png',
+				tag: 'memo-alarm-merged-' + mergeKey,
+				requireInteraction: false,
+				data: { memoIds, type: 'merged' }
+			});
+		}
+	} catch (e) {
+		console.error('[firebase-messaging-sw.js] flush error:', e);
+	} finally {
+		// 모든 handler Promise resolve — flush 실패해도 SW keepalive가 무한 지속되지 않도록
+		const resolves = _fcmPendingResolves.splice(0, _fcmPendingResolves.length);
+		_fcmPendingResolves = [];
+		resolves.forEach((r) => r());
+	}
+}
+
+// 백그라운드 메시지 핸들러 — 800ms debounce 병합 window
+// 각 handler는 _fcmPendingResolves에 resolve를 등록, flush 시 일괄 해제
 messaging.onBackgroundMessage((payload) => {
 	console.log('[firebase-messaging-sw.js] Background message received:', payload);
-
-	const notificationTitle = payload.notification?.title || 'memo-alarm';
-	const notificationOptions = {
-		body: payload.notification?.body || '',
-		icon: '/favicon.png',
-		tag: 'memo-alarm-notification',
-		requireInteraction: false,
-		data: payload.data
-	};
-
-	return self.registration.showNotification(notificationTitle, notificationOptions);
+	_fcmPending.push(payload);
+	clearTimeout(_fcmMergeTimer);
+	return new Promise((resolve) => {
+		_fcmPendingResolves.push(resolve);
+		_fcmMergeTimer = setTimeout(_flushFcmNotifications, 800);
+	});
 });
 
 // 알림 클릭 핸들러
@@ -46,9 +95,15 @@ self.addEventListener('notificationclick', (event) => {
 
 	event.notification.close();
 
-	// 알림 데이터에서 메모 ID 추출
-	const memoId = event.notification.data?.memoId;
-	const appUrl = memoId ? `/?memo=${memoId}` : '/';
+	const data = event.notification.data || {};
+	let appUrl;
+	if (data.type === 'merged') {
+		const firstId = data.memoIds?.[0] || data.memo_ids?.[0];
+		appUrl = firstId ? '/?memo=' + firstId : '/';
+	} else {
+		const memoId = data.memo_id || data.memoId;
+		appUrl = memoId ? '/?memo=' + memoId : '/';
+	}
 
 	// 알림 클릭 시 앱 열기
 	event.waitUntil(
