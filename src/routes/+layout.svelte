@@ -46,9 +46,10 @@
 	async function syncRemindersToSw(reason: string) {
 		if (!browser) return;
 		if (!memosStore.initialized || memosStore.loading) return;
+		// await 전에 동기적으로 key를 갱신해 $effect 재진입 방지
+		lastReminderSyncKey = notificationStore.activeReminderSyncKey;
 		console.log(`[Layout] SW reminder sync (${reason})`);
 		await notificationStore.registerRemindersToServiceWorker();
-		lastReminderSyncKey = notificationStore.activeReminderSyncKey;
 	}
 
 	// SW 교체(앱 업데이트) 후 새 SW가 clients.claim() 완료 시 reminders 재등록
