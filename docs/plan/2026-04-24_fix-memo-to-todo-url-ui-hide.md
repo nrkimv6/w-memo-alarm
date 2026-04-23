@@ -3,7 +3,7 @@
 > 작성일시: 2026-04-24 00:39
 > 기준커밋: 931c414
 > 대상 프로젝트: memo-alarm
-> 상태: 구현중
+> 상태: 머지대기
 > branch: impl/fix-memo-to-todo-url-ui-hide
 > worktree: .worktrees/impl-fix-memo-to-todo-url-ui-hide
 > worktree-owner: D:\work\project\service\wtools\memo-alarm\docs\plan\2026-04-24_fix-memo-to-todo-url-ui-hide.md
@@ -213,4 +213,4 @@ npm run check
 
 ---
 
-*상태: 구현중 | 진행률: 45/71 (63%)*
+*상태: 머지대기 | 진행률: 45/71 (63%)*
