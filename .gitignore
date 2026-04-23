@@ -44,3 +44,6 @@ coverage/
 
 .wrangler
 nul
+
+# Git worktrees (Cloudflare Pages submodule clone 오류 방지)
+.worktrees/
