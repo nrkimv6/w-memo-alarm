@@ -3,11 +3,10 @@
 > 작성일시: 2026-04-24 17:45
 > 기준커밋: 931c414
 > 대상 프로젝트: memo-alarm
-> 상태: 머지대기
-> branch: impl/fix-settings-state-desync-on-cold-load
-> worktree: .worktrees/impl-fix-settings-state-desync-on-cold-load
-> worktree-owner: D:\work\project\service\wtools\memo-alarm\docs\plan\2026-04-24_fix-settings-state-desync-on-cold-load.md
-> 진행률: 35/58 (60%)
+> 상태: 구현완료
+> 반영일시: 2026-04-24 08:33
+> 머지커밋: e79316a
+> 진행률: 42/61 (69%)
 > 요약: 브라우저에서 설정 페이지 진입 시 "새 메모에 자동 알림" 토글이 localStorage 실제 값과 무관하게 항상 OFF 로 표시되지만, 실제 동작(메모 생성·알림 관리)은 ON 값을 쓰고 있어 UI 만 불일치 — 설정 페이지의 로컬 `$state` 초기값 복사를 `$derived` 로 교체해 타이밍 디싱크 제거
 
 ---
@@ -152,10 +151,13 @@ R3. - [x] **방어 증명**
 
 ### Phase Z: Post-Merge Cleanup (/merge-test owner)
 
-Z. - [ ] **post-merge 정리 확인** — `/merge-test` owner
-   - [ ] `2026-04-24_fix-settings-state-desync-on-cold-load.md`: `main merge 시도`를 owner step 으로 적는다
-   - [ ] `2026-04-24_fix-settings-state-desync-on-cold-load.md`: `root dirty stash/apply (if needed)`를 owner step 으로 적는다
-   - [ ] `2026-04-24_fix-settings-state-desync-on-cold-load.md`: `T4/T5 해당 없음 (TypeScript/Svelte UI, pytest 강제 규칙 비대상)`, `worktree remove`, `branch remove`, `header meta 제거`를 분리해 적는다
+Z. - [x] **post-merge 정리 확인** — `/merge-test` owner
+   - [x] main merge 완료: `e79316a` ✅
+   - [x] root dirty stash/apply 완료 ✅
+   - [x] T4/T5 해당 없음 (TypeScript/Svelte UI, pytest 강제 규칙 비대상) ✅
+   - [x] worktree remove: `.worktrees/impl-fix-settings-state-desync-on-cold-load` ✅
+   - [x] branch remove: `impl/fix-settings-state-desync-on-cold-load` ✅
+   - [x] header meta 제거: `branch`, `worktree`, `worktree-owner` 필드 제거 ✅
 
 > 예외 경로: `merge resolve`, `stash pop`, `stash-pop resolve`는 정상 체크박스로 만들지 않고 충돌/복원 실패 시 메모로만 남긴다.
 
@@ -186,4 +188,4 @@ Z. - [ ] **post-merge 정리 확인** — `/merge-test` owner
 
 ---
 
-*상태: 머지대기 | 진행률: 35/58 (60%)*
+*상태: 구현완료 | 진행률: 42/61 (69%)*
