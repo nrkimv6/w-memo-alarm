@@ -7,7 +7,9 @@
 
 	let inputValue = $state('');
 	let inputRef = $state<HTMLInputElement | null>(null);
-	let useAutoReminder = $state(settingsStore.settings.autoReminderOnCreate);
+	// null = 사용자가 아직 토글 안 함 → 전역 설정 값을 실시간으로 반영
+	let sessionOverride = $state<boolean | null>(null);
+	const useAutoReminder = $derived(sessionOverride ?? settingsStore.settings.autoReminderOnCreate);
 
 	// URL 패턴 감지
 	const urlPattern = /^(https?:\/\/[^\s]+)$/i;
@@ -57,7 +59,7 @@
 	}
 
 	function toggleAutoReminder() {
-		useAutoReminder = !useAutoReminder;
+		sessionOverride = !useAutoReminder;
 	}
 </script>
 
