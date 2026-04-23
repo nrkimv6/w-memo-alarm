@@ -16,7 +16,7 @@
 
 ## 개요
 
-현재 운영 경로는 `lineminder-23489` 기준으로 돌아가 있지만, 원래 의도한 Firebase 프로젝트는 `wservice-cross-noti`다(`cross-noti/google-services_crossnoti.json` literal과 일치). 제공된 서비스계정 JSON은 `D:\Data\obsidian2\Study\Dev\Tools\woory\wservice-cross-noti-firebase-adminsdk-fbsvc-bc0aff608d.json`이며, 키 생성 시각(2026-02-06)도 이후 즉흥적으로 만든 `lineminder-23489` 서비스계정보다 앞선다.
+현재 운영 경로는 `lineminder-23489` 기준으로 돌아가 있지만, 원래 의도한 Firebase 프로젝트는 `wservice-cross-noti`다(`cross-noti/google-services_crossnoti.json` literal과 일치). 사용할 서비스계정 JSON은 `D:\Data\obsidian2\Study\Dev\Tools\woory\wservice-cross-noti-426c8076e72b.json`(`noti-6422-common@wservice-cross-noti.iam.gserviceaccount.com`, 2026-04-22 생성)이다. `firebase-adminsdk-fbsvc` 기본 계정(`bc0aff608d`)이 아니라 FCM 전용으로 별도 생성한 `noti-6422-common` 계정을 사용한다.
 
 실제 검증 기준으로도 provided JSON 자체가 깨진 것은 아니다. `wservice-cross-noti` 서비스계정으로 자기 프로젝트에 FCM `validate_only`를 보냈을 때 `PERMISSION_DENIED`가 아니라 `SENDER_ID_MISMATCH`가 반환됐다. 이는 현재 저장된 `memo-alarm` 토큰이 다른 sender에서 발급됐다는 뜻이고, "admin JSON 교체만 하면 끝"이 아니라 **클라이언트 public Firebase 식별자와 토큰 재발급까지 같이 가야 한다**는 뜻이다.
 
