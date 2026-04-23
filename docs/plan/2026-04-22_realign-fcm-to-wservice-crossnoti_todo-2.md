@@ -13,7 +13,7 @@
 ## Phase 3: memo-alarm public Firebase 설정 원복
 
 1. - [ ] **memo-alarm을 shared Firebase 설정에서 분리한다** — `line-minder`와 같은 값을 계속 물고 있지 않게 한다.
-   - [ ] `D:\work\project\service\wtools\common\.env.shared`: `memo-alarm`이 shared Firebase 블록에 묶여 있는 현재 구조를 해제할지, 아니면 memo-alarm 전용 `.env.local` override를 둘지 **구현 전에 한 가지만 선택한다**. 기본 경로는 후자(override) — shared 파일은 `line-minder` 값을 유지하고, memo-alarm이 로컬 override로 `wservice-cross-noti` 값을 덮어쓴다. 이때 shared 파일에서 memo-alarm 전용 주석 블록은 삭제한다.
+   - [ ] `D:\work\project\service\wtools\common\.env.shared`: `line-minder` 값을 유지하되, memo-alarm 전용 주석 블록(`# Web Push (memo-alarm) - 추후 추가 필요` 등)만 삭제한다. memo-alarm 값은 아래 체크박스의 `.env.local` override로 처리한다 (override로 해결 불가능이 확인되는 경우에만 shared 분리로 fallback).
    - [ ] `D:\work\project\service\wtools\memo-alarm\.env`: 현재 `common/.env.shared`를 가리키는 심볼릭 링크를 유지한 채, 같은 디렉토리에 `.env.local`을 신규 생성하고 `PUBLIC_FIREBASE_PROJECT_ID`, `PUBLIC_FIREBASE_API_KEY`, `PUBLIC_FIREBASE_AUTH_DOMAIN`, `PUBLIC_FIREBASE_STORAGE_BUCKET`, `PUBLIC_FIREBASE_MESSAGING_SENDER_ID`, `PUBLIC_FIREBASE_APP_ID`, `PUBLIC_FIREBASE_VAPID_KEY`를 `wservice-cross-noti` 기준으로 채운다. SvelteKit은 `.env.local`이 `.env`보다 우선 적용된다는 규칙을 주석으로 남긴다.
 
      ```env
@@ -55,7 +55,7 @@
 3. - [ ] **새 sender로 등록된 토큰만 정상 상태로 본다** — old sender token이 남아도 오판하지 않게 한다.
    - [ ] `D:\work\project\service\wtools\memo-alarm\src\lib\fcm.ts`: 수동 등록 엔트리(`registerFCMToken()` 수동 호출)와 재설정 경로(`resetFCMToken()` 후 재등록) 모두 **토큰 등록 성공 직후에만** `writeStoredProjectMarker()`를 호출하도록 순서를 강제한다. 실패한 경로에서 marker가 앞서 갱신되는 상태를 막는다.
    - [ ] `D:\work\project\service\wtools\memo-alarm\src\routes\settings\+page.svelte`: `user_devices` 조회 결과에서 `is_active=true` count와 최근 10건 로그의 `[SENDER_ID_MISMATCH]`/`[PERMISSION_DENIED]` 출현 여부를 함께 계산해, `activeTokenCount >= 1 && senderMismatchInRecent === 0 && permissionDeniedInRecent === 0`일 때만 성공 배지(녹색)를 띄우도록 조건을 수정한다.
-   - [ ] `D:\work\project\service\wtools\memo-alarm\docs\plan\2026-04-22_realign-fcm-to-wservice-crossnoti_todo-2.md`: 아래 `## 최종 수동 검증 순서` 섹션을 추가해, `설정 페이지 재등록 → user_devices active token 확인 → validate_only 성공 → 실제 스케줄 수신 확인` 순서를 문서에 고정한다.
+   - [x] `D:\work\project\service\wtools\memo-alarm\docs\plan\2026-04-22_realign-fcm-to-wservice-crossnoti_todo-2.md`: 아래 `## 최종 수동 검증 순서` 섹션 이미 반영 — `설정 페이지 재등록 → user_devices active token 확인 → validate_only 성공 → 실제 스케줄 수신 확인` 순서가 Line 60~ 에 고정되어 있다.
 
 ## 최종 수동 검증 순서 (Phase 3~5 완료 후)
 
