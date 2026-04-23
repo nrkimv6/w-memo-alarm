@@ -156,7 +156,25 @@ export async function registerFCMToken(userId: string): Promise<FCMToken | null>
 
 		return { token: fcmToken, platform: 'web' };
 	} catch (error) {
-		console.error('FCM token registration failed:', error);
+		const code = (error as { code?: string })?.code ?? '';
+		const message = (error as { message?: string })?.message ?? '';
+		const serverResponse = (error as { customData?: { serverResponse?: string } })?.customData?.serverResponse ?? '';
+
+		const isDomainNotAuthorized =
+			(code.includes('installations/request-failed') || code.includes('installations')) &&
+			(message.includes('INVALID_ARGUMENT') ||
+				serverResponse.includes('INVALID_ARGUMENT') ||
+				serverResponse.includes('authorized domains') ||
+				serverResponse.includes('memo.woory.day'));
+
+		if (isDomainNotAuthorized) {
+			console.error(
+				'[FCM] Domain not authorized in Firebase Console — add memo.woory.day to Authentication > Authorized Domains for wservice-cross-noti',
+				error
+			);
+		} else {
+			console.error('FCM token registration failed:', error);
+		}
 		return null;
 	}
 }
