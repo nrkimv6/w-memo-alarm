@@ -56,6 +56,17 @@ function getTodayDateISO(date: Date = new Date()): string {
 	return date.toISOString().split('T')[0];
 }
 
+// NOTE: duplicated from src/lib/utils/notificationMerge.ts — SW scope
+function buildMergedTitle(count: number): string {
+	return `${count}개의 메모 알림`;
+}
+function buildMergedBody(titles: string[], maxItems = 4): string {
+	if (titles.length === 0) return '';
+	const shown = titles.slice(0, maxItems).map((t) => `• ${t}`).join('\n');
+	const rest = titles.length - maxItems;
+	return rest > 0 ? `${shown}\n외 ${rest}건` : shown;
+}
+
 // 메인 스레드로 로그 전달 함수
 function swLog(level: 'info' | 'warn' | 'error', message: string, data?: unknown) {
 	const logMsg = `[SW] ${message}`;
@@ -197,12 +208,11 @@ function showSingleNotification(reminder: ScheduledReminder) {
 
 // 병합 알림 표시 (같은 시간에 여러 알림이 있을 때)
 function showMergedNotification(reminders: ScheduledReminder[], time: string) {
-	const titles = reminders.map(r => `• ${r.title}`).join('\n');
 	const memoIds = reminders.map(r => r.memoId);
 
 	try {
-		sw.registration.showNotification(`${reminders.length}개의 메모 알림`, {
-			body: titles,
+		sw.registration.showNotification(buildMergedTitle(reminders.length), {
+			body: buildMergedBody(reminders.map(r => r.title)),
 			icon: '/favicon.png',
 			badge: '/favicon.png',
 			tag: `memo-batch-${time}`,
