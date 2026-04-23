@@ -4,10 +4,10 @@
 > 대상 프로젝트: memo-alarm
 > 실행순서: 1
 > 선행조건: 없음
-> 상태: 초안
-> branch:
-> worktree:
-> worktree-owner:
+> 상태: 구현중
+> branch: impl/fix-fcm-notification-tag-and-missing-sends
+> worktree: .worktrees/impl-fix-fcm-notification-tag-and-missing-sends
+> worktree-owner: D:/work/project/service/wtools/memo-alarm/docs/plan/2026-04-23_fix-fcm-notification-tag-and-missing-sends.md
 > 진행률: 0/42 (0%)
 
 ---
@@ -93,4 +93,4 @@
 
 ---
 
-*상태: 초안 | 진행률: 0/42 (0%)*
+*상태: 구현중 | 진행률: 0/42 (0%)*

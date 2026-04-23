@@ -7,6 +7,8 @@
 
 ## In Progress
 
+- [ ] **FCM 알림 merge window 구현 (memo-alarm SW)** — [plan](docs/plan/2026-04-23_fix-fcm-notification-tag-and-missing-sends_todo-1.md) (31/42, 74%)
+
 ## Pending
 
 - [ ] **FCM 알림 덮어쓰기 + 6개 미전송 원인 수정** — [plan](docs/plan/2026-04-23_fix-fcm-notification-tag-and-missing-sends.md) (0/73, 0%)
