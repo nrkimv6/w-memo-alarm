@@ -8,6 +8,7 @@
 ## In Progress
 
 - [ ] **FCM 프로젝트 원복: wservice-crossnoti 기준으로 설정·토큰·발송 경로 재정렬** — [plan](docs/plan/2026-04-22_realign-fcm-to-wservice-crossnoti.md) (0/6, 0%)
+- [ ] **SW 업데이트 후 알림 소실 수정** — [plan](docs/plan/2026-04-23_fix-sw-update-alarm-lost.md) (0/16, 0%)
 
 ## Pending
 
