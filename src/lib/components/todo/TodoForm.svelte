@@ -381,10 +381,16 @@
 	async function handleConvertToMemo() {
 		if (!memo) return;
 
+		const extraUrlCount = todoUrls.length >= 2 ? todoUrls.length - 1 : 0;
+		const urlWarning = extraUrlCount > 0
+			? `\n\n🔗 URL 목록 중 첫 번째를 제외한 ${extraUrlCount}개 URL이 삭제됩니다.`
+			: '';
+
 		// 확인 다이얼로그
 		const confirmed = confirm(
 			'할일을 메모로 전환하시겠습니까?\n\n' +
-			'⚠️ 주의: 기한, 우선순위, 반복 설정 등 할일 전용 정보가 삭제됩니다.'
+			'⚠️ 주의: 기한, 우선순위, 반복 설정 등 할일 전용 정보가 삭제됩니다.' +
+			urlWarning
 		);
 
 		if (!confirmed) return;
