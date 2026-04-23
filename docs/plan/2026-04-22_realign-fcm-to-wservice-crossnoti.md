@@ -34,7 +34,7 @@
 
 ## 기술적 고려사항
 
-- provided 서비스계정 JSON은 서버용 자격증명이다. 클라이언트 전환에는 `apiKey`, `authDomain`, `storageBucket`, `messagingSenderId`, `appId`, `VAPID key`가 별도로 필요하다. 현재 확인된 `wservice-cross-noti` artifact에는 `project_id`, `project_number`, Android API key만 있고 web `appId`와 VAPID key는 별도 수집이 필요하다. **web artifact 미수집 상태에서 Phase 3을 실행하면 브라우저 토큰 발급이 실패하므로, 구현 전에 web appId/VAPID key를 확보했는지 체크한 뒤 진행한다.**
+- provided 서비스계정 JSON은 서버용 자격증명이다. 클라이언트 전환에는 `apiKey`, `authDomain`, `storageBucket`, `messagingSenderId`, `appId`, `VAPID key`가 별도로 필요하다. **2026-04-23 web config + VAPID key 수집 완료** — Firebase Console에서 Web 앱을 등록하고 Web Push certificates를 확보했다. 실값은 obsidian `2026-02-11_key.md`와 todo-2 Phase 3.1 체크박스 아래 템플릿에 박혀 있다. 따라서 Phase 3 진입 시 추가 수집 작업은 없다.
 - `memo-alarm/.env`는 `common/.env.shared` 심볼릭 링크이므로, shared 파일을 그대로 바꾸면 `line-minder` 등 다른 앱도 함께 영향을 받는다. 본 plan은 **memo-alarm 전용 `.env.local` override** 경로를 기본으로 선택한다(shared 파일은 건드리지 않음). 구현 중 override로는 해결 불가능하다는 게 드러나면 shared env 분리로 전환하되, 전환 판단을 개별 체크박스 단위로 흩뜨리지 않는다.
 - `memo-alarm/static/firebase-messaging-sw.js`는 public env와 별개로 Firebase 식별자를 하드코딩한다. sender cutover 이후 이 파일이 남아 있으면 브라우저 토큰 발급 프로젝트와 서비스워커 수신 프로젝트가 다시 어긋날 수 있다.
 - 현재 `+layout.svelte`는 로그인 후 자동으로 `registerFCMToken()`을 호출한다. 이 자동 흐름을 이용하면 cutover 직후 "project marker mismatch"를 감지해 `resetFCMToken()` 또는 강제 재등록으로 연결할 수 있다.
@@ -44,7 +44,7 @@
 ### 재검토 보강 (2026-04-22, /review-plan)
 
 - 🟡 **선행 plan Phase 5 충돌**: 선행 plan(`fix-notification-fcm-permission-and-duplicate-cron`)의 Phase 5 step 11이 "`lineminder-23489`(또는 현 운영 project_id) 대상 service account로 교체"를 명시한다. 본 plan이 `wservice-cross-noti`로 방향을 뒤집으므로, 본 plan의 Phase 5 완료 후 선행 plan의 Phase 5는 더 이상 유효하지 않다. 선행 plan 쪽 체크박스 정리는 **본 plan을 운영 반영까지 마친 뒤** `/done` 또는 `/review-plan` 재실행 시 수동으로 "대체됨" 메모와 함께 체크 처리한다. 본 plan에서는 선행 plan 파일을 수정하지 않는다(외부 수정 임의 되돌리기 금지 규칙).
-- 🟡 **web artifact 공백**: web `appId`와 `VAPID key`가 현재 확인된 artifact에 없다. Phase 3.2를 시작하기 전에 Firebase Console > Project Settings > Your apps(web)에서 web `appId`와 Cloud Messaging > Web Push certificates에서 VAPID key를 수집했는지 명시적으로 체크한다. 미수집 상태로 구현에 진입하면 브라우저 토큰 발급이 `messaging/installation-token-errors` 계열로 실패한다.
+- 🟢 **web artifact 수집 완료 (2026-04-23)**: Firebase Console에서 Web 앱(`1:570337797776:web:dd0e36c66152ad18275a15`) 등록 완료, VAPID key(`BLHcqgg12jg0gWLQOuJjM_Kucv_WGCkaNq48BdAKHgZKn6rfsgrKD4RNnVnYeeSPzJhBnO6coebq8NEaTqzvdv0`, 2026-04-23 추가된 pair) 확보. 전체 web config는 obsidian `D:\Data\obsidian2\Study\Dev\Tools\woory\2026-02-11_key.md`의 "Web config (PUBLIC — memo-alarm 용)" 섹션에 기록되어 있고, todo-2 Phase 3.1에도 `.env.local`/`firebase-messaging-sw.js` 복붙용 템플릿이 박혀 있다. Phase 3 진입 블로커 해소.
 - 🟡 **`.env.local` vs shared 분리 선택**: Phase 3.1에서 override/분리 두 경로를 열어 두면 구현 중 혼선이 생긴다. 본 plan은 **override를 기본 경로로 고정**하고, override 실패 시에만 shared 분리로 전환하도록 todo-2 Phase 3.1에서 명시했다.
 - 🟡 **settings UI 중복 렌더링 리스크**: 선행 plan이 `settings/+page.svelte`에 이미 "서버측 FCM 상태" 카드를 추가했고 진행률 29/33으로 대부분 완료 상태다. 본 plan의 "project marker" 카드는 그 아래에 **추가**하며, 동일 `notification_logs` 조회를 중복 수행하지 않고 기존 `fcmStatus.notificationLogs` 배열을 필터해 재활용한다.
 - 🟢 **Phase T1~T5 미적용 사유**: 본 plan은 Deno Edge Function(TypeScript) + Svelte/TS + 운영 SQL/.env만 수정하며 Python/FastAPI 백엔드 변경이 없으므로 expand-todo의 5-Phase 테스트 블록은 필수 대상이 아니다. 대신 todo-1 "운영 실행 순서"와 todo-2 "최종 수동 검증 순서"를 유지한다.

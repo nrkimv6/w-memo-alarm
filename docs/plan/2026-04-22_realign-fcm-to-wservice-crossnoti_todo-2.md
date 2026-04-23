@@ -15,7 +15,32 @@
 1. - [ ] **memo-alarm을 shared Firebase 설정에서 분리한다** — `line-minder`와 같은 값을 계속 물고 있지 않게 한다.
    - [ ] `D:\work\project\service\wtools\common\.env.shared`: `memo-alarm`이 shared Firebase 블록에 묶여 있는 현재 구조를 해제할지, 아니면 memo-alarm 전용 `.env.local` override를 둘지 **구현 전에 한 가지만 선택한다**. 기본 경로는 후자(override) — shared 파일은 `line-minder` 값을 유지하고, memo-alarm이 로컬 override로 `wservice-cross-noti` 값을 덮어쓴다. 이때 shared 파일에서 memo-alarm 전용 주석 블록은 삭제한다.
    - [ ] `D:\work\project\service\wtools\memo-alarm\.env`: 현재 `common/.env.shared`를 가리키는 심볼릭 링크를 유지한 채, 같은 디렉토리에 `.env.local`을 신규 생성하고 `PUBLIC_FIREBASE_PROJECT_ID`, `PUBLIC_FIREBASE_API_KEY`, `PUBLIC_FIREBASE_AUTH_DOMAIN`, `PUBLIC_FIREBASE_STORAGE_BUCKET`, `PUBLIC_FIREBASE_MESSAGING_SENDER_ID`, `PUBLIC_FIREBASE_APP_ID`, `PUBLIC_FIREBASE_VAPID_KEY`를 `wservice-cross-noti` 기준으로 채운다. SvelteKit은 `.env.local`이 `.env`보다 우선 적용된다는 규칙을 주석으로 남긴다.
+
+     ```env
+     # memo-alarm 전용 override — shared .env의 line-minder 값을 덮어쓴다
+     # SvelteKit은 .env.local이 .env보다 우선 적용됨 (dotenv 기본 동작)
+     PUBLIC_FIREBASE_API_KEY=AIzaSyAVh8Enn3VjbLo4JMBmvhK5zE2nZJvMzDA
+     PUBLIC_FIREBASE_AUTH_DOMAIN=wservice-cross-noti.firebaseapp.com
+     PUBLIC_FIREBASE_PROJECT_ID=wservice-cross-noti
+     PUBLIC_FIREBASE_STORAGE_BUCKET=wservice-cross-noti.firebasestorage.app
+     PUBLIC_FIREBASE_MESSAGING_SENDER_ID=570337797776
+     PUBLIC_FIREBASE_APP_ID=1:570337797776:web:dd0e36c66152ad18275a15
+     PUBLIC_FIREBASE_VAPID_KEY=BLHcqgg12jg0gWLQOuJjM_Kucv_WGCkaNq48BdAKHgZKn6rfsgrKD4RNnVnYeeSPzJhBnO6coebq8NEaTqzvdv0
+     ```
+
    - [ ] `D:\work\project\service\wtools\memo-alarm\static\firebase-messaging-sw.js`: 하드코딩된 `lineminder-23489` 식별자와 `"line-minder와 동일한 프로젝트"` 주석을 제거하고, memo-alarm이 실제 사용하는 `wservice-cross-noti` web config(apiKey, authDomain, projectId=`wservice-cross-noti`, messagingSenderId, appId)로 맞춘다. VAPID key는 service worker 쪽에서 사용하지 않으므로 제외.
+
+     ```js
+     // memo-alarm service worker — wservice-cross-noti 프로젝트 전용
+     firebase.initializeApp({
+       apiKey: 'AIzaSyAVh8Enn3VjbLo4JMBmvhK5zE2nZJvMzDA',
+       authDomain: 'wservice-cross-noti.firebaseapp.com',
+       projectId: 'wservice-cross-noti',
+       storageBucket: 'wservice-cross-noti.firebasestorage.app',
+       messagingSenderId: '570337797776',
+       appId: '1:570337797776:web:dd0e36c66152ad18275a15',
+     });
+     ```
 
 ## Phase 4: sender 전환 시 토큰을 강제 재등록한다
 
