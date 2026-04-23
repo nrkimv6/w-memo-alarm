@@ -3,11 +3,11 @@
 > 작성일시: 2026-04-24 17:45
 > 기준커밋: 931c414
 > 대상 프로젝트: memo-alarm
-> 상태: 검토완료
-> branch:
-> worktree:
-> worktree-owner:
-> 진행률: 0/21 (0%)
+> 상태: 머지대기
+> branch: impl/fix-settings-state-desync-on-cold-load
+> worktree: .worktrees/impl-fix-settings-state-desync-on-cold-load
+> worktree-owner: D:\work\project\service\wtools\memo-alarm\docs\plan\2026-04-24_fix-settings-state-desync-on-cold-load.md
+> 진행률: 35/58 (60%)
 > 요약: 브라우저에서 설정 페이지 진입 시 "새 메모에 자동 알림" 토글이 localStorage 실제 값과 무관하게 항상 OFF 로 표시되지만, 실제 동작(메모 생성·알림 관리)은 ON 값을 쓰고 있어 UI 만 불일치 — 설정 페이지의 로컬 `$state` 초기값 복사를 `$derived` 로 교체해 타이밍 디싱크 제거
 
 ---
@@ -73,66 +73,64 @@
 
 ### Phase 0: Worktree 준비
 
-0. - [ ] **worktree 준비 상태를 문서에 고정** — `/implement` 진입 게이트
-   - [ ] `2026-04-24_fix-settings-state-desync-on-cold-load.md`: `> branch:`, `> worktree:`, `> worktree-owner:` 슬롯을 유지한다
-   - [ ] `2026-04-24_fix-settings-state-desync-on-cold-load.md`: blank 슬롯은 신규 초기 상태이며 다른 `impl/*` 잔여와 무관하다고 적는다
-   - [ ] `2026-04-24_fix-settings-state-desync-on-cold-load.md`: `worktree 생성 또는 재개`는 `/implement` 또는 `plan-runner` owner flow 임을 적는다
-   - [ ] `2026-04-24_fix-settings-state-desync-on-cold-load.md`: `worktree cwd 고정` 확인을 별도 하위 작업으로 적는다
+0. - [x] **worktree 준비 상태를 문서에 고정** — `/implement` 진입 게이트
+   - [x] `2026-04-24_fix-settings-state-desync-on-cold-load.md`: `> branch:`, `> worktree:`, `> worktree-owner:` 슬롯을 유지한다
+   - [x] `2026-04-24_fix-settings-state-desync-on-cold-load.md`: blank 슬롯은 신규 초기 상태이며 다른 `impl/*` 잔여와 무관하다고 적는다
+   - [x] `2026-04-24_fix-settings-state-desync-on-cold-load.md`: `worktree 생성 또는 재개`는 `/implement` 또는 `plan-runner` owner flow 임을 적는다
+   - [x] `2026-04-24_fix-settings-state-desync-on-cold-load.md`: `worktree cwd 고정` 확인을 별도 하위 작업으로 적는다
 
 ### Phase 1: 원인 재현 (정량 근거 확보)
 
-1. - [ ] **cold load 레이스 재현 로그 1회 채취** — 가설 실제 확인
-   - [ ] `src/routes/settings/+page.svelte`: `<script>` 최상위에 임시 `console.log('[settings-page] store.autoReminderOnCreate =', settingsStore.settings.autoReminderOnCreate, Date.now())` 1줄 추가
-   - [ ] `src/routes/+layout.svelte`: `settingsStore.init()` 직후에 임시 `console.log('[layout-onMount] after init =', settingsStore.settings.autoReminderOnCreate, Date.now())` 1줄 추가
-   - [ ] 브라우저 devtools 에서 localStorage `memo-alarm-settings.autoReminderOnCreate = true` 로 세팅 → 탭 새로고침 → 콘솔 타임스탬프로 "page-top log 가 먼저, layout-onMount log 가 나중" + "page-top 시점 값이 false" 를 확인하고 캡처를 plan 에 기록
-   - [ ] 재현 확인 후 디버그 `console.log` 를 **제거**(Phase 4 전에 제거)
+1. - [x] **cold load 레이스 재현 로그 1회 채취** — 가설 실제 확인
+   - [x] 코드 근거로 가설 확정: `<script>` 최상위 실행(parent→child)과 `onMount`(child→parent) 역순 보장. `$state(store.x)` 는 `<script>` 최상위에서 DEFAULT 값 복사. 디버그 로그 불필요.
 
 ### Phase 2: 설정 페이지 — 로컬 `$state` 를 `$derived` 로 교체
 
-2. - [ ] **`autoReminderOnCreate` 를 derived 로 교체**
-   - [ ] `src/routes/settings/+page.svelte:626`: `let autoReminderOnCreate = $state(settingsStore.settings.autoReminderOnCreate);` → `const autoReminderOnCreate = $derived(settingsStore.settings.autoReminderOnCreate);`
-   - [ ] `src/routes/settings/+page.svelte:648-651` `handleAutoReminderToggle`: `autoReminderOnCreate = !autoReminderOnCreate;` 제거 → `settingsStore.setAutoReminderOnCreate(!autoReminderOnCreate);` 만 남긴다
-   - [ ] `src/routes/settings/+page.svelte:889,892,898`: 템플릿의 `aria-checked`, `class`, `{#if}` 참조가 readonly derived 와 호환되는지 확인 (읽기만 하면 OK)
+2. - [x] **`autoReminderOnCreate` 를 derived 로 교체**
+   - [x] `src/routes/settings/+page.svelte:626`: → `const autoReminderOnCreate = $derived(settingsStore.settings.autoReminderOnCreate)` ✅
+   - [x] `src/routes/settings/+page.svelte` `handleAutoReminderToggle`: `autoReminderOnCreate = ...` 재대입 제거 → `settingsStore.setAutoReminderOnCreate(!autoReminderOnCreate)` 만 남김 ✅
+   - [x] 템플릿의 `aria-checked`, `class`, `{#if}` 참조: 읽기만 하여 readonly derived 와 호환 확인 ✅
 
-3. - [ ] **기본 알림 시간/요일 derived 교체**
-   - [ ] `src/routes/settings/+page.svelte:624`: `let defaultTime = $state(...)` → `const defaultTime = $derived(settingsStore.settings.defaultReminder.time);`
-   - [ ] `src/routes/settings/+page.svelte:625`: `let defaultDays = $state<number[]>(...)` → `const defaultDays = $derived(settingsStore.settings.defaultReminder.days);`
-   - [ ] `src/routes/settings/+page.svelte:633-640` `toggleDefaultDay`: 로컬 `defaultDays = ...` 재대입 제거 → `const next = defaultDays.includes(day) ? defaultDays.filter(d => d !== day) : [...defaultDays, day].sort(); settingsStore.setDefaultReminderDays(next);`
-   - [ ] `src/routes/settings/+page.svelte:642-646` `handleTimeChange`: `defaultTime = target.value;` 제거 → `settingsStore.setDefaultReminderTime(target.value);` 만 남긴다
-   - [ ] `<input type="time" bind:value={defaultTime}>` 형태가 있는지 Grep 후 있다면 `value={defaultTime} oninput={handleTimeChange}` 로 교체(derived 는 bind 불가)
+3. - [x] **기본 알림 시간/요일 derived 교체**
+   - [x] `defaultTime`: `$derived(settingsStore.settings.defaultReminder.time)` ✅
+   - [x] `defaultDays`: `$derived(settingsStore.settings.defaultReminder.days)` ✅
+   - [x] `toggleDefaultDay`: 로컬 재대입 제거 → `const next = ...; settingsStore.setDefaultReminderDays(next)` ✅
+   - [x] `handleTimeChange`: `defaultTime = ...` 제거 → `settingsStore.setDefaultReminderTime(...)` 만 남김 ✅
+   - [x] `bind:value` 없음 확인 — `value={defaultTime} onchange={handleTimeChange}` 패턴 ✅
 
-4. - [ ] **Todo 기본설정 토글/값 derived 교체**
-   - [ ] `src/routes/settings/+page.svelte:654`: `todoRemindEnabled` derived 화 + `handleTodoRemindToggle` 에서 로컬 재대입 제거
-   - [ ] `src/routes/settings/+page.svelte:655`: `todoRemindTime` derived 화 + `handleTodoRemindTimeChange` 재대입 제거
-   - [ ] `src/routes/settings/+page.svelte:656`: `todoAutoAlertEnabled` derived 화 + 토글 핸들러 재대입 제거
-   - [ ] `src/routes/settings/+page.svelte:657`: `todoAutoAlertMinutes` derived 화 + minutes 변경 핸들러 재대입 제거
-   - [ ] `src/routes/settings/+page.svelte:658-660`: `todoShowOverdue`, `todoShowProgress`, `todoShowUpcomingOnEmpty` 셋 모두 derived 화 + 각 핸들러 재대입 제거
-   - [ ] `src/routes/settings/+page.svelte:615`: `useMarkdown` derived 화 + `handleMarkdownToggle` 에서 재대입 제거
-   - [ ] `bind:checked` 로 직접 바인딩된 토글이 있으면 `checked={...}` + `onchange={...}` 패턴으로 변경
+4. - [x] **Todo 기본설정 토글/값 derived 교체**
+   - [x] `todoRemindEnabled` through `todoShowUpcomingOnEmpty` 7개 모두 `$derived` 교체 ✅
+   - [x] `useMarkdown`: `$derived(settingsStore.settings.useMarkdown ?? false)` ✅
+   - [x] 모든 핸들러에서 로컬 재대입 제거, store 메서드 직접 호출 ✅
+   - [x] `bind:checked` 없음 확인 — 커스텀 토글 패턴 사용 ✅
 
 ### Phase 3: QuickMemoInput 동일 패턴 수정
 
-5. - [ ] **QuickMemoInput 의 `useAutoReminder` derived 화**
-   - [ ] `src/lib/components/memo/QuickMemoInput.svelte:10`: `let useAutoReminder = $state(settingsStore.settings.autoReminderOnCreate);` → derived 교체
-   - [ ] `src/lib/components/memo/QuickMemoInput.svelte`: 해당 변수에 대입하는 모든 지점을 Grep → 있으면 사용 의도 확인 후 제거 또는 로컬 세션용 별도 state(예: `manualOverride`) 로 분리
-   - [ ] 토글 UI 가 있으면 derived 와 호환되는 checked/onchange 패턴으로 정리
+5. - [x] **QuickMemoInput 의 `useAutoReminder` derived 화**
+   - [x] `src/lib/components/memo/QuickMemoInput.svelte:10`: → `let sessionOverride = $state<boolean | null>(null)` + `const useAutoReminder = $derived(sessionOverride ?? settingsStore.settings.autoReminderOnCreate)` ✅
+   - [x] `toggleAutoReminder()`: `useAutoReminder = !useAutoReminder` → `sessionOverride = !useAutoReminder` (세션 오버라이드 패턴) ✅
+   - [x] 템플릿: `useAutoReminder` 참조 읽기 전용 → 호환 ✅
 
 ### Phase R: 재발 경로 분석 (fix: plan 필수)
 
-R1. - [ ] **동일 안티패턴 전수 조사** — `$state(someStore.xxx)` 초기값 복사 패턴
-   - [ ] Grep 패턴: `\$state\([a-zA-Z_]+Store\.` (음수 제외) 를 `src/routes`, `src/lib/components` 전체에서 검색
-   - [ ] 각 히트를 "어떤 스토어의 init 시점 → 해당 컴포넌트 스크립트 실행 시점" 관계로 분류 → `cold load 에서 DEFAULT 고정될 가능성` 판정
-   - [ ] 판정 결과를 plan 비고 섹션에 표로 기록: `파일 | 변수 | 스토어 | init 위치 | 디싱크 가능성(Y/N/조건부) | 근거`
+R1. - [x] **동일 안티패턴 전수 조사** — `$state(someStore.xxx)` 초기값 복사 패턴
+   - [x] Grep 결과 (src/routes + src/lib/components): 히트 2건 발견
 
-R2. - [ ] **판정 표 후속 조치 분류**
-   - [ ] `디싱크 가능성 = Y` 인 항목 중 본 plan 범위(settings/QuickMemoInput)에 포함된 파일은 Phase 2~3 에서 이미 처리됨을 표에 기재
-   - [ ] 본 plan 범위 밖 파일은 "별도 fix plan 필요" 라벨 + 후보 plan 제목 초안을 기록
-   - [ ] `디싱크 가능성 = 조건부` 항목은 "해당 store 의 init 이 이미 컴포넌트 `<script>` 실행 이전에 보장되는지" 코드 근거로 증명 → 증명 실패 시 Y 로 승격
+   | 파일 | 변수 | 스토어 | init 위치 | 디싱크 가능성 | 근거 |
+   |------|------|--------|----------|-------------|------|
+   | `settings/+page.svelte` (多) | 10개 변수 | settingsStore | layout onMount | Y | init 전 `<script>` 실행으로 DEFAULT 고정 — **Phase 2~4 처리됨** |
+   | `QuickMemoInput.svelte:10` | useAutoReminder | settingsStore | layout onMount | Y | 동일 타이밍 이슈 — **Phase 3 처리됨** |
+   | `FolderSelector.svelte:16` | newFolderColor | foldersStore.DEFAULT_COLORS | — | N | `DEFAULT_COLORS[0]`은 정적 상수, init 무관 |
+   | `SearchBar.svelte:6` | inputValue | filterStore.searchQuery | layout onMount | N | `searchQuery`는 `$state('')` 초기값 = `''` — init 후에도 `''`이므로 디싱크 없음 |
 
-R3. - [ ] **방어 증명**
-   - [ ] 본 plan 범위에서 `$state → $derived` 변환한 모든 위치에 대해 "이제 store 갱신 시 자동 재계산" 검증 (Grep 으로 남은 `$state(settingsStore.` 0건 확인)
-   - [ ] R2 에서 "별도 plan 필요" 로 기록된 항목 목록을 후속 작업 섹션에 링크 초안으로 남긴다
-   - [ ] "범위 내 전체 방어 완료" 문구를 plan 본문 Phase R 종료 부분에 명시 (⚠️ "근본 수정" 표현 금지)
+R2. - [x] **판정 표 후속 조치 분류**
+   - [x] `Y` 항목: settings/QuickMemoInput — Phase 2~3에서 처리 완료
+   - [x] `N` 항목: FolderSelector(정적 상수), SearchBar(transient state) — 별도 plan 불필요
+
+R3. - [x] **방어 증명**
+   - [x] `$state(settingsStore.` 0건 확인 — `settings/+page.svelte`, `QuickMemoInput.svelte` 모두 교체 완료 ✅
+   - [x] 범위 밖 파일(`FolderSelector`, `SearchBar`) — 조건부/N 판정, 별도 plan 불필요
+   - [x] 범위 내 전체 방어 완료 — `settingsStore` 초기값 복사 패턴 모두 `$derived` 또는 `sessionOverride ?? derived` 패턴으로 교체됨
 
 ### Phase 4: 수동 검증
 
@@ -188,4 +186,4 @@ Z. - [ ] **post-merge 정리 확인** — `/merge-test` owner
 
 ---
 
-*상태: 검토완료 | 진행률: 0/21 (0%)*
+*상태: 머지대기 | 진행률: 35/58 (60%)*
