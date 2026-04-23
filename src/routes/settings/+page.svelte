@@ -26,7 +26,7 @@
 	} from '$lib/utils/capacitor';
 	import { SW_MSG } from '$lib/constants/swMessages';
 	import { supabase } from '$lib/services/supabase';
-	import { registerFCMToken, getFCMConfigStatus } from '$lib/fcm';
+	import { registerFCMToken, getFCMConfigStatus, detectProjectMarkerMismatch, readStoredProjectMarker } from '$lib/fcm';
 
 	let fileInput: HTMLInputElement;
 	let importing = $state(false);
@@ -167,6 +167,33 @@
 		}
 
 		return /permission denied|forbidden|not allowed|rls/i.test(fcmStatus.error);
+	});
+
+	const projectMarkerState = $derived.by(() => {
+		const { mismatch, stored, current } = detectProjectMarkerMismatch();
+		return { mismatch, stored, current };
+	});
+
+	const senderMismatchLogs = $derived.by(() => {
+		return fcmStatus.notificationLogs.filter((log) =>
+			log.error_message?.includes('[SENDER_ID_MISMATCH@')
+		);
+	});
+
+	const recentHasSenderMismatch = $derived.by(() => senderMismatchLogs.length > 0);
+
+	const recentHasPermissionDenied = $derived.by(() =>
+		fcmStatus.notificationLogs.some((log) =>
+			log.error_message?.includes('[PERMISSION_DENIED]')
+		)
+	);
+
+	const fcmCutoverSuccess = $derived.by(() => {
+		return (
+			activeFcmTokenCount >= 1 &&
+			!recentHasSenderMismatch &&
+			!recentHasPermissionDenied
+		);
 	});
 
 	// 초기화 - 페이지 로드 시 네이티브 체크
@@ -1705,6 +1732,42 @@
 								<p class="text-muted-foreground">notification_logs 기록 없음</p>
 							{:else}
 								<p class="text-muted-foreground">로그인 필요</p>
+							{/if}
+						</div>
+
+						<!-- Project Marker 카드 -->
+						<div class="text-xs space-y-2 p-2 rounded bg-muted">
+							<p class="font-semibold flex items-center gap-2">
+								FCM 프로젝트 마커
+								{#if fcmCutoverSuccess}
+									<span class="rounded bg-green-500/15 px-2 py-0.5 text-green-600">cutover 완료</span>
+								{:else if activeFcmTokenCount === 0}
+									<span class="rounded bg-gray-500/15 px-2 py-0.5 text-muted-foreground">토큰 없음</span>
+								{:else}
+									<span class="rounded bg-orange-500/15 px-2 py-0.5 text-orange-600">확인 필요</span>
+								{/if}
+							</p>
+							<p>현재 마커: <span class="font-mono">{projectMarkerState.current ?? '—'}</span></p>
+							<p>저장된 마커: <span class="font-mono">{projectMarkerState.stored ?? '미저장'}</span></p>
+							<p>
+								재등록 필요:
+								{#if projectMarkerState.mismatch}
+									<span class="text-orange-500 font-semibold">예 (마커 불일치)</span>
+								{:else if projectMarkerState.stored === null}
+									<span class="text-muted-foreground">최초 등록 대기</span>
+								{:else}
+									<span class="text-green-600">아니오</span>
+								{/if}
+							</p>
+							{#if senderMismatchLogs.length > 0}
+								<div class="space-y-1 border-t border-border/50 pt-2">
+									<p class="font-semibold text-orange-600">SENDER_ID_MISMATCH 로그 ({senderMismatchLogs.length}건)</p>
+									<div class="max-h-24 space-y-1 overflow-y-auto">
+										{#each senderMismatchLogs as log}
+											<p class="font-mono break-all">{formatDevDateTime(log.sent_at)} — {log.error_message}</p>
+										{/each}
+									</div>
+								</div>
 							{/if}
 						</div>
 

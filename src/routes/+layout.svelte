@@ -13,7 +13,7 @@
 	import { filterStore } from "$lib/stores/filter.svelte";
 	import { foldersStore } from "$lib/stores/folders.svelte";
 	import { tagMetaStore } from "$lib/stores/tagMeta.svelte";
-	import { registerFCMToken, setupForegroundMessageListener, hasDeactivatedToken, resetFCMToken } from "$lib/fcm";
+	import { registerFCMToken, setupForegroundMessageListener, hasDeactivatedToken, resetFCMToken, detectProjectMarkerMismatch } from "$lib/fcm";
 	import { setupShareIntentListener, setupNotificationListeners, shareIntentToQueryParams, type ShareIntentData } from "$lib/utils/capacitor";
 	import { Toast } from "$lib/components/ui";
 	import UnifiedHeader from "$lib/components/layout/UnifiedHeader.svelte";
@@ -41,6 +41,17 @@
 	async function initFCM() {
 		if (authStore.isAuthenticated && authStore.user?.id) {
 			try {
+				// sender가 바뀌면 먼저 강제 재등록 (hasDeactivatedToken 검사보다 우선)
+				const { mismatch } = detectProjectMarkerMismatch();
+				if (mismatch) {
+					console.log('[Layout] FCM project marker mismatch — forcing re-registration');
+					const result = await resetFCMToken(authStore.user.id);
+					if (result) {
+						setupForegroundMessageListener();
+					}
+					return; // mismatch 처리 완료 — 이중 재등록 방지
+				}
+
 				// 비활성화된 토큰이 있는지 확인 (서버에서 NotRegistered로 비활성화됨)
 				const hasExpiredToken = await hasDeactivatedToken(authStore.user.id);
 				if (hasExpiredToken) {

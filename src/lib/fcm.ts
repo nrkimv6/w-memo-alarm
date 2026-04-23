@@ -43,6 +43,44 @@ export function getFCMConfigStatus() {
 	};
 }
 
+const FCM_PROJECT_MARKER_KEY = 'fcm.projectMarker';
+
+function buildCurrentProjectMarker(): string {
+	return `${PUBLIC_FIREBASE_PROJECT_ID}|${PUBLIC_FIREBASE_MESSAGING_SENDER_ID}`;
+}
+
+export function readStoredProjectMarker(): string | null {
+	if (!browser) return null;
+	try {
+		return localStorage.getItem(FCM_PROJECT_MARKER_KEY);
+	} catch {
+		return null;
+	}
+}
+
+export function writeStoredProjectMarker(marker: string): void {
+	if (!browser) return;
+	try {
+		localStorage.setItem(FCM_PROJECT_MARKER_KEY, marker);
+	} catch {
+		// privacy mode or storage full — ignore
+	}
+}
+
+export function detectProjectMarkerMismatch(): {
+	mismatch: boolean;
+	stored: string | null;
+	current: string | null;
+} {
+	const current = buildCurrentProjectMarker();
+	const stored = readStoredProjectMarker();
+	return {
+		mismatch: stored !== null && stored !== current,
+		stored,
+		current
+	};
+}
+
 // Firebase 초기화
 const app = browser && firebaseConfig.apiKey ? initializeApp(firebaseConfig) : null;
 const messaging = app ? getMessaging(app) : null;
@@ -110,6 +148,9 @@ export async function registerFCMToken(userId: string): Promise<FCMToken | null>
 			console.error('Failed to save FCM token to Supabase:', error);
 			throw error;
 		}
+
+		// 등록 성공 직후에만 project marker를 갱신한다 (실패 경로에서 앞서 갱신 방지)
+		writeStoredProjectMarker(buildCurrentProjectMarker());
 
 		return { token: fcmToken, platform: 'web' };
 	} catch (error) {

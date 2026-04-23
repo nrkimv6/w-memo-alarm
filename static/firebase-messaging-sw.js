@@ -4,14 +4,14 @@
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
 
-// Firebase 설정 (line-minder와 동일한 프로젝트)
+// memo-alarm service worker — wservice-cross-noti 프로젝트 전용
 firebase.initializeApp({
-	apiKey: 'AIzaSyA7D62gSqecQ-gUMUJ8C-P-0Fs6CeybyK4',
-	authDomain: 'lineminder-23489.firebaseapp.com',
-	projectId: 'lineminder-23489',
-	storageBucket: 'lineminder-23489.appspot.com',
-	messagingSenderId: '426056584594',
-	appId: '1:426056584594:web:5ecf5d11afe3e2c8a5854b'
+	apiKey: 'AIzaSyAVh8Enn3VjbLo4JMBmvhK5zE2nZJvMzDA',
+	authDomain: 'wservice-cross-noti.firebaseapp.com',
+	projectId: 'wservice-cross-noti',
+	storageBucket: 'wservice-cross-noti.firebasestorage.app',
+	messagingSenderId: '570337797776',
+	appId: '1:570337797776:web:dd0e36c66152ad18275a15'
 });
 
 const messaging = firebase.messaging();
