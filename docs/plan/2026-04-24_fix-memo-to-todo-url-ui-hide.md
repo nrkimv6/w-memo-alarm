@@ -3,10 +3,10 @@
 > 작성일시: 2026-04-24 00:39
 > 기준커밋: 931c414
 > 대상 프로젝트: memo-alarm
-> 상태: 검토완료
-> branch:
-> worktree:
-> worktree-owner:
+> 상태: 구현중
+> branch: impl/fix-memo-to-todo-url-ui-hide
+> worktree: .worktrees/impl-fix-memo-to-todo-url-ui-hide
+> worktree-owner: D:\work\project\service\wtools\memo-alarm\docs\plan\2026-04-24_fix-memo-to-todo-url-ui-hide.md
 > 진행률: 0/20 (0%)
 > 요약: 메모→할일 전환 시 기존 `memo.url`(북마크 URL)이 할일 UI(TodoCard/TodoForm)에서 표시되지 않아 "URL이 사라진 것처럼" 보인다 — `convertMemoToTodo`에서 `url`을 `todoUrls`로 자동 마이그레이션하고, 역방향 `convertTodoToMemo`에서 `todoUrls[0]`을 `url`로 복원한다. 함께 할일→메모 경고 다이얼로그에도 URL 삭제 경고를 추가한다.
 
@@ -206,4 +206,4 @@ npm run check
 
 ---
 
-*상태: 검토완료 | 진행률: 0/20 (0%)*
+*상태: 구현중 | 진행률: 0/20 (0%)*
