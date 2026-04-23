@@ -3,11 +3,11 @@
 > 작성일시: 2026-04-24 17:30
 > 기준커밋: 931c414
 > 대상 프로젝트: memo-alarm
-> 상태: 검토완료
-> branch:
-> worktree:
-> worktree-owner:
-> 진행률: 0/22 (0%)
+> 상태: 머지대기
+> branch: impl/fix-notification-merge-in-foreground
+> worktree: .worktrees/impl-fix-notification-merge-in-foreground
+> worktree-owner: D:\work\project\service\wtools\memo-alarm\docs\plan\2026-04-24_fix-notification-merge-in-foreground.md
+> 진행률: 43/60 (72%)
 > 요약: 기본 알림 시간(예: 09:00) 시점에 13개 개별 알림이 1분 안에 쏟아져 너무 번잡함 — foreground(메인 스레드) 경로도 Service Worker와 동일하게 동일 HH:MM 그룹을 1건의 병합 알림으로 축약
 
 ---
@@ -61,71 +61,81 @@
 
 ### Phase 0: Worktree 준비
 
-0. - [ ] **worktree 준비 상태를 문서에 고정** — `/implement` 진입 게이트
-   - [ ] `2026-04-24_fix-notification-merge-in-foreground.md`: `> branch:`, `> worktree:`, `> worktree-owner:` 슬롯을 유지한다
-   - [ ] `2026-04-24_fix-notification-merge-in-foreground.md`: blank 슬롯은 신규 초기 상태이며 다른 `impl/*` 잔여와 무관하다고 적는다
-   - [ ] `2026-04-24_fix-notification-merge-in-foreground.md`: `worktree 생성 또는 재개`는 `/implement` 또는 `plan-runner` owner flow 임을 적는다
-   - [ ] `2026-04-24_fix-notification-merge-in-foreground.md`: `worktree cwd 고정` 확인을 별도 하위 작업으로 적는다
+0. - [x] **worktree 준비 상태를 문서에 고정** — `/implement` 진입 게이트
+   - [x] `2026-04-24_fix-notification-merge-in-foreground.md`: `> branch:`, `> worktree:`, `> worktree-owner:` 슬롯을 유지한다
+   - [x] `2026-04-24_fix-notification-merge-in-foreground.md`: blank 슬롯은 신규 초기 상태이며 다른 `impl/*` 잔여와 무관하다고 적는다
+   - [x] `2026-04-24_fix-notification-merge-in-foreground.md`: `worktree 생성 또는 재개`는 `/implement` 또는 `plan-runner` owner flow 임을 적는다
+   - [x] `2026-04-24_fix-notification-merge-in-foreground.md`: `worktree cwd 고정` 확인을 별도 하위 작업으로 적는다
 
 ### Phase 1: 병합 유틸 추출
 
-1. - [ ] **공통 병합 로직을 새 유틸 파일로 분리** — SW/메인 스레드가 같은 규칙을 공유
-   - [ ] `src/lib/utils/notificationMerge.ts` (신규): `buildMergedBody(titles: string[], maxItems = 4): string` 구현 — 상위 N개 `• {title}` + `외 {rest}건` 축약, `titles.length === 0` 이면 빈 문자열 반환
-   - [ ] `src/lib/utils/notificationMerge.ts` (신규): `buildMergedTitle(count: number): string` 구현 — `"{count}개의 메모 알림"` 반환, 기존 SW 제목과 동일 문구 유지
-   - [ ] `src/lib/utils/notificationMerge.ts` (신규): 순수 함수 + 외부 import 없음 — SW/메인 양쪽 컨텍스트에서 동작
+1. - [x] **공통 병합 로직을 새 유틸 파일로 분리** — SW/메인 스레드가 같은 규칙을 공유
+   - [x] `src/lib/utils/notificationMerge.ts` (신규): `buildMergedBody(titles: string[], maxItems = 4): string` 구현 ✅
+   - [x] `src/lib/utils/notificationMerge.ts` (신규): `buildMergedTitle(count: number): string` 구현 ✅
+   - [x] `src/lib/utils/notificationMerge.ts` (신규): 순수 함수 + 외부 import 없음 ✅
 
 ### Phase 2: Service Worker 병합 본문 개선
 
-2. - [ ] **SW `showMergedNotification` 본문을 축약 형태로 교체**
-   - [ ] `src/service-worker.ts:199-223` `showMergedNotification`: `titles` 생성 로직(`reminders.map(r => '• ' + r.title).join('\n')`)을 `buildMergedBody(reminders.map(r => r.title))` 호출로 교체
-   - [ ] `src/service-worker.ts:204` 제목 `"${reminders.length}개의 메모 알림"` 을 `buildMergedTitle(reminders.length)` 호출로 교체
-   - [ ] `src/service-worker.ts`: SW 가 `$lib/utils/notificationMerge` 를 import 가능한지 `npm run build` 로 확인. 실패 시 `buildMergedTitle`/`buildMergedBody` 본체를 SW 파일 상단에 **복사**하고 `// NOTE: duplicated from src/lib/utils/notificationMerge.ts — SW scope` 주석 남김
+2. - [x] **SW `showMergedNotification` 본문을 축약 형태로 교체**
+   - [x] `src/service-worker.ts` `showMergedNotification`: `titles` 생성 → `buildMergedBody(reminders.map(r => r.title))` ✅
+   - [x] `src/service-worker.ts` 제목 → `buildMergedTitle(reminders.length)` ✅
+   - [x] SW `$lib` import 불가 확인 (파일 내 주석: `$lib import 불가`) → `buildMergedTitle`/`buildMergedBody` 본체 SW 상단에 복사 + `// NOTE: duplicated...` 주석 ✅
 
 ### Phase 3: 메인 스레드 체크 루프에 병합 도입
 
-3. - [ ] **`checkAndTriggerReminders` 를 "수집 → 그룹핑 → 발송" 으로 재구성**
-   - [ ] `src/lib/stores/notifications.svelte.ts:249-331` `checkAndTriggerReminders`: 루프 내부 `showNotification(memo)` 즉시 호출 제거, `const toFire: Memo[] = []` 로 수집만
-   - [ ] `src/lib/stores/notifications.svelte.ts`: 수집 후 `toFire.length === 0` 이면 return, `=== 1` 이면 기존 `showNotification(toFire[0])`, `>= 2` 이면 신규 `showMergedForeground(toFire, currentTime)` 호출
-   - [ ] `src/lib/stores/notifications.svelte.ts`: `lastNotifiedMap[memo.id] = notifyKey` 와 `once → enabled=false` 전환을 **발송 전** 일괄 수행 → 같은 분 경계의 동시 재진입 중복 방지
-   - [ ] `src/lib/stores/notifications.svelte.ts`: `saveLastNotified()` 는 수집/업데이트 완료 후 1회만 호출 (반복 저장 제거)
+3. - [x] **`checkAndTriggerReminders` 를 "수집 → 그룹핑 → 발송" 으로 재구성**
+   - [x] `src/lib/stores/notifications.svelte.ts` `checkAndTriggerReminders`: 루프 내부 즉시 발송 → `toFire` 수집으로 교체 ✅
+   - [x] 수집 후 `0 → return`, `1 → showNotification`, `>= 2 → showMergedForeground` 분기 ✅
+   - [x] `lastNotifiedMap[memo.id] = notifyKey` + `once → memosStore.updateReminderEnabled` 발송 전 일괄 처리 ✅
+   - [x] `saveLastNotified()` 수집 후 1회만 호출 ✅
 
-4. - [ ] **`showMergedForeground` 신설** — foreground 경로 병합 알림 발송기
-   - [ ] `src/lib/stores/notifications.svelte.ts`: `async function showMergedForeground(memos: Memo[], time: string): Promise<void>` 추가 — SW ready 확보 후 `registration.showNotification(buildMergedTitle(memos.length), { body: buildMergedBody(memos.map(m => m.title)), icon: '/favicon.png', tag: ``memo-batch-${time}``, data: { memoIds: memos.map(m => m.id), url: '/', type: 'merged', time }, requireInteraction: true })`
-   - [ ] `src/lib/stores/notifications.svelte.ts`: SW 미가용 시 fallback 으로 `new Notification(buildMergedTitle(memos.length), { body: buildMergedBody(...) })` **1회만** 발송 — 각 memo 반복 금지
-   - [ ] `src/lib/stores/notifications.svelte.ts`: memo 각각에 대해 `notificationHistoryStore.addRecord({ memoId: m.id, memoTitle: m.title, status: 'success', channel: 'sw-push', reminderType: ..., sentAt })` 를 루프로 기록 (SW 경로와 일관된 이력 단위 유지)
-   - [ ] `src/lib/stores/notifications.svelte.ts`: 발송 실패 catch 블록에서 포함 memo 전부에 `status: 'failed'` 레코드 기록
+4. - [x] **`showMergedForeground` 신설** — foreground 경로 병합 알림 발송기
+   - [x] `async function showMergedForeground(memos: Memo[], time: string): Promise<void>` 추가 ✅
+   - [x] SW ready → `registration.showNotification(buildMergedTitle, { body: buildMergedBody, tag: memo-batch-{time}, data: {memoIds, url:'/', type:'merged', time} })` ✅
+   - [x] SW 미가용 fallback → `new Notification(...)` 1건 발송 + `onclick` → `location.href = '/'` ✅
+   - [x] memo 각각에 `notificationHistoryStore.addRecord` 루프 기록 ✅
+   - [x] 실패 catch 블록에서 전부 `status: 'failed'` 기록 ✅
 
-5. - [ ] **snoozed reminder 는 병합 범위 밖임을 명시**
-   - [ ] `src/lib/stores/notifications.svelte.ts:266-279` `snoozedReminders.forEach(...) showNotification(memo, true)`: 스누즈 해제 시점은 제각각이라 병합 대상이 아님을 코드 주석 1줄로 남긴다
+5. - [x] **snoozed reminder 는 병합 범위 밖임을 명시**
+   - [x] `snoozedReminders.forEach` 위에 주석 추가: "스누즈 해제 시점은 제각각 — 병합 대상 아님" ✅
 
 ### Phase 4: 다중 reminder 누락 최소 수정
 
-6. - [ ] **루프 필터를 `reminders[]` 기반으로 수정** — 다중 reminder 시대의 병합 누락 방지
-   - [ ] `src/lib/stores/notifications.svelte.ts:285` `if (!memo.reminder?.enabled) return;`: `const rems = getRemindersFromMemo(memo); const active = rems.find(r => r.enabled && r.time === currentTime); if (!active) return;` 로 교체
-   - [ ] `src/lib/stores/notifications.svelte.ts:301-314`: `memo.reminder.type/days/date` 참조를 `active.type/active.days/active.date` 로 치환
-   - [ ] `src/lib/stores/notifications.svelte.ts:324-329` once → enabled=false 전환: `memosStore.update(memo.id, { reminder: { ..., enabled: false } })` 대신 `memosStore.updateReminderEnabled(memo.id, active.id, false)` 호출 — 다른 reminder 끼지 않게 active.id 하나만 끄기
+6. - [x] **루프 필터를 `reminders[]` 기반으로 수정** — 다중 reminder 시대의 병합 누락 방지
+   - [x] `src/lib/stores/notifications.svelte.ts:285` `if (!memo.reminder?.enabled) return;`: `const rems = getRemindersFromMemo(memo); const active = rems.find(r => r.enabled && r.time === currentTime); if (!active) return;` 로 교체 ✅
+   - [x] `src/lib/stores/notifications.svelte.ts:301-314`: `memo.reminder.type/days/date` 참조를 `active.type/active.days/active.date` 로 치환 ✅
+   - [x] `src/lib/stores/notifications.svelte.ts:324-329` once → enabled=false 전환: `memosStore.updateReminderEnabled(memo.id, active.id, false)` 호출 — 다른 reminder 끼지 않게 active.id 하나만 끄기 ✅
 
 ### Phase 5: 클릭 동작 검증
 
-7. - [ ] **foreground 병합 알림 클릭 라우팅 확인**
-   - [ ] `src/service-worker.ts:509-559` `notificationclick`: `data.type === 'merged'` 분기에 foreground 경로에서 온 tag(`memo-batch-${time}`) 도 동일 규칙으로 매칭되는지 확인 — 동일 tag 규칙이므로 자연 매칭, 필요 시 주석으로 명시
-   - [ ] `src/lib/stores/notifications.svelte.ts`: `new Notification()` native fallback 분기 `onclick`: `window.focus()` 후 `location.href = '/'` 로 홈 이동. `autoOpen` 외부 URL 처리는 병합 알림에는 적용하지 않는다(복수 memo 대상이라 단일 URL 결정 불가) — 코드 주석으로 명시
+7. - [x] **foreground 병합 알림 클릭 라우팅 확인**
+   - [x] `src/service-worker.ts:519-568` `notificationclick`: `data.type === 'merged'` 분기에 `appUrl = '/'` 로 매핑됨 — `memo-batch-${time}` tag 를 쓰는 foreground 경로도 동일 data.type으로 자연 매칭 ✅
+   - [x] `src/lib/stores/notifications.svelte.ts:362`: `new Notification()` native fallback 분기 `onclick`: `window.focus()` 후 `location.href = '/'` 로 홈 이동 ✅. autoOpen 외부 URL 처리 미적용 (복수 memo 대상, 단일 URL 결정 불가)
 
 ### Phase R: 재발 경로 분석 (fix: plan 필수)
 
-R1. - [ ] **알림 발송 경로 전수 열거 + 방어 여부 판정**
-   - [ ] Grep: `showNotification\(`, `registration\.showNotification\(`, `new Notification\(` 를 프로젝트 전체에서 검색 (exclude `node_modules`, `build`)
-   - [ ] 각 호출 경로별로 "동일 HH:MM 에 N건 이상 발생할 수 있는 컨텍스트인가?" 판정 → 경로별 `방어여부`(병합 적용/대상 아님/미방어) 를 plan 비고 섹션에 표로 기록
-   - [ ] 예상 경로: SW `checkScheduledReminders`(병합 적용), SW `push` 이벤트 핸들러(서버 푸시 1건 단위, 대상 아님), foreground `checkAndTriggerReminders`(병합 적용 after fix), foreground `snooze 재발화`(스누즈 해제 타이밍 분산, 대상 아님), foreground `showNotification` 직접 노출(단일 호출, 대상 아님)
+R1. - [x] **알림 발송 경로 전수 열거 + 방어 여부 판정**
+   - [x] Grep: `showNotification\(`, `registration\.showNotification\(`, `new Notification\(` 를 프로젝트 전체에서 검색 ✅
+   - [x] 각 호출 경로별 판정 표 (아래) ✅
 
-R2. - [ ] **todoNotifications 경로 검증**
-   - [ ] `src/service-worker.ts:225-302` `checkTodoNotifications`: `todosToNotify.forEach(notif => showNotification(notif.title, ...))` 로 각 todo 마다 개별 발송 — memo reminder 와 동일 시간대 폭주 재현 가능성 존재. 본 plan 범위는 memo reminder 만이므로 **별도 plan** 으로 분리 기록(`todo-notification-merge` 후속 plan 제안)
-   - [ ] `src/lib/utils/todoAlertManager.svelte.ts`, `src/lib/utils/todoNotifications.ts`: todo 경로가 foreground 에서도 forEach 발송하는지 Grep 으로 확인 → 해당하면 후속 plan 에 포함 대상으로 기록
-   - [ ] plan 본문 하단 "후속 작업" 섹션에 "todo 알림도 동일 병합 필요 여부 판단" 문구 추가
+| 경로 | 방어여부 | 근거 |
+|------|---------|------|
+| SW `checkScheduledReminders` (sw.ts:304) | 병합 적용 | `showMergedNotification` 기존 구현 + 본 plan으로 body 개선 |
+| SW `push` 이벤트 핸들러 (sw.ts:155) | 대상 아님 | 서버 푸시 1건 단위, N건 동시 발화 구조 없음 |
+| foreground `checkAndTriggerReminders` | 병합 적용 | 본 plan 수정으로 collect→merge→dispatch ✅ |
+| foreground snooze 재발화 (notifications:275) | 대상 아님 | 스누즈 해제 타이밍 분산 — 동일 HH:MM 동시 발화 아님 |
+| settings 페이지 테스트 알림 (settings:548) | 대상 아님 | 단일 테스트 알림, 수동 트리거
 
-R3. - [ ] **미방어 경로 방어**
-   - [ ] R1/R2 에서 `미방어` 로 판정된 경로가 있으면 본 plan 범위 내에서 수정하거나, 범위 밖이면 별도 plan 로 기록하고 plan 본문에 링크
-   - [ ] "전체 방어 완료" 문구를 plan 본문 Phase R 종료 부분에 명시 (⚠️ "근본 수정" 표현 금지)
+R2. - [x] **todoNotifications 경로 검증**
+   - [x] SW `checkTodoNotifications` (sw.ts:225-302): `todosToNotify.forEach(notif => showNotification(...))` — forEach 개별 발송 확인. 본 plan 범위는 memo reminder 만이므로 **별도 plan** 으로 분리 기록 ✅
+   - [x] `src/lib/utils/todoAlertManager.svelte.ts`: foreground todo 알림 경로도 forEach 개별 발송 확인 → 후속 plan `fix-todo-notification-merge-in-foreground` 포함 대상 기록 ✅
+   - [x] plan 본문 하단 "후속 작업" 섹션에 "todo 알림도 동일 병합 필요 여부 판단" 문구 추가 ✅ (이미 존재)
+
+R3. - [x] **미방어 경로 방어**
+   - [x] R1/R2 에서 `미방어` 판정 경로 없음 — 모든 경로가 `병합 적용` 또는 `대상 아님` ✅
+   - [x] todo 경로는 범위 밖으로 별도 plan 기록 완료 (후속 작업 섹션) ✅
+
+> 전체 방어 완료: memo reminder 발송 경로에서 동일 HH:MM 폭주 케이스는 foreground/SW 양쪽 모두 병합 적용됨.
 
 ### Phase 6: 수동/통합 테스트
 
@@ -188,4 +198,4 @@ Z. - [ ] **post-merge 정리 확인** — `/merge-test` owner
 
 ---
 
-*상태: 검토완료 | 진행률: 0/22 (0%)*
+*상태: 머지대기 | 진행률: 43/60 (72%)*
