@@ -29,6 +29,38 @@ interface SnoozedReminder {
 // 개발자 모드 로그
 const log = createLogger('Notification');
 
+// SW "activating" race 방어: registration.active가 fully activated 상태가 될 때까지 대기
+async function awaitActivatedServiceWorker(): Promise<ServiceWorker | null> {
+	if (!('serviceWorker' in navigator)) return null;
+	try {
+		const registration = await navigator.serviceWorker.ready;
+		if (!registration.active) return null;
+		if (registration.active.state === 'activated') return registration.active;
+		// activating 상태 — statechange 이벤트로 activated 대기 (8초 timeout)
+		return await new Promise<ServiceWorker | null>((resolve) => {
+			const sw = registration.active!;
+			const timer = setTimeout(() => {
+				sw.removeEventListener('statechange', onStateChange);
+				resolve(null);
+			}, 8000);
+			function onStateChange() {
+				if (sw.state === 'activated') {
+					clearTimeout(timer);
+					sw.removeEventListener('statechange', onStateChange);
+					resolve(sw);
+				} else if (sw.state === 'redundant') {
+					clearTimeout(timer);
+					sw.removeEventListener('statechange', onStateChange);
+					resolve(null);
+				}
+			}
+			sw.addEventListener('statechange', onStateChange);
+		});
+	} catch {
+		return null;
+	}
+}
+
 function createNotificationStore() {
 	let permission = $state<NotificationPermission>('default');
 	let initialized = $state(false);
@@ -42,6 +74,30 @@ function createNotificationStore() {
 			const reminders = getRemindersFromMemo(m);
 			return reminders.some(r => r.enabled);
 		})
+	);
+
+	// SW 재등록 트리거용 fingerprint: payload 내용 전체를 직렬화해 count 기반 false negative 방지
+	const activeReminderSyncKey = $derived(
+		activeReminderMemos
+			.flatMap(m =>
+				getRemindersFromMemo(m)
+					.filter(r => r.enabled)
+					.map(r => ({
+						memoId: m.id,
+						reminderId: r.id,
+						time: r.time,
+						type: r.type,
+						days: [...(r.days ?? [])].sort((a, b) => a - b),
+						date: r.date ?? null,
+						title: m.title,
+						body: m.content ?? '',
+						url: m.url ?? null,
+						autoOpen: r.autoOpen ?? false
+					}))
+			)
+			.sort((a, b) => `${a.memoId}:${a.reminderId}`.localeCompare(`${b.memoId}:${b.reminderId}`))
+			.map(r => JSON.stringify(r))
+			.join('|')
 	);
 
 	function loadLastNotified() {
@@ -434,12 +490,12 @@ function createNotificationStore() {
 		log.info(`📊 memosStore.loading = ${memosStore.loading}`);
 
 		try {
-			log.info('⏳ Waiting for SW ready...');
-			const registration = await navigator.serviceWorker.ready;
-			log.info(`✅ SW ready, state: ${registration.active?.state}`);
+			log.info('⏳ Waiting for SW activated...');
+			const sw = await awaitActivatedServiceWorker();
+			log.info(`✅ SW ready, state: ${sw?.state ?? 'null'}`);
 
-			if (!registration.active) {
-				log.warn('❌ No active Service Worker');
+			if (!sw) {
+				log.warn('❌ No activated Service Worker (timeout or unavailable)');
 				return;
 			}
 
@@ -473,7 +529,7 @@ function createNotificationStore() {
 				log.info(`📋 First reminder: ${first.title} at ${first.time}`);
 			}
 
-			registration.active.postMessage({
+			sw.postMessage({
 				type: SW_MSG.REGISTER_MEMO_REMINDERS,
 				reminders: activeReminders
 			});
@@ -495,12 +551,10 @@ function createNotificationStore() {
 
 	// Service Worker에 단일 알림 업데이트 (reminders 배열 지원)
 	async function updateReminderInServiceWorker(memo: Memo) {
-		if (!('serviceWorker' in navigator)) return;
+		const sw = await awaitActivatedServiceWorker();
+		if (!sw) return;
 
 		try {
-			const registration = await navigator.serviceWorker.ready;
-			if (!registration.active) return;
-
 			const reminders = getRemindersFromMemo(memo);
 			const enabledReminders = reminders.filter(r => r.enabled);
 
@@ -519,14 +573,14 @@ function createNotificationStore() {
 						url: memo.url,
 						autoOpen: r.autoOpen
 					}));
-					registration.active!.postMessage({
+					sw.postMessage({
 						type: SW_MSG.UPDATE_MEMO_REMINDER,
 						reminder: reminderData
 					});
 				});
 				log.info(`📤 Updated ${enabledReminders.length} reminders in SW: "${memo.title}"`);
 			} else {
-				registration.active.postMessage({
+				sw.postMessage({
 					type: SW_MSG.REMOVE_MEMO_REMINDER,
 					memoId: memo.id
 				});
@@ -539,13 +593,11 @@ function createNotificationStore() {
 
 	// Service Worker에서 알림 제거
 	async function removeReminderFromServiceWorker(memoId: string) {
-		if (!('serviceWorker' in navigator)) return;
+		const sw = await awaitActivatedServiceWorker();
+		if (!sw) return;
 
 		try {
-			const registration = await navigator.serviceWorker.ready;
-			if (!registration.active) return;
-
-			registration.active.postMessage({
+			sw.postMessage({
 				type: SW_MSG.REMOVE_MEMO_REMINDER,
 				memoId
 			});
@@ -560,21 +612,17 @@ function createNotificationStore() {
 		reminders: unknown[];
 		intervalRunning: boolean;
 	} | null> {
-		if (!('serviceWorker' in navigator)) return null;
+		const sw = await awaitActivatedServiceWorker();
+		if (!sw) return null;
 
 		try {
-			const registration = await navigator.serviceWorker.ready;
-			if (!registration.active) return null;
-
 			return new Promise((resolve) => {
 				const messageChannel = new MessageChannel();
 				messageChannel.port1.onmessage = (event) => {
 					resolve(event.data);
 				};
 
-				registration.active!.postMessage({ type: SW_MSG.GET_SCHEDULED_REMINDERS }, [
-					messageChannel.port2
-				]);
+				sw.postMessage({ type: SW_MSG.GET_SCHEDULED_REMINDERS }, [messageChannel.port2]);
 
 				// 타임아웃
 				setTimeout(() => resolve(null), 3000);
@@ -591,11 +639,11 @@ function createNotificationStore() {
 		stopBackgroundCheck();
 
 		// 2. Service Worker에 등록된 리마인더 모두 해제
-		if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+		if (typeof navigator !== 'undefined') {
 			try {
-				const registration = await navigator.serviceWorker.ready;
-				if (registration.active) {
-					registration.active.postMessage({
+				const sw = await awaitActivatedServiceWorker();
+				if (sw) {
+					sw.postMessage({
 						type: SW_MSG.REGISTER_MEMO_REMINDERS,
 						reminders: []
 					});
@@ -645,7 +693,10 @@ function createNotificationStore() {
 		syncRemindersToServiceWorker,
 		updateReminderInServiceWorker,
 		removeReminderFromServiceWorker,
-		getServiceWorkerScheduleStatus
+		getServiceWorkerScheduleStatus,
+		get activeReminderSyncKey() {
+			return activeReminderSyncKey;
+		}
 	};
 }
 

@@ -60,6 +60,12 @@
 
 > `PUBLIC_SUPABASE_URL` / `PUBLIC_SUPABASE_ANON_KEY`는 변경 없음.
 
+### Firebase Console 도메인 승인 (Cloudflare env 교체와 별개의 선행 수동 조치)
+
+> 이 작업은 Cloudflare 환경변수 교체와 독립적으로 먼저 완료해야 FCM 토큰 등록 400 에러가 해소됩니다.
+
+- [ ] Firebase Console > `wservice-cross-noti` 프로젝트 > Authentication > Authorized domains > `memo.woory.day` 추가
+
 ---
 
 *마지막 업데이트: 2026-04-23*

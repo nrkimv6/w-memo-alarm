@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from "svelte";
+	import { onMount, onDestroy } from "svelte";
 	import { onNavigate, goto } from "$app/navigation";
 	import { browser } from "$app/environment";
 	import "../app.css";
@@ -36,6 +36,38 @@
 
 	// 알림 재설정 필요 여부
 	let showNotificationResetAlert = $state(false);
+
+	// SW reminder sync 상태
+	let lastReminderSyncKey = $state('');
+	// 메모 로드 전 controllerchange가 발생하면 true로 set, 로드 완료 후 소모
+	let pendingControllerResync = $state(false);
+
+	// SW에 reminders를 전체 재등록하는 공통 helper
+	async function syncRemindersToSw(reason: string) {
+		if (!browser) return;
+		if (!memosStore.initialized || memosStore.loading) return;
+		console.log(`[Layout] SW reminder sync (${reason})`);
+		await notificationStore.registerRemindersToServiceWorker();
+		lastReminderSyncKey = notificationStore.activeReminderSyncKey;
+	}
+
+	// SW 교체(앱 업데이트) 후 새 SW가 clients.claim() 완료 시 reminders 재등록
+	function handleControllerChange() {
+		if (!memosStore.initialized || memosStore.loading) {
+			// 메모 로드 전이면 pending 플래그만 기록
+			pendingControllerResync = true;
+		} else {
+			syncRemindersToSw('controllerchange');
+		}
+	}
+
+	// fingerprint 변화 감지 → 전체 재등록 ($effect는 Svelte 5 rune)
+	$effect(() => {
+		const syncKey = notificationStore.activeReminderSyncKey;
+		if (!browser || !memosStore.initialized || memosStore.loading) return;
+		if (syncKey === lastReminderSyncKey) return;
+		syncRemindersToSw('reminder-change');
+	});
 
 	// FCM 토큰 등록 (로그인 후)
 	async function initFCM() {
@@ -100,6 +132,11 @@
 	}
 
 	onMount(async () => {
+		// controllerchange 리스너: awaited init보다 먼저 등록해 앱 업데이트 직후 이벤트를 놓치지 않는다
+		if (browser && 'serviceWorker' in navigator) {
+			navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
+		}
+
 		themeStore.init();
 		settingsStore.init();
 		notificationStore.init();
@@ -116,10 +153,16 @@
 			filterStore.init();
 			foldersStore.init();
 			tagMetaStore.init();
-		}
 
-		// 메모 로드 완료 후 Service Worker에 알림 스케줄 등록
-		notificationStore.registerRemindersToServiceWorker();
+			// 메모 로드 완료 후 SW에 알림 스케줄 전체 등록 (1회 보장)
+			await syncRemindersToSw('initial-load');
+
+			// 로드 전 발생한 controllerchange 이벤트가 있으면 소모
+			if (pendingControllerResync) {
+				pendingControllerResync = false;
+				await syncRemindersToSw('controllerchange-deferred');
+			}
+		}
 
 		// FCM 등록
 		initFCM();
@@ -136,6 +179,12 @@
 			// 메모 상세로 이동
 			goto(`/?memo=${memoId}`);
 		});
+	});
+
+	onDestroy(() => {
+		if (browser && 'serviceWorker' in navigator) {
+			navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
+		}
 	});
 </script>
 
