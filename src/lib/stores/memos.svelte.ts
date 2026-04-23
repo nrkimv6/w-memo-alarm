@@ -1189,6 +1189,19 @@ function createMemosStore() {
 		const memo = getById(memoId);
 		if (!memo) return null;
 
+		const hasUrl = typeof memo.url === 'string' && memo.url.trim().length > 0;
+		// 기존 todoUrls가 없을 때만 url을 첫 항목으로 이전 (덮어쓰기 방지)
+		const migratedTodoUrls =
+			hasUrl && (!memo.todoUrls || memo.todoUrls.length === 0)
+				? [
+						{
+							id: `entry-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+							url: memo.url as string,
+							addedAt: Date.now()
+						}
+					]
+				: undefined;
+
 		const result = await update(memoId, {
 			memoType: 'todo',
 			todoStatus: 'pending',
@@ -1201,7 +1214,8 @@ function createMemosStore() {
 				showOverdue: true
 			},
 			isPinned: memo.isPinned,
-			isFavorite: memo.isFavorite
+			isFavorite: memo.isFavorite,
+			...(migratedTodoUrls ? { url: undefined, todoUrls: migratedTodoUrls } : {})
 		});
 
 		if (result) {
@@ -1217,6 +1231,11 @@ function createMemosStore() {
 	async function convertTodoToMemo(todoId: string): Promise<Memo | null> {
 		const todo = getById(todoId);
 		if (!todo) return null;
+
+		// 기존 url이 없고 todoUrls 첫 항목이 있으면 복원 (기존 url 우선)
+		const existingUrl = typeof todo.url === 'string' && todo.url.trim().length > 0;
+		const firstTodoUrl = todo.todoUrls?.[0]?.url?.trim();
+		const restoredUrl = !existingUrl && firstTodoUrl ? firstTodoUrl : undefined;
 
 		// 할일 전용 필드 제거
 		const result = await update(todoId, {
@@ -1235,7 +1254,8 @@ function createMemosStore() {
 			autoPung: undefined,
 			pungDelay: undefined,
 			isPinned: todo.isPinned,
-			isFavorite: todo.isFavorite
+			isFavorite: todo.isFavorite,
+			...(restoredUrl ? { url: restoredUrl } : {})
 		});
 
 		if (result) {
