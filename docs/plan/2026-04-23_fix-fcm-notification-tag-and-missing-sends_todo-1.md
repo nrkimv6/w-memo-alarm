@@ -32,7 +32,9 @@
    - [ ] `static/firebase-messaging-sw.js`: `messaging.onBackgroundMessage` 바로 위에 함수 정의
    - [ ] 함수 동작: `_fcmPending`를 splice로 꺼내 개수에 따라 분기
      - 1개: `tag: 'memo-alarm-{schedule_id}'` (schedule_id = `payload.data?.schedule_id || String(Date.now())`)로 단일 알림 표시
-     - 2개 이상: 제목 목록 `"• {title}\n• {title}..."` + `tag: 'memo-alarm-batch'` + `data: { memoIds: [...], type: 'merged' }`로 병합 알림 표시
+     - 2개 이상: 제목 목록 `"• {title}\n• {title}..."` + `tag: 'memo-alarm-merged-{merge_key}'` + `data: { memoIds: [...], type: 'merged' }`로 병합 알림 표시
+       - merge_key: 첫 payload의 `schedule_id` 또는 `Date.now()` 기반 (고정 tag로 인한 교체 방지)
+       - memoIds: 각 payload의 `payload.data?.memo_id || payload.data?.memoId`로 수집 (snake_case 우선)
    - [ ] 함수 종료 후 `_fcmPending = []; _fcmMergeTimer = null;` 리셋
 
 4. - [ ] **`_flushFcmNotifications()` 예외 방어**
@@ -49,8 +51,8 @@
 
 7. - [ ] **`notificationclick` 핸들러에 merged type 분기 추가**
    - [ ] `static/firebase-messaging-sw.js`: 기존 `const memoId = event.notification.data?.memoId;` 라인 수정
-   - [ ] `data.type === 'merged'`이면 `appUrl = data.memoIds?.[0] ? '/?memo=' + data.memoIds[0] : '/'`
-   - [ ] `data.type !== 'merged'`이면 기존 `memoId` 경로 유지
+   - [ ] 단일 알림: `memoId = data.memo_id || data.memoId`로 읽고 `appUrl = memoId ? '/?memo=' + memoId : '/'`
+   - [ ] merged 알림: `firstMemoId = data.memoIds?.[0] || data.memo_ids?.[0] || data.memo_id || data.memoId`로 읽고 `appUrl` 결정
 
 ### Phase R: 재발 경로 분석 (fix: plan 필수)
 
@@ -67,9 +69,9 @@
 
 ### Phase T: 통합 테스트
 
-> T1~T2 해당 없음: memo-alarm은 단위 테스트 프레임워크가 구성되어 있지 않다(Glob `src/**/*.test.ts`, `tests/**/*` 0건, `package.json`에 `"test"` 스크립트 없음). Service Worker 병합 동작은 실브라우저 알림 생명주기에 의존해 Node mock으로 재현 가치가 낮다.
+> T1~T2 해당 없음: memo-alarm은 단위 테스트 프레임워크가 구성되어 있지 않다(Glob (node_modules 제외) `memo-alarm/src/**/*.test.ts` 0건, `memo-alarm/tests/**/*` 0건, `package.json`에 `"test"` 스크립트 없음). Service Worker 병합 동작은 실브라우저 알림 생명주기에 의존해 Node mock으로 재현 가치가 낮다.
 > T3 재현 TC 해당 없음: SW `onBackgroundMessage` 동작은 브라우저 FCM push가 필요하며, 동일 분 N건 push 시나리오는 deploy 후 수동 재현으로만 검증 가능하다. 자동화된 integration 테스트 하네스가 프로젝트에 없다.
-> T4 E2E 해당 없음: Glob `**/*e2e*`, `**/*integration*` 결과 node_modules 외 0건. 프로젝트에 Playwright/e2e 하네스 없음. SW push는 실기기/실브라우저 + FCM 서버에 의존.
+> T4 E2E 해당 없음: 프로젝트에 Playwright/e2e 하네스 없음. (Glob (node_modules 제외) `**/*e2e*`, `**/*integration*` 매칭은 문서 파일만 존재)
 > T5 HTTP 해당 없음: SvelteKit FE 프로젝트로 send-notifications 같은 HTTP 서버를 이 레포에 호스팅하지 않는다. Glob `**/*http*`, `**/*api*` 결과 node_modules 외 0건.
 
 10. - [ ] **수동 브라우저 검증 시나리오 기록** — 배포 후 `/merge-test` 또는 main deploy 직후 수행
