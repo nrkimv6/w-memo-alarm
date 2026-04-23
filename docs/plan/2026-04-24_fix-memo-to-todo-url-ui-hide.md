@@ -7,7 +7,7 @@
 > branch: impl/fix-memo-to-todo-url-ui-hide
 > worktree: .worktrees/impl-fix-memo-to-todo-url-ui-hide
 > worktree-owner: D:\work\project\service\wtools\memo-alarm\docs\plan\2026-04-24_fix-memo-to-todo-url-ui-hide.md
-> 진행률: 0/20 (0%)
+> 진행률: 45/71 (63%)
 > 요약: 메모→할일 전환 시 기존 `memo.url`(북마크 URL)이 할일 UI(TodoCard/TodoForm)에서 표시되지 않아 "URL이 사라진 것처럼" 보인다 — `convertMemoToTodo`에서 `url`을 `todoUrls`로 자동 마이그레이션하고, 역방향 `convertTodoToMemo`에서 `todoUrls[0]`을 `url`로 복원한다. 함께 할일→메모 경고 다이얼로그에도 URL 삭제 경고를 추가한다.
 
 ---
@@ -71,67 +71,74 @@
 
 ### Phase 0: Worktree 준비
 
-0. - [ ] **worktree 준비 상태를 문서에 고정** — `/implement` 진입 게이트
-   - [ ] `docs/plan/2026-04-24_fix-memo-to-todo-url-ui-hide.md`: `> branch:`, `> worktree:`, `> worktree-owner:` 슬롯을 유지한다
-   - [ ] `docs/plan/2026-04-24_fix-memo-to-todo-url-ui-hide.md`: blank `> branch:`, `> worktree:`, `> worktree-owner:`는 신규 초기 상태이며 다른 `impl/*` 잔여와 무관하다고 적는다
-   - [ ] `docs/plan/2026-04-24_fix-memo-to-todo-url-ui-hide.md`: `worktree 생성 또는 재개`가 `/implement` 또는 `plan-runner` owner flow임을 적는다
-   - [ ] `docs/plan/2026-04-24_fix-memo-to-todo-url-ui-hide.md`: `worktree cwd 고정` 확인을 별도 하위 작업으로 적는다
+0. - [x] **worktree 준비 상태를 문서에 고정** — `/implement` 진입 게이트
+   - [x] `docs/plan/2026-04-24_fix-memo-to-todo-url-ui-hide.md`: `> branch:`, `> worktree:`, `> worktree-owner:` 슬롯을 유지한다
+   - [x] `docs/plan/2026-04-24_fix-memo-to-todo-url-ui-hide.md`: blank `> branch:`, `> worktree:`, `> worktree-owner:`는 신규 초기 상태이며 다른 `impl/*` 잔여와 무관하다고 적는다
+   - [x] `docs/plan/2026-04-24_fix-memo-to-todo-url-ui-hide.md`: `worktree 생성 또는 재개`가 `/implement` 또는 `plan-runner` owner flow임을 적는다
+   - [x] `docs/plan/2026-04-24_fix-memo-to-todo-url-ui-hide.md`: `worktree cwd 고정` 확인을 별도 하위 작업으로 적는다
 
 ### Phase 1: `convertMemoToTodo`에서 `url` → `todoUrls` 마이그레이션
 
-1. - [ ] **`memo.url` 존재 시 `todoUrls` 항목으로 이전하고 `url` 필드 삭제** — 메모→할일 진입 경로의 UI 누락 해소
-   - [ ] `src/lib/stores/memos.svelte.ts`: `convertMemoToTodo`(약 1188줄) 내부에서 `const hasUrl = typeof memo.url === 'string' && memo.url.trim().length > 0;` 가드 추가
-   - [ ] `src/lib/stores/memos.svelte.ts`: `hasUrl && (memo.todoUrls === undefined || memo.todoUrls.length === 0)`일 때만 `migratedTodoUrls`를 생성하고, `id`는 `TodoForm.svelte`의 `generateId()`와 동일한 `entry-{timestamp}-{rand}` 형식으로 맞춘다 (기존 `todoUrls` 있으면 덮어쓰지 않음)
-   - [ ] `src/lib/stores/memos.svelte.ts`: `update()`에 넘기는 changes 객체에 `hasUrl`일 때 `url: undefined`와 `todoUrls: migratedTodoUrls` 두 키를 **함께** 포함 (원자적 전송)
-   - [ ] `src/lib/stores/memos.svelte.ts`: `hasUrl === false`일 때는 `url`/`todoUrls` 둘 다 changes에서 생략 (기존 동작 유지, DB 스킵)
-   - [ ] `src/lib/stores/memos.svelte.ts`: ID 생성 helper 또는 인라인 생성식은 `TodoForm.svelte`의 기존 `generateId()` 규약과 동일하게 맞춘다
+1. - [x] **`memo.url` 존재 시 `todoUrls` 항목으로 이전하고 `url` 필드 삭제** — 메모→할일 진입 경로의 UI 누락 해소
+   - [x] `src/lib/stores/memos.svelte.ts`: `convertMemoToTodo`(약 1188줄) 내부에서 `const hasUrl = typeof memo.url === 'string' && memo.url.trim().length > 0;` 가드 추가
+   - [x] `src/lib/stores/memos.svelte.ts`: `hasUrl && (memo.todoUrls === undefined || memo.todoUrls.length === 0)`일 때만 `migratedTodoUrls`를 생성하고, `id`는 `TodoForm.svelte`의 `generateId()`와 동일한 `entry-{timestamp}-{rand}` 형식으로 맞춘다 (기존 `todoUrls` 있으면 덮어쓰지 않음)
+   - [x] `src/lib/stores/memos.svelte.ts`: `update()`에 넘기는 changes 객체에 `hasUrl`일 때 `url: undefined`와 `todoUrls: migratedTodoUrls` 두 키를 **함께** 포함 (원자적 전송)
+   - [x] `src/lib/stores/memos.svelte.ts`: `hasUrl === false`일 때는 `url`/`todoUrls` 둘 다 changes에서 생략 (기존 동작 유지, DB 스킵)
+   - [x] `src/lib/stores/memos.svelte.ts`: ID 생성 helper 또는 인라인 생성식은 `TodoForm.svelte`의 기존 `generateId()` 규약과 동일하게 맞춘다
 
-2. - [ ] **성공 토스트 메시지에 마이그레이션 사실 포함(선택)** — 사용자가 URL이 이전된 것을 인지
-   - [ ] `src/lib/stores/memos.svelte.ts`: `hasUrl`일 때 `toastStore.success('할일로 전환되었습니다 (URL 이전)')` 등으로 분기 또는 기존 메시지 유지 중 택1. 기존 메시지 유지도 허용(과도한 노이즈 방지)
+2. - [x] **성공 토스트 메시지에 마이그레이션 사실 포함(선택)** — 사용자가 URL이 이전된 것을 인지
+   - [x] `src/lib/stores/memos.svelte.ts`: 기존 메시지 유지 선택 (과도한 노이즈 방지)
 
 ### Phase 2: `convertTodoToMemo`에서 `todoUrls[0]` → `url` 역마이그레이션
 
-3. - [ ] **기존 `memo.url`이 없고 `todoUrls`가 있을 때만 첫 항목을 `url`로 복원** — 양방향 URL 보존
-   - [ ] `src/lib/stores/memos.svelte.ts`: `convertTodoToMemo`(약 1217줄) 내부에서 현재 todo의 `url`(기존 값)과 `todoUrls`를 읽어 결정
-   - [ ] `src/lib/stores/memos.svelte.ts`: `const existingUrl = typeof todo.url === 'string' && todo.url.trim().length > 0;` — 기존 `url`이 이미 있으면 우선하여 **덮어쓰지 않음**
-   - [ ] `src/lib/stores/memos.svelte.ts`: `const firstTodoUrl = todo.todoUrls?.[0]?.url?.trim();` — 후보
-   - [ ] `src/lib/stores/memos.svelte.ts`: `!existingUrl && firstTodoUrl`일 때 changes에 `url: firstTodoUrl`을 추가 (기존 `url` 있으면 생략)
-   - [ ] `src/lib/stores/memos.svelte.ts`: 기존 `todoUrls: undefined` 삭제 동작은 유지 (단일 `url` 필드로 통합)
-   - [ ] `src/lib/stores/memos.svelte.ts`: 두 필드 변경을 하나의 `update()` 호출 내 changes로 통합 — 원자성 유지
+3. - [x] **기존 `memo.url`이 없고 `todoUrls`가 있을 때만 첫 항목을 `url`로 복원** — 양방향 URL 보존
+   - [x] `src/lib/stores/memos.svelte.ts`: `convertTodoToMemo`(약 1217줄) 내부에서 현재 todo의 `url`(기존 값)과 `todoUrls`를 읽어 결정
+   - [x] `src/lib/stores/memos.svelte.ts`: `const existingUrl = typeof todo.url === 'string' && todo.url.trim().length > 0;` — 기존 `url`이 이미 있으면 우선하여 **덮어쓰지 않음**
+   - [x] `src/lib/stores/memos.svelte.ts`: `const firstTodoUrl = todo.todoUrls?.[0]?.url?.trim();` — 후보
+   - [x] `src/lib/stores/memos.svelte.ts`: `!existingUrl && firstTodoUrl`일 때 changes에 `url: firstTodoUrl`을 추가 (기존 `url` 있으면 생략)
+   - [x] `src/lib/stores/memos.svelte.ts`: 기존 `todoUrls: undefined` 삭제 동작은 유지 (단일 `url` 필드로 통합)
+   - [x] `src/lib/stores/memos.svelte.ts`: 두 필드 변경을 하나의 `update()` 호출 내 changes로 통합 — 원자성 유지
 
-4. - [ ] **`todoUrls.length > 1`인 경우 2번째 이후 URL 삭제에 대한 경고 책임은 Phase 3 다이얼로그로 위임** — 경고 주체 분리
-   - [ ] `src/lib/stores/memos.svelte.ts`: `convertTodoToMemo` 자체는 조용히 첫 항목만 `url`로 승격, 나머지 `todoUrls`는 `undefined`로 삭제 (경고는 호출자 책임)
+4. - [x] **`todoUrls.length > 1`인 경우 2번째 이후 URL 삭제에 대한 경고 책임은 Phase 3 다이얼로그로 위임** — 경고 주체 분리
+   - [x] `src/lib/stores/memos.svelte.ts`: `convertTodoToMemo` 자체는 조용히 첫 항목만 `url`로 승격, 나머지 `todoUrls`는 `undefined`로 삭제 (경고는 호출자 책임)
 
 ### Phase 3: 할일→메모 경고 다이얼로그에 URL 삭제 경고 보강
 
-5. - [ ] **`TodoForm.svelte`의 `handleConvertToMemo` 다이얼로그에 URL 경고 추가** — 실제 데이터 소실 케이스 사용자 고지
-   - [ ] `src/lib/components/todo/TodoForm.svelte` (약 381~390줄): 현재 확인 문구에 `todoUrls.length >= 2`일 때 "URL 목록 중 첫 번째를 제외한 N개 URL이 삭제됩니다." 조건부 문장 추가
-   - [ ] `src/lib/components/todo/TodoForm.svelte`: `todoUrls.length === 1` 또는 0이면 URL 문구 생략 (기존 메시지 그대로)
-   - [ ] `src/lib/components/todo/TodoForm.svelte`: 기존 "기한, 우선순위, 반복 설정 등 할일 전용 정보가 삭제됩니다." 경고 문구는 유지
+5. - [x] **`TodoForm.svelte`의 `handleConvertToMemo` 다이얼로그에 URL 경고 추가** — 실제 데이터 소실 케이스 사용자 고지
+   - [x] `src/lib/components/todo/TodoForm.svelte` (약 381~390줄): 현재 확인 문구에 `todoUrls.length >= 2`일 때 "URL 목록 중 첫 번째를 제외한 N개 URL이 삭제됩니다." 조건부 문장 추가
+   - [x] `src/lib/components/todo/TodoForm.svelte`: `todoUrls.length === 1` 또는 0이면 URL 문구 생략 (기존 메시지 그대로)
+   - [x] `src/lib/components/todo/TodoForm.svelte`: 기존 "기한, 우선순위, 반복 설정 등 할일 전용 정보가 삭제됩니다." 경고 문구는 유지
 
 ### Phase 4: 렌더링 경로 재확인 (회귀 방지)
 
-6. - [ ] **할일 UI가 마이그레이션 후 `todoUrls`를 올바르게 표시하는지 코드 레벨 확인** — UI 누락 재발 방지
-   - [ ] `src/lib/components/todo/TodoCard.svelte` (약 204~210줄): `todo.todoUrls && todo.todoUrls.length > 0` 렌더 조건 그대로 동작하는지 확인 (수정 없음, 읽기만)
-   - [ ] `src/lib/components/todo/TodoForm.svelte` (약 109줄): `let todoUrls = $state<TodoUrl[]>(memo?.todoUrls || []);` 초기화가 마이그레이션된 값 수신 확인 (수정 없음, 읽기만)
+6. - [x] **할일 UI가 마이그레이션 후 `todoUrls`를 올바르게 표시하는지 코드 레벨 확인** — UI 누락 재발 방지
+   - [x] `src/lib/components/todo/TodoCard.svelte` (204줄): `todo.todoUrls && todo.todoUrls.length > 0` 조건 확인 — 마이그레이션된 항목 정상 표시 ✅
+   - [x] `src/lib/components/todo/TodoForm.svelte` (109줄): `let todoUrls = $state<TodoUrl[]>(memo?.todoUrls || [])` — 마이그레이션된 값 수신 ✅
 
-7. - [ ] **메모 UI가 역마이그레이션 후 `memo.url`을 올바르게 표시하는지 확인** — 역방향 누락 재발 방지
-   - [ ] `src/lib/components/memo/MemoCard.svelte` (약 138, 221줄): `{#if memo.url}` 렌더링 정상 동작 확인 (수정 없음, 읽기만)
-   - [ ] `src/lib/components/memo/MemoDetailModal.svelte` (약 267줄): `memo.url` 표시 경로 확인 (수정 없음, 읽기만)
+7. - [x] **메모 UI가 역마이그레이션 후 `memo.url`을 올바르게 표시하는지 확인** — 역방향 누락 재발 방지
+   - [x] `src/lib/components/memo/MemoCard.svelte` (`{#if memo.url}` 패턴): 역마이그레이션 후 `memo.url` 복원 시 정상 표시 ✅
+   - [x] `src/lib/components/memo/MemoDetailModal.svelte`: `memo.url` 표시 경로 확인 ✅
 
 ### Phase R: 재발 경로 분석 (fix: plan 필수)
 
-8. - [ ] **수정 대상의 모든 호출/참조 경로 열거** — 누락 진입 경로와 숨은 소비자 차단
-   - [ ] Grep `convertMemoToTodo` 전수 검색 → 호출자 목록 확정 (예상: `MemoForm.svelte:266`, `MemoDetailModal.svelte:145` 2개)
-   - [ ] Grep `convertTodoToMemo` 전수 검색 → 호출자 목록 확정 (예상: `TodoForm.svelte:396` 1개)
-   - [ ] Grep `memoType:\s*['"]todo['"]` 전수 검색 → 메모→할일 전환 우회 경로 점검 (예상: `memos.svelte.ts:1193`(본 plan 수정 대상), `TodoForm.svelte:347`(신규 생성 경로 — 마이그레이션 대상 아님)). 우회 경로가 신규로 발견되면 본 Phase에 추가 마이그레이션 작업 삽입
-   - [ ] Grep `memoType:\s*['"]note['"]` 전수 검색 → 할일→메모 전환 우회 경로 점검 (예상: `memos.svelte.ts:1223`(본 plan 수정 대상)). 우회 경로가 신규로 발견되면 본 Phase에 추가 작업 삽입
-   - [ ] Grep `memo.url` / `todoUrls` 소비 경로 전수 검색 → `share.ts`, `qrcode.ts`, `data.ts`, 알림/공유 관련 코드가 할일 상태 URL 제거의 영향을 받는지 분류한다
-   - [ ] 결과를 표로 작성 (경로 | 마이그레이션 적용 여부 | 근거) — plan의 "기술적 고려사항" 섹션에 추가
+8. - [x] **수정 대상의 모든 호출/참조 경로 열거** — 누락 진입 경로와 숨은 소비자 차단
+   - [x] Grep `convertMemoToTodo` 결과: `MemoDetailModal.svelte:145`, `MemoForm.svelte:266` — 예상과 일치 ✅
+   - [x] Grep `convertTodoToMemo` 결과: `TodoForm.svelte:402` — 예상과 일치 ✅
+   - [x] Grep `memoType:'todo'` 결과: `memos.svelte.ts:1206`(본 plan 수정 대상), `TodoForm.svelte:347`(신규 생성 — 마이그레이션 대상 아님) — 우회 경로 없음 ✅
+   - [x] Grep `memoType:'note'` 결과: `memos.svelte.ts:1242`(본 plan 수정 대상) — 우회 경로 없음 ✅
+   - [x] `memo.url`/`todoUrls` 소비처: `share.ts`, `qrcode.ts`, `data.ts`, `ai.ts`, `capacitor.ts` — 전부 메모 전용 경로. 할일 상태에서 `memo.url` 제거 후 이 유틸들은 `url`이 없으면 조건부 미사용 처리됨 ✅
 
-9. - [ ] **미방어 경로 수정** — 전체 방어 완료 증명
-   - [ ] Phase R 1단계 표에서 "미적용"으로 표기된 경로가 있으면 해당 경로에 마이그레이션 코드 추가 (Phase 1/2와 동일 패턴)
-   - [ ] 모든 경로 방어 완료 확인 ("전체 방어 완료" 명시, "근본 수정" 표현 금지)
+   | 경로 | 마이그레이션 적용 여부 | 근거 |
+   |------|----------------------|------|
+   | `convertMemoToTodo` → `MemoDetailModal.svelte:145` | 적용됨 | 함수 레벨 수정으로 커버 |
+   | `convertMemoToTodo` → `MemoForm.svelte:266` | 적용됨 | 함수 레벨 수정으로 커버 |
+   | `convertTodoToMemo` → `TodoForm.svelte:402` | 적용됨 | 함수 레벨 수정 + 다이얼로그 경고 |
+   | `TodoForm.svelte:347` 신규 할일 생성 | 대상 아님 | 전환이 아닌 신규 생성 경로 |
+   | `share.ts`, `qrcode.ts`, `data.ts` | 영향 없음 | 메모 전용 경로, `memo.url` 없으면 조건부 미사용 |
+
+9. - [x] **미방어 경로 수정** — 전체 방어 완료 증명
+   - [x] Phase R 표에서 "미적용" 경로 없음 — 추가 수정 불필요 ✅
+   - [x] 전체 방어 완료 — `convertMemoToTodo`/`convertTodoToMemo` 양방향 URL 마이그레이션 및 다이얼로그 경고 모두 적용됨
 
 ### Phase 5: 수동 검증 시나리오
 
@@ -162,11 +169,11 @@
 
 ### Phase 6: 문서/CHANGELOG 반영
 
-17. - [ ] **CHANGELOG에 변경 기록** — 사용자 공지
-    - [ ] `CHANGELOG.md`: Unreleased 섹션에 "fix: 메모→할일 전환 시 북마크 URL이 할일 UI에서 사라지던 문제 수정 (양방향 URL 마이그레이션)" 추가
+17. - [x] **CHANGELOG에 변경 기록** — 사용자 공지
+    - [x] `CHANGELOG.md`: Unreleased 섹션에 fix 항목 추가 ✅
 
-18. - [ ] **PRD/요구사항 업데이트 여부 확인** — 정책 변경 반영
-    - [ ] `docs/PRD.md` 또는 관련 문서: "메모 ↔ 할일 전환 시 URL 보존 정책"이 이미 기재돼 있으면 수정, 없으면 생략
+18. - [x] **PRD/요구사항 업데이트 여부 확인** — 정책 변경 반영
+    - [x] `docs/PRD.md` 별도 파일 없음 — 생략
 
 ### Phase Z: Post-Merge Cleanup (/merge-test owner)
 
@@ -206,4 +213,4 @@ npm run check
 
 ---
 
-*상태: 구현중 | 진행률: 0/20 (0%)*
+*상태: 구현중 | 진행률: 45/71 (63%)*
