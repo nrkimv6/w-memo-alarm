@@ -4,6 +4,7 @@ import { notificationHistoryStore } from './notificationHistory.svelte';
 import { createLogger, devLogStore } from './devLogs.svelte';
 import { getCurrentTimeHHMM, getTodayDateISO } from '$lib/utils/timeUtils';
 import { SW_MSG } from '$lib/constants/swMessages';
+import { buildMergedTitle, buildMergedBody } from '$lib/utils/notificationMerge';
 
 // 메모에서 알림 목록 가져오기 (하위 호환성)
 function getRemindersFromMemo(memo: Memo): Reminder[] {
@@ -262,7 +263,7 @@ function createNotificationStore() {
 
 		log.info(`📅 time=${currentTime}, date=${todayDate}, day=${today}`);
 
-		// Check snoozed reminders
+		// Check snoozed reminders (스누즈 해제 시점은 제각각 — 병합 대상 아님)
 		if (snoozedReminders.length > 0) {
 			log.info(`Snoozed: ${snoozedReminders.length}`);
 		}
@@ -281,53 +282,115 @@ function createNotificationStore() {
 		// Check regular reminders (activeReminderMemos: 사전 필터링된 derived 스토어)
 		log.info(`📋 Active reminders: ${activeReminderMemos.length}`);
 
+		// 수집 단계: 발송 대상 memo + 매칭된 active reminder 모아두기
+		const toFire: Array<{ memo: Memo; active: Reminder }> = [];
+
 		activeReminderMemos.forEach((memo) => {
-			if (!memo.reminder?.enabled) return;
+			const rems = getRemindersFromMemo(memo);
+			const active = rems.find(r => r.enabled && r.time === currentTime);
+			if (!active) return;
 
-			const reminderTime = memo.reminder.time;
-			if (reminderTime !== currentTime) return;
-
-			log.info(`⏱️ Time match: "${memo.title}" (${reminderTime})`);
+			log.info(`⏱️ Time match: "${memo.title}" (${active.time})`);
 
 			// Check if already notified
-			const lastNotified = lastNotifiedMap[memo.id];
-			const notifyKey = `${todayDate}-${reminderTime}`;
-			if (lastNotified === notifyKey) {
+			const notifyKey = `${todayDate}-${active.time}`;
+			if (lastNotifiedMap[memo.id] === notifyKey) {
 				log.debug(`⏩ Already notified: ${notifyKey}`);
 				return;
 			}
 
 			// Check day/date conditions
-			const isOnce = memo.reminder.type === 'once';
+			const isOnce = active.type === 'once';
 			if (isOnce) {
-				if (memo.reminder.date !== todayDate) {
-					log.debug(`❌ Date mismatch: ${memo.reminder.date} != ${todayDate}`);
+				if (active.date !== todayDate) {
+					log.debug(`❌ Date mismatch: ${active.date} != ${todayDate}`);
 					return;
 				}
 				log.info(`✅ Date match: ${todayDate}`);
 			} else {
-				if (!memo.reminder.days?.includes(today)) {
-					log.debug(`❌ Day mismatch: ${JSON.stringify(memo.reminder.days)} !includes ${today}`);
+				if (!active.days?.includes(today)) {
+					log.debug(`❌ Day mismatch: ${JSON.stringify(active.days)} !includes ${today}`);
 					return;
 				}
 				log.info(`✅ Day match: ${today}`);
 			}
 
-			// Trigger notification
-			log.info(`🔔 TRIGGERING: "${memo.title}"`);
-			showNotification(memo);
+			toFire.push({ memo, active });
+		});
+
+		if (toFire.length === 0) return;
+
+		// 발송 전 일괄 상태 업데이트 (동시 재진입 중복 방지)
+		const notifyKey = `${todayDate}-${currentTime}`;
+		toFire.forEach(({ memo, active }) => {
 			lastNotifiedMap[memo.id] = notifyKey;
-			saveLastNotified();
-
-			// autoOpen 처리는 서비스 워커에서 처리 (notificationclick)
-
-			if (isOnce) {
+			if (active.type === 'once') {
 				log.info(`🔕 Disabling one-time: "${memo.title}"`);
-				memosStore.update(memo.id, {
-					reminder: { ...memo.reminder, enabled: false }
-				});
+				memosStore.updateReminderEnabled(memo.id, active.id, false);
 			}
 		});
+		saveLastNotified();
+
+		// 발송 단계: 1건이면 단일 알림, 2건 이상이면 병합
+		log.info(`🔔 TRIGGERING: ${toFire.length}건`);
+		if (toFire.length === 1) {
+			showNotification(toFire[0].memo);
+		} else {
+			showMergedForeground(toFire.map(f => f.memo), currentTime);
+		}
+	}
+
+	async function showMergedForeground(memos: Memo[], time: string): Promise<void> {
+		log.info(`🔔 showMergedForeground: ${memos.length}건`);
+
+		const sentAt = new Date().toISOString();
+		const options: NotificationOptions = {
+			body: buildMergedBody(memos.map(m => m.title)),
+			icon: '/favicon.png',
+			tag: `memo-batch-${time}`,
+			data: { memoIds: memos.map(m => m.id), url: '/', type: 'merged', time },
+			requireInteraction: true
+		};
+
+		try {
+			if ('serviceWorker' in navigator) {
+				const registration = await navigator.serviceWorker.ready;
+				await registration.showNotification(buildMergedTitle(memos.length), options);
+			} else {
+				// SW 미가용 fallback: 병합 알림 1건만 발송 (개별 반복 금지)
+				const n = new Notification(buildMergedTitle(memos.length), options);
+				n.onclick = () => { window.focus(); location.href = '/'; n.close(); };
+			}
+			memos.forEach(m => {
+				const reminders = getRemindersFromMemo(m);
+				const active = reminders.find(r => r.enabled) || reminders[0];
+				notificationHistoryStore.addRecord({
+					memoId: m.id,
+					memoTitle: m.title,
+					reminderId: active?.id || '',
+					reminderType: active?.isDefault ? 'default' : 'additional',
+					channel: 'sw-push',
+					status: 'success',
+					sentAt
+				});
+			});
+		} catch (e) {
+			const errorMsg = e instanceof Error ? e.message : String(e);
+			memos.forEach(m => {
+				const reminders = getRemindersFromMemo(m);
+				const active = reminders.find(r => r.enabled) || reminders[0];
+				notificationHistoryStore.addRecord({
+					memoId: m.id,
+					memoTitle: m.title,
+					reminderId: active?.id || '',
+					reminderType: active?.isDefault ? 'default' : 'additional',
+					channel: 'sw-push',
+					status: 'failed',
+					errorMessage: errorMsg,
+					sentAt
+				});
+			});
+		}
 	}
 
 	async function requestPermission(): Promise<boolean> {
