@@ -112,8 +112,10 @@ export async function registerFCMToken(userId: string): Promise<FCMToken | null>
 			return null;
 		}
 
-		// 2. Service Worker 등록 확인
-		const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+		// 2. Service Worker 등록 및 활성화 대기
+		// register()는 설치만 트리거하고 즉시 반환하므로 ready로 활성화까지 기다린다
+		await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+		const registration = await navigator.serviceWorker.ready;
 
 		// 3. FCM 토큰 발급 (VAPID 키 사용)
 		if (!PUBLIC_FIREBASE_VAPID_KEY) {

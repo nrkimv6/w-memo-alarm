@@ -4,6 +4,14 @@
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
 
+// SW 업데이트 시 즉시 활성화 — waiting 상태에서 멈추지 않도록
+self.addEventListener('install', (event) => {
+	self.skipWaiting();
+});
+self.addEventListener('activate', (event) => {
+	event.waitUntil(clients.claim());
+});
+
 // memo-alarm service worker — wservice-cross-noti 프로젝트 전용
 firebase.initializeApp({
 	apiKey: 'AIzaSyAVh8Enn3VjbLo4JMBmvhK5zE2nZJvMzDA',
