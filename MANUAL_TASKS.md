@@ -68,4 +68,15 @@
 
 ---
 
+## 2026-04-23: FCM 알림 merge window 브라우저 검증
+
+> from: [`2026-04-23_fix-fcm-notification-tag-and-missing-sends_todo-1.md`](docs/plan/2026-04-23_fix-fcm-notification-tag-and-missing-sends_todo-1.md)#10
+
+- [ ] 동일 분에 예약된 메모 2건 이상 등록 후, 앱 백그라운드로 두고 FCM push 수신 → "N개의 메모 알림" 1건만 표시되는지 확인 — from: 2026-04-23_fix-fcm-notification-tag-and-missing-sends_todo-1.md#10 (2026-04-23)
+- [ ] 단일 FCM push 수신 → 개별 tag `memo-alarm-{schedule_id}`로 표시, 이전 알림과 교체되지 않는지 확인 — from: 2026-04-23_fix-fcm-notification-tag-and-missing-sends_todo-1.md#10 (2026-04-23)
+- [ ] 병합 알림 클릭 → `memoIds[0]` 메모 상세로 네비게이트 확인 — from: 2026-04-23_fix-fcm-notification-tag-and-missing-sends_todo-1.md#10 (2026-04-23)
+- [ ] 개별 알림 클릭 → 기존 `memoId` 경로 유지 확인 — from: 2026-04-23_fix-fcm-notification-tag-and-missing-sends_todo-1.md#10 (2026-04-23)
+
+---
+
 *마지막 업데이트: 2026-04-23*

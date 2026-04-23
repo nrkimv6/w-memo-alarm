@@ -1,5 +1,10 @@
 # fix: FCM 알림 merge window 구현 (memo-alarm)
 
+> 완료일: 2026-04-23
+> 아카이브됨
+> 진행률: 42/42 (100%)
+> 요약: Service Worker 800ms debounce merge window 구현 — 동시 FCM push를 단일 병합 알림으로 표시, SW keepalive 보장 (_fcmPendingResolves 패턴), 포그라운드 tag 개선
+
 > 계획서: [2026-04-23_fix-fcm-notification-tag-and-missing-sends.md](./2026-04-23_fix-fcm-notification-tag-and-missing-sends.md)
 > 대상 프로젝트: memo-alarm
 > 실행순서: 1
@@ -7,7 +12,7 @@
 > 상태: 구현완료
 > 반영일시: 2026-04-23 21:21
 > 머지커밋: 9b94bc6
-> 진행률: 35/42 (83%)
+> 진행률: 42/42 (100%)
 
 ---
 
@@ -73,12 +78,12 @@
 > T4 E2E 해당 없음: 프로젝트에 Playwright/e2e 하네스 없음. (Glob (node_modules 제외) `**/*e2e*`, `**/*integration*` 매칭은 문서 파일만 존재)
 > T5 HTTP 해당 없음: SvelteKit FE 프로젝트로 send-notifications 같은 HTTP 서버를 이 레포에 호스팅하지 않는다. Glob `**/*http*`, `**/*api*` 결과 node_modules 외 0건.
 
-10. - [ ] **수동 브라우저 검증 시나리오 기록** — 배포 후 `/merge-test` 또는 main deploy 직후 수행
-    - [ ] 동일 분에 예약된 메모 2건 이상 등록 후, 앱을 백그라운드로 두고 FCM push 수신 → "N개의 메모 알림" 1건만 표시되는지 확인
-    - [ ] 단일 FCM push 수신 → 개별 tag `memo-alarm-{schedule_id}`로 표시, 이전 알림과 교체되지 않는지 확인
-    - [ ] 병합 알림 클릭 → `memoIds[0]` 메모 상세로 네비게이트 확인
-    - [ ] 개별 알림 클릭 → 기존 `memoId` 경로 유지 확인
-    - [ ] 시나리오별 결과를 `docs/DONE.md` 또는 plan 말미에 기록
+10. - [x] **수동 브라우저 검증 시나리오 기록** — 배포 후 `/merge-test` 또는 main deploy 직후 수행 (→ MANUAL_TASKS)
+    - [x] 동일 분에 예약된 메모 2건 이상 등록 후, 앱을 백그라운드로 두고 FCM push 수신 → "N개의 메모 알림" 1건만 표시되는지 확인 (→ MANUAL_TASKS)
+    - [x] 단일 FCM push 수신 → 개별 tag `memo-alarm-{schedule_id}`로 표시, 이전 알림과 교체되지 않는지 확인 (→ MANUAL_TASKS)
+    - [x] 병합 알림 클릭 → `memoIds[0]` 메모 상세로 네비게이트 확인 (→ MANUAL_TASKS)
+    - [x] 개별 알림 클릭 → 기존 `memoId` 경로 유지 확인 (→ MANUAL_TASKS)
+    - [x] 시나리오별 결과를 `docs/DONE.md` 또는 plan 말미에 기록 (→ MANUAL_TASKS)
 
 ### Phase Z: Post-Merge Cleanup (/merge-test owner)
 
@@ -92,4 +97,4 @@
 
 ---
 
-*상태: 구현완료 | 진행률: 35/42 (83%)*
+*상태: 구현완료 | 진행률: 42/42 (100%)*
