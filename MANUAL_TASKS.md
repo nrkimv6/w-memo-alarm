@@ -39,4 +39,27 @@
 
 ---
 
-*마지막 업데이트: 2026-03-31*
+## 2026-04-23: Cloudflare 환경변수 업데이트 (wservice-cross-noti 전환)
+
+> from: [`2026-04-22_realign-fcm-to-wservice-crossnoti`](docs/plan/2026-04-22_realign-fcm-to-wservice-crossnoti.md) 배포 단계
+
+현재 Cloudflare 대시보드에는 구버전 `lineminder-23489` Firebase 값이 등록되어 있다.
+로컬 `.env.local`은 이미 `wservice-cross-noti` 기준으로 업데이트됐으므로, **머지+배포 후 아래 값으로 Cloudflare 환경변수를 교체해야 한다.**
+
+- [ ] Cloudflare Workers > `wservice-memo-alarm` > Settings > Environment Variables 에서 아래 변수 교체
+
+| 변수 | 새 값 |
+|------|-------|
+| `PUBLIC_FIREBASE_API_KEY` | `AIzaSyAVh8Enn3VjbLo4JMBmvhK5zE2nZJvMzDA` |
+| `PUBLIC_FIREBASE_AUTH_DOMAIN` | `wservice-cross-noti.firebaseapp.com` |
+| `PUBLIC_FIREBASE_PROJECT_ID` | `wservice-cross-noti` |
+| `PUBLIC_FIREBASE_STORAGE_BUCKET` | `wservice-cross-noti.firebasestorage.app` |
+| `PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | `570337797776` |
+| `PUBLIC_FIREBASE_APP_ID` | `1:570337797776:web:dd0e36c66152ad18275a15` |
+| `PUBLIC_FIREBASE_VAPID_KEY` | `BLHcqgg12jg0gWLQOuJjM_Kucv_WGCkaNq48BdAKHgZKn6rfsgrKD4RNnVnYeeSPzJhBnO6coebq8NEaTqzvdv0` |
+
+> `PUBLIC_SUPABASE_URL` / `PUBLIC_SUPABASE_ANON_KEY`는 변경 없음.
+
+---
+
+*마지막 업데이트: 2026-04-23*
