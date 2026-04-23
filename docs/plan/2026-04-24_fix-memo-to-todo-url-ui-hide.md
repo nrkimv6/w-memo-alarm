@@ -7,7 +7,7 @@
 > branch:
 > worktree:
 > worktree-owner:
-> 진행률: 0/21 (0%)
+> 진행률: 0/20 (0%)
 > 요약: 메모→할일 전환 시 기존 `memo.url`(북마크 URL)이 할일 UI(TodoCard/TodoForm)에서 표시되지 않아 "URL이 사라진 것처럼" 보인다 — `convertMemoToTodo`에서 `url`을 `todoUrls`로 자동 마이그레이션하고, 역방향 `convertTodoToMemo`에서 `todoUrls[0]`을 `url`로 복원한다. 함께 할일→메모 경고 다이얼로그에도 URL 삭제 경고를 추가한다.
 
 ---
@@ -44,7 +44,7 @@
 ## 기술적 고려사항
 
 - `memoToSupabase`(`src/lib/services/memoMapper.ts:101`): `key in memoRecord` + `val === undefined → null`. changes 객체에 키를 **안 넣으면** 스킵, **`undefined`로 명시하면** DB에 null 전송. 본 plan은 양쪽 동작을 모두 사용한다.
-- `TodoUrl` 인터페이스(`src/lib/types/memo.ts:108`): `{ id, url, label?, addedAt }`. `id`는 `crypto.randomUUID()` 또는 `nanoid` 사용 (기존 TodoForm.svelte가 이미 사용하는 방식 확인 후 동일 채택).
+- `TodoUrl` 인터페이스(`src/lib/types/memo.ts:108`): `{ id, url, label?, addedAt }`. 현재 `TodoForm.svelte`는 `generateId()`로 `entry-${Date.now()}-${Math.random().toString(36).substring(2, 7)}` 형태를 사용하므로, 변환 경로도 같은 ID 규약을 재사용하거나 공용 helper로 추출해 제3의 형식을 추가하지 않는다.
 - `convertMemoToTodo`(`src/lib/stores/memos.svelte.ts:1188`): 현재 `url` 키 없음 → 마이그레이션 후에도 DB의 기존 `url` 컬럼이 남으면 안 된다. `url` 이전 시 `url: undefined` 명시하여 DB에서 삭제해야 할일 UI의 `todoUrls`와 중복 소스가 되지 않는다.
 - `convertTodoToMemo`(`src/lib/stores/memos.svelte.ts:1217`): 기존에 `todoUrls: undefined`로 전체 삭제. `todoUrls[0].url`이 있으면 `url`에 복원한 뒤 `todoUrls: undefined`로 삭제. 메모가 이미 `memo.url`을 가진 경우의 우선순위는 **기존 `memo.url` 보존 우선** (덮어쓰지 않음).
 - `TodoForm.svelte:381` 경고 문구 수정 시 2단계 스프레드(`...(memo || {}), ...`) 패턴으로 `url` 필드는 이미 자연 보존됨. 본 plan의 Phase 2 마이그레이션 로직이 들어가면 `url`은 `convertTodoToMemo`에서 복원 경로가 생기므로 TodoForm 저장 경로와 충돌하지 않는다(TodoForm은 `convert*` 호출 전 `handleSubmit`으로 먼저 저장).
@@ -53,6 +53,7 @@
 - 반대 방향도 동일. 두 필드를 별도 `update()`로 분리하지 않는다.
 - 메모→할일 진입 경로 전수: `convertMemoToTodo` 호출자는 `MemoForm.svelte:266`, `MemoDetailModal.svelte:145` 두 곳뿐이며 둘 다 동일 함수를 호출하므로 Phase 1 수정만으로 모든 진입 경로가 커버된다(별도 분기 불필요). 신규 할일 작성 경로(`TodoForm.svelte:347`의 `memoType: "todo"` 저장)는 메모 → 할일 "전환"이 아니라 신규 생성이므로 마이그레이션 대상 아님.
 - 할일→메모 진입 경로: `convertTodoToMemo` 호출자는 `TodoForm.svelte:396` 한 곳. Phase 2/3 수정으로 커버.
+- `src/lib/utils/share.ts`, `src/lib/utils/qrcode.ts`, `src/lib/utils/data.ts`는 여전히 `memo.url`만 소비한다. 현재 import 경로상 메모 라우트 전용 사용으로 보이지만, 할일 상태에서 `url`을 제거하면 변환된 할일 URL은 이 유틸리티들에서 보이지 않으므로 Phase R에서 실제 호출 경로를 재검증해 범위 내 여부를 고정한다.
 
 ### 대안 검토
 
@@ -80,10 +81,10 @@
 
 1. - [ ] **`memo.url` 존재 시 `todoUrls` 항목으로 이전하고 `url` 필드 삭제** — 메모→할일 진입 경로의 UI 누락 해소
    - [ ] `src/lib/stores/memos.svelte.ts`: `convertMemoToTodo`(약 1188줄) 내부에서 `const hasUrl = typeof memo.url === 'string' && memo.url.trim().length > 0;` 가드 추가
-   - [ ] `src/lib/stores/memos.svelte.ts`: `hasUrl && (memo.todoUrls === undefined || memo.todoUrls.length === 0)`일 때만 `migratedTodoUrls = [{ id: crypto.randomUUID(), url: memo.url!, addedAt: Date.now() }]`로 생성 (기존 `todoUrls` 있으면 덮어쓰지 않음)
+   - [ ] `src/lib/stores/memos.svelte.ts`: `hasUrl && (memo.todoUrls === undefined || memo.todoUrls.length === 0)`일 때만 `migratedTodoUrls`를 생성하고, `id`는 `TodoForm.svelte`의 `generateId()`와 동일한 `entry-{timestamp}-{rand}` 형식으로 맞춘다 (기존 `todoUrls` 있으면 덮어쓰지 않음)
    - [ ] `src/lib/stores/memos.svelte.ts`: `update()`에 넘기는 changes 객체에 `hasUrl`일 때 `url: undefined`와 `todoUrls: migratedTodoUrls` 두 키를 **함께** 포함 (원자적 전송)
    - [ ] `src/lib/stores/memos.svelte.ts`: `hasUrl === false`일 때는 `url`/`todoUrls` 둘 다 changes에서 생략 (기존 동작 유지, DB 스킵)
-   - [ ] `src/lib/stores/memos.svelte.ts`: UUID 생성 방식은 기존 코드 컨벤션과 동일하게 맞춘다 (`TodoForm.svelte:169` 주변 또는 기존 `todoUrls` 생성부를 Grep으로 확인 후 통일)
+   - [ ] `src/lib/stores/memos.svelte.ts`: ID 생성 helper 또는 인라인 생성식은 `TodoForm.svelte`의 기존 `generateId()` 규약과 동일하게 맞춘다
 
 2. - [ ] **성공 토스트 메시지에 마이그레이션 사실 포함(선택)** — 사용자가 URL이 이전된 것을 인지
    - [ ] `src/lib/stores/memos.svelte.ts`: `hasUrl`일 때 `toastStore.success('할일로 전환되었습니다 (URL 이전)')` 등으로 분기 또는 기존 메시지 유지 중 택1. 기존 메시지 유지도 허용(과도한 노이즈 방지)
@@ -120,11 +121,12 @@
 
 ### Phase R: 재발 경로 분석 (fix: plan 필수)
 
-8. - [ ] **수정 대상의 모든 호출/참조 경로 열거** — 누락 진입 경로 차단
+8. - [ ] **수정 대상의 모든 호출/참조 경로 열거** — 누락 진입 경로와 숨은 소비자 차단
    - [ ] Grep `convertMemoToTodo` 전수 검색 → 호출자 목록 확정 (예상: `MemoForm.svelte:266`, `MemoDetailModal.svelte:145` 2개)
    - [ ] Grep `convertTodoToMemo` 전수 검색 → 호출자 목록 확정 (예상: `TodoForm.svelte:396` 1개)
    - [ ] Grep `memoType:\s*['"]todo['"]` 전수 검색 → 메모→할일 전환 우회 경로 점검 (예상: `memos.svelte.ts:1193`(본 plan 수정 대상), `TodoForm.svelte:347`(신규 생성 경로 — 마이그레이션 대상 아님)). 우회 경로가 신규로 발견되면 본 Phase에 추가 마이그레이션 작업 삽입
    - [ ] Grep `memoType:\s*['"]note['"]` 전수 검색 → 할일→메모 전환 우회 경로 점검 (예상: `memos.svelte.ts:1223`(본 plan 수정 대상)). 우회 경로가 신규로 발견되면 본 Phase에 추가 작업 삽입
+   - [ ] Grep `memo.url` / `todoUrls` 소비 경로 전수 검색 → `share.ts`, `qrcode.ts`, `data.ts`, 알림/공유 관련 코드가 할일 상태 URL 제거의 영향을 받는지 분류한다
    - [ ] 결과를 표로 작성 (경로 | 마이그레이션 적용 여부 | 근거) — plan의 "기술적 고려사항" 섹션에 추가
 
 9. - [ ] **미방어 경로 수정** — 전체 방어 완료 증명
@@ -174,7 +176,7 @@ Z. - [ ] **post-merge 정리 확인** — `/merge-test` owner
    - [ ] `docs/plan/2026-04-24_fix-memo-to-todo-url-ui-hide.md`: `T4/T5`, `worktree remove`, `branch remove`, `header meta 제거`를 분리해 적는다
 
 > 예외 경로: `merge resolve`, `stash pop`, `stash-pop resolve`는 정상 체크박스로 만들지 않고 충돌/복원 실패 시 메모로만 남긴다.
-> T4/T5 해당 없음: 이 프로젝트는 pytest 대상이 아닌 SvelteKit + Capacitor 프런트엔드이며 vitest/플레이라이트 자동화가 아직 설정돼 있지 않다. 검증은 Phase 5의 수동 시나리오로 수행한다.
+> T4/T5 해당 없음: `tests/` 디렉토리가 없고 repo grep 기준 vitest/playwright 자동화도 확인되지 않았다. 이 plan은 SvelteKit + Capacitor 프런트엔드 변경이므로 자동 E2E/HTTP 테스트 대신 Phase 5 수동 시나리오 + `npm run check`로 검증한다.
 
 ---
 
@@ -204,4 +206,4 @@ npm run check
 
 ---
 
-*상태: 검토완료 | 진행률: 0/21 (0%)*
+*상태: 검토완료 | 진행률: 0/20 (0%)*
