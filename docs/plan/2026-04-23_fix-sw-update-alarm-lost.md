@@ -80,6 +80,8 @@ notificationStore.registerRemindersToServiceWorker();  // 1회 호출
 - `controllerchange` 리스너는 `await authStore.initialize()`/`await memosStore.init()`보다 먼저 등록해야 한다. 앱 업데이트 직후 새 SW가 `clients.claim()`을 끝내기 전에 listener를 늦게 붙이면 이벤트를 놓칠 수 있다.
 - `MANUAL_TASKS.md`에는 이미 `2026-04-23: Cloudflare 환경변수 업데이트 (wservice-cross-noti 전환)` 섹션이 있으므로, Firebase 도메인 승인 체크는 새 날짜 섹션을 만들지 말고 기존 2026-04-23 섹션에 합쳐 중복을 피한다.
 - 연관 active plan은 `2026-04-22_fix-notification-fcm-permission-and-duplicate-cron.md`(구현중)와 `2026-04-22_realign-fcm-to-wservice-crossnoti.md`(구현완료) 2건이다. 본 plan은 기존 project marker / settings 진단 카드 / Cloudflare env 전환 계획을 재사용하고, 범위를 `fcm.ts`, `notifications.svelte.ts`, `+layout.svelte`, `MANUAL_TASKS.md`로 제한한다.
+- **⚠️ 로컬 drift (review-plan 감지)**: 사용자가 `firebase-messaging-sw.js`에 `install/activate` handler(`skipWaiting()` + `clients.claim()`)를 추가했다. 이 SW는 SvelteKit SW(`/service-worker.js`)와 동일 scope(`/`)로 등록되므로, FCM SW가 활성화되면 SvelteKit SW를 교체할 수 있다. SvelteKit SW가 제거되면 캐시·오프라인·reminder scheduling이 모두 깨진다. Phase 4 검증에서 반드시 SvelteKit SW 생존 여부를 확인해야 한다.
+- **⚠️ 로컬 drift (review-plan 감지)**: `fcm.ts`에서 `navigator.serviceWorker.register('/firebase-messaging-sw.js')` 후 `navigator.serviceWorker.ready`를 사용하도록 변경됐다. `ready`는 현재 페이지를 control하는 SW의 registration을 반환하므로 FCM SW가 아닌 SvelteKit SW를 반환할 수 있다. `getToken(messaging, { serviceWorkerRegistration: registration })`에 잘못된 SW가 전달되면 FCM 토큰이 틀린 SW에 연결된다. Phase 4 검증에서 FCM 도메인 승인 후 토큰 등록 성공 여부와 함께 확인한다.
 
 ### 재검토 보강 (2026-04-23, /review-plan)
 
@@ -119,6 +121,7 @@ notificationStore.registerRemindersToServiceWorker();  // 1회 호출
    - [ ] `src/lib/stores/notifications.svelte.ts`: `navigator.serviceWorker.ready` 이후 `registration.active`를 반환하는 공통 helper(`awaitActivatedServiceWorker()` 등)를 추가한다.
    - [ ] `src/lib/stores/notifications.svelte.ts`: helper에서 `registration.active`가 없으면 `null`을 반환하고, 기존 caller가 동일하게 early return 할 수 있게 계약을 고정한다.
    - [ ] `src/lib/stores/notifications.svelte.ts`: helper에서 `active.state === 'activating'`이면 `statechange` once listener로 `activated`가 될 때까지 대기하고, 이미 `activated`면 즉시 반환한다.
+   - [ ] `src/lib/stores/notifications.svelte.ts`: `statechange` 대기에 8초 timeout을 추가한다 — timeout 초과 시 `null`을 반환해 무한 pending을 방지한다. SW activation이 실패하거나 SW가 terminated된 경우 caller는 early return하도록 한다.
 
 4. - [ ] **모든 SW 메시지/조회 경로가 공통 helper를 재사용하도록 교체한다**
    - [ ] `src/lib/stores/notifications.svelte.ts`: `registerRemindersToServiceWorker()`가 직접 `navigator.serviceWorker.ready`를 호출하지 말고 공통 helper 반환값을 사용해 `postMessage` 하도록 바꾼다.
@@ -169,6 +172,7 @@ notificationStore.registerRemindersToServiceWorker();  // 1회 호출
    - [ ] Firebase Console > Authentication > Authorized Domains에 `memo.woory.day`를 추가한 뒤 앱을 재로드한다.
    - [ ] 콘솔에서 `INVALID_ARGUMENT` 또는 Installations 400 에러가 더 이상 발생하지 않는지 확인한다.
    - [ ] 토큰 등록 성공 후 settings devMode의 활성 토큰 수 또는 project marker가 정상 상태로 회복되는지 확인한다.
+   - [ ] DevTools > Application > Service Workers에서 SvelteKit SW(`/service-worker.js`)와 FCM SW(`/firebase-messaging-sw.js`) 각각의 상태를 확인한다 — SvelteKit SW가 activated & running 상태여야 하고 FCM SW가 이를 교체하지 않았는지 검증한다.
 
 ### Phase R: 재발 경로 분석 (fix: plan 필수)
 
