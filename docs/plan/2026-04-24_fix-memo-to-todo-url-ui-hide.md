@@ -3,11 +3,10 @@
 > 작성일시: 2026-04-24 00:39
 > 기준커밋: 931c414
 > 대상 프로젝트: memo-alarm
-> 상태: 머지대기
-> branch: impl/fix-memo-to-todo-url-ui-hide
-> worktree: .worktrees/impl-fix-memo-to-todo-url-ui-hide
-> worktree-owner: D:\work\project\service\wtools\memo-alarm\docs\plan\2026-04-24_fix-memo-to-todo-url-ui-hide.md
-> 진행률: 45/71 (63%)
+> 상태: 구현완료
+> 반영일시: 2026-04-24 08:33
+> 머지커밋: bcf4e41
+> 진행률: 52/74 (70%)
 > 요약: 메모→할일 전환 시 기존 `memo.url`(북마크 URL)이 할일 UI(TodoCard/TodoForm)에서 표시되지 않아 "URL이 사라진 것처럼" 보인다 — `convertMemoToTodo`에서 `url`을 `todoUrls`로 자동 마이그레이션하고, 역방향 `convertTodoToMemo`에서 `todoUrls[0]`을 `url`로 복원한다. 함께 할일→메모 경고 다이얼로그에도 URL 삭제 경고를 추가한다.
 
 ---
@@ -177,10 +176,13 @@
 
 ### Phase Z: Post-Merge Cleanup (/merge-test owner)
 
-Z. - [ ] **post-merge 정리 확인** — `/merge-test` owner
-   - [ ] `docs/plan/2026-04-24_fix-memo-to-todo-url-ui-hide.md`: `main merge 시도`를 owner step으로 적는다
-   - [ ] `docs/plan/2026-04-24_fix-memo-to-todo-url-ui-hide.md`: `root dirty stash/apply (if needed)`를 owner step으로 적는다
-   - [ ] `docs/plan/2026-04-24_fix-memo-to-todo-url-ui-hide.md`: `T4/T5`, `worktree remove`, `branch remove`, `header meta 제거`를 분리해 적는다
+Z. - [x] **post-merge 정리 확인** — `/merge-test` owner
+   - [x] main merge 완료: `bcf4e41` ✅
+   - [x] root dirty stash/apply 완료 (pre-existing archive files stash → merge → apply → drop) ✅
+   - [x] T4/T5 해당 없음 (SvelteKit/Svelte 프런트엔드, Python 없음) ✅
+   - [x] worktree remove: `.worktrees/impl-fix-memo-to-todo-url-ui-hide` ✅
+   - [x] branch remove: `impl/fix-memo-to-todo-url-ui-hide` ✅
+   - [x] header meta 제거: `branch`, `worktree`, `worktree-owner` 필드 제거 ✅
 
 > 예외 경로: `merge resolve`, `stash pop`, `stash-pop resolve`는 정상 체크박스로 만들지 않고 충돌/복원 실패 시 메모로만 남긴다.
 > T4/T5 해당 없음: `tests/` 디렉토리가 없고 repo grep 기준 vitest/playwright 자동화도 확인되지 않았다. 이 plan은 SvelteKit + Capacitor 프런트엔드 변경이므로 자동 E2E/HTTP 테스트 대신 Phase 5 수동 시나리오 + `npm run check`로 검증한다.
@@ -213,4 +215,4 @@ npm run check
 
 ---
 
-*상태: 머지대기 | 진행률: 45/71 (63%)*
+*상태: 구현완료 | 진행률: 52/74 (70%)*

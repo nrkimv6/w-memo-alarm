@@ -3,11 +3,10 @@
 > 작성일시: 2026-04-24 17:30
 > 기준커밋: 931c414
 > 대상 프로젝트: memo-alarm
-> 상태: 머지대기
-> branch: impl/fix-notification-merge-in-foreground
-> worktree: .worktrees/impl-fix-notification-merge-in-foreground
-> worktree-owner: D:\work\project\service\wtools\memo-alarm\docs\plan\2026-04-24_fix-notification-merge-in-foreground.md
-> 진행률: 43/60 (72%)
+> 상태: 구현완료
+> 반영일시: 2026-04-24 08:33
+> 머지커밋: fea06a6
+> 진행률: 50/63 (79%)
 > 요약: 기본 알림 시간(예: 09:00) 시점에 13개 개별 알림이 1분 안에 쏟아져 너무 번잡함 — foreground(메인 스레드) 경로도 Service Worker와 동일하게 동일 HH:MM 그룹을 1건의 병합 알림으로 축약
 
 ---
@@ -151,10 +150,13 @@ R3. - [x] **미방어 경로 방어**
 
 ### Phase Z: Post-Merge Cleanup (/merge-test owner)
 
-Z. - [ ] **post-merge 정리 확인** — `/merge-test` owner
-   - [ ] `2026-04-24_fix-notification-merge-in-foreground.md`: `main merge 시도`를 owner step 으로 적는다
-   - [ ] `2026-04-24_fix-notification-merge-in-foreground.md`: `root dirty stash/apply (if needed)`를 owner step 으로 적는다
-   - [ ] `2026-04-24_fix-notification-merge-in-foreground.md`: `T4/T5 해당 없음 (TypeScript/Svelte UI 경로, pytest 강제 규칙 비대상)`, `worktree remove`, `branch remove`, `header meta 제거`를 분리해 적는다
+Z. - [x] **post-merge 정리 확인** — `/merge-test` owner
+   - [x] main merge 완료: `fea06a6` ✅
+   - [x] root dirty stash/apply 완료 ✅
+   - [x] T4/T5 해당 없음 (TypeScript/Svelte UI 경로, pytest 강제 규칙 비대상) ✅
+   - [x] worktree remove: `.worktrees/impl-fix-notification-merge-in-foreground` ✅
+   - [x] branch remove: `impl/fix-notification-merge-in-foreground` ✅
+   - [x] header meta 제거: `branch`, `worktree`, `worktree-owner` 필드 제거 ✅
 
 > 예외 경로: `merge resolve`, `stash pop`, `stash-pop resolve`는 정상 체크박스로 만들지 않고 충돌/복원 실패 시 메모로만 남긴다.
 
@@ -198,4 +200,4 @@ Z. - [ ] **post-merge 정리 확인** — `/merge-test` owner
 
 ---
 
-*상태: 머지대기 | 진행률: 43/60 (72%)*
+*상태: 구현완료 | 진행률: 50/63 (79%)*
