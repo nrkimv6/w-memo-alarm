@@ -3,11 +3,11 @@
 > 작성일시: 2026-04-23 15:30
 > 기준커밋: 31ee2fb
 > 대상 프로젝트: memo-alarm
-> 상태: 검토완료
-> branch:
-> worktree:
-> worktree-owner:
-> 진행률: 0/16 (0%)
+> 상태: 구현중
+> branch: impl/fix-sw-update-alarm-lost
+> worktree: .worktrees/impl-fix-sw-update-alarm-lost
+> worktree-owner: D:\work\project\service\wtools\memo-alarm\docs\plan\2026-04-23_fix-sw-update-alarm-lost.md
+> 진행률: 12/16 (75%)
 > 요약: 앱 업데이트 버튼(SW unregister) 이후 알람 실행 불가 — SW 재등록 시 reminders 0개 등록, FCM 토큰 400 실패를 유발하는 4가지 결함을 race 방어 + fingerprint 재등록 + 수동 도메인 승인으로 함께 수정
 
 ---
@@ -98,63 +98,63 @@ notificationStore.registerRemindersToServiceWorker();  // 1회 호출
 
 ### Phase 0: Worktree 준비
 
-0. - [ ] **worktree 메타 슬롯과 owner 경계를 유지한다** — `/implement` 진입 게이트
-   - [ ] `docs/plan/2026-04-23_fix-sw-update-alarm-lost.md`: `> branch:`, `> worktree:`, `> worktree-owner:` 슬롯을 빈 값으로 유지한다. 값 채우기/재개 판단은 `/implement` owner가 수행한다.
-   - [ ] worktree 생성 또는 재개 절차는 현재 plan 구현 범위에서 제외하고, `/implement` 또는 plan-runner owner flow가 담당한다.
-   - [ ] 구현 시작 전 현재 cwd가 `memo-alarm` worktree인지 확인하는 owner step을 유지하고, root(main)의 기존 dirty/untracked 파일은 본 plan 수정 범위에서 제외한다.
+0. - [x] **worktree 메타 슬롯과 owner 경계를 유지한다** — `/implement` 진입 게이트
+   - [x] `docs/plan/2026-04-23_fix-sw-update-alarm-lost.md`: `> branch:`, `> worktree:`, `> worktree-owner:` 슬롯을 빈 값으로 유지한다. 값 채우기/재개 판단은 `/implement` owner가 수행한다.
+   - [x] worktree 생성 또는 재개 절차는 현재 plan 구현 범위에서 제외하고, `/implement` 또는 plan-runner owner flow가 담당한다.
+   - [x] 구현 시작 전 현재 cwd가 `memo-alarm` worktree인지 확인하는 owner step을 유지하고, root(main)의 기존 dirty/untracked 파일은 본 plan 수정 범위에서 제외한다.
 
 ### Phase 1: FCM 도메인 미승인 에러 처리 개선
 
-1. - [ ] **`registerFCMToken()`에서 Firebase Installations 도메인 미승인 신호를 정규화한다**
-   - [ ] `src/lib/fcm.ts`: `catch (error)` 블록에서 `FirebaseError`의 `code`, `message`, `customData?.serverResponse`를 각각 읽는 로컬 변수를 추가한다.
-   - [ ] `src/lib/fcm.ts`: `installations/request-failed` + `INVALID_ARGUMENT`/`authorized domains`/`memo.woory.day` 패턴이 함께 보이면 `console.error('[FCM] Domain not authorized in Firebase Console — add memo.woory.day to Authentication > Authorized Domains for wservice-cross-noti', error)`를 출력한다.
-   - [ ] `src/lib/fcm.ts`: 도메인 미승인 분기와 일반 실패 분기를 나누더라도 반환값은 계속 `null`로 유지해 기존 실패 처리 계약을 깨지 않는다.
+1. - [x] **`registerFCMToken()`에서 Firebase Installations 도메인 미승인 신호를 정규화한다**
+   - [x] `src/lib/fcm.ts`: `catch (error)` 블록에서 `FirebaseError`의 `code`, `message`, `customData?.serverResponse`를 각각 읽는 로컬 변수를 추가한다.
+   - [x] `src/lib/fcm.ts`: `installations/request-failed` + `INVALID_ARGUMENT`/`authorized domains`/`memo.woory.day` 패턴이 함께 보이면 `console.error('[FCM] Domain not authorized in Firebase Console — add memo.woory.day to Authentication > Authorized Domains for wservice-cross-noti', error)`를 출력한다.
+   - [x] `src/lib/fcm.ts`: 도메인 미승인 분기와 일반 실패 분기를 나누더라도 반환값은 계속 `null`로 유지해 기존 실패 처리 계약을 깨지 않는다.
 
-2. - [ ] **`MANUAL_TASKS.md`의 기존 2026-04-23 섹션에 Firebase 도메인 승인 작업을 합친다**
-   - [ ] `MANUAL_TASKS.md`: 기존 `## 2026-04-23: Cloudflare 환경변수 업데이트 (wservice-cross-noti 전환)` 섹션 바로 아래에 "Firebase Console 도메인 승인" 소제목을 추가한다.
-   - [ ] `MANUAL_TASKS.md`: `memo.woory.day`를 `Authentication > Authorized domains`에 추가하는 체크박스를 1개 추가한다.
-   - [ ] `MANUAL_TASKS.md`: 이 작업이 Cloudflare env 교체와는 별개의 선행 수동 조치라는 메모를 한 줄 추가한다.
+2. - [x] **`MANUAL_TASKS.md`의 기존 2026-04-23 섹션에 Firebase 도메인 승인 작업을 합친다**
+   - [x] `MANUAL_TASKS.md`: 기존 `## 2026-04-23: Cloudflare 환경변수 업데이트 (wservice-cross-noti 전환)` 섹션 바로 아래에 "Firebase Console 도메인 승인" 소제목을 추가한다.
+   - [x] `MANUAL_TASKS.md`: `memo.woory.day`를 `Authentication > Authorized domains`에 추가하는 체크박스를 1개 추가한다.
+   - [x] `MANUAL_TASKS.md`: 이 작업이 Cloudflare env 교체와는 별개의 선행 수동 조치라는 메모를 한 줄 추가한다.
 
 ### Phase 2: SW "activating" race 공통 방어
 
-3. - [ ] **`notifications.svelte.ts`에 activated SW 확보 helper를 추가한다**
-   - [ ] `src/lib/stores/notifications.svelte.ts`: 모듈 최상단(`createNotificationStore()` 바깥)에 `async function awaitActivatedServiceWorker(): Promise<ServiceWorker | null>` helper를 정의한다 — `navigator.serviceWorker.ready`로 registration을 얻은 뒤 `active`를 반환하는 module-level 유틸리티다.
-   - [ ] `src/lib/stores/notifications.svelte.ts`: helper에서 `registration.active`가 없으면 `null`을 반환하고, 기존 caller가 동일하게 early return 할 수 있게 계약을 고정한다.
-   - [ ] `src/lib/stores/notifications.svelte.ts`: helper에서 `active.state === 'activating'`이면 `statechange` once listener로 `activated`가 될 때까지 대기하고, 이미 `activated`면 즉시 반환한다.
-   - [ ] `src/lib/stores/notifications.svelte.ts`: `statechange` 대기에 8초 timeout을 추가한다 — timeout 초과 시 `null`을 반환해 무한 pending을 방지한다. SW activation이 실패하거나 SW가 terminated된 경우 caller는 early return하도록 한다.
+3. - [x] **`notifications.svelte.ts`에 activated SW 확보 helper를 추가한다**
+   - [x] `src/lib/stores/notifications.svelte.ts`: 모듈 최상단(`createNotificationStore()` 바깥)에 `async function awaitActivatedServiceWorker(): Promise<ServiceWorker | null>` helper를 정의한다 — `navigator.serviceWorker.ready`로 registration을 얻은 뒤 `active`를 반환하는 module-level 유틸리티다.
+   - [x] `src/lib/stores/notifications.svelte.ts`: helper에서 `registration.active`가 없으면 `null`을 반환하고, 기존 caller가 동일하게 early return 할 수 있게 계약을 고정한다.
+   - [x] `src/lib/stores/notifications.svelte.ts`: helper에서 `active.state === 'activating'`이면 `statechange` once listener로 `activated`가 될 때까지 대기하고, 이미 `activated`면 즉시 반환한다.
+   - [x] `src/lib/stores/notifications.svelte.ts`: `statechange` 대기에 8초 timeout을 추가한다 — timeout 초과 시 `null`을 반환해 무한 pending을 방지한다. SW activation이 실패하거나 SW가 terminated된 경우 caller는 early return하도록 한다.
 
-4. - [ ] **모든 SW 메시지/조회 경로가 공통 helper를 재사용하도록 교체한다**
-   - [ ] `src/lib/stores/notifications.svelte.ts`: `registerRemindersToServiceWorker()`가 직접 `navigator.serviceWorker.ready`를 호출하지 말고 공통 helper 반환값을 사용해 `postMessage` 하도록 바꾼다.
-   - [ ] `src/lib/stores/notifications.svelte.ts`: `updateReminderInServiceWorker()`와 `removeReminderFromServiceWorker()`도 동일 helper를 사용하도록 바꾼다.
-   - [ ] `src/lib/stores/notifications.svelte.ts`: `getServiceWorkerScheduleStatus()`와 `cleanup()`의 `ready` 호출도 같은 helper 또는 동일한 activated guard를 재사용하게 맞춘다.
-   - [ ] `src/lib/stores/notifications.svelte.ts`: 이번 race 보강은 SW에 `postMessage`/상태 조회를 보내는 경로에만 적용하고, `showNotification()`의 `registration.showNotification()` 경로는 범위 밖으로 유지한다.
+4. - [x] **모든 SW 메시지/조회 경로가 공통 helper를 재사용하도록 교체한다**
+   - [x] `src/lib/stores/notifications.svelte.ts`: `registerRemindersToServiceWorker()`가 직접 `navigator.serviceWorker.ready`를 호출하지 말고 공통 helper 반환값을 사용해 `postMessage` 하도록 바꾼다.
+   - [x] `src/lib/stores/notifications.svelte.ts`: `updateReminderInServiceWorker()`와 `removeReminderFromServiceWorker()`도 동일 helper를 사용하도록 바꾼다.
+   - [x] `src/lib/stores/notifications.svelte.ts`: `getServiceWorkerScheduleStatus()`와 `cleanup()`의 `ready` 호출도 같은 helper 또는 동일한 activated guard를 재사용하게 맞춘다.
+   - [x] `src/lib/stores/notifications.svelte.ts`: 이번 race 보강은 SW에 `postMessage`/상태 조회를 보내는 경로에만 적용하고, `showNotification()`의 `registration.showNotification()` 경로는 범위 밖으로 유지한다.
 
 ### Phase 3: layout 기반 전체 재등록 보강
 
-5. - [ ] **SW 전체 재등록 기준이 되는 reminder fingerprint를 노출한다**
-   - [ ] `src/lib/stores/notifications.svelte.ts`: `activeReminderMemos`를 순회해 `memoId`, `reminderId`, `time`, `type`, `days`, `date`, `title`, `body`, `url`, `autoOpen`을 직렬화한 `activeReminderSyncKey` derived 값을 추가한다.
-   - [ ] `src/lib/stores/notifications.svelte.ts`: `days` 배열은 정렬 후 직렬화해 순서 차이만으로 false positive가 나지 않게 한다.
-   - [ ] `src/lib/stores/notifications.svelte.ts`: `createNotificationStore` 반환 객체에 `get activeReminderSyncKey()` getter를 추가해 `+layout.svelte`가 직접 구독할 수 있게 한다.
+5. - [x] **SW 전체 재등록 기준이 되는 reminder fingerprint를 노출한다**
+   - [x] `src/lib/stores/notifications.svelte.ts`: `activeReminderMemos`를 순회해 `memoId`, `reminderId`, `time`, `type`, `days`, `date`, `title`, `body`, `url`, `autoOpen`을 직렬화한 `activeReminderSyncKey` derived 값을 추가한다.
+   - [x] `src/lib/stores/notifications.svelte.ts`: `days` 배열은 정렬 후 직렬화해 순서 차이만으로 false positive가 나지 않게 한다.
+   - [x] `src/lib/stores/notifications.svelte.ts`: `createNotificationStore` 반환 객체에 `get activeReminderSyncKey()` getter를 추가해 `+layout.svelte`가 직접 구독할 수 있게 한다.
 
-6. - [ ] **`+layout.svelte`에 SW sync state와 공통 trigger 함수를 추가한다**
-   - [ ] `src/routes/+layout.svelte`: `onDestroy` import를 추가한다.
-   - [ ] `src/routes/+layout.svelte`: 컴포넌트 top-level에 `lastReminderSyncKey`, `pendingControllerResync` 같은 state를 추가해 초기 load 전후를 구분한다.
-   - [ ] `src/routes/+layout.svelte`: `syncRemindersToSw(reason)` helper를 추가해 `browser`, `memosStore.initialized`, `memosStore.loading`를 확인한 뒤 `notificationStore.registerRemindersToServiceWorker()`를 호출하고 마지막 sync key를 갱신한다.
+6. - [x] **`+layout.svelte`에 SW sync state와 공통 trigger 함수를 추가한다**
+   - [x] `src/routes/+layout.svelte`: `onDestroy` import를 추가한다.
+   - [x] `src/routes/+layout.svelte`: 컴포넌트 top-level에 `lastReminderSyncKey`, `pendingControllerResync` 같은 state를 추가해 초기 load 전후를 구분한다.
+   - [x] `src/routes/+layout.svelte`: `syncRemindersToSw(reason)` helper를 추가해 `browser`, `memosStore.initialized`, `memosStore.loading`를 확인한 뒤 `notificationStore.registerRemindersToServiceWorker()`를 호출하고 마지막 sync key를 갱신한다.
 
-7. - [ ] **`controllerchange` 리스너를 awaited init보다 먼저 등록하고 해제한다**
-   - [ ] `src/routes/+layout.svelte`: `onMount` 진입 직후 `navigator.serviceWorker?.addEventListener('controllerchange', handleControllerChange)`를 등록한다.
-   - [ ] `src/routes/+layout.svelte`: `handleControllerChange`는 메모 로드 전이면 `pendingControllerResync = true`만 기록하고, 로드 후면 `syncRemindersToSw('controllerchange')`를 호출하게 만든다.
-   - [ ] `src/routes/+layout.svelte`: `onDestroy`에서 같은 handler를 `removeEventListener`로 해제한다.
+7. - [x] **`controllerchange` 리스너를 awaited init보다 먼저 등록하고 해제한다**
+   - [x] `src/routes/+layout.svelte`: `onMount` 진입 직후 `navigator.serviceWorker?.addEventListener('controllerchange', handleControllerChange)`를 등록한다.
+   - [x] `src/routes/+layout.svelte`: `handleControllerChange`는 메모 로드 전이면 `pendingControllerResync = true`만 기록하고, 로드 후면 `syncRemindersToSw('controllerchange')`를 호출하게 만든다.
+   - [x] `src/routes/+layout.svelte`: `onDestroy`에서 같은 handler를 `removeEventListener`로 해제한다.
 
-8. - [ ] **초기 메모 로드 완료 직후 1회 전체 재등록을 보장한다**
-   - [ ] `src/routes/+layout.svelte`: `await memosStore.init()` 직후 기존 직접 호출 대신 `syncRemindersToSw('initial-load')`를 호출한다.
-   - [ ] `src/routes/+layout.svelte`: auth callback skip 경로에서는 `memosStore.init()`이 실행되지 않으므로 initial sync도 건너뛰게 guard를 유지한다.
-   - [ ] `src/routes/+layout.svelte`: 메모 로드 전 발생해 누적된 `pendingControllerResync`가 있으면 initial sync 직후 소모되도록 처리한다.
+8. - [x] **초기 메모 로드 완료 직후 1회 전체 재등록을 보장한다**
+   - [x] `src/routes/+layout.svelte`: `await memosStore.init()` 직후 기존 직접 호출 대신 `syncRemindersToSw('initial-load')`를 호출한다.
+   - [x] `src/routes/+layout.svelte`: auth callback skip 경로에서는 `memosStore.init()`이 실행되지 않으므로 initial sync도 건너뛰게 guard를 유지한다.
+   - [x] `src/routes/+layout.svelte`: 메모 로드 전 발생해 누적된 `pendingControllerResync`가 있으면 initial sync 직후 소모되도록 처리한다.
 
-9. - [ ] **reminder fingerprint 변화 시 전체 재등록한다**
-   - [ ] `src/routes/+layout.svelte`: `$effect`에서 `notificationStore.activeReminderSyncKey`를 읽는 reactive path를 추가한다.
-   - [ ] `src/routes/+layout.svelte`: `memosStore.initialized && !memosStore.loading && syncKey !== lastReminderSyncKey`면 `syncRemindersToSw('reminder-change')`를 호출하도록 만든다.
-   - [ ] `src/routes/+layout.svelte`: `syncKey === ''`로 바뀌는 경우에도 SW에 빈 배열이 다시 등록돼 기존 scheduled reminders가 제거되도록 empty-key 전환을 별도 허용한다.
+9. - [x] **reminder fingerprint 변화 시 전체 재등록한다**
+   - [x] `src/routes/+layout.svelte`: `$effect`에서 `notificationStore.activeReminderSyncKey`를 읽는 reactive path를 추가한다.
+   - [x] `src/routes/+layout.svelte`: `memosStore.initialized && !memosStore.loading && syncKey !== lastReminderSyncKey`면 `syncRemindersToSw('reminder-change')`를 호출하도록 만든다.
+   - [x] `src/routes/+layout.svelte`: `syncKey === ''`로 바뀌는 경우에도 SW에 빈 배열이 다시 등록돼 기존 scheduled reminders가 제거되도록 empty-key 전환을 별도 허용한다.
 
 ### Phase 4: 수동 검증 (앱 업데이트 + same-count 변경)
 
@@ -176,15 +176,19 @@ notificationStore.registerRemindersToServiceWorker();  // 1회 호출
 
 ### Phase R: 재발 경로 분석 (fix: plan 필수)
 
-13. - [ ] **SW/FCM 재발 경로를 전수 열거한다**
-   - [ ] `src/lib/stores/notifications.svelte.ts`의 `navigator.serviceWorker.ready`/`postMessage` 호출 경로, `src/routes/+layout.svelte`의 초기 등록 경로, `src/routes/settings/+page.svelte`의 수동 등록/업데이트 경로를 목록화한다.
-   - [ ] 각 경로별로 `activated helper`, `controllerchange early hook`, `activeReminderSyncKey`, `manual Firebase domain approval` 중 어떤 방어가 적용되는지 표로 정리한다.
-   - [ ] `docs/archive/2026-02-02_PWA_NOTIFICATION_DEBUG_REPORT.md`의 retry/timeout 후보와 비교해, 이번 plan이 `activated` 대기 + early event hook을 채택하는 이유를 한 줄 근거로 남긴다.
+13. - [x] **SW/FCM 재발 경로를 전수 열거한다**
+   - [x] `src/lib/stores/notifications.svelte.ts`의 `navigator.serviceWorker.ready`/`postMessage` 호출 경로, `src/routes/+layout.svelte`의 초기 등록 경로, `src/routes/settings/+page.svelte`의 수동 등록/업데이트 경로를 목록화한다.
+   - [x] 각 경로별로 `activated helper`, `controllerchange early hook`, `activeReminderSyncKey`, `manual Firebase domain approval` 중 어떤 방어가 적용되는지 표로 정리한다.
+   - [x] `docs/archive/2026-02-02_PWA_NOTIFICATION_DEBUG_REPORT.md`의 retry/timeout 후보와 비교해, 이번 plan이 `activated` 대기 + early event hook을 채택하는 이유를 한 줄 근거로 남긴다.
 
-14. - [ ] **미방어 경로가 발견되면 본 plan 범위 안에서 즉시 흡수한다**
-   - [ ] helper가 적용되지 않은 `navigator.serviceWorker.ready` + `postMessage` 경로가 남아 있으면 Phase 2 하위 항목으로 되돌려 추가한다.
-   - [ ] `activeReminderSyncKey`에 빠진 payload 필드가 발견되면 Phase 3 직렬화 항목에 즉시 추가한다.
-   - [ ] 구현 전 최종 검토 시 `방어 경로 N/N` 결과를 기술적 고려사항 또는 검증 메모에 기록하고, "근본 수정" 표현은 사용하지 않는다.
+   > 방어 경로 12/12 완료. retry 루프 대신 activated 상태 직접 대기 + early controllerchange hook 방식을 채택한 이유: archive 보고서에서 "retry 타이머가 race window를 줄일 뿐 근본 해결이 아니다"라고 정리됨. activated 이벤트 대기는 SW가 control을 실제 획득한 시점을 정확히 포착하므로 더 적합하다.
+
+14. - [x] **미방어 경로가 발견되면 본 plan 범위 안에서 즉시 흡수한다**
+   - [x] helper가 적용되지 않은 `navigator.serviceWorker.ready` + `postMessage` 경로가 남아 있으면 Phase 2 하위 항목으로 되돌려 추가한다.
+   - [x] `activeReminderSyncKey`에 빠진 payload 필드가 발견되면 Phase 3 직렬화 항목에 즉시 추가한다.
+   - [x] 구현 전 최종 검토 시 `방어 경로 N/N` 결과를 기술적 고려사항 또는 검증 메모에 기록하고, "근본 수정" 표현은 사용하지 않는다.
+
+   > 미방어 경로 없음. `showNotification()`, `todoNotifications.ts`, `settings` devMode 버튼은 각각 별도 패턴으로 safe. `fcm.ts:118 navigator.serviceWorker.ready` → getToken() 경로는 RC-A(도메인 승인) 해결 후 Phase 4에서 검증.
 
 ### Phase Z: Post-Merge Cleanup (/merge-test owner)
 
@@ -212,4 +216,4 @@ notificationStore.registerRemindersToServiceWorker();  // 1회 호출
 
 ---
 
-*상태: 검토완료 | 진행률: 0/16 (0%)*
+*상태: 구현중 | 진행률: 12/16 (75%)*
