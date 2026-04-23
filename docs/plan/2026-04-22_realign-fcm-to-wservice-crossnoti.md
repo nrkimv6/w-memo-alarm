@@ -3,8 +3,8 @@
 > 작성일시: 2026-04-22 14:04
 > 기준커밋: 7d9cc88
 > 대상 프로젝트: gifticon-manager, memo-alarm
-> 상태: 초안
-> 진행률: 0/6 (0%)
+> 상태: 구현완료
+> 진행률: 6/6 (100%)
 > 선행 plan: [`2026-04-22_fix-notification-fcm-permission-and-duplicate-cron`](./2026-04-22_fix-notification-fcm-permission-and-duplicate-cron.md) (진행중) — Phase 1~4와 Phase R이 이미 추가해둔 `NormalizedFcmErrorCode`, `normalizeFcmError()`, `[CODE]` 정규화, `FCM_PROJECT_ID_MISMATCH` 가드, settings "서버측 FCM 상태" 카드 위에서 본 plan이 동작한다. **선행 plan의 Phase 5(운영 secret 교체)는 `lineminder-23489` 방향으로 명시되어 있는데, 본 plan이 그 방향을 `wservice-cross-noti`로 뒤집는다.** 선행 plan의 Phase 5는 본 plan 완료 시점에 "대체됨"으로 정리한다 — 정리 시점은 본 plan의 Phase 5가 운영 반영될 때.
 > 요약: 본 계획은 임시로 되돌아간 `lineminder-23489` 경로를 정답으로 간주하지 않고 `wservice-cross-noti` 기준으로 서버 secret, 클라이언트 Firebase 식별자, 기존 토큰 재등록 흐름을 다시 맞춘다.
 >
@@ -50,4 +50,4 @@
 
 ---
 
-*상태: 초안 | 진행률: 0/6 (0%)*
+*상태: 구현완료 | 진행률: 6/6 (100%)*
