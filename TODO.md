@@ -10,7 +10,7 @@
 
 ## Pending
 
-- [ ] **메모→할일 전환 시 URL이 할일 UI에서 사라지는 이슈 수정** — [plan](docs/plan/2026-04-24_fix-memo-to-todo-url-ui-hide.md) (0/19, 0%)
+- [ ] **메모→할일 전환 시 URL이 할일 UI에서 사라지는 이슈 수정** — [plan](docs/plan/2026-04-24_fix-memo-to-todo-url-ui-hide.md) (0/21, 0%)
 - [ ] **foreground 경로 동일 시간대 알림 병합 누락 수정** — [plan](docs/plan/2026-04-24_fix-notification-merge-in-foreground.md) (0/22, 0%)
 - [ ] **브라우저 cold load 설정 토글 상태 디싱크 수정** — [plan](docs/plan/2026-04-24_fix-settings-state-desync-on-cold-load.md) (0/21, 0%)
 - [ ] **FCM 알림 덮어쓰기 + 6개 미전송 원인 수정** — [plan](docs/plan/2026-04-23_fix-fcm-notification-tag-and-missing-sends.md) (0/73, 0%)
