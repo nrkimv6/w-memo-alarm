@@ -6,7 +6,6 @@
 ---
 
 ## In Progress
-- [ ] 알림 기본설정 계정단위 전환 및 기기 간 동기화 (from: docs/plan/2026-04-24_clarify-default-reminder-settings.md)
 - [ ] `ma_user_settings` 마이그레이션 적용 및 설정 동기화 검증 (from: docs/plan/2026-04-24_apply-ma-user-settings-migration-and-validate-sync.md)
 
 ## Pending

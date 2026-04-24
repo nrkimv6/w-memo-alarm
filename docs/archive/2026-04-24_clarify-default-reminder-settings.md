@@ -3,11 +3,11 @@
 > 작성일시: 2026-04-24 22:27
 > 기준커밋: 945bf4d
 > 대상 프로젝트: memo-alarm
-> 상태: DB 반영 대기
+> 상태: 구현완료
 > 구현커밋: 303095a
 > 머지커밋: 6c1d438
 > 반영일시: 2026-04-24 22:54
-> 진행률: 4/8 (50%)
+> 진행률: 4/4 (100%)
 > 요약: 기본알림(메모)과 할일 기본 알림시간/자동알림(분)을 **로그인 시 계정단위로 동기화**하고, **비로그인 시에는 localStorage(기기단위) fallback**으로 유지한다.
 
 ---
@@ -41,17 +41,18 @@
 
 ---
 
-## 남은 작업
+## 완료
 
 - [x] 코드 반영 및 머지 (303095a, 6c1d438)
 - [x] 정적 검증: `npm run check` (2026-04-24)
 - [x] 정적 검증: `npm run build` (2026-04-24)
 - [x] worktree/branch 정리: `impl/clarify-default-reminder-settings` 삭제 (2026-04-24)
-- [ ] Supabase에 `012_account_scoped_notification_settings.sql` 적용 (테이블/정책/트리거 생성)
-- [ ] 2세션(2브라우저/2기기)에서 설정 변경이 다른 세션에 반영되는지 확인 (realtime 포함)
-- [ ] 기본알림/전역 할일 알림 연쇄 업데이트 회귀 확인 (`isDefault`, `useGlobalRemind`, `useGlobalAutoAlert`)
-- [ ] TODO/DONE 정리 및 plan 종료 처리 (/done 또는 follow-up plan)
+
+## Follow-up
+
+- DB 반영 및 2세션 검증/회귀 확인은 후속 계획서에서 진행한다:
+  - `docs/plan/2026-04-24_apply-ma-user-settings-migration-and-validate-sync.md`
 
 ---
 
-*상태: DB 반영 대기 | 진행률: 4/8 (50%)*
+*상태: 구현완료 | 진행률: 4/4 (100%)*
