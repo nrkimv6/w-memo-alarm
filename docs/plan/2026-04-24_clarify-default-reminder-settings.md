@@ -49,8 +49,7 @@
 - [x] worktree/branch 정리: `impl/clarify-default-reminder-settings` 삭제 (2026-04-24)
 - [x] Supabase에 `012_account_scoped_notification_settings.sql` 적용 (테이블/정책/트리거 생성) (2026-04-24)
 - [x] Supabase Realtime publication(`supabase_realtime`)에 `public.ma_user_settings` 추가 (2026-04-24)
-- [ ] 2세션(2브라우저/2기기)에서 설정 변경이 다른 세션에 반영되는지 확인 (realtime 포함)
-- [ ] 기본알림/전역 할일 알림 연쇄 업데이트 회귀 확인 (`isDefault`, `useGlobalRemind`, `useGlobalAutoAlert`)
+- [ ] 수동검증 체크리스트 수행 — `MANUAL_TASKS.md`의 `2026-04-24: 알림 기본설정 계정단위 동기화 수동 검증` 섹션 참고
 - [ ] TODO/DONE 정리 및 plan 종료 처리 (/done)
 
 ---
