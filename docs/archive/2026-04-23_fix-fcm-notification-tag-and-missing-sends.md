@@ -3,7 +3,7 @@
 > 작성일시: 2026-04-23 16:45
 > 기준커밋: 06f7142
 > 대상 프로젝트: memo-alarm, line-minder
-> 상태: 초안
+> 상태: 보류
 > 유형: fix
 > 진행률: 0/73 (0%) (memo-alarm 42 + line-minder 31, 하위 TODO 참조)
 > 요약: FCM push 알림이 고정 tag으로 서로 덮어쓰여 동일 시각 여러 알림 병합 불가, 14개 중 6개 미수신 — firebase-messaging-sw.js merge window 구현 + send-notifications INVALID_ARGUMENT 토큰 비활성화 오처리 수정
@@ -11,6 +11,8 @@
 > **실행 TODO:**
 > - [memo-alarm: Phase 0~1 SW merge window](./2026-04-23_fix-fcm-notification-tag-and-missing-sends_todo-1.md) — independent, 선행조건 없음
 > - [line-minder: Phase 0~2 send-notifications 수정](../../../line-minder/docs/plan/2026-04-23_fix-fcm-notification-tag-and-missing-sends_todo-2.md) — independent, 선행조건 없음
+
+> 메모: memo-alarm 쪽 TODO-1은 완료(archive). line-minder 쪽 TODO-2는 line-minder 레포에서 진행 필요.
 
 ---
 
