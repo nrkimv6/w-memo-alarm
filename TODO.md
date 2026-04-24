@@ -8,6 +8,7 @@
 ## In Progress
 
 ## Pending
+- [ ] **Google 로그인 갑작스런 실패 회귀 조사 및 최소 수정** — [plan](docs/plan/2026-04-24_fix-google-login-regression.md) (0/28, 0%)
 - [ ] **FCM 알림 덮어쓰기 + 6개 미전송 원인 수정** — [plan](docs/plan/2026-04-23_fix-fcm-notification-tag-and-missing-sends.md) (0/73, 0%)
 - [ ] **북마크 필터에서 할일 카드 렌더링 개선** — [plan](docs/plan/2026-03-30_bookmark-filter-todo-card.md) (0/6, 0%)
 - [x] **메모↔할일 전환 시 북마크 소실 재발 이슈 수정** — [plan](docs/plan/2026-04-07_fix-bookmark-disappear-recurrence.md) — 구현완료 (Phase 6 수동 검증 별도)
