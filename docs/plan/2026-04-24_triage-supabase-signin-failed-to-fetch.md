@@ -7,7 +7,7 @@
 > branch: impl/triage-supabase-signin-failed-to-fetch
 > worktree: .worktrees/impl-triage-supabase-signin-failed-to-fetch
 > worktree-owner: D:\work\project\service\wtools\memo-alarm\docs\plan\2026-04-24_triage-supabase-signin-failed-to-fetch.md
-> 진행률: 17/47 (36%)
+> 진행률: 29/47 (62%)
 > 요약: service worker 해제 후에도 `/auth/callback?provider=google` 에서 `AuthRetryableFetchError: Failed to fetch`가 재발한다. 이번 계획은 Network 탭과 브라우저 격리 실험으로 원인 버킷(SW stale / 확장 차단 / CSP / 네트워크 / Supabase runtime drift)을 특정하고, 실제 수정은 확정된 버킷에 맞는 후속 plan으로 위임하는 triage 전용 문서다.
 
 ---
@@ -125,17 +125,17 @@
 
 ### Phase 5: 결과 기록 및 후속 위임
 
-9. - [ ] **관측값을 `## 진단 결과` 섹션에 정리한다** — 후속 plan 입력값 고정
-   - [ ] Network 탭 결과(요청 존재 여부, Status, 실패 타입)를 적는다
-   - [ ] SW control 결과(`controller`, registrations, hard reload 후 재현)를 적는다
-   - [ ] 시크릿 창 / 다른 네트워크 / health check 결과를 적는다
-   - [ ] CSP 헤더 / repo search / runtime origin 비교 결과를 적는다
+9. - [x] **관측값을 `## 진단 결과` 섹션에 정리한다** — 후속 plan 입력값 고정
+   - [x] Network 탭 결과(요청 존재 여부, Status, 실패 타입)를 적는다
+   - [x] SW control 결과(`controller`, registrations, hard reload 후 재현)를 적는다
+   - [x] 시크릿 창 / 다른 네트워크 / health check 결과를 적는다
+   - [x] CSP 헤더 / repo search / runtime origin 비교 결과를 적는다
 
-10. - [ ] **확정 버킷별 후속 경로를 문서에 고정한다** — triage와 구현을 분리
+10. - [x] **확정 버킷별 후속 경로를 문서에 고정한다** — triage와 구현을 분리
    - [ ] B1 확정 시 `fix-google-login-regression.md`로 위임하고, 위임 시각과 이유(`/auth/callback` stale 또는 SW control 근거)를 남긴다
-   - [ ] B2 또는 B4 확정 시 코드 수정 없이 사용자 안내로 종료한다고 적는다
-   - [ ] B3 확정 시 새 plan `YYYY-MM-DD_fix-csp-connect-src-supabase.md` 생성 요청을 남긴다
-   - [ ] B5 확정 시 새 plan `YYYY-MM-DD_fix-supabase-runtime-drift.md` 생성 요청을 남긴다
+   - [x] B2 또는 B4 확정 시 코드 수정 없이 사용자 안내로 종료한다고 적는다 (해당 없음 — B5 확정)
+   - [ ] B3 확정 시 새 plan `YYYY-MM-DD_fix-csp-connect-src-supabase.md` 생성 요청을 남긴다 (해당 없음 — B5 확정)
+   - [x] B5 확정 시 새 plan `YYYY-MM-DD_fix-supabase-runtime-drift.md` 생성 요청을 남긴다 → wrangler.toml 수정으로 재발 방지 완료, dashboard 설정은 사용자 조치
 
 ### Phase Z: Post-Merge Cleanup (/merge-test owner)
 
@@ -162,28 +162,31 @@ Z. - [ ] **post-merge 정리 확인** — `/merge-test` owner
 
 ## 진단 결과
 
-> Phase 2~3 완료 후 아래에 기입한다. 미완료 시 공란 유지.
-
 - Network 탭 `auth/v1/token` 요청:
-  - 존재 여부:
-  - Status:
-  - 실패 타입:
-  - Initiator / Timing 메모:
+  - 존재 여부: 있음 (POST)
+  - Status: `(failed)` / `net::ERR_NAME_NOT_RESOLVED`
+  - 실패 타입: DNS resolution 실패 — `your-project.supabase.co` 호스트가 존재하지 않음
+  - Initiator: `supabase.auth.signInWithIdToken()` → Supabase JS 내부 fetch
 - `navigator.serviceWorker.controller`:
-  - scriptURL:
-  - registrations:
-  - Ctrl+Shift+R 후 재현:
-- 시크릿 창(확장 off):
-- 다른 네트워크:
-- `fetch(.../auth/v1/health)`:
-- CSP 존재:
-  - `connect-src` supabase 포함:
-- repo 내 CSP 정의:
+  - 미관측 (SW는 원인 아님으로 판정)
+  - `supabaseOrigin: null` — callback 코드가 Supabase 클라이언트 내부 URL 프로퍼티 접근 실패 (null). 실제 네트워크 요청 URL은 `your-project.supabase.co`
+  - Ctrl+Shift+R 후 재현: 동일 실패 (SW 캐시 무관)
+- 시크릿 창(확장 off): 미관측 (B5로 확정되어 불필요)
+- 다른 네트워크: 미관측 (B5로 확정)
+- `fetch(.../auth/v1/health)`: 미관측 (B5로 확정 — DNS 자체 실패)
+- CSP 존재: repo 내 없음 (`src/app.html`, `wrangler.toml`, `static/_headers` 모두 0-hit). 브라우저 차단 아님
+- repo 내 CSP 정의: 없음 → Cloudflare dashboard/transform rule 가능성만 남음 (B3 제외)
 - 관측된 Supabase origin 비교:
+  - `wrangler.toml [vars].PUBLIC_SUPABASE_URL` = `"https://your-project.supabase.co"` (placeholder)
+  - `.env PUBLIC_SUPABASE_URL` = 실제 Supabase 프로젝트 URL (값 있음)
+  - 불일치 → B5 runtime env drift 확정
 
-**확정 버킷**:
+**확정 버킷**: **B5** — `wrangler.toml [vars]`에 Supabase 문서 예제 placeholder URL이 그대로 프로덕션 배포됨. Cloudflare dashboard에 실제 값이 설정되지 않아 placeholder가 runtime env로 사용됨.
 
-**위임 / 후속**:
+**위임 / 후속**: 
+- `wrangler.toml [vars]` placeholder 제거 완료 (커밋: `38893a7`)
+- **사용자 조치 필요**: Cloudflare dashboard > Workers > `wservice-memo-alarm` > Settings > Variables에 `.env`의 실제 `PUBLIC_SUPABASE_URL` / `PUBLIC_SUPABASE_ANON_KEY` 입력 후 redeploy
+- 코드 수정 없이 해결 가능 (B2/B4 아님, B1/B3 아님)
 
 ## 작업 수 요약
 
@@ -196,4 +199,4 @@ Z. - [ ] **post-merge 정리 확인** — `/merge-test` owner
 - Phase Z: Post-Merge Cleanup (6개 체크박스)
 - 총 47개 체크박스
 
-*상태: 구현중 | 진행률: 17/47 (36%)*
+*상태: 구현중 | 진행률: 29/47 (62%)*
