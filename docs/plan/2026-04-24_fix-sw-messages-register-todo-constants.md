@@ -3,7 +3,9 @@
 > 작성일시: 2026-04-24
 > 기준커밋: 5a01690
 > 대상 프로젝트: memo-alarm
-> 상태: 머지대기
+> 상태: 구현완료
+> 반영일시: 2026-04-24 14:51
+> 머지커밋: ebab841
 > branch: impl/fix-sw-messages-register-todo-constants
 > worktree: .worktrees/impl-fix-sw-messages-register-todo-constants
 > worktree-owner: docs/plan/2026-04-24_fix-sw-messages-register-todo-constants.md
