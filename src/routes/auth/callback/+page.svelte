@@ -2,6 +2,7 @@
 	import { onMount } from "svelte";
 	import { supabase } from "$lib/services/supabase";
 	import { browser } from "$app/environment";
+	import { env } from "$env/dynamic/public";
 	import { Loader2 } from "lucide-svelte";
 
 	let error = $state<string | null>(null);
@@ -87,6 +88,16 @@
 			// 통합: 메타데이터 우선, 토큰은 hash에서
 			const tokens = { ...hashTokens, ...queryMetadata };
 
+			// NOTE: tokens를 메모리에 복사한 뒤, 주소창 hash(#...)를 즉시 제거해 노출면을 줄인다.
+			// query string은 유지해야 하므로 pathname + search로만 교체한다.
+			if (browser && hashTokens && window.location.hash) {
+				window.history.replaceState(
+					{},
+					"",
+					window.location.pathname + window.location.search
+				);
+			}
+
 			// NOTE: 토큰 원문(access_token/id_token/refresh_token 등)은 어떤 로그에도 남기지 않는다.
 			const hasGoogleTokens = Boolean(tokens?.id_token && tokens?.access_token);
 			const hasSupabaseTokens = Boolean(
@@ -147,8 +158,10 @@
 				// 구글은 기존 방식 (signInWithIdToken)
 				console.log("[Auth Callback] Using signInWithIdToken (Google)");
 				const supabaseOrigin = (() => {
+					const supabaseUrl = env.PUBLIC_SUPABASE_URL;
+					if (!supabaseUrl) return null;
 					try {
-						return new URL(import.meta.env.PUBLIC_SUPABASE_URL).origin;
+						return new URL(supabaseUrl).origin;
 					} catch {
 						return null;
 					}
