@@ -66,6 +66,10 @@ function buildMergedBody(titles: string[], maxItems = 4): string {
 	const rest = titles.length - maxItems;
 	return rest > 0 ? `${shown}\n외 ${rest}건` : shown;
 }
+// NOTE: duplicated label for todo — SW scope
+function buildMergedTodoTitle(count: number): string {
+	return `${count}개의 할일 알림`;
+}
 
 // 메인 스레드로 로그 전달 함수
 function swLog(level: 'info' | 'warn' | 'error', message: string, data?: unknown) {
@@ -232,6 +236,59 @@ function showMergedNotification(reminders: ScheduledReminder[], time: string) {
 	}
 }
 
+function showMergedTodoNotification(todos: TodoScheduledNotification[], time: string) {
+	const memoIds = todos.map(t => t.memoId);
+
+	try {
+		sw.registration.showNotification(buildMergedTodoTitle(todos.length), {
+			body: buildMergedBody(todos.map(t => t.title)),
+			icon: '/favicon.png',
+			badge: '/favicon.png',
+			tag: `todo-batch-${time}`,
+			data: {
+				type: 'todo-merged',
+				time,
+				memoIds
+			},
+			vibrate: [200, 100, 200],
+			requireInteraction: true
+		});
+
+		sw.clients.matchAll().then((clients) => {
+			const sentAt = new Date().toISOString();
+			todos.forEach((todo) => {
+				clients.forEach((client) => {
+					client.postMessage({
+						type: 'TODO_NOTIFICATION_SENT',
+						memoId: todo.memoId,
+						notificationId: todo.notificationId,
+						notificationType: todo.type,
+						status: 'success',
+						sentAt
+					});
+				});
+			});
+		});
+	} catch (e) {
+		swLog('error', 'Failed to show merged todo notification', e);
+		sw.clients.matchAll().then((clients) => {
+			const sentAt = new Date().toISOString();
+			todos.forEach((todo) => {
+				clients.forEach((client) => {
+					client.postMessage({
+						type: 'TODO_NOTIFICATION_SENT',
+						memoId: todo.memoId,
+						notificationId: todo.notificationId,
+						notificationType: todo.type,
+						status: 'failed',
+						sentAt
+					});
+				});
+			});
+		});
+	}
+}
+
 // Todo 알림 체크 함수 (Phase 2)
 function checkTodoNotifications() {
 	const now = new Date();
@@ -275,40 +332,45 @@ function checkTodoNotifications() {
 		}
 	});
 
-	// Todo 알림 발송
-	todosToNotify.forEach((notif) => {
-		try {
-			sw.registration.showNotification(notif.title, {
-				body: notif.body,
-				icon: '/favicon.png',
-				badge: '/favicon.png',
-				tag: notif.notificationId,
-				data: {
-					memoId: notif.memoId,
-					url: notif.url,
-					type: notif.type
-				},
-				vibrate: notif.type === 'todo-alert' ? [200, 100, 200, 100, 200] : [200, 100, 200],
-				requireInteraction: notif.requireInteraction
-			});
+	if (todosToNotify.length === 0) return;
 
-			// 메인 스레드에 기록 전달
-			sw.clients.matchAll().then((clients) => {
-				clients.forEach((client) => {
-					client.postMessage({
-						type: 'TODO_NOTIFICATION_SENT',
-						memoId: notif.memoId,
-						notificationId: notif.notificationId,
-						notificationType: notif.type,
-						status: 'success',
-						sentAt: new Date().toISOString()
-					});
+	if (todosToNotify.length >= 2) {
+		showMergedTodoNotification(todosToNotify, currentTime);
+		return;
+	}
+
+	const notif = todosToNotify[0];
+	try {
+		sw.registration.showNotification(notif.title, {
+			body: notif.body,
+			icon: '/favicon.png',
+			badge: '/favicon.png',
+			tag: notif.notificationId,
+			data: {
+				memoId: notif.memoId,
+				url: notif.url,
+				type: notif.type
+			},
+			vibrate: notif.type === 'todo-alert' ? [200, 100, 200, 100, 200] : [200, 100, 200],
+			requireInteraction: notif.requireInteraction
+		});
+
+		// 메인 스레드에 기록 전달
+		sw.clients.matchAll().then((clients) => {
+			clients.forEach((client) => {
+				client.postMessage({
+					type: 'TODO_NOTIFICATION_SENT',
+					memoId: notif.memoId,
+					notificationId: notif.notificationId,
+					notificationType: notif.type,
+					status: 'success',
+					sentAt: new Date().toISOString()
 				});
 			});
-		} catch (e) {
-			swLog('error', `Failed to show todo notification: ${notif.title}`, e);
-		}
-	});
+		});
+	} catch (e) {
+		swLog('error', `Failed to show todo notification: ${notif.title}`, e);
+	}
 }
 
 // 메모 알림 체크 함수
@@ -523,7 +585,10 @@ sw.addEventListener('notificationclick', (event) => {
 
 	// 앱 내 네비게이션 URL 결정 (항상 same-origin)
 	let appUrl: string;
-	if (data?.type === 'merged') {
+	if (data?.type === 'todo-merged') {
+		appUrl = '/todos';
+		swLog('info', '📱 Merged todo notification clicked, navigating to todos');
+	} else if (data?.type === 'merged') {
 		appUrl = '/';
 		swLog('info', `📱 Merged notification clicked, navigating to home`);
 	} else if (data?.memoId) {

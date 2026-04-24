@@ -6,6 +6,7 @@
 ---
 
 ## In Progress
+- [ ] **SW 동일 시간대 할일 알림 병합** — [plan](docs/plan/2026-04-24_fix-todo-notification-merge-in-sw.md) (54/71, 76%)
 
 ## Pending
 - [ ] **svelte-check 21개 에러 수정** — [plan](docs/plan/2026-04-24_fix-svelte-check-errors.md) (0/11, 0%)
