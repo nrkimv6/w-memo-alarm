@@ -97,7 +97,7 @@
 
 ## 2026-04-24: todo 알림 click 라우팅 + SW 메시지 계약 검증
 
-> from: [`2026-04-24_fix-todo-notification-click-and-sw-messages`](docs/plan/2026-04-24_fix-todo-notification-click-and-sw-messages.md)
+> from: [`2026-04-24_fix-todo-notification-click-and-sw-messages`](docs/archive/2026-04-24_fix-todo-notification-click-and-sw-messages.md)
 
 - [ ] todo 상기(remind) 알림 1건 발송 → 클릭 시 `/todos` 리스트로 이동하는지 확인 — 단일 todo click → /todos
 - [ ] todo 병합 알림(2건 이상, 동일 시각) → 클릭 시 `/todos`로 이동하는지 확인 — 병합 todo click → /todos
@@ -114,6 +114,19 @@
 - [x] `data/migrations/011_notification_history_todo_contract.sql` 실행 완료
 - [x] CHECK 제약 업데이트 확인
 - [ ] 확인 후 todo 알림 1건 발송 → `/notifications` 페이지에서 기록이 생성되는지 확인한다 (DB CHECK 통과 증거)
+
+---
+
+## 2026-04-24: Settings 페이지 재디자인 UI 검증
+
+> from: [`2026-04-24_redesign-settings-page`](docs/archive/2026-04-24_redesign-settings-page.md)
+
+- [ ] Settings Hub 페이지(`/settings`) 로드 → NavGroup/NavRow 목록이 정상 렌더링되는지 확인
+- [ ] Notifications 서브페이지(`/settings/notifications`) 진입 → 모든 토글/섹션 정상 표시 확인
+- [ ] Developer 서브페이지(`/settings/developer`) 진입 → dev mode unlock PIN 입력 흐름 동작 확인
+- [ ] 다크/라이트 테마 전환 시 `settings-*` CSS 네임스페이스 색상이 정상 적용되는지 확인
+- [ ] markdown 미리보기 토글(SegmentedControl) 전환 시 Pill 상태 갱신 확인
+- [ ] developer 모드 unlock 후 페이지 재이동 시 `dev_mode_unlocked` localStorage 유지 확인
 
 ---
 
