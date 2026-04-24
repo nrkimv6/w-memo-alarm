@@ -176,9 +176,9 @@ export interface NotificationHistory {
 	id: string; // noti_타임스탬프_랜덤
 	memoId: string;
 	memoTitle: string; // 발송 시점 스냅샷
-	reminderId: string;
-	reminderType: 'default' | 'additional';
-	channel: 'sw-push' | 'capacitor-local' | 'fcm-push';
+	reminderId: string; // todo 경로에서는 notificationId를 이 필드에 매핑
+	reminderType: 'default' | 'additional' | 'todo-remind' | 'todo-alert' | 'todo-overdue';
+	channel: 'sw-push' | 'sw-todo' | 'capacitor-local' | 'fcm-push';
 	status: 'success' | 'failed' | 'unknown';
 	errorMessage?: string;
 	sentAt: string; // ISO datetime string

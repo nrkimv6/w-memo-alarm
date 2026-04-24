@@ -201,7 +201,22 @@ function createNotificationStore() {
 						errorMessage: event.data.errorMessage || undefined,
 						sentAt: event.data.sentAt
 					});
-					log.info(`SW notification record: ${event.data.memoTitle} (${event.data.status})`);
+					log.info(`SW memo notification record: ${event.data.memoTitle} (${event.data.status})`);
+				}
+				if (event.data.type === SW_MSG.TODO_NOTIFICATION_SENT) {
+					const memo = memosStore.getById(event.data.memoId);
+					const memoTitle = memo?.title ?? '(unknown todo)';
+					notificationHistoryStore.addRecord({
+						memoId: event.data.memoId,
+						memoTitle,
+						reminderId: event.data.notificationId || '',
+						reminderType: event.data.notificationType || 'todo-remind',
+						channel: 'sw-todo',
+						status: event.data.status,
+						errorMessage: event.data.errorMessage || undefined,
+						sentAt: event.data.sentAt
+					});
+					log.info(`SW todo notification record: ${memoTitle} (${event.data.status})`);
 				}
 				// autoOpen으로 외부 URL이 열린 경우 openCount 증가
 				if (event.data.type === 'AUTO_OPEN_TRIGGERED' && event.data.memoId) {
