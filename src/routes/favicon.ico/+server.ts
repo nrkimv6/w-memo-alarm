@@ -1,0 +1,9 @@
+import { redirect } from '@sveltejs/kit';
+
+export function GET() {
+	redirect(308, '/favicon.png');
+}
+
+export function HEAD() {
+	redirect(308, '/favicon.png');
+}

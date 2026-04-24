@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - fix: 메모→할일 전환 시 북마크 URL이 할일 UI에서 사라지던 문제 수정 (양방향 URL 마이그레이션) — `convertMemoToTodo`에서 `url`→`todoUrls` 자동 이전, `convertTodoToMemo`에서 `todoUrls[0]`→`url` 역복원, 할일→메모 다이얼로그에 다중 URL 삭제 경고 추가
 
+## [0.6.12] - 2026-04-25
+
+### Fixed
+
+- 배포 후 `/settings` 접속 시 SSR store 순환 초기화로 500이 나던 문제 수정 — `memosStore`의 `notificationStore` 정적 import를 지연 로드로 전환해 `Cannot access 'memosStore' before initialization` 예외 제거
+- `/favicon.ico` 브라우저 기본 요청을 `/favicon.png`로 `308` 리다이렉트해 배포본에서 favicon 관련 불필요한 404/에러 로그 정리
+
 ## [0.6.8] - 2026-04-09
 
 ### Fixed

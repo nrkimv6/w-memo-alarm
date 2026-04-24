@@ -8,7 +8,6 @@ import { toastStore } from './toast.svelte';
 import { createMemoAlarm, updateMemoAlarm, deleteMemoAlarms, syncMemoAlarms } from '$lib/services/alarmSchedules';
 import { syncQueue } from '$lib/services/syncQueue';
 import { settingsStore } from './settings.svelte';
-import { notificationStore } from './notifications.svelte';
 import { createNextInstance, recoverMissingInstances } from '$lib/utils/recurrence';
 import { generateId, generateLocalId, generateReminderId } from '$lib/utils/memoIdGenerator';
 import { migrateToMultipleReminders, getRemindersFromMemo, getDefaultReminderFromMemo, getAdditionalRemindersFromMemo } from '$lib/utils/reminderHelpers';
@@ -16,6 +15,12 @@ import { supabaseToMemo, memoToSupabase, type SupabaseMemoRow } from '$lib/servi
 
 const CACHE_KEY = 'memo-alarm-memos-cache';
 const INITIALIZED_KEY = 'memo-alarm-initialized';
+
+async function getNotificationStore() {
+	if (!browser) return null;
+	const { notificationStore } = await import('./notifications.svelte');
+	return notificationStore;
+}
 
 // ID 생성 함수는 $lib/utils/memoIdGenerator 에서 import됨
 // Reminder 헬퍼 함수는 $lib/utils/reminderHelpers 에서 import됨
@@ -472,7 +477,8 @@ function createMemosStore() {
 					console.warn('[Alarms] Failed to sync alarms:', alarmError);
 				}
 				// Service Worker에 알림 등록 (백그라운드 알림용)
-				notificationStore.updateReminderInServiceWorker(result);
+				const notificationStore = await getNotificationStore();
+				await notificationStore?.updateReminderInServiceWorker(result);
 			}
 		}
 
@@ -650,7 +656,8 @@ function createMemosStore() {
 					});
 				}
 				// Service Worker에 알림 갱신 (백그라운드 알림용)
-				notificationStore.updateReminderInServiceWorker(result);
+				const notificationStore = await getNotificationStore();
+				await notificationStore?.updateReminderInServiceWorker(result);
 			}
 		}
 
@@ -691,7 +698,8 @@ function createMemosStore() {
 			cancelNotification(id);
 		} else {
 			// Service Worker에서 알림 제거
-			notificationStore.removeReminderFromServiceWorker(id);
+			const notificationStore = await getNotificationStore();
+			await notificationStore?.removeReminderFromServiceWorker(id);
 
 			if (authStore.isAuthenticated) {
 				// FCM 서버 알림 삭제 (백그라운드)
@@ -965,7 +973,8 @@ function createMemosStore() {
 			if (await isNative()) {
 				cancelNotification(memo.id);
 			} else {
-				notificationStore.removeReminderFromServiceWorker(memo.id);
+				const notificationStore = await getNotificationStore();
+				await notificationStore?.removeReminderFromServiceWorker(memo.id);
 				if (authStore.isAuthenticated) {
 					deleteMemoAlarms(memo.id).catch((e) => {
 						console.warn('[Alarms] Failed to delete alarms:', e);
