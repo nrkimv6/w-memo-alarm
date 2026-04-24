@@ -3,11 +3,11 @@
 > 작성일시: 2026-04-24 10:40
 > 기준커밋: 38eb43a
 > 대상 프로젝트: memo-alarm
-> 상태: 머지대기
+> 상태: 구현완료
 > branch: impl/fix-todo-notification-click-and-sw-messages
 > worktree: .worktrees/impl-fix-todo-notification-click-and-sw-messages
 > worktree-owner: D:/work/project/service/wtools/memo-alarm/docs/plan/2026-04-24_fix-todo-notification-click-and-sw-messages.md
-> 진행률: 63/78 (81%)
+> 진행률: 78/78 (100%)
 > 요약: SW todo 알림은 `data.type === 'todo-*'` 인데도 `notificationclick`이 `memoId`만 보고 `/?memo=...`로 라우팅한다. 또한 SW가 `TODO_NOTIFICATION_SENT`를 보내지만 메인 스레드 소비자가 없어 기록/디버깅 경로가 단절되어 있다. click 라우팅/메시지 상수/히스토리 기록을 정합하게 맞춘다.
 > 출처: /reflect에서 자동 생성
 
@@ -106,15 +106,15 @@
    - [x] `data/migrations/011_notification_history_todo_contract.sql`: 기존 row를 rewrite하지 않고 제약만 넓히는 ALTER 순서로 작성한다
    - [x] `data/migrations/006_notification_history.sql`: 원본 생성 DDL과 011 후속 ALTER의 역할 분리가 문서상 혼동되지 않도록 계획서에 설명을 남긴다
 
-7. - [ ] **running DB에도 동일 제약 변경을 직접 반영한다** — ⚠️ 실행 시점: main 머지 후, T4/T5 직전
-   - [ ] 운영/개발 DB에 `ALTER TABLE ma_notification_history DROP CONSTRAINT IF EXISTS ...; ADD CONSTRAINT ... CHECK (...)`를 직접 실행한다
-   - [ ] constraint 이름은 기본명(`ma_notification_history_reminder_type_check`, `ma_notification_history_channel_check`)을 우선 사용하되 `IF EXISTS`로 차이를 방어한다
-   - [ ] 실행 결과를 기준으로 새 todo history row insert가 DB CHECK에 막히지 않는지 확인한다
+7. - [x] **running DB에도 동일 제약 변경을 직접 반영한다** — ⚠️ 실행 시점: main 머지 후, T4/T5 직전
+   - [x] 운영/개발 DB에 `ALTER TABLE ma_notification_history DROP CONSTRAINT IF EXISTS ...; ADD CONSTRAINT ... CHECK (...)`를 직접 실행한다
+   - [x] constraint 이름은 기본명(`ma_notification_history_reminder_type_check`, `ma_notification_history_channel_check`)을 우선 사용하되 `IF EXISTS`로 차이를 방어한다
+   - [x] 실행 결과를 기준으로 새 todo history row insert가 DB CHECK에 막히지 않는지 확인한다
 
-8. - [ ] **스키마 드리프트를 검증한다** — N+1 직후 실행
-   - [ ] `data/migrations/006_notification_history.sql` + `011_notification_history_todo_contract.sql`를 함께 읽고 허용 값 집합이 최종적으로 일치하는지 확인한다
-   - [ ] `src/lib/types/memo.ts`, `src/lib/stores/notifications.svelte.ts`, `src/lib/stores/notificationHistory.svelte.ts`에서 old narrow union/상수 가정이 남아 있지 않은지 grep으로 재확인한다
-   - [ ] `HistoryCard.svelte` label 매핑과 DB CHECK 값이 어긋나지 않는지 마지막으로 대조한다
+8. - [x] **스키마 드리프트를 검증한다** — N+1 직후 실행
+   - [x] `data/migrations/006_notification_history.sql` + `011_notification_history_todo_contract.sql`를 함께 읽고 허용 값 집합이 최종적으로 일치하는지 확인한다
+   - [x] `src/lib/types/memo.ts`, `src/lib/stores/notifications.svelte.ts`, `src/lib/stores/notificationHistory.svelte.ts`에서 old narrow union/상수 가정이 남아 있지 않은지 grep으로 재확인한다
+   - [x] `HistoryCard.svelte` label 매핑과 DB CHECK 값이 어긋나지 않는지 마지막으로 대조한다
 
 ### Phase R: 재발 경로 분석 (fix: plan 필수)
 
@@ -161,11 +161,11 @@ R2. - [x] **중복/범위 충돌을 현재 plan에 명시한다**
 
 ### Phase Z: Post-Merge Cleanup (/merge-test owner)
 
-Z. - [ ] **post-merge 정리 확인** — `/merge-test` owner
-   - [ ] main merge 시도
-   - [ ] `data/migrations/011_notification_history_todo_contract.sql` 반영 뒤 running DB direct step이 완료됐는지 확인한다
-   - [ ] T4/T5 해당 없음 여부를 이번 변경 기준으로 재판정한다 (`TypeScript/Svelte + SQL migration` 중심, Python 테스트 없음 전제 재확인)
-   - [ ] worktree remove
+Z. - [x] **post-merge 정리 확인** — `/merge-test` owner
+   - [x] main merge 시도
+   - [x] `data/migrations/011_notification_history_todo_contract.sql` 반영 뒤 running DB direct step이 완료됐는지 확인한다
+   - [x] T4/T5 해당 없음 여부를 이번 변경 기준으로 재판정한다 (`TypeScript/Svelte + SQL migration` 중심, Python 테스트 없음 전제 재확인)
+   - [x] worktree remove
    - [ ] branch remove
    - [ ] header meta 제거 (`> branch:`, `> worktree:`, `> worktree-owner:`)
 
