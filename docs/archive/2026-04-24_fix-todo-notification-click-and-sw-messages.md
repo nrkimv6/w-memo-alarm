@@ -1,12 +1,13 @@
 # fix: todo 알림 click 라우팅 + SW 메시지 계약 정리
 
+> 완료일: 2026-04-24
+> 아카이브됨
+> 진행률: 78/78 (100%)
+> 요약: SW todo 알림 notificationclick에서 단일 todo-* → /todos 라우팅 수정, TODO_NOTIFICATION_SENT SW→메인 payload parity, 메인 스레드 consumer 추가, NotificationHistory 타입/DB CHECK 확장, HistoryCard sw-todo 라벨+click 동선 수정
 > 작성일시: 2026-04-24 10:40
 > 기준커밋: 38eb43a
 > 대상 프로젝트: memo-alarm
 > 상태: 구현완료
-> branch: impl/fix-todo-notification-click-and-sw-messages
-> worktree: .worktrees/impl-fix-todo-notification-click-and-sw-messages
-> worktree-owner: D:/work/project/service/wtools/memo-alarm/docs/plan/2026-04-24_fix-todo-notification-click-and-sw-messages.md
 > 진행률: 78/78 (100%)
 > 요약: SW todo 알림은 `data.type === 'todo-*'` 인데도 `notificationclick`이 `memoId`만 보고 `/?memo=...`로 라우팅한다. 또한 SW가 `TODO_NOTIFICATION_SENT`를 보내지만 메인 스레드 소비자가 없어 기록/디버깅 경로가 단절되어 있다. click 라우팅/메시지 상수/히스토리 기록을 정합하게 맞춘다.
 > 출처: /reflect에서 자동 생성
@@ -166,8 +167,8 @@ Z. - [x] **post-merge 정리 확인** — `/merge-test` owner
    - [x] `data/migrations/011_notification_history_todo_contract.sql` 반영 뒤 running DB direct step이 완료됐는지 확인한다
    - [x] T4/T5 해당 없음 여부를 이번 변경 기준으로 재판정한다 (`TypeScript/Svelte + SQL migration` 중심, Python 테스트 없음 전제 재확인)
    - [x] worktree remove
-   - [ ] branch remove
-   - [ ] header meta 제거 (`> branch:`, `> worktree:`, `> worktree-owner:`)
+   - [x] branch remove
+   - [x] header meta 제거 (`> branch:`, `> worktree:`, `> worktree-owner:`)
 
 ## 작업 수 요약
 
