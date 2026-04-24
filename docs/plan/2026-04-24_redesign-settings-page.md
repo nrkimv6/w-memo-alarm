@@ -3,7 +3,7 @@
 > **소스**: `C:\Users\Narang\Downloads\settings-hub-main.zip` (React + TanStack Router + Tailwind v4, "Memo & Todo Settings Hub")
 > **타겟**: `memo-alarm/src/routes/settings/+page.svelte` (SvelteKit + Svelte 5 + Tailwind v4)
 > **모드**: 🟤 **브라운필드** — 기존 단일 파일(1929줄) → Hub+서브페이지 구조로 리팩토링 + 디자인/배치만 이식
-> 상태: 구현중
+> 상태: 머지대기
 > 진행률: 72/80 (90%)
 > branch: impl/redesign-settings-page
 > worktree: .worktrees/impl-redesign-settings-page
