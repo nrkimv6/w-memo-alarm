@@ -7,7 +7,7 @@
 > branch:
 > worktree:
 > worktree-owner:
-> 진행률: 0/12 (0%)
+> 진행률: 0/11 (0%)
 > 요약: 2026-04-24 기준 Google 로그인 콜백에서 `AuthRetryableFetchError: Failed to fetch`가 재발했다. 이번 계획은 로그인 구조 개편이 아니라, 운영 드리프트와 SW 캐시 회귀를 먼저 고정하고 callback 진단 로그와 캐시 범위를 최소 수정하는 데 목적이 있다.
 
 ---
@@ -43,38 +43,39 @@
 ### Phase 1: 회귀 기준선 고정
 
 1. - [ ] **현재 로그인 경로와 연관 plan 경계를 코드 기준으로 고정한다** — 회귀 원인 후보를 문서화
-   - [ ] `src/routes/auth/callback/+page.svelte`: Google은 `signInWithIdToken()`, Kakao는 `setSession()` 경로임을 기준선으로 적는다
-   - [ ] `../auth-worker/src/providers/google.ts`: callback이 여전히 `id_token`과 `access_token`을 redirect payload로 내리는지 근거로 적는다
+   - [ ] `src/routes/auth/callback/+page.svelte:133-166`: `if (tokens.supabase_access_token...)` / `else if (tokens.id_token && tokens.access_token)` 분기를 기준선으로 적어 provider별 세션 생성 경로를 고정한다
+   - [ ] `../auth-worker/src/providers/google.ts:141-160`: Google callback이 `id_token`과 `access_token`을 `redirectToWebApp()`으로 넘기는 현재 계약을 근거로 적는다
+   - [ ] `src/lib/services/supabase.ts:5-13`: Supabase 대상이 `PUBLIC_SUPABASE_URL` 런타임 값에 의존한다는 점을 drift 후보로 기술적 고려사항에 남긴다
    - [ ] `docs/plan/2026-04-24_fix-google-login-regression.md`: `triage-supabase-signin-failed-to-fetch`는 원인 특정 전용, 본 plan은 B1/cache-drift 수정 전용이라고 범위를 적는다
 
 2. - [ ] **서비스워커와 callback 문서 캐시 위험을 구현 범위로 고정한다** — stale callback 번들 가능성 판단 기준
-   - [ ] `src/service-worker.ts`: 현재 fetch 핸들러가 같은 origin `GET`을 넓게 캐시하고 `/api`만 예외 처리한다는 점을 적는다
-   - [ ] `static/firebase-messaging-sw.js`: 별도 루트 스코프 SW가 동시에 존재해 진단을 혼탁하게 만들 수 있음을 적되, 이번 plan 수정 대상에서는 제외한다
+   - [ ] `src/service-worker.ts:121-148`: fetch 핸들러가 같은 origin `GET`을 넓게 캐시하고 `/api`만 예외 처리한다는 점을 구현 기준선으로 적는다
+   - [ ] `static/firebase-messaging-sw.js:1-16`: 별도 루트 스코프 SW가 동시에 존재해 진단을 혼탁하게 만들 수 있음을 적되, 이번 plan 수정 대상에서는 제외한다고 명시한다
    - [ ] `docs/plan/2026-04-24_fix-google-login-regression.md`: `/auth/callback` 문서와 navigation document는 캐시 대상에서 제외하는 최소 수정안으로 고정한다
 
 ### Phase 2: callback 진단 로그 최소 강화
 
 3. - [ ] **callback 진입 직후 남길 메타 로그를 토큰 비노출 형태로 정리한다** — 실패 타입을 네트워크/세션/토큰 부재로 분리
-   - [ ] `src/routes/auth/callback/+page.svelte`: `parseQueryParams()` / `parseHashFragment()` 직후 로그를 `provider`, `returnTo`, `hasGoogleTokens`, `hasSupabaseTokens`, `navigator.onLine` 중심으로 바꾼다
-   - [ ] `src/routes/auth/callback/+page.svelte`: `appId`, pathname, search는 남기되 hash fragment 원문과 token 길이/앞자리 같은 유사 노출도 남기지 않는다
-   - [ ] `src/routes/auth/callback/+page.svelte`: 기존 `Query metadata present/none`, `Hash tokens present/none` 로그는 새 진단 로그와 중복되지 않게 통합한다
+   - [ ] `src/routes/auth/callback/+page.svelte:64-69`: `console.log("[Auth Callback] Query metadata:", ...)`를 token 비노출 메타 객체 로그로 바꾸고 `provider`, `appId`, `returnTo`, `error`, `navigator.onLine`만 남긴다
+   - [ ] `src/routes/auth/callback/+page.svelte:95-104`: `queryMetadata/hashTokens present|none` 2개 로그를 제거하고 `hasGoogleTokens`, `hasSupabaseTokens`, `provider`, `returnTo`를 한 번에 기록하는 진단 로그 1개로 통합한다
+   - [ ] `src/routes/auth/callback/+page.svelte`: `window.location.hash`, `access_token`, `id_token`, token 길이/앞자리/뒷자리 등 유사 식별 정보는 어떤 로그에도 포함하지 않는다는 완료 기준을 문장에 포함한다
 
 4. - [ ] **`signInWithIdToken()` 직전과 catch 로그를 실패 분류용으로 보강한다** — 동작 변경 최소화
-   - [ ] `src/routes/auth/callback/+page.svelte`: `signInWithIdToken()` 직전 Supabase origin, provider, pathname/search, `navigator.onLine`만 기록한다
-   - [ ] `src/routes/auth/callback/+page.svelte`: catch에서 `err instanceof Error ? err.name : 'unknown'`, `err.message`, `navigator.onLine`을 함께 남긴다
-   - [ ] `src/routes/auth/callback/+page.svelte`: 사용자 노출 문구는 `네트워크 또는 세션 교환 실패` 수준으로만 보강하고, 기존 `setSession()` 우선/Google fallback/`returnTo` 정규화는 그대로 유지한다
+   - [ ] `src/routes/auth/callback/+page.svelte:145-152`: Google branch 진입 직전에 Supabase origin, provider, pathname, search, `navigator.onLine`만 기록하는 `console.log` 1개를 추가한다
+   - [ ] `src/routes/auth/callback/+page.svelte:173-178`: catch에서 `err instanceof Error ? err.name : 'unknown'`, `err instanceof Error ? err.message : String(err)`, `navigator.onLine`을 구조화 로그로 남긴다
+   - [ ] `src/routes/auth/callback/+page.svelte:175-178`: 사용자 노출 문구는 `네트워크 또는 세션 교환 실패` 수준으로만 보강하고, 기존 `setSession()` 우선/Google fallback/`returnTo` 정규화는 그대로 유지한다
 
 ### Phase 3: SW 캐시 범위 축소
 
 5. - [ ] **앱 Service Worker가 navigation document를 캐시하지 않도록 제한한다** — 재배포 직후 stale callback 방지
-   - [ ] `src/service-worker.ts`: `event.request.mode === 'navigate'` 요청은 캐시 로직에 들어가기 전에 즉시 bypass하도록 분기한다
-   - [ ] `src/service-worker.ts`: `destination === 'document'` 또는 이에 준하는 navigation 문서 요청은 캐시에서 읽지도 쓰지도 않게 정리한다
-   - [ ] `src/service-worker.ts`: 변경 후에도 정적 자산 캐시, push, reminder scheduling 로직은 그대로 유지한다
+   - [ ] `src/service-worker.ts:121-131`: fetch 핸들러 상단에 `const isNavigationRequest = event.request.mode === 'navigate' || event.request.destination === 'document'` 계산을 추가한다
+   - [ ] `src/service-worker.ts:121-131`: `isNavigationRequest`가 true면 `event.respondWith`에 들어가기 전에 즉시 return 하도록 분기한다
+   - [ ] `src/service-worker.ts:132-147`: navigation bypass 추가 후에도 기존 `cache.match -> fetch -> cache.put` 경로는 정적 자산 요청에서만 유지된다는 완료 기준을 적는다
 
 6. - [ ] **`/auth` 계열 경로를 캐시 예외로 고정한다** — callback 문서 stale 방지
-   - [ ] `src/service-worker.ts`: 같은 origin이어도 `url.pathname.startsWith('/auth')`면 fetch passthrough 하도록 분기한다
-   - [ ] `src/service-worker.ts`: 특히 `/auth/callback`이 캐시 대상에서 완전히 빠졌는지 조건문 순서를 점검한다
-   - [ ] `src/service-worker.ts`: 새 예외가 `/api` 예외와 충돌하지 않도록 fetch 가드 순서를 명시한다
+   - [ ] `src/service-worker.ts:124-131`: `const isAuthPath = url.pathname.startsWith('/auth')` 계산을 추가한다
+   - [ ] `src/service-worker.ts:124-131`: 같은 origin이어도 `isAuthPath`면 fetch passthrough 하도록 분기해 `/auth/callback`을 캐시 read/write 대상에서 제외한다
+   - [ ] `src/service-worker.ts:126-131`: `same-origin -> navigation/auth -> /api` 순서 중 어떤 가드가 먼저 실행되는지 문서와 코드가 일치하는지 점검한다
 
 ### Phase 4: 검증 및 회귀 방지
 
@@ -84,7 +85,8 @@
    - [ ] 빌드 산출물 검토: callback 라우트와 `service-worker.js`가 모두 재생성되는지 확인한다
 
 8. - [ ] **운영 재현 시나리오를 고정한다** — triage 결과와 연결되는 smoke test
-   - [ ] Chrome DevTools Network: `/auth/callback` 문서가 SW on/off 각각에서 최신 번들로 로드되는지 비교 확인한다
+   - [ ] Chrome DevTools Application: SW unregister 직후와 hard reload 후 각각 `navigator.serviceWorker.controller?.scriptURL`을 기록해 callback 페이지가 최신 SW control 상태인지 비교한다
+   - [ ] Chrome DevTools Network: `/auth/callback` document 응답이 SW on/off 각각에서 최신 번들로 로드되는지 비교 확인한다
    - [ ] Chrome DevTools Network: `signInWithIdToken()` 호출의 실제 URL, 상태코드, 실패 타입(`blocked`, `cancelled`, `net::ERR_*`, CORS)을 기록한다
    - [ ] 브라우저 콘솔: callback 로그에 토큰 원문이 남지 않으면서도 `provider`, `hasGoogleTokens`, `hasSupabaseTokens`, `navigator.onLine`이 보이는지 확인한다
    - [ ] 회귀 확인: Kakao 로그인, 기존 `returnTo=/settings` 복귀, 재배포 직후 `/auth/callback` 최신 반영이 유지되는지 확인한다
@@ -94,11 +96,13 @@
 9. - [ ] **로그인 실패 재발 경로를 전수 열거한다**
    - [ ] `src/routes/auth/callback/+page.svelte`의 로그 추가 지점, `src/service-worker.ts`의 fetch 캐시 경로, `../auth-worker/src/providers/google.ts`의 redirect payload 경로를 한 표로 정리한다
    - [ ] 각 경로별로 이번 plan 방어 대상인지(`callback log`, `document cache`) 또는 범위 제외인지(`auth-worker payload`, `FCM SW`)를 판정한다
+   - [ ] `src/lib/fcm.ts:112-113`의 `firebase-messaging-sw.js` 등록 경로는 이번 plan 범위 제외라고 별도 줄로 고정해 FCM SW 수정과 섞이지 않게 한다
    - [ ] `docs/archive/2026-02-05_fix-memo-todo-bugs.md`와 `docs/archive/2026-04-23_fix-sw-update-alarm-lost.md`의 기존 원인과 섞이지 않도록 근거를 한 줄씩 남긴다
 
 10. - [ ] **미방어 경로가 남으면 현재 plan 범위 안에서 흡수한다**
-   - [ ] callback에서 토큰 비노출 규칙을 깨는 기존 로그가 남아 있으면 Phase 2 하위 작업에 즉시 추가한다
-   - [ ] `src/service-worker.ts`에 navigation/auth 예외를 추가해도 여전히 문서 캐시 write 경로가 남으면 Phase 3 하위 작업에 즉시 추가한다
+   - [ ] `rg -n "\\[Auth Callback\\]" src/routes/auth/callback/+page.svelte` 결과를 다시 확인해 토큰 비노출 규칙을 깨는 기존 로그가 남아 있으면 Phase 2 하위 작업에 즉시 추가한다
+   - [ ] `src/service-worker.ts`에 navigation/auth 예외를 추가한 뒤에도 document cache write 경로가 남으면 Phase 3 하위 작업에 즉시 추가한다
+   - [ ] `git diff --name-only 5a01690..main -- src/routes/auth/callback/+page.svelte src/service-worker.ts src/lib/services/supabase.ts static/firebase-messaging-sw.js` 결과를 검토해 대상 파일 drift가 생기면 기술적 고려사항에 반영한다
    - [ ] 최종 재검토 시 `방어 경로 N/N` 또는 `범위 제외 경로 N건`을 기술적 고려사항 또는 검증 메모에 남기고, "근본 수정" 표현은 사용하지 않는다
 
 ### Phase Z: Post-Merge Cleanup (/merge-test owner)
@@ -132,4 +136,18 @@ npm run build
 
 ---
 
-*상태: 초안 | 진행률: 0/12 (0%)*
+## Phase 요약
+
+- Phase 0: Worktree 준비 — 1개 상위 작업 / 3개 원자 작업
+- Phase 1: 회귀 기준선 고정 — 2개 상위 작업 / 7개 원자 작업
+- Phase 2: callback 진단 로그 최소 강화 — 2개 상위 작업 / 6개 원자 작업
+- Phase 3: SW 캐시 범위 축소 — 2개 상위 작업 / 6개 원자 작업
+- Phase 4: 검증 및 회귀 방지 — 2개 상위 작업 / 8개 원자 작업
+- Phase R: 재발 경로 분석 — 2개 상위 작업 / 8개 원자 작업
+- Phase Z: Post-Merge Cleanup — 1개 상위 작업 / 3개 원자 작업
+
+총 11개 상위 작업 / 41개 원자 작업
+
+---
+
+*상태: 초안 | 진행률: 0/11 (0%)*
