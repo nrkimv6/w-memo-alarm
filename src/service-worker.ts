@@ -264,12 +264,14 @@ function showMergedTodoNotification(todos: TodoScheduledNotification[], time: st
 						notificationId: todo.notificationId,
 						notificationType: todo.type,
 						status: 'success',
+						errorMessage: null,
 						sentAt
 					});
 				});
 			});
 		});
 	} catch (e) {
+		const errorMsg = e instanceof Error ? e.message : String(e);
 		swLog('error', 'Failed to show merged todo notification', e);
 		sw.clients.matchAll().then((clients) => {
 			const sentAt = new Date().toISOString();
@@ -281,6 +283,7 @@ function showMergedTodoNotification(todos: TodoScheduledNotification[], time: st
 						notificationId: todo.notificationId,
 						notificationType: todo.type,
 						status: 'failed',
+						errorMessage: errorMsg,
 						sentAt
 					});
 				});
@@ -364,12 +367,27 @@ function checkTodoNotifications() {
 					notificationId: notif.notificationId,
 					notificationType: notif.type,
 					status: 'success',
+					errorMessage: null,
 					sentAt: new Date().toISOString()
 				});
 			});
 		});
 	} catch (e) {
+		const errorMsg = e instanceof Error ? e.message : String(e);
 		swLog('error', `Failed to show todo notification: ${notif.title}`, e);
+		sw.clients.matchAll().then((clients) => {
+			clients.forEach((client) => {
+				client.postMessage({
+					type: 'TODO_NOTIFICATION_SENT',
+					memoId: notif.memoId,
+					notificationId: notif.notificationId,
+					notificationType: notif.type,
+					status: 'failed',
+					errorMessage: errorMsg,
+					sentAt: new Date().toISOString()
+				});
+			});
+		});
 	}
 }
 
@@ -591,6 +609,10 @@ sw.addEventListener('notificationclick', (event) => {
 	} else if (data?.type === 'merged') {
 		appUrl = '/';
 		swLog('info', `📱 Merged notification clicked, navigating to home`);
+	} else if (typeof data?.type === 'string' && data.type.startsWith('todo-')) {
+		// todo-remind | todo-alert | todo-overdue → /todos 리스트 진입 (deep-link 미지원)
+		appUrl = '/todos';
+		swLog('info', `📱 Single todo notification clicked: type=${data.type}, memoId=${data.memoId}, navigating to todos`);
 	} else if (data?.memoId) {
 		appUrl = `/?memo=${data.memoId}`;
 		swLog('info', `📱 Single notification clicked: memoId=${data.memoId}`);
