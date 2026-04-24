@@ -47,11 +47,11 @@
 
 ### Phase 0: Worktree 준비
 
-0. - [ ] **worktree 준비 상태를 문서에 고정** — `/implement` 진입 게이트
-   - [ ] `docs/plan/2026-04-24_fix-todo-notification-click-and-sw-messages.md`: `> branch:`, `> worktree:`, `> worktree-owner:` 슬롯을 유지한다
-   - [ ] `docs/plan/2026-04-24_fix-todo-notification-click-and-sw-messages.md`: blank 슬롯은 신규 초기 상태이며 다른 `impl/*` 잔여와 무관하다고 적는다
-   - [ ] `docs/plan/2026-04-24_fix-todo-notification-click-and-sw-messages.md`: `worktree 생성 또는 재개`는 `/implement` 또는 `plan-runner` owner flow 임을 적는다
-   - [ ] `docs/plan/2026-04-24_fix-todo-notification-click-and-sw-messages.md`: `worktree cwd 고정` 확인을 별도 하위 작업으로 적는다
+0. - [x] **worktree 준비 상태를 문서에 고정** — `/implement` 진입 게이트
+   - [x] `docs/plan/2026-04-24_fix-todo-notification-click-and-sw-messages.md`: `> branch:`, `> worktree:`, `> worktree-owner:` 슬롯을 유지한다
+   - [x] `docs/plan/2026-04-24_fix-todo-notification-click-and-sw-messages.md`: blank 슬롯은 신규 초기 상태이며 다른 `impl/*` 잔여와 무관하다고 적는다
+   - [x] `docs/plan/2026-04-24_fix-todo-notification-click-and-sw-messages.md`: `worktree 생성 또는 재개`는 `/implement` 또는 `plan-runner` owner flow 임을 적는다
+   - [x] `docs/plan/2026-04-24_fix-todo-notification-click-and-sw-messages.md`: `worktree cwd 고정` 확인을 별도 하위 작업으로 적는다
 
 ### Phase 1: 단일 todo 알림 click 라우팅 정합
 
