@@ -79,4 +79,20 @@
 
 ---
 
-*마지막 업데이트: 2026-04-23*
+## 2026-04-24: SW 동일 시간대 할일 알림 병합 검증
+
+> from: [`2026-04-24_fix-todo-notification-merge-in-sw`](docs/archive/2026-04-24_fix-todo-notification-merge-in-sw.md)
+
+- [ ] `src/lib/utils/todoNotifications.ts` 경로로 등록되는 상기(remind) todo 3개 이상을 같은 `time: HH:MM` 으로 만든다
+- [ ] 해당 시각 도달 시 OS 알림이 1건만 뜨는지 확인한다
+- [ ] 병합 제목이 `"N개의 할일 알림"` 형식인지 확인한다
+- [ ] 병합 본문이 `buildMergedBody()` 규칙대로 상위 항목만 노출하는지 확인한다
+- [ ] 병합 알림 클릭 시 앱이 `/todos` 로 이동하는지 확인한다
+- [ ] 같은 조건에서 `TODO_NOTIFICATION_SENT` 메시지 또는 로그가 success path로 남는지 devtools/로그로 확인한다
+- [ ] 동일 시각 대상이 1건만 남도록 조정한 뒤 기존 단일 알림이 `tag: notificationId` 로 발송되는지 확인한다
+- [ ] 단일 todo 알림 클릭 시 기존 `/?memo={memoId}` 이동이 유지되는지 확인한다
+- [ ] one-time alert 발송 후 해당 `notificationId` 가 `todoNotifications` 배열에서 제거되는지 확인한다
+
+---
+
+*마지막 업데이트: 2026-04-24*

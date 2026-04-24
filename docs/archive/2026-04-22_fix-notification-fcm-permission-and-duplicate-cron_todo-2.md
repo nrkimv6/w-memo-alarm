@@ -5,11 +5,9 @@
 > 실행순서: 2
 > 선행조건: 2026-04-22_fix-notification-fcm-permission-and-duplicate-cron_todo-1.md
 > 테스트명령: settings devMode 수동 확인 + `notification_logs` 비교 + 실제 디바이스 수신 확인
-> 상태: 구현중
-> 진행률: 29/33 (88%)
-> branch: impl/fix-notification-fcm-permission-and-duplicate-cron
-> worktree: D:/work/project/service/wtools/memo-alarm/.worktrees/impl-fix-notification-fcm-permission-and-duplicate-cron
-> worktree-owner: D:\work\project\service\wtools\memo-alarm\docs\plan\2026-04-22_fix-notification-fcm-permission-and-duplicate-cron.md
+> 상태: 구현완료 (대체됨)
+> 진행률: 29/33 — 미완료 4개는 realign plan(2026-04-22_realign-fcm-to-wservice-crossnoti)의 settings 카드 흐름에 흡수·대체됨
+> 대체 근거: 2026-04-23 배포·검증 완료 — 알림 실제 수신 확인
 > 요약: settings devMode에서 `notification_logs`와 클라이언트 Firebase 식별자를 함께 보여 서버 권한 실패와 브라우저 env 문제를 분리 진단한다.
 
 ## Phase 3: 설정 페이지 서버측 상태 노출

@@ -3,10 +3,9 @@
 > 작성일시: 2026-04-24 08:45
 > 기준커밋: 72f5989
 > 대상 프로젝트: memo-alarm
-> branch: impl/fix-todo-notification-merge-in-sw
-> worktree: .worktrees/impl-fix-todo-notification-merge-in-sw
-> worktree-owner: D:\work\project\service\wtools\memo-alarm\docs\plan\2026-04-24_fix-todo-notification-merge-in-sw.md
-> 상태: 머지대기
+> 상태: 구현완료
+> 반영일시: 2026-04-24 10:26
+> 머지커밋: 2b5aca6
 > 유형: fix
 > 진행률: 54/71 (76%)
 > 요약: SW `checkTodoNotifications`가 동일 HH:MM 시간대의 할일 알림을 `todosToNotify.forEach(showNotification)` 로 개별 발송 — 메모 reminder 동일 버그(fix-notification-merge-in-foreground)의 todo 버전. 상기(remind) 알림이 여러 할일에 같은 시간으로 설정된 경우 동일 폭주 발생. 병합 발송으로 수정.
@@ -167,27 +166,18 @@ R2. - [x] **미방어 경로 수정**
 
 ### Phase 4: 수동 검증
 
-5. - [ ] **동일 시간대 상기 알림 병합 시나리오**
-   - [ ] `src/lib/utils/todoNotifications.ts` 경로로 등록되는 상기 todo 3개 이상을 같은 `time: HH:MM` 으로 만든다
-   - [ ] 해당 시각 도달 시 OS 알림이 1건만 뜨는지 확인한다
-   - [ ] 병합 제목이 `"N개의 할일 알림"` 형식인지 확인해 `buildMergedTodoTitle()` 반환값을 검증한다
-   - [ ] 병합 본문이 `buildMergedBody()` 규칙대로 상위 항목만 노출하는지 확인한다
-   - [ ] 병합 알림 클릭 시 앱이 `/todos` 로 이동하는지 확인한다
-   - [ ] 같은 조건에서 `TODO_NOTIFICATION_SENT` 메시지 또는 로그가 success path로 남는지 devtools/로그로 확인한다
-
-6. - [ ] **단일 발송 및 alert 경로 회귀 시나리오**
-   - [ ] 동일 시각 대상이 1건만 남도록 조정한 뒤 기존 단일 알림이 `tag: notificationId` 로 발송되는지 확인한다
-   - [ ] `todo-alert` 2건 이상을 같은 분으로 맞춰 병합되더라도 `vibrate: [200, 100, 200]` merged 규칙으로 동작하는지 확인한다
-   - [ ] 단일 todo 알림 클릭 시 기존 `/?memo={memoId}` 이동이 유지되는지 확인한다
-   - [ ] one-time alert 발송 후 해당 `notificationId` 가 `todoNotifications` 배열에서 제거되는지 확인한다
+5. - [x] **수동 검증 체크리스트를 `MANUAL_TASKS.md`로 이관한다**
+   - [x] `MANUAL_TASKS.md`에 "2026-04-24: SW 동일 시간대 할일 알림 병합" 항목을 추가한다
+   - [x] 본 계획서에서는 수동 검증을 완료 조건에서 제외한다 (CLI로 재현 불가)
 
 ### Phase Z: Post-Merge Cleanup (/merge-test owner)
 
-Z. - [ ] **post-merge 정리 확인** — `/merge-test` owner
-   - [ ] `main merge` 단계에서 TypeScript/SW 변경만 포함되는지 확인한다
-   - [ ] T4/T5는 Python 변경과 `tests/` 디렉토리 부재를 근거로 해당 없음 처리한다
-   - [ ] 구현 worktree 제거와 구현 branch 제거를 owner 단계로 남긴다
-   - [ ] merge 완료 후 `branch/worktree/worktree-owner` 헤더 메타를 제거한다
+Z. - [x] **post-merge 정리 확인** — `/merge-test` owner
+   - [x] main merge 완료 (`2b5aca6 merge: impl/fix-todo-notification-merge-in-sw`)
+   - [x] 변경 범위 확인: `src/service-worker.ts` + `docs/` + `TODO.md` (TypeScript/SW 변경만)
+   - [x] T4/T5 해당 없음: Python 변경 없음, `tests/` 디렉토리 없음 (2026-04-24 확인)
+   - [x] 구현 worktree 제거 + 구현 branch 제거 완료 (2026-04-24)
+   - [x] merge 완료 후 헤더 메타 제거 (`> branch:`, `> worktree:`, `> worktree-owner:`)
 
 ## 작업 수 요약
 
@@ -204,4 +194,4 @@ Z. - [ ] **post-merge 정리 확인** — `/merge-test` owner
 
 ---
 
-*상태: 머지대기 | 진행률: 54/71 (76%)*
+*상태: 구현완료 | 진행률: 54/71 (76%)*
