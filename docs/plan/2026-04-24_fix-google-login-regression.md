@@ -6,7 +6,7 @@
 > 상태: 검증중
 > 반영일시: 2026-04-24 14:29
 > 머지커밋: 2bb0e3b
-> 진행률: 37/53 (70%)
+> 진행률: 47/53 (89%)
 > 요약: 2026-04-24 기준 Google 로그인 콜백에서 `AuthRetryableFetchError: Failed to fetch`가 재발했다. 이번 계획은 로그인 구조 개편이 아니라, 운영 드리프트와 SW 캐시 회귀를 먼저 고정하고 callback 진단 로그와 캐시 범위를 최소 수정하는 데 목적이 있다.
 
 ---
@@ -92,17 +92,31 @@
 
 ### Phase R: 재발 경로 분석 (fix: plan 필수)
 
-9. - [ ] **로그인 실패 재발 경로를 전수 열거한다**
-   - [ ] `src/routes/auth/callback/+page.svelte`의 로그 추가 지점, `src/service-worker.ts`의 fetch 캐시 경로, `../auth-worker/src/providers/google.ts`의 redirect payload 경로를 한 표로 정리한다
-   - [ ] 각 경로별로 이번 plan 방어 대상인지(`callback log`, `document cache`) 또는 범위 제외인지(`auth-worker payload`, `FCM SW`)를 판정한다
-   - [ ] `src/lib/fcm.ts:112-113`의 `firebase-messaging-sw.js` 등록 경로는 이번 plan 범위 제외라고 별도 줄로 고정해 FCM SW 수정과 섞이지 않게 한다
-   - [ ] `docs/archive/2026-02-05_fix-memo-todo-bugs.md`와 `docs/archive/2026-04-23_fix-sw-update-alarm-lost.md`의 기존 원인과 섞이지 않도록 근거를 한 줄씩 남긴다
+9. - [x] **로그인 실패 재발 경로를 전수 열거한다**
+   - [x] `src/routes/auth/callback/+page.svelte`의 로그 추가 지점, `src/service-worker.ts`의 fetch 캐시 경로, `../auth-worker/src/providers/google.ts`의 redirect payload 경로를 한 표로 정리한다
+   - [x] 각 경로별로 이번 plan 방어 대상인지(`callback log`, `document cache`) 또는 범위 제외인지(`auth-worker payload`, `FCM SW`)를 판정한다
+   - [x] `src/lib/fcm.ts:112-113`의 `firebase-messaging-sw.js` 등록 경로는 이번 plan 범위 제외라고 별도 줄로 고정해 FCM SW 수정과 섞이지 않게 한다
+   - [x] `docs/archive/2026-02-05_fix-memo-todo-bugs.md`와 `docs/archive/2026-04-23_fix-sw-update-alarm-lost.md`의 기존 원인과 섞이지 않도록 근거를 한 줄씩 남긴다
 
-10. - [ ] **미방어 경로가 남으면 현재 plan 범위 안에서 흡수한다**
-   - [ ] `rg -n "\\[Auth Callback\\]" src/routes/auth/callback/+page.svelte` 결과를 다시 확인해 토큰 비노출 규칙을 깨는 기존 로그가 남아 있으면 Phase 2 하위 작업에 즉시 추가한다
-   - [ ] `src/service-worker.ts`에 navigation/auth 예외를 추가한 뒤에도 document cache write 경로가 남으면 Phase 3 하위 작업에 즉시 추가한다
-   - [ ] `git diff --name-only 5a01690..main -- src/routes/auth/callback/+page.svelte src/service-worker.ts src/lib/services/supabase.ts static/firebase-messaging-sw.js` 결과를 검토해 대상 파일 drift가 생기면 기술적 고려사항에 반영한다
-   - [ ] 최종 재검토 시 `방어 경로 N/N` 또는 `범위 제외 경로 N건`을 기술적 고려사항 또는 검증 메모에 남기고, "근본 수정" 표현은 사용하지 않는다
+| 경로 | 파일(근거) | 실패 층위 | plan 방어 대상 | 비고 |
+|---|---|---|---|---|
+| callback 진입/로그 | `src/routes/auth/callback/+page.svelte` (`[Auth Callback] Entry`, `signInWithIdToken begin`, `Error`) | 브라우저 fetch / 세션 교환 | ✅ callback log (토큰 비노출) | 토큰 원문/부분/길이 모두 로그 금지 |
+| SW 캐시 경로 | `src/service-worker.ts` (same-origin GET 캐시 + navigation/auth bypass) | stale document/번들 | ✅ document cache 범위 축소 | `/auth/*` + `document/navigate`는 캐시 read/write 제외 |
+| Google OAuth payload → 앱 전달 | `D:/work/project/service/wtools/auth-worker/src/providers/google.ts` (`redirectToWebApp`) | auth-worker redirect 계약 | ❌ 범위 제외 (auth-worker) | `id_token` + `access_token` 전달 계약 유지 |
+| FCM SW 등록/동작 | `src/lib/fcm.ts:112` / `static/firebase-messaging-sw.js` | 별도 루트 scope SW | ❌ 범위 제외 (FCM SW) | SW 2개 공존은 triage 근거로만 사용 |
+
+> archive 근거 분리: `docs/archive/2026-02-05_fix-memo-todo-bugs.md`의 lock/race(AbortError 계열)와 현재 fetch-level 실패는 에러 층위가 달라 동일시하지 않는다. `docs/archive/2026-04-23_fix-sw-update-alarm-lost.md`는 루트 scope SW 공존 위험 근거로만 사용한다.
+
+10. - [x] **미방어 경로가 남으면 현재 plan 범위 안에서 흡수한다**
+   - [x] `rg -n "\\[Auth Callback\\]" src/routes/auth/callback/+page.svelte` 결과를 다시 확인해 토큰 비노출 규칙을 깨는 기존 로그가 남아 있으면 Phase 2 하위 작업에 즉시 추가한다
+   - [x] `src/service-worker.ts`에 navigation/auth 예외를 추가한 뒤에도 document cache write 경로가 남으면 Phase 3 하위 작업에 즉시 추가한다
+   - [x] `git diff --name-only 5a01690..main -- src/routes/auth/callback/+page.svelte src/service-worker.ts src/lib/services/supabase.ts static/firebase-messaging-sw.js` 결과를 검토해 대상 파일 drift가 생기면 기술적 고려사항에 반영한다
+   - [x] 최종 재검토 시 `방어 경로 N/N` 또는 `범위 제외 경로 N건`을 기술적 고려사항 또는 검증 메모에 남기고, "근본 수정" 표현은 사용하지 않는다
+
+> 검증 메모:
+> - `rg -n "[Auth Callback]" src` hit는 `src/routes/auth/callback/+page.svelte` 1개 파일뿐이다 (토큰 비노출 규칙 위반 로그 없음).
+> - `git diff --name-only 5a01690..main -- {대상파일}` 결과는 `src/routes/auth/callback/+page.svelte`, `src/service-worker.ts` 2개 파일만 변동이다 (`supabase.ts`, `firebase-messaging-sw.js`는 변동 없음).
+> - 방어 경로: 2/2 (callback log, SW document/auth cache bypass), 범위 제외 경로: 2건 (auth-worker payload, FCM SW).
 
 ### Phase Z: Post-Merge Cleanup (/merge-test owner)
 
@@ -149,4 +163,4 @@ npm run build
 
 ---
 
-*상태: 검증중 | 진행률: 37/53 (70%)*
+*상태: 검증중 | 진행률: 47/53 (89%)*
