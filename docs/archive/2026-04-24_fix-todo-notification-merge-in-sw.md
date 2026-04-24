@@ -7,7 +7,7 @@
 > 반영일시: 2026-04-24 10:26
 > 머지커밋: 2b5aca6
 > 유형: fix
-> 진행률: 54/71 (76%)
+> 진행률: 63/63 (100%)
 > 요약: SW `checkTodoNotifications`가 동일 HH:MM 시간대의 할일 알림을 `todosToNotify.forEach(showNotification)` 로 개별 발송 — 메모 reminder 동일 버그(fix-notification-merge-in-foreground)의 todo 버전. 상기(remind) 알림이 여러 할일에 같은 시간으로 설정된 경우 동일 폭주 발생. 병합 발송으로 수정.
 > 출처: /reflect에서 자동 생성 (fix-notification-merge-in-foreground Phase R2 후속 plan)
 
@@ -188,10 +188,10 @@ Z. - [x] **post-merge 정리 확인** — `/merge-test` owner
 - Phase R: 재발 경로 분석 (13개 체크박스)
 - Phase 4: 수동 검증 (12개 체크박스)
 - Phase Z: Post-Merge Cleanup (5개 체크박스)
-- 총 71개 체크박스
+- 총 63개 체크박스 (수동 검증은 `MANUAL_TASKS.md`로 이관)
 
 > T4/T5 해당 없음: Python 코드 없음, `tests/` 디렉토리 없음 (2026-04-24 확인). Phase 4 수동 검증으로 대체.
 
 ---
 
-*상태: 구현완료 | 진행률: 54/71 (76%)*
+*상태: 구현완료 | 진행률: 63/63 (100%)*
