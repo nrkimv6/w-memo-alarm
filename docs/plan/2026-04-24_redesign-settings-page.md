@@ -3,6 +3,11 @@
 > **소스**: `C:\Users\Narang\Downloads\settings-hub-main.zip` (React + TanStack Router + Tailwind v4, "Memo & Todo Settings Hub")
 > **타겟**: `memo-alarm/src/routes/settings/+page.svelte` (SvelteKit + Svelte 5 + Tailwind v4)
 > **모드**: 🟤 **브라운필드** — 기존 단일 파일(1929줄) → Hub+서브페이지 구조로 리팩토링 + 디자인/배치만 이식
+> 상태: 구현중
+> 진행률: 72/80 (90%)
+> branch: impl/redesign-settings-page
+> worktree: .worktrees/impl-redesign-settings-page
+> worktree-owner: D:/work/project/service/wtools/memo-alarm/docs/plan/2026-04-24_redesign-settings-page.md
 
 ---
 
@@ -105,111 +110,111 @@ routes/
 
 ### Phase 1 — settings 전용 스타일 토대
 
-1. - [ ] **settings 전용 클래스 네임스페이스를 확정한다**
-   - [ ] `src/app.css`: `@layer components`에 `.settings-surface-card`를 추가하고 완료 기준을 "settings 전용 카드 박스 클래스 1개가 정의됨"으로 고정한다.
-   - [ ] `src/app.css`: `@layer components`에 `.settings-row`와 `.settings-row + .settings-row`를 추가하고 완료 기준을 "56px min-height + 구분선 규칙이 코드에 존재함"으로 고정한다.
-   - [ ] `src/app.css`: `@layer components`에 `.settings-pill`, `.settings-pill-success`, `.settings-pill-warning`, `.settings-pill-info`, `.settings-pill-destructive`, `.settings-pill-neutral`를 추가한다.
-   - [ ] `src/app.css`: `@layer components`에 `.settings-group-label`을 추가하고 완료 기준을 "허브 그룹명 전용 typography helper가 1개 존재함"으로 고정한다.
-   - [ ] `src/app.css`: `@layer utilities` 또는 `@layer components`에 `.settings-bg-gradient`를 추가하고 완료 기준을 "body가 아니라 wrapper에 붙일 수 있는 배경 클래스 1개가 존재함"으로 고정한다.
-   - [ ] `src/app.css`: 신규 클래스가 기존 HSL 토큰만 읽도록 정리하고 OKLCH 토큰/폰트 선언이 추가되지 않았는지 확인한다.
+1. - [x] **settings 전용 클래스 네임스페이스를 확정한다**
+   - [x] `src/app.css`: `@layer components`에 `.settings-surface-card`를 추가하고 완료 기준을 "settings 전용 카드 박스 클래스 1개가 정의됨"으로 고정한다.
+   - [x] `src/app.css`: `@layer components`에 `.settings-row`와 `.settings-row + .settings-row`를 추가하고 완료 기준을 "56px min-height + 구분선 규칙이 코드에 존재함"으로 고정한다.
+   - [x] `src/app.css`: `@layer components`에 `.settings-pill`, `.settings-pill-success`, `.settings-pill-warning`, `.settings-pill-info`, `.settings-pill-destructive`, `.settings-pill-neutral`를 추가한다.
+   - [x] `src/app.css`: `@layer components`에 `.settings-group-label`을 추가하고 완료 기준을 "허브 그룹명 전용 typography helper가 1개 존재함"으로 고정한다.
+   - [x] `src/app.css`: `@layer utilities` 또는 `@layer components`에 `.settings-bg-gradient`를 추가하고 완료 기준을 "body가 아니라 wrapper에 붙일 수 있는 배경 클래스 1개가 존재함"으로 고정한다.
+   - [x] `src/app.css`: 신규 클래스가 기존 HSL 토큰만 읽도록 정리하고 OKLCH 토큰/폰트 선언이 추가되지 않았는지 확인한다.
 
-2. - [ ] **현재 레이아웃 제약을 반영한 shell 기준을 잡는다**
-   - [ ] `src/routes/settings/+page.svelte`: 현재 헤더 블록의 `sticky top-14 z-20` 클래스 위치를 기준점으로 표시하고 소스의 `top-0` 헤더를 그대로 복사하지 않는다는 완료 기준을 적는다.
-   - [ ] `src/routes/+layout.svelte`: `<main style="padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));">`를 기준으로 settings 하위 페이지가 별도 하단 padding을 중복 추가하지 않도록 메모를 남긴다.
-   - [ ] `src/lib/components/Footer.svelte`: `border-t`와 `mt-auto`를 유지 전제로 삼고 settings 허브/서브페이지 wrapper에서 이중 border를 만들지 않도록 완료 기준을 적는다.
-   - [ ] `docs/plan/2026-04-24_redesign-settings-page.md`: 전역 body gradient 대신 settings wrapper 전용 배경 장식만 허용한다고 범위를 고정한다.
+2. - [x] **현재 레이아웃 제약을 반영한 shell 기준을 잡는다**
+   - [x] `src/routes/settings/+page.svelte`: 현재 헤더 블록의 `sticky top-14 z-20` 클래스 위치를 기준점으로 표시하고 소스의 `top-0` 헤더를 그대로 복사하지 않는다는 완료 기준을 적는다.
+   - [x] `src/routes/+layout.svelte`: `<main style="padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));">`를 기준으로 settings 하위 페이지가 별도 하단 padding을 중복 추가하지 않도록 메모를 남긴다.
+   - [x] `src/lib/components/Footer.svelte`: `border-t`와 `mt-auto`를 유지 전제로 삼고 settings 허브/서브페이지 wrapper에서 이중 border를 만들지 않도록 완료 기준을 적는다.
+   - [x] `docs/plan/2026-04-24_redesign-settings-page.md`: 전역 body gradient 대신 settings wrapper 전용 배경 장식만 허용한다고 범위를 고정한다.
 
 ### Phase 2 — 공통 settings 원시 컴포넌트 정리
 
-1. - [ ] **허브/서브페이지 공용 primitive를 만든다**
-   - [ ] `src/lib/components/settings/Section.svelte`: `title`, `description`, `icon`, `action`, `children` snippet props를 선언한다.
-   - [ ] `src/lib/components/settings/Section.svelte`: wrapper에 `.settings-surface-card`를 연결하고 완료 기준을 "타이틀 영역과 카드 body가 분리된 마크업이 존재함"으로 고정한다.
-   - [ ] `src/lib/components/settings/Row.svelte`: `label`, `hint`, `trailing`, `children` snippet props를 선언한다.
-   - [ ] `src/lib/components/settings/Row.svelte`: `as='div' | 'button'` 분기와 `.settings-row` 클래스를 연결하고 완료 기준을 "row 하나가 클릭형/정적형 둘 다 렌더 가능함"으로 고정한다.
-   - [ ] `src/lib/components/settings/GroupLabel.svelte`: 텍스트만 받는 단순 wrapper를 만들고 완료 기준을 "group label이 클래스 중복 없이 한 컴포넌트로 렌더됨"으로 고정한다.
-   - [ ] `src/lib/components/settings/NavGroup.svelte`: `.settings-surface-card` wrapper만 담당하게 만들고 완료 기준을 "허브 그룹 카드 wrapper가 별도 컴포넌트 1개로 존재함"으로 고정한다.
+1. - [x] **허브/서브페이지 공용 primitive를 만든다**
+   - [x] `src/lib/components/settings/Section.svelte`: `title`, `description`, `icon`, `action`, `children` snippet props를 선언한다.
+   - [x] `src/lib/components/settings/Section.svelte`: wrapper에 `.settings-surface-card`를 연결하고 완료 기준을 "타이틀 영역과 카드 body가 분리된 마크업이 존재함"으로 고정한다.
+   - [x] `src/lib/components/settings/Row.svelte`: `label`, `hint`, `trailing`, `children` snippet props를 선언한다.
+   - [x] `src/lib/components/settings/Row.svelte`: `as='div' | 'button'` 분기와 `.settings-row` 클래스를 연결하고 완료 기준을 "row 하나가 클릭형/정적형 둘 다 렌더 가능함"으로 고정한다.
+   - [x] `src/lib/components/settings/GroupLabel.svelte`: 텍스트만 받는 단순 wrapper를 만들고 완료 기준을 "group label이 클래스 중복 없이 한 컴포넌트로 렌더됨"으로 고정한다.
+   - [x] `src/lib/components/settings/NavGroup.svelte`: `.settings-surface-card` wrapper만 담당하게 만들고 완료 기준을 "허브 그룹 카드 wrapper가 별도 컴포넌트 1개로 존재함"으로 고정한다.
 
-2. - [ ] **상태/이동 표현 컴포넌트를 만든다**
-   - [ ] `src/lib/components/settings/NavRow.svelte`: `href`, `label`, `hint`, `icon`, `trailing` props를 선언한다.
-   - [ ] `src/lib/components/settings/NavRow.svelte`: 루트 엘리먼트를 `<a href>`로 고정하고 완료 기준을 "chevron 포함 이동 row 1개가 키보드 포커스 가능"으로 적는다.
-   - [ ] `src/lib/components/settings/Pill.svelte`: `tone` 유니온을 선언하고 `.settings-pill*` 클래스 매핑만 담당하게 만든다.
-   - [ ] `src/lib/components/settings/ImpactNote.svelte`: 아이콘 + 본문 구조를 만들고 완료 기준을 "기본 알림 영향 문구를 담을 전용 박스 1개가 존재함"으로 고정한다.
-   - [ ] `src/lib/components/settings/SegmentedControl.svelte`: `'light' | 'dark' | 'system'` 옵션을 수용하는 `value`, `options`, `onchange` 계약을 선언한다.
-   - [ ] `src/lib/components/settings/SegmentedControl.svelte`: active 버튼 class와 inactive 버튼 class를 분리하고 완료 기준을 "선택 상태가 클래스 한 벌로 표현됨"으로 고정한다.
+2. - [x] **상태/이동 표현 컴포넌트를 만든다**
+   - [x] `src/lib/components/settings/NavRow.svelte`: `href`, `label`, `hint`, `icon`, `trailing` props를 선언한다.
+   - [x] `src/lib/components/settings/NavRow.svelte`: 루트 엘리먼트를 `<a href>`로 고정하고 완료 기준을 "chevron 포함 이동 row 1개가 키보드 포커스 가능"으로 적는다.
+   - [x] `src/lib/components/settings/Pill.svelte`: `tone` 유니온을 선언하고 `.settings-pill*` 클래스 매핑만 담당하게 만든다.
+   - [x] `src/lib/components/settings/ImpactNote.svelte`: 아이콘 + 본문 구조를 만들고 완료 기준을 "기본 알림 영향 문구를 담을 전용 박스 1개가 존재함"으로 고정한다.
+   - [x] `src/lib/components/settings/SegmentedControl.svelte`: `'light' | 'dark' | 'system'` 옵션을 수용하는 `value`, `options`, `onchange` 계약을 선언한다.
+   - [x] `src/lib/components/settings/SegmentedControl.svelte`: active 버튼 class와 inactive 버튼 class를 분리하고 완료 기준을 "선택 상태가 클래스 한 벌로 표현됨"으로 고정한다.
 
-3. - [ ] **기존 공용 컴포넌트의 재사용 경계를 확정한다**
-   - [ ] `src/lib/components/ui/Toggle.svelte`: `checked = $bindable(false)` + 내부 `onclick` 구조를 읽고 settings 허브에서 controlled 사용이 가능한지 먼저 판정한다.
-   - [ ] `docs/plan/2026-04-24_redesign-settings-page.md`: `Toggle.svelte` 재사용이 안전하지 않으면 settings 허브는 기존 수동 토글 마크업을 유지한다는 fallback을 명시한다.
-   - [ ] `src/lib/components/ui/Button.svelte`: 지원 variant가 `primary|secondary|ghost|destructive`뿐임을 확인하고 새 settings primitive에서 `outline` variant를 가정하지 않는다고 명시한다.
-   - [ ] `src/lib/components/ui/ConfirmDialog.svelte`: `open`, `message`, `onConfirm`, `onCancel`, `variant` 계약을 유지 대상으로 적는다.
-   - [ ] `src/lib/components/memo/PinLockModal.svelte`: `mode`, `onSuccess`, `onClose` 계약을 유지 대상으로 적는다.
-   - [ ] `src/lib/components/settings/AlarmManager.svelte`: 내부 `$effect`로 `alarmManagerStore.refresh()`를 호출하는 구조를 유지 대상으로 적는다.
+3. - [x] **기존 공용 컴포넌트의 재사용 경계를 확정한다**
+   - [x] `src/lib/components/ui/Toggle.svelte`: `checked = $bindable(false)` + 내부 `onclick` 구조를 읽고 settings 허브에서 controlled 사용이 가능한지 먼저 판정한다. → `bind:checked={storeValue}` 형태로 안전하게 사용 가능 확인
+   - [x] `docs/plan/2026-04-24_redesign-settings-page.md`: `Toggle.svelte` 재사용이 안전하지 않으면 settings 허브는 기존 수동 토글 마크업을 유지한다는 fallback을 명시한다. → 재사용 안전 확인, fallback 불필요
+   - [x] `src/lib/components/ui/Button.svelte`: 지원 variant가 `primary|secondary|ghost|destructive`뿐임을 확인하고 새 settings primitive에서 `outline` variant를 가정하지 않는다고 명시한다.
+   - [x] `src/lib/components/ui/ConfirmDialog.svelte`: `open`, `message`, `onConfirm`, `onCancel`, `variant` 계약을 유지 대상으로 적는다.
+   - [x] `src/lib/components/memo/PinLockModal.svelte`: `mode`, `onSuccess`, `onClose` 계약을 유지 대상으로 적는다.
+   - [x] `src/lib/components/settings/AlarmManager.svelte`: 내부 `$effect`로 `alarmManagerStore.refresh()`를 호출하는 구조를 유지 대상으로 적는다.
 
 ### Phase 3 — 허브 페이지 재구성
 
-1. - [ ] **허브 상단 구조를 재설계한다**
-   - [ ] `src/routes/settings/+page.svelte`: 상단 wrapper에 `.settings-bg-gradient`를 붙일 위치를 정하고 완료 기준을 "배경 장식이 settings route wrapper 안에만 묶임"으로 고정한다.
-   - [ ] `src/routes/settings/+page.svelte`: 현재 헤더 블록 바로 아래 hero/snapshot 카드 1개를 추가하고 완료 기준을 "설정 허브 소개 카드가 1개 존재함"으로 고정한다.
-   - [ ] `src/routes/settings/+page.svelte`: 허브 전체 wrapper를 `space-y-6` 중심으로 재정렬하고 완료 기준을 "개별 섹션이 동일 간격 규칙을 공유함"으로 고정한다.
+1. - [x] **허브 상단 구조를 재설계한다**
+   - [x] `src/routes/settings/+page.svelte`: 상단 wrapper에 `.settings-bg-gradient`를 붙일 위치를 정하고 완료 기준을 "배경 장식이 settings route wrapper 안에만 묶임"으로 고정한다.
+   - [x] `src/routes/settings/+page.svelte`: 현재 헤더 블록 바로 아래 hero/snapshot 카드 1개를 추가하고 완료 기준을 "설정 허브 소개 카드가 1개 존재함"으로 고정한다.
+   - [x] `src/routes/settings/+page.svelte`: 허브 전체 wrapper를 `space-y-6` 중심으로 재정렬하고 완료 기준을 "개별 섹션이 동일 간격 규칙을 공유함"으로 고정한다.
 
-2. - [ ] **인라인 유지 섹션을 Row/Section 패턴으로 옮긴다**
-   - [ ] `src/routes/settings/+page.svelte`: `themeStore.theme` 3버튼 블록을 `SegmentedControl`로 교체하고 완료 기준을 "light/dark/system 선택 UI가 한 control로 렌더됨"으로 고정한다.
-   - [ ] `src/routes/settings/+page.svelte`: `themeStore.resolved`를 읽는 상태 pill을 추가하고 완료 기준을 "현재 실제 적용 테마가 별도 라벨로 표시됨"으로 고정한다.
-   - [ ] `src/routes/settings/+page.svelte`: `useMarkdown` 토글 row를 `Appearance` 그룹 안으로 이동한다.
-   - [ ] `src/routes/settings/+page.svelte`: 클라우드 동기화 섹션을 `Section` + row 조합으로 다시 배치하고 로그인/비로그인 분기를 유지한다.
-   - [ ] `src/routes/settings/+page.svelte`: 기본 알림 섹션의 시간 input과 요일 토글 블록을 `Section` 안으로 재배치한다.
-   - [ ] `src/routes/settings/+page.svelte`: `defaultReminderMemoCount` 경고 문구를 `ImpactNote`로 감싼다.
-   - [ ] `src/routes/settings/+page.svelte`: PIN 섹션을 `PinLockModal` 액션 row 조합으로 다시 배치한다.
-   - [ ] `src/routes/settings/+page.svelte`: 할일 기본설정 5개 토글/입력 블록을 row 단위로 다시 배치한다.
-   - [ ] `src/routes/settings/+page.svelte`: 데이터 관리, 위험 영역, 앱 정보 섹션을 각각 별도 `Section`으로 다시 배치한다.
+2. - [x] **인라인 유지 섹션을 Row/Section 패턴으로 옮긴다**
+   - [x] `src/routes/settings/+page.svelte`: `themeStore.theme` 3버튼 블록을 `SegmentedControl`로 교체하고 완료 기준을 "light/dark/system 선택 UI가 한 control로 렌더됨"으로 고정한다.
+   - [x] `src/routes/settings/+page.svelte`: `themeStore.resolved`를 읽는 상태 pill을 추가하고 완료 기준을 "현재 실제 적용 테마가 별도 라벨로 표시됨"으로 고정한다.
+   - [x] `src/routes/settings/+page.svelte`: `useMarkdown` 토글 row를 `Appearance` 그룹 안으로 이동한다.
+   - [x] `src/routes/settings/+page.svelte`: 클라우드 동기화 섹션을 `Section` + row 조합으로 다시 배치하고 로그인/비로그인 분기를 유지한다.
+   - [x] `src/routes/settings/+page.svelte`: 기본 알림 섹션의 시간 input과 요일 토글 블록을 `Section` 안으로 재배치한다.
+   - [x] `src/routes/settings/+page.svelte`: `defaultReminderMemoCount` 경고 문구를 `ImpactNote`로 감싼다.
+   - [x] `src/routes/settings/+page.svelte`: PIN 섹션을 `PinLockModal` 액션 row 조합으로 다시 배치한다.
+   - [x] `src/routes/settings/+page.svelte`: 할일 기본설정 5개 토글/입력 블록을 row 단위로 다시 배치한다.
+   - [x] `src/routes/settings/+page.svelte`: 데이터 관리, 위험 영역, 앱 정보 섹션을 각각 별도 `Section`으로 다시 배치한다.
 
-3. - [ ] **기존 동작 계약을 허브에서 그대로 유지한다**
-   - [ ] `src/routes/settings/+page.svelte`: `handleImport`, `handleExport`, `handleClearAll`, `confirmClearAll`, `handleUpdateCheck` 함수를 유지하고 호출 위치만 재배치한다.
-   - [ ] `src/routes/settings/+page.svelte`: `handlePinSetup`, `handlePinChange`, `handlePinRemove`, `handlePinSuccess`를 유지하고 버튼 위치만 재배치한다.
-   - [ ] `src/routes/settings/+page.svelte`: `toggleDefaultDay`, `handleTimeChange`, `handleAutoReminderToggle`가 그대로 `settingsStore` setter를 호출하도록 유지한다.
-   - [ ] `src/routes/settings/+page.svelte`: `handleTodoRemindToggle`, `handleTodoRemindTimeChange`, `handleTodoAutoAlertToggle`, `handleTodoAutoAlertMinutesChange`, `handleTodoShowOverdueToggle`, `handleTodoShowProgressToggle`, `handleTodoShowUpcomingOnEmptyToggle`를 유지한다.
-   - [ ] `src/routes/settings/+page.svelte`: cold-load fix의 전제대로 `useMarkdown`, `defaultTime`, `todoRemindEnabled` 등은 `$derived`를 유지하고 로컬 `$state`로 되돌리지 않는다.
-   - [ ] `src/routes/settings/+page.svelte`: `defaultReminder.autoOpen`과 백업 스키마 확장 UI는 추가하지 않는다.
+3. - [x] **기존 동작 계약을 허브에서 그대로 유지한다**
+   - [x] `src/routes/settings/+page.svelte`: `handleImport`, `handleExport`, `handleClearAll`, `confirmClearAll`, `handleUpdateCheck` 함수를 유지하고 호출 위치만 재배치한다.
+   - [x] `src/routes/settings/+page.svelte`: `handlePinSetup`, `handlePinChange`, `handlePinRemove`, `handlePinSuccess`를 유지하고 버튼 위치만 재배치한다.
+   - [x] `src/routes/settings/+page.svelte`: `toggleDefaultDay`, `handleTimeChange`, `handleAutoReminderToggle`가 그대로 `settingsStore` setter를 호출하도록 유지한다.
+   - [x] `src/routes/settings/+page.svelte`: `handleTodoRemindToggle`, `handleTodoRemindTimeChange`, `handleTodoAutoAlertToggle`, `handleTodoAutoAlertMinutesChange`, `handleTodoShowOverdueToggle`, `handleTodoShowProgressToggle`, `handleTodoShowUpcomingOnEmptyToggle`를 유지한다.
+   - [x] `src/routes/settings/+page.svelte`: cold-load fix의 전제대로 `useMarkdown`, `defaultTime`, `todoRemindEnabled` 등은 `$derived`를 유지하고 로컬 `$state`로 되돌리지 않는다.
+   - [x] `src/routes/settings/+page.svelte`: `defaultReminder.autoOpen`과 백업 스키마 확장 UI는 추가하지 않는다.
 
-4. - [ ] **허브에서 서브페이지 진입점을 만든다**
-   - [ ] `src/routes/settings/+page.svelte`: `AlarmManager` import와 인라인 렌더 블록을 제거할 준비로 notifications summary row 위치를 먼저 확정한다.
-   - [ ] `src/routes/settings/+page.svelte`: notifications 진입 row에 활성 알림 수/설명 텍스트를 요약 hint로 붙인다.
-   - [ ] `src/routes/settings/+page.svelte`: developer 진입 row에 dev 상태 pill 또는 보조 문구를 붙인다.
-   - [ ] `src/routes/settings/+page.svelte`: `versionTapCount` UI와 developer entry 노출 규칙을 같은 섹션 안에서 충돌 없이 공존시키는 배치를 확정한다.
-   - [ ] `src/routes/settings/+page.svelte`: dev unlock 상태가 서브페이지 이동 후에도 유지되도록 저장 위치를 `localStorage` helper 또는 store 중 하나로 고정한다.
+4. - [x] **허브에서 서브페이지 진입점을 만든다**
+   - [x] `src/routes/settings/+page.svelte`: `AlarmManager` import와 인라인 렌더 블록을 제거할 준비로 notifications summary row 위치를 먼저 확정한다.
+   - [x] `src/routes/settings/+page.svelte`: notifications 진입 row에 활성 알림 수/설명 텍스트를 요약 hint로 붙인다.
+   - [x] `src/routes/settings/+page.svelte`: developer 진입 row에 dev 상태 pill 또는 보조 문구를 붙인다.
+   - [x] `src/routes/settings/+page.svelte`: `versionTapCount` UI와 developer entry 노출 규칙을 같은 섹션 안에서 충돌 없이 공존시키는 배치를 확정한다.
+   - [x] `src/routes/settings/+page.svelte`: dev unlock 상태가 서브페이지 이동 후에도 유지되도록 저장 위치를 `localStorage` helper 또는 store 중 하나로 고정한다.
 
 ### Phase 4 — 서브페이지 분리
 
-1. - [ ] **공용 서브페이지 shell을 만든다**
-   - [ ] `src/lib/components/settings/SubPageShell.svelte`: `eyebrow`, `title`, `description`, `children` snippet props를 선언한다.
-   - [ ] `src/lib/components/settings/SubPageShell.svelte`: back link를 `/settings`로 고정한 헤더 마크업을 만든다.
-   - [ ] `src/lib/components/settings/SubPageShell.svelte`: sticky header 클래스에 `top-14` 오프셋을 적용하고 완료 기준을 "global header와 겹치지 않는 shell header가 존재함"으로 고정한다.
-   - [ ] `src/lib/components/settings/SubPageShell.svelte`: `max-w-2xl px-4` 컨테이너와 하단 여백 wrapper를 추가한다.
+1. - [x] **공용 서브페이지 shell을 만든다**
+   - [x] `src/lib/components/settings/SubPageShell.svelte`: `eyebrow`, `title`, `description`, `children` snippet props를 선언한다.
+   - [x] `src/lib/components/settings/SubPageShell.svelte`: back link를 `/settings`로 고정한 헤더 마크업을 만든다.
+   - [x] `src/lib/components/settings/SubPageShell.svelte`: sticky header 클래스에 `top-14` 오프셋을 적용하고 완료 기준을 "global header와 겹치지 않는 shell header가 존재함"으로 고정한다.
+   - [x] `src/lib/components/settings/SubPageShell.svelte`: `max-w-2xl px-4` 컨테이너와 하단 여백 wrapper를 추가한다.
 
-2. - [ ] **알림 관리 페이지를 분리한다**
-   - [ ] `src/routes/settings/notifications/+page.svelte`: `SubPageShell` import와 `AlarmManager` import를 추가한다.
-   - [ ] `src/routes/settings/notifications/+page.svelte`: title/description copy를 넣고 본문에 `AlarmManager`만 배치한다.
-   - [ ] `src/lib/components/settings/AlarmManager.svelte`: 현재 `$effect -> alarmManagerStore.refresh()` 구조를 유지한 채 새 라우트에서 그대로 동작하는지 확인 대상으로 적는다.
-   - [ ] `src/lib/stores/alarmManager.svelte.ts`: `toggleTimeSlot()`, `disableAll()`이 `notificationStore.syncRemindersToServiceWorker()`를 호출하는 흐름을 유지 대상으로 적는다.
-   - [ ] `src/routes/settings/+page.svelte`: 기존 알림 관리 인라인 섹션을 제거하고 `/settings/notifications` `NavRow`로 교체한다.
-   - [ ] `docs/plan/2026-04-24_redesign-settings-page.md`: `open-memo-edit` 커스텀 이벤트 소비자가 없으면 편집 버튼 동선을 follow-up로 남긴다고 명시한다.
+2. - [x] **알림 관리 페이지를 분리한다**
+   - [x] `src/routes/settings/notifications/+page.svelte`: `SubPageShell` import와 `AlarmManager` import를 추가한다.
+   - [x] `src/routes/settings/notifications/+page.svelte`: title/description copy를 넣고 본문에 `AlarmManager`만 배치한다.
+   - [x] `src/lib/components/settings/AlarmManager.svelte`: 현재 `$effect -> alarmManagerStore.refresh()` 구조를 유지한 채 새 라우트에서 그대로 동작하는지 확인 대상으로 적는다.
+   - [x] `src/lib/stores/alarmManager.svelte.ts`: `toggleTimeSlot()`, `disableAll()`이 `notificationStore.syncRemindersToServiceWorker()`를 호출하는 흐름을 유지 대상으로 적는다.
+   - [x] `src/routes/settings/+page.svelte`: 기존 알림 관리 인라인 섹션을 제거하고 `/settings/notifications` `NavRow`로 교체한다.
+   - [x] `docs/plan/2026-04-24_redesign-settings-page.md`: `open-memo-edit` 커스텀 이벤트 소비자가 없으면 편집 버튼 동선을 follow-up로 남긴다고 명시한다.
 
-3. - [ ] **개발자 모드 페이지를 분리한다**
-   - [ ] `src/routes/settings/developer/+page.svelte`: 개발자 전용 import(`supabase`, `registerFCMToken`, Capacitor helpers, `SW_MSG`, `devLogStore`)를 옮긴다.
-   - [ ] `src/routes/settings/developer/+page.svelte`: local state(`testNotificationSent`, `isNativePlatform`, `nativePermission`, `pendingNotifications`, `webPushTestSent`, `webPushDelayedSent`, `swRegistration`, `testDelaySeconds`, `swScheduleStatus`, `logFilter`, `showLogViewer`, `fcmStatus`, `fcmRegistering`)를 옮긴다.
-   - [ ] `src/routes/settings/developer/+page.svelte`: helper 함수 `formatDevDateTime()`, `extractProjectIdFromMessage()`, `checkServiceWorker()`, `checkSWScheduleStatus()`, `registerRemindersToSW()`, `testWebPushNotification()`, `testDelayedWebPushNotification()`를 옮긴다.
-   - [ ] `src/routes/settings/developer/+page.svelte`: helper 함수 `checkCapacitorStatus()`, `checkFCMStatus()`, `manualRegisterFCM()`, `loadPendingNotifications()`, `requestNativeNotificationPermission()`, `testCapacitorNotification()`, `clearAllScheduledNotifications()`, `testNotification()`, `triggerManualCheck()`를 옮긴다.
-   - [ ] `src/routes/settings/developer/+page.svelte`: `$effect` 블록 `devLogStore.init()` / `checkCapacitorStatus()` / `checkFCMStatus()` / `checkServiceWorker()` 초기화 흐름을 그대로 옮긴다.
-   - [ ] `src/routes/settings/developer/+page.svelte`: FCM 상태 카드, SW 테스트, Capacitor 테스트, 로그 뷰어, 디버그 정보 마크업을 그대로 옮긴다.
-   - [ ] `src/routes/settings/+page.svelte`: 개발자 모드 인라인 섹션과 관련 import/state/helper를 제거한다.
-   - [ ] `src/routes/settings/+page.svelte`: 버전 탭으로 unlock 상태를 세팅하는 로직과 `/settings/developer` 진입 row만 남긴다.
+3. - [x] **개발자 모드 페이지를 분리한다**
+   - [x] `src/routes/settings/developer/+page.svelte`: 개발자 전용 import(`supabase`, `registerFCMToken`, Capacitor helpers, `SW_MSG`, `devLogStore`)를 옮긴다.
+   - [x] `src/routes/settings/developer/+page.svelte`: local state(`testNotificationSent`, `isNativePlatform`, `nativePermission`, `pendingNotifications`, `webPushTestSent`, `webPushDelayedSent`, `swRegistration`, `testDelaySeconds`, `swScheduleStatus`, `logFilter`, `showLogViewer`, `fcmStatus`, `fcmRegistering`)를 옮긴다.
+   - [x] `src/routes/settings/developer/+page.svelte`: helper 함수 `formatDevDateTime()`, `extractProjectIdFromMessage()`, `checkServiceWorker()`, `checkSWScheduleStatus()`, `registerRemindersToSW()`, `testWebPushNotification()`, `testDelayedWebPushNotification()`를 옮긴다.
+   - [x] `src/routes/settings/developer/+page.svelte`: helper 함수 `checkCapacitorStatus()`, `checkFCMStatus()`, `manualRegisterFCM()`, `loadPendingNotifications()`, `requestNativeNotificationPermission()`, `testCapacitorNotification()`, `clearAllScheduledNotifications()`, `testNotification()`, `triggerManualCheck()`를 옮긴다.
+   - [x] `src/routes/settings/developer/+page.svelte`: `$effect` 블록 `devLogStore.init()` / `checkCapacitorStatus()` / `checkFCMStatus()` / `checkServiceWorker()` 초기화 흐름을 그대로 옮긴다.
+   - [x] `src/routes/settings/developer/+page.svelte`: FCM 상태 카드, SW 테스트, Capacitor 테스트, 로그 뷰어, 디버그 정보 마크업을 그대로 옮긴다.
+   - [x] `src/routes/settings/+page.svelte`: 개발자 모드 인라인 섹션과 관련 import/state/helper를 제거한다.
+   - [x] `src/routes/settings/+page.svelte`: 버전 탭으로 unlock 상태를 세팅하는 로직과 `/settings/developer` 진입 row만 남긴다.
 
 ### Phase 5 — 검증
 
-1. - [ ] **정적 검증을 실행한다**
-   - [ ] 프로젝트 루트: `bun run check`로 Svelte 타입/문법 오류가 없는지 확인한다.
-   - [ ] 프로젝트 루트: `bun run build`로 라우트 분리와 CSS 변경 이후 빌드가 유지되는지 확인한다.
-   - [ ] `bun run lint`는 현재 스크립트가 없으므로 이번 계획의 완료 조건에서 제외한다.
+1. - [x] **정적 검증을 실행한다**
+   - [x] 프로젝트 루트: `bun run check`로 Svelte 타입/문법 오류가 없는지 확인한다. → 0 errors, 58 warnings (기존 파일 a11y 경고, 신규 파일 무관)
+   - [x] 프로젝트 루트: `bun run build`로 라우트 분리와 CSS 변경 이후 빌드가 유지되는지 확인한다. → 3개 settings 라우트 아티팩트 생성 확인
+   - [x] `bun run lint`는 현재 스크립트가 없으므로 이번 계획의 완료 조건에서 제외한다.
 
 2. - [ ] **핵심 동작 smoke 검증을 수행한다**
    - [ ] `/settings`: 테마 변경(light/dark/system), 현재 적용 상태 pill, Markdown 토글이 정상 동작하는지 확인한다.
