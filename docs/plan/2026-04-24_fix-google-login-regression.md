@@ -3,11 +3,13 @@
 > 작성일시: 2026-04-24 13:25
 > 기준커밋: 5a01690
 > 대상 프로젝트: memo-alarm
-> 상태: 구현중
+> 상태: 검증중
+> 반영일시: 2026-04-24 14:29
+> 머지커밋: 2bb0e3b
 > branch: impl/fix-google-login-regression
 > worktree: .worktrees/impl-fix-google-login-regression
 > worktree-owner: docs/plan/2026-04-24_fix-google-login-regression.md
-> 진행률: 29/53 (55%)
+> 진행률: 33/53 (62%)
 > 요약: 2026-04-24 기준 Google 로그인 콜백에서 `AuthRetryableFetchError: Failed to fetch`가 재발했다. 이번 계획은 로그인 구조 개편이 아니라, 운영 드리프트와 SW 캐시 회귀를 먼저 고정하고 callback 진단 로그와 캐시 범위를 최소 수정하는 데 목적이 있다.
 
 ---
@@ -79,10 +81,10 @@
 
 ### Phase 4: 검증 및 회귀 방지
 
-7. - [ ] **정적 검증으로 빌드 회귀를 차단한다**
-   - [ ] 프로젝트 루트: `npm run check`로 callback 로그 변경과 SW fetch 분기 변경 후 타입 오류가 없는지 확인한다
-   - [ ] 프로젝트 루트: `npm run build`로 callback 페이지와 SvelteKit SW 번들이 정상 생성되는지 확인한다
-   - [ ] 빌드 산출물 검토: callback 라우트와 `service-worker.js`가 모두 재생성되는지 확인한다
+7. - [x] **정적 검증으로 빌드 회귀를 차단한다**
+   - [x] 프로젝트 루트: `npm run check`로 callback 로그 변경과 SW fetch 분기 변경 후 타입 오류가 없는지 확인한다
+   - [x] 프로젝트 루트: `npm run build`로 callback 페이지와 SvelteKit SW 번들이 정상 생성되는지 확인한다
+   - [x] 빌드 산출물 검토: callback 라우트와 `service-worker.js`가 모두 재생성되는지 확인한다
 
 8. - [ ] **운영 재현 시나리오를 고정한다** — triage 결과와 연결되는 smoke test
    - [ ] Chrome DevTools Application: SW unregister 직후와 hard reload 후 각각 `navigator.serviceWorker.controller?.scriptURL`을 기록해 callback 페이지가 최신 SW control 상태인지 비교한다
@@ -150,4 +152,4 @@ npm run build
 
 ---
 
-*상태: 구현중 | 진행률: 29/53 (55%)*
+*상태: 검증중 | 진행률: 33/53 (62%)*
