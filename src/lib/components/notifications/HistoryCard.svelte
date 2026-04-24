@@ -15,6 +15,7 @@
 	function getChannelLabel(channel: string): string {
 		switch (channel) {
 			case 'sw-push': return 'Push';
+			case 'sw-todo': return 'Todo';
 			case 'capacitor-local': return 'Native';
 			case 'fcm-push': return 'FCM';
 			default: return channel;
@@ -22,7 +23,11 @@
 	}
 
 	function handleClick() {
-		goto('/memos');
+		if (record.channel === 'sw-todo') {
+			goto('/todos');
+		} else {
+			goto('/memos');
+		}
 	}
 </script>
 
