@@ -106,13 +106,13 @@
 - [ ] 알림 내역 카드의 클릭이 `sw-todo` 채널 기록은 `/todos`, 메모 채널 기록은 `/memos`로 이동하는지 확인 — todo history click → /todos
 - [ ] 기존 메모 알림 click(단일/병합) 동작이 변경 없음(회귀 없음) — smoke: memo click → /memos 또는 `/?memo=...`
 
-## 2026-04-24: notification_history DB CHECK 제약 직접 반영 ⚠️ 미완료
+## 2026-04-24: notification_history DB CHECK 제약 직접 반영 ✅ 완료
 
 > from: [`2026-04-24_fix-todo-notification-click-and-sw-messages`](docs/archive/2026-04-24_fix-todo-notification-click-and-sw-messages.md) Phase DB-Direct item 7
-> **주의**: 이 단계가 완료되지 않으면 todo 알림 기록 INSERT 시 DB CHECK 제약 오류 발생
+> 다른 세션에서 실행 완료됨 (2026-04-24)
 
-- [ ] Supabase 대시보드 > SQL Editor에서 `data/migrations/011_notification_history_todo_contract.sql` 전체 내용을 실행한다
-- [ ] 실행 후 `SELECT constraint_name FROM information_schema.table_constraints WHERE table_name = 'ma_notification_history'`로 제약이 업데이트됐는지 확인한다
+- [x] `data/migrations/011_notification_history_todo_contract.sql` 실행 완료
+- [x] CHECK 제약 업데이트 확인
 - [ ] 확인 후 todo 알림 1건 발송 → `/notifications` 페이지에서 기록이 생성되는지 확인한다 (DB CHECK 통과 증거)
 
 ---
