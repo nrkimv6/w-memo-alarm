@@ -2,6 +2,7 @@ import type { Memo, Folder } from '$lib/types/memo';
 import { memosStore } from '$lib/stores/memos.svelte';
 import { foldersStore } from '$lib/stores/folders.svelte';
 import { settingsStore } from '$lib/stores/settings.svelte';
+import { authStore } from '$lib/stores/auth.svelte';
 import { toastStore } from '$lib/stores/toast.svelte';
 
 export interface ExportData {
@@ -13,6 +14,10 @@ export interface ExportData {
 		defaultReminderTime: string;
 		defaultReminderDays: number[];
 		autoReminderEnabled: boolean;
+		todoRemindEnabled?: boolean;
+		todoRemindTime?: string;
+		todoAutoAlertEnabled?: boolean;
+		todoAutoAlertMinutes?: number;
 	};
 }
 
@@ -28,14 +33,18 @@ export function exportMemos(memos: Memo[]): string {
 export function exportAllData(): ExportData {
 	const { defaultReminder, autoReminderOnCreate } = settingsStore.settings;
 	return {
-		version: 1,
+		version: 2,
 		exportedAt: new Date().toISOString(),
 		memos: memosStore.memos,
 		folders: foldersStore.folders,
 		settings: {
 			defaultReminderTime: defaultReminder.time,
 			defaultReminderDays: defaultReminder.days,
-			autoReminderEnabled: autoReminderOnCreate
+			autoReminderEnabled: autoReminderOnCreate,
+			todoRemindEnabled: settingsStore.settings.todoDefaults.remind.enabled,
+			todoRemindTime: settingsStore.settings.todoDefaults.remind.time,
+			todoAutoAlertEnabled: settingsStore.settings.todoDefaults.autoAlert.enabled,
+			todoAutoAlertMinutes: settingsStore.settings.todoDefaults.autoAlert.minutesBefore
 		}
 	};
 }
@@ -87,13 +96,12 @@ export async function importMemos(file: File): Promise<Memo[]> {
 					throw new Error('Invalid backup file format');
 				}
 
-				// Validate memo structure
 				const validMemos = data.memos.filter(
 					(m) => m.id && m.title !== undefined && Array.isArray(m.tags)
 				);
 
 				resolve(validMemos);
-			} catch (err) {
+			} catch {
 				reject(new Error('Failed to parse backup file'));
 			}
 		};
@@ -110,21 +118,17 @@ export async function importFullBackup(
 		const text = await file.text();
 		const data = JSON.parse(text) as ExportData;
 
-		// Validate data structure
 		if (!data.version || !Array.isArray(data.memos)) {
 			return { success: false, message: '유효하지 않은 백업 파일입니다' };
 		}
 
-		// Import memos
 		let importedMemos = 0;
 		let skippedMemos = 0;
 
 		for (const memo of data.memos) {
 			const existing = memosStore.getById(memo.id);
 			if (existing) {
-				// Compare updatedAt and keep newer
 				if (memo.updatedAt > existing.updatedAt) {
-					// undefined 키 제거: Phase 1 매퍼 변경으로 undefined→null 전송 방지 (기존 DB 값 보호)
 					const cleaned = Object.fromEntries(
 						Object.entries(memo).filter(([, v]) => v !== undefined)
 					) as typeof memo;
@@ -134,13 +138,11 @@ export async function importFullBackup(
 					skippedMemos++;
 				}
 			} else {
-				// Add new memo
 				memosStore.add(memo);
 				importedMemos++;
 			}
 		}
 
-		// Import folders
 		let importedFolders = 0;
 		if (data.folders) {
 			for (const folder of data.folders) {
@@ -152,14 +154,30 @@ export async function importFullBackup(
 			}
 		}
 
-		// Import settings
 		if (data.settings) {
-			settingsStore.setDefaultReminderTime(data.settings.defaultReminderTime);
-			settingsStore.setDefaultReminderDays(data.settings.defaultReminderDays);
-			settingsStore.setAutoReminderOnCreate(data.settings.autoReminderEnabled);
+			await settingsStore.setDefaultReminderTime(data.settings.defaultReminderTime);
+			await settingsStore.setDefaultReminderDays(data.settings.defaultReminderDays);
+			await settingsStore.setAutoReminderOnCreate(data.settings.autoReminderEnabled);
+			if (typeof data.settings.todoRemindEnabled === 'boolean') {
+				await settingsStore.setTodoRemindEnabled(data.settings.todoRemindEnabled);
+			}
+			if (data.settings.todoRemindTime) {
+				await settingsStore.setTodoRemindTime(data.settings.todoRemindTime);
+			}
+			if (typeof data.settings.todoAutoAlertEnabled === 'boolean') {
+				await settingsStore.setTodoAutoAlertEnabled(data.settings.todoAutoAlertEnabled);
+			}
+			if (typeof data.settings.todoAutoAlertMinutes === 'number') {
+				await settingsStore.setTodoAutoAlertMinutes(data.settings.todoAutoAlertMinutes);
+			}
 		}
 
-		const message = `가져오기 완료: 메모 ${importedMemos}개, 폴더 ${importedFolders}개${skippedMemos > 0 ? ` (${skippedMemos}개 건너뜀)` : ''}`;
+		const settingsMessage = data.settings
+			? authStore.isAuthenticated
+				? ', 알림 기본설정 계정 동기화 반영'
+				: ', 알림 기본설정 로컬 복원'
+			: '';
+		const message = `가져오기 완료: 메모 ${importedMemos}개, 폴더 ${importedFolders}개${skippedMemos > 0 ? ` (${skippedMemos}개 건너뜀)` : ''}${settingsMessage}`;
 		toastStore.success(message);
 		return { success: true, message };
 	} catch (err) {
@@ -171,10 +189,8 @@ export async function importFullBackup(
 }
 
 export async function clearAllData(): Promise<void> {
-	// Clear memos (벌크 삭제로 레이스 컨디션 방지)
 	await memosStore.removeAll();
 
-	// Clear folders (순차 실행)
 	const folderIds = foldersStore.folders.map((f) => f.id);
 	for (const id of folderIds) {
 		await foldersStore.remove(id);
@@ -183,14 +199,12 @@ export async function clearAllData(): Promise<void> {
 	toastStore.success('모든 데이터가 삭제되었습니다');
 }
 
-// Merge multiple memos into one
 export function mergeMemos(memoIds: string[]): Memo | null {
 	if (memoIds.length < 2) return null;
 
 	const memos = memoIds.map((id) => memosStore.getById(id)).filter((m): m is Memo => m !== null);
 	if (memos.length < 2) return null;
 
-	// Sort by creation date (oldest first)
 	memos.sort((a, b) => a.createdAt - b.createdAt);
 
 	const firstMemo = memos[0];
@@ -221,7 +235,6 @@ export function mergeMemos(memoIds: string[]): Memo | null {
 	return mergedMemo;
 }
 
-// Find duplicate memos by URL
 export function findDuplicatesByUrl(): Map<string, Memo[]> {
 	const urlMap = new Map<string, Memo[]>();
 
@@ -233,7 +246,6 @@ export function findDuplicatesByUrl(): Map<string, Memo[]> {
 		}
 	}
 
-	// Filter to only include duplicates
 	const duplicates = new Map<string, Memo[]>();
 	for (const [url, memos] of urlMap) {
 		if (memos.length > 1) {

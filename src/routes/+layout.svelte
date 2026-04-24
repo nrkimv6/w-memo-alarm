@@ -139,7 +139,6 @@
 		}
 
 		themeStore.init();
-		settingsStore.init();
 		notificationStore.init();
 		notificationHistoryStore.init();
 
@@ -150,10 +149,12 @@
 
 		if (!isAuthCallback) {
 			await authStore.initialize();
+			await settingsStore.init();
 			await memosStore.init();
 			filterStore.init();
 			foldersStore.init();
 			tagMetaStore.init();
+			await settingsStore.flushPendingRuntimeSync();
 
 			// 메모 로드 완료 후 SW에 알림 스케줄 전체 등록 (1회 보장)
 			await syncRemindersToSw('initial-load');

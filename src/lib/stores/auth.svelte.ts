@@ -59,6 +59,8 @@ function createAuthStore() {
 				// setTimeout으로 분리하여 콜백을 즉시 반환 → lock 해제 후 DB 쿼리 실행.
 				if (!wasLoggedIn) {
 					setTimeout(async () => {
+						const { settingsStore } = await import('./settings.svelte');
+						await settingsStore.reinit();
 						await memosStore.reinit();
 						await foldersStore.reinit();
 					}, 0);
@@ -68,12 +70,14 @@ function createAuthStore() {
 					toastStore.success('로그인되었습니다');
 				}
 			} else if (event === 'SIGNED_OUT') {
-				if (state.user?.id) {
-					deactivateAllFCMTokens(state.user.id);
+				const previousUserId = state.user?.id;
+				if (previousUserId) {
+					deactivateAllFCMTokens(previousUserId);
 				}
 				state.user = null;
 				state.session = null;
 				state.hasShownLoginToast = false;
+				void import('./settings.svelte').then(({ settingsStore }) => settingsStore.cleanup());
 				memosStore.cleanup();
 				foldersStore.cleanup();
 				notificationStore.cleanup();

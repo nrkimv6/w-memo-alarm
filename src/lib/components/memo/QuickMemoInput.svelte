@@ -41,7 +41,12 @@
 		// Apply auto reminder if enabled
 		if (useAutoReminder) {
 			const defaultReminder = settingsStore.getDefaultReminder();
-			data.reminder = { ...defaultReminder, id: generateReminderId() };
+			data.reminder = {
+				...defaultReminder,
+				id: generateReminderId(),
+				type: 'repeat',
+				isDefault: true
+			};
 		}
 
 		memosStore.add(data);
