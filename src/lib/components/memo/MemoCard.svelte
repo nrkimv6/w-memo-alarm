@@ -118,9 +118,9 @@
 	{#if ultraCompact}
 		<div class="flex items-center gap-3">
 			{#if isLocalOnly}
-				<CloudOff class="w-4 h-4 text-blue-500 flex-shrink-0" title="로컬에 저장됨 - 동기화 대기" />
+				<CloudOff class="w-4 h-4 text-blue-500 flex-shrink-0" aria-label="로컬에 저장됨 - 동기화 대기" />
 			{:else if isPending}
-				<RefreshCw class="w-4 h-4 text-amber-500 animate-spin flex-shrink-0" title="동기화 중..." />
+				<RefreshCw class="w-4 h-4 text-amber-500 animate-spin flex-shrink-0" aria-label="동기화 중..." />
 			{:else if isFailed}
 				<button
 					onclick={handleRetrySync}
@@ -164,9 +164,9 @@
 		<header class="flex items-start justify-between gap-3 mb-2">
 			<div class="flex items-center gap-2 flex-1 min-w-0">
 				{#if isLocalOnly}
-					<CloudOff class="w-4 h-4 text-blue-500 flex-shrink-0" title="로컬에 저장됨 - 동기화 대기" />
+					<CloudOff class="w-4 h-4 text-blue-500 flex-shrink-0" aria-label="로컬에 저장됨 - 동기화 대기" />
 				{:else if isPending}
-					<RefreshCw class="w-4 h-4 text-amber-500 animate-spin flex-shrink-0" title="동기화 중..." />
+					<RefreshCw class="w-4 h-4 text-amber-500 animate-spin flex-shrink-0" aria-label="동기화 중..." />
 				{:else if isFailed}
 					<button
 						onclick={handleRetrySync}

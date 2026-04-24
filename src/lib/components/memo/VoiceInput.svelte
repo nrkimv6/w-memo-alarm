@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Mic, MicOff, Square } from 'lucide-svelte';
+	import { Mic, Square } from 'lucide-svelte';
 	import { toastStore } from '$lib/stores/toast.svelte';
 
 	interface Props {
@@ -16,23 +16,21 @@
 	// Web Speech API 지원 여부 확인
 	$effect(() => {
 		if (typeof window !== 'undefined') {
-			const SpeechRecognition =
-				(window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-			isSupported = !!SpeechRecognition;
+			const SpeechRecognitionCtor = window.SpeechRecognition ?? window.webkitSpeechRecognition;
+			isSupported = !!SpeechRecognitionCtor;
 		}
 	});
 
 	function startListening() {
 		if (typeof window === 'undefined') return;
 
-		const SpeechRecognition =
-			(window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-		if (!SpeechRecognition) {
+		const SpeechRecognitionCtor = window.SpeechRecognition ?? window.webkitSpeechRecognition;
+		if (!SpeechRecognitionCtor) {
 			toastStore.error('이 브라우저는 음성 인식을 지원하지 않습니다');
 			return;
 		}
 
-		recognition = new SpeechRecognition();
+		recognition = new SpeechRecognitionCtor();
 		recognition.lang = 'ko-KR';
 		recognition.continuous = true;
 		recognition.interimResults = true;
