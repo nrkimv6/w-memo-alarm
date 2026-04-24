@@ -9,7 +9,7 @@
 
 ## Pending
 - [x] **메모↔할일 전환 시 북마크 소실 재발 이슈 수정** — [archive](docs/archive/2026-04-07_fix-bookmark-disappear-recurrence.md) — 구현완료 (Phase 6 수동 검증 별도)
-- [ ] **기본알림 설정 의미 분리 및 UI 정리** — [plan](docs/plan/2026-04-24_clarify-default-reminder-settings.md) (0/5, 0%)
+- [ ] **알림 기본설정 계정단위 전환 및 기기 간 동기화** — [plan](docs/plan/2026-04-24_clarify-default-reminder-settings.md) (0/6, 0%)
 
 ---
 
