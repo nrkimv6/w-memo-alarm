@@ -2,6 +2,7 @@
 
 > 이전 기록: [DONE-2026-03.md](archive/DONE-2026-03.md)
 
+- [x] 2026-04-24: svelte-check 21개 에러 수정 (`__APP_VERSION__`, VoiceInput, Modal/EmojiPicker/Icon props, QuickMemoInput/notifications, Onboarding/TodoCard, public env 경로 보정) — [archive](archive/2026-04-24_fix-svelte-check-errors.md)
 - [x] 2026-04-24: foreground 경로 동일 시간대 알림 병합 추가 (collect→merge→dispatch, SW 로직과 대칭, buildMergedTitle/Body 유틸) — [archive](archive/2026-04-24_fix-notification-merge-in-foreground.md)
 - [x] 2026-04-24: 설정 페이지 cold load 토글 디싱크 수정 ($state→$derived, QuickMemoInput sessionOverride 패턴) — [archive](archive/2026-04-24_fix-settings-state-desync-on-cold-load.md)
 - [x] 2026-04-24: 메모→할일 전환 시 URL 양방향 마이그레이션 (convertMemoToTodo: url→todoUrls, convertTodoToMemo: todoUrls[0]→url 역복원, 다중 URL 경고 다이얼로그) — [archive](archive/2026-04-24_fix-memo-to-todo-url-ui-hide.md)

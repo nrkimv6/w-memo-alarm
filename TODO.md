@@ -1,12 +1,11 @@
 # Memo Alarm - TODO
 
 > 완료된 작업: [DONE.md](docs/DONE.md)
-> 현재 Phase: **머지대기 (`/merge-test` 전)**
+> 현재 Phase: **pending backlog only**
 
 ---
 
 ## In Progress
-- [ ] **svelte-check 21개 에러 수정** — [plan](docs/plan/2026-04-24_fix-svelte-check-errors.md) (57/64, 89%, `npm run check`/`npm run build` 통과)
 
 ## Pending
 - [ ] **FCM 알림 덮어쓰기 + 6개 미전송 원인 수정** — [plan](docs/plan/2026-04-23_fix-fcm-notification-tag-and-missing-sends.md) (0/73, 0%)
