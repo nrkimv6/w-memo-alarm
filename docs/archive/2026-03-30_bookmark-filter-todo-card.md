@@ -3,10 +3,9 @@
 > 작성일: 2026-03-30
 > 기준커밋: b900531
 > 대상 프로젝트: memo-alarm
-> 상태: 머지대기
-> branch: impl/bookmark-filter-todo-card
-> worktree: .worktrees/impl-bookmark-filter-todo-card
-> worktree-owner: codex
+> 상태: 구현완료
+> 반영일시: 2026-04-24 16:44
+> 머지커밋: 747389f
 > 진행률: 6/6 (100%)
 > 요약: 북마크 필터 선택 시 todo가 MemoCard로 렌더링되어 기한/상태 등 할일 정보가 누락되는 문제 수정
 > 출처: /reflect에서 자동 생성
@@ -51,4 +50,4 @@
 
 ---
 
-*상태: 머지대기 | 진행률: 6/6 (100%)*
+*상태: 구현완료 | 진행률: 6/6 (100%)*
