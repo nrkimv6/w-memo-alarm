@@ -7,7 +7,7 @@
 
 ## In Progress
 
-- [ ] **Google 로그인 갑작스런 실패 회귀 조사 및 최소 수정** — [plan](docs/plan/2026-04-24_fix-google-login-regression.md) (33/53, 62%)
+- [ ] **Google 로그인 갑작스런 실패 회귀 조사 및 최소 수정** — [plan](docs/plan/2026-04-24_fix-google-login-regression.md) (37/53, 70%)
 
 ## Pending
 - [ ] **Supabase signInWithIdToken "Failed to fetch" 원인 버킷 triage** — [plan](docs/plan/2026-04-24_triage-supabase-signin-failed-to-fetch.md) (0/17, 0%)

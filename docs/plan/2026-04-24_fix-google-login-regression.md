@@ -6,10 +6,7 @@
 > 상태: 검증중
 > 반영일시: 2026-04-24 14:29
 > 머지커밋: 2bb0e3b
-> branch: impl/fix-google-login-regression
-> worktree: .worktrees/impl-fix-google-login-regression
-> worktree-owner: docs/plan/2026-04-24_fix-google-login-regression.md
-> 진행률: 33/53 (62%)
+> 진행률: 37/53 (70%)
 > 요약: 2026-04-24 기준 Google 로그인 콜백에서 `AuthRetryableFetchError: Failed to fetch`가 재발했다. 이번 계획은 로그인 구조 개편이 아니라, 운영 드리프트와 SW 캐시 회귀를 먼저 고정하고 callback 진단 로그와 캐시 범위를 최소 수정하는 데 목적이 있다.
 
 ---
@@ -109,10 +106,10 @@
 
 ### Phase Z: Post-Merge Cleanup (/merge-test owner)
 
-Z. - [ ] **post-merge 정리 확인** — `/merge-test` owner
-   - [ ] `docs/plan/2026-04-24_fix-google-login-regression.md`: `main merge 시도`, `T4/T5`, `worktree remove`, `branch remove`는 `/merge-test` owner step으로 남긴다
-   - [ ] `docs/plan/2026-04-24_fix-google-login-regression.md`: root dirty stash/apply 필요 시 owner가 수행한다고 적는다
-   - [ ] `docs/plan/2026-04-24_fix-google-login-regression.md`: header meta(`> branch:`, `> worktree:`, `> worktree-owner:`) 제거는 merge 후 정리 단계에서만 수행한다
+Z. - [x] **post-merge 정리 확인** — `/merge-test` owner
+   - [x] `docs/plan/2026-04-24_fix-google-login-regression.md`: `main merge 시도`, `T4/T5`, `worktree remove`, `branch remove`는 `/merge-test` owner step으로 남긴다
+   - [x] `docs/plan/2026-04-24_fix-google-login-regression.md`: root dirty stash/apply 필요 시 owner가 수행한다고 적는다
+   - [x] `docs/plan/2026-04-24_fix-google-login-regression.md`: header meta(`> branch:`, `> worktree:`, `> worktree-owner:`) 제거는 merge 후 정리 단계에서만 수행한다
 
 > 예외 경로: 운영 drift가 Cloudflare env 또는 auth-worker 배포 mismatch로 확정되면, 앱 코드 수정과 분리해 운영값 복구를 별도 후속 작업으로 처리한다.
 
@@ -152,4 +149,4 @@ npm run build
 
 ---
 
-*상태: 검증중 | 진행률: 33/53 (62%)*
+*상태: 검증중 | 진행률: 37/53 (70%)*
