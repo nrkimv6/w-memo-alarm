@@ -4,17 +4,25 @@
 import { initializeApp } from 'firebase/app';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 import { browser } from '$app/environment';
-import { env } from '$env/dynamic/public';
+import {
+	PUBLIC_FIREBASE_API_KEY,
+	PUBLIC_FIREBASE_AUTH_DOMAIN,
+	PUBLIC_FIREBASE_PROJECT_ID,
+	PUBLIC_FIREBASE_STORAGE_BUCKET,
+	PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+	PUBLIC_FIREBASE_APP_ID,
+	PUBLIC_FIREBASE_VAPID_KEY
+} from '$env/static/public';
 import { supabase } from './services/supabase';
 
 // Firebase 설정
 const firebaseConfig = {
-	apiKey: env.PUBLIC_FIREBASE_API_KEY ?? '',
-	authDomain: env.PUBLIC_FIREBASE_AUTH_DOMAIN ?? '',
-	projectId: env.PUBLIC_FIREBASE_PROJECT_ID ?? '',
-	storageBucket: env.PUBLIC_FIREBASE_STORAGE_BUCKET ?? '',
-	messagingSenderId: env.PUBLIC_FIREBASE_MESSAGING_SENDER_ID ?? '',
-	appId: env.PUBLIC_FIREBASE_APP_ID ?? ''
+	apiKey: PUBLIC_FIREBASE_API_KEY,
+	authDomain: PUBLIC_FIREBASE_AUTH_DOMAIN,
+	projectId: PUBLIC_FIREBASE_PROJECT_ID,
+	storageBucket: PUBLIC_FIREBASE_STORAGE_BUCKET,
+	messagingSenderId: PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+	appId: PUBLIC_FIREBASE_APP_ID
 };
 
 // Firebase 설정 검증 (환경 변수 누락 시 경고)
@@ -26,15 +34,15 @@ if (browser && !firebaseConfig.apiKey) {
 // settings devMode 비교용 식별자만 노출하며 API/VAPID 키 원문은 반환하지 않는다.
 export function getFCMConfigStatus() {
 	return {
-		hasApiKey: !!env.PUBLIC_FIREBASE_API_KEY,
-		hasVapidKey: !!env.PUBLIC_FIREBASE_VAPID_KEY,
-		projectId: env.PUBLIC_FIREBASE_PROJECT_ID || null,
-		envProjectId: env.PUBLIC_FIREBASE_PROJECT_ID || null,
-		messagingSenderId: env.PUBLIC_FIREBASE_MESSAGING_SENDER_ID || null,
+		hasApiKey: !!PUBLIC_FIREBASE_API_KEY,
+		hasVapidKey: !!PUBLIC_FIREBASE_VAPID_KEY,
+		projectId: PUBLIC_FIREBASE_PROJECT_ID || null,
+		envProjectId: PUBLIC_FIREBASE_PROJECT_ID || null,
+		messagingSenderId: PUBLIC_FIREBASE_MESSAGING_SENDER_ID || null,
 		isConfigured:
-			!!env.PUBLIC_FIREBASE_API_KEY &&
-			!!env.PUBLIC_FIREBASE_VAPID_KEY &&
-			!!env.PUBLIC_FIREBASE_PROJECT_ID
+			!!PUBLIC_FIREBASE_API_KEY &&
+			!!PUBLIC_FIREBASE_VAPID_KEY &&
+			!!PUBLIC_FIREBASE_PROJECT_ID
 	};
 }
 
