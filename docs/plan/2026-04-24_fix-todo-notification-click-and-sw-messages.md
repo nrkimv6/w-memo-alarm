@@ -55,15 +55,15 @@
 
 ### Phase 1: 단일 todo 알림 click 라우팅 정합
 
-1. - [ ] **`notificationclick`에서 todo 알림을 `/todos`로 라우팅한다**
-   - [ ] `src/service-worker.ts`: `notificationclick`의 `data?.type === 'todo-merged'` 분기가 이미 `/todos`로 가는지 기준선으로 다시 확인한다
-   - [ ] `src/routes/todos/+page.svelte`: 현재 페이지가 `?id=` 같은 쿼리 파라미터로 특정 todo를 여는 로직이 없는지 확인하고, 이번 click target을 `/todos` 고정으로 문서에 남긴다
-   - [ ] `src/service-worker.ts`: 기존 `todo-merged` exact-match 분기는 그대로 유지하고, 새 `data?.type?.startsWith('todo-')` 분기는 `data?.type === 'merged'` 분기 직후, `data?.memoId` 분기 직전에 삽입한다 (`notificationclick` 핸들러 내 `} else if (data?.memoId)` 앞)
-   - [ ] `src/service-worker.ts`: 단일 todo 알림(`todo-remind|todo-alert|todo-overdue`)이 모두 `/todos`로 가도록 분기 조건을 추가한다
-   - [ ] `src/service-worker.ts`: todo 단일 알림 click 로그를 `type`, `memoId`가 함께 보이도록 추가한다
-   - [ ] `src/service-worker.ts`: memo 알림 click 라우팅(`data?.type === 'merged'`와 `/?memo=...`)은 기존 동작을 유지한다
-   - [ ] `src/service-worker.ts`: `externalUrl`는 `data.url.startsWith('http')`인 경우에만 열리므로 todo payload의 상대경로(`/todos?id=...`)는 외부 탭을 열지 않는다는 점을 문서에 남긴다
-   - [ ] `src/service-worker.ts`: `AUTO_OPEN_TRIGGERED` postMessage는 absolute external URL + `memoId`가 있는 memo 경로에만 남기고, todo click 라우팅과 섞지 않는다
+1. - [x] **`notificationclick`에서 todo 알림을 `/todos`로 라우팅한다**
+   - [x] `src/service-worker.ts`: `notificationclick`의 `data?.type === 'todo-merged'` 분기가 이미 `/todos`로 가는지 기준선으로 다시 확인한다
+   - [x] `src/routes/todos/+page.svelte`: 현재 페이지가 `?id=` 같은 쿼리 파라미터로 특정 todo를 여는 로직이 없는지 확인하고, 이번 click target을 `/todos` 고정으로 문서에 남긴다
+   - [x] `src/service-worker.ts`: 기존 `todo-merged` exact-match 분기는 그대로 유지하고, 새 `data?.type?.startsWith('todo-')` 분기는 `data?.type === 'merged'` 분기 직후, `data?.memoId` 분기 직전에 삽입한다 (`notificationclick` 핸들러 내 `} else if (data?.memoId)` 앞)
+   - [x] `src/service-worker.ts`: 단일 todo 알림(`todo-remind|todo-alert|todo-overdue`)이 모두 `/todos`로 가도록 분기 조건을 추가한다
+   - [x] `src/service-worker.ts`: todo 단일 알림 click 로그를 `type`, `memoId`가 함께 보이도록 추가한다
+   - [x] `src/service-worker.ts`: memo 알림 click 라우팅(`data?.type === 'merged'`와 `/?memo=...`)은 기존 동작을 유지한다
+   - [x] `src/service-worker.ts`: `externalUrl`는 `data.url.startsWith('http')`인 경우에만 열리므로 todo payload의 상대경로(`/todos?id=...`)는 외부 탭을 열지 않는다는 점을 문서에 남긴다
+   - [x] `src/service-worker.ts`: `AUTO_OPEN_TRIGGERED` postMessage는 absolute external URL + `memoId`가 있는 memo 경로에만 남기고, todo click 라우팅과 섞지 않는다
 
 ### Phase 2: SW→메인 메시지 계약 정리
 
