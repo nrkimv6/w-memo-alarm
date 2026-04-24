@@ -11,7 +11,9 @@ binding = "ASSETS"
 # 참고: docs/ARCHITECTURE_FCM.md
 
 # Environment variables
-# These are placeholders - actual values should be set in .dev.vars (local) or Cloudflare dashboard (production)
-[vars]
-PUBLIC_SUPABASE_URL = "https://your-project.supabase.co"
-PUBLIC_SUPABASE_ANON_KEY = "your-anon-key-here"
+# 로컬: .dev.vars 파일에 설정 (gitignored)
+# 프로덕션: Cloudflare dashboard > Workers > wservice-memo-alarm > Settings > Variables
+# wrangler deploy가 dashboard 값을 덮어쓰지 않도록 [vars]에 placeholder를 두지 않는다
+# [vars]
+# PUBLIC_SUPABASE_URL = ""
+# PUBLIC_SUPABASE_ANON_KEY = ""

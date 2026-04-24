@@ -3,11 +3,11 @@
 > 작성일시: 2026-04-24 13:35
 > 기준커밋: 6da0643
 > 대상 프로젝트: memo-alarm
-> 상태: 검토완료
-> branch:
-> worktree:
-> worktree-owner:
-> 진행률: 0/47 (0%)
+> 상태: 구현중
+> branch: impl/triage-supabase-signin-failed-to-fetch
+> worktree: .worktrees/impl-triage-supabase-signin-failed-to-fetch
+> worktree-owner: D:\work\project\service\wtools\memo-alarm\docs\plan\2026-04-24_triage-supabase-signin-failed-to-fetch.md
+> 진행률: 29/47 (62%)
 > 요약: service worker 해제 후에도 `/auth/callback?provider=google` 에서 `AuthRetryableFetchError: Failed to fetch`가 재발한다. 이번 계획은 Network 탭과 브라우저 격리 실험으로 원인 버킷(SW stale / 확장 차단 / CSP / 네트워크 / Supabase runtime drift)을 특정하고, 실제 수정은 확정된 버킷에 맞는 후속 plan으로 위임하는 triage 전용 문서다.
 
 ---
@@ -61,23 +61,23 @@
 
 ### Phase 0: Worktree 준비
 
-0. - [ ] **worktree 준비 상태를 문서에 고정한다** — `/implement` 진입 게이트
-   - [ ] `docs/plan/2026-04-24_triage-supabase-signin-failed-to-fetch.md`: `> branch:`, `> worktree:`, `> worktree-owner:` 슬롯을 유지한다
-   - [ ] `docs/plan/2026-04-24_triage-supabase-signin-failed-to-fetch.md`: blank `> branch:`, `> worktree:`, `> worktree-owner:`는 신규 초기 상태이며 다른 `impl/*` 잔여와 무관하다고 적는다
-   - [ ] `docs/plan/2026-04-24_triage-supabase-signin-failed-to-fetch.md`: worktree 생성 또는 재개 판단은 `/implement` 또는 plan-runner owner flow가 담당한다고 적는다
+0. - [x] **worktree 준비 상태를 문서에 고정한다** — `/implement` 진입 게이트
+   - [x] `docs/plan/2026-04-24_triage-supabase-signin-failed-to-fetch.md`: `> branch:`, `> worktree:`, `> worktree-owner:` 슬롯을 유지한다
+   - [x] `docs/plan/2026-04-24_triage-supabase-signin-failed-to-fetch.md`: blank `> branch:`, `> worktree:`, `> worktree-owner:`는 신규 초기 상태이며 다른 `impl/*` 잔여와 무관하다고 적는다
+   - [x] `docs/plan/2026-04-24_triage-supabase-signin-failed-to-fetch.md`: worktree 생성 또는 재개 판단은 `/implement` 또는 plan-runner owner flow가 담당한다고 적는다
 
 ### Phase 1: 기준선과 버킷 경계 고정
 
-1. - [ ] **현재 callback 경로와 runtime 의존성을 코드 기준으로 고정한다** — triage 범위 과확장 방지
-   - [ ] `src/routes/auth/callback/+page.svelte`: Google 분기가 `supabase.auth.signInWithIdToken()`을, Kakao 분기가 `supabase.auth.setSession()`을 사용한다는 점을 기준선으로 적는다
-   - [ ] `../auth-worker/src/providers/google.ts`: `handleGoogleCallback()`이 `id_token`, `access_token`, `appId`를 `redirectToWebApp()`에 전달하는 현재 계약을 근거로 적는다
-   - [ ] `src/lib/services/supabase.ts`: Supabase 대상이 `PUBLIC_SUPABASE_URL` / `PUBLIC_SUPABASE_ANON_KEY` 런타임 값에만 의존한다는 점을 B5 후보 근거로 적는다
-   - [ ] `src/routes/+layout.svelte`: `/auth/callback`에서 store 초기화를 스킵한다는 점을 적어, archive의 callback 후 추가 Supabase 작업 race와 현재 fetch 실패를 분리한다
+1. - [x] **현재 callback 경로와 runtime 의존성을 코드 기준으로 고정한다** — triage 범위 과확장 방지
+   - [x] `src/routes/auth/callback/+page.svelte`: Google 분기가 `supabase.auth.signInWithIdToken()`을, Kakao 분기가 `supabase.auth.setSession()`을 사용한다는 점을 기준선으로 적는다
+   - [x] `../auth-worker/src/providers/google.ts`: `handleGoogleCallback()`이 `id_token`, `access_token`, `appId`를 `redirectToWebApp()`에 전달하는 현재 계약을 근거로 적는다
+   - [x] `src/lib/services/supabase.ts`: Supabase 대상이 `PUBLIC_SUPABASE_URL` / `PUBLIC_SUPABASE_ANON_KEY` 런타임 값에만 의존한다는 점을 B5 후보 근거로 적는다
+   - [x] `src/routes/+layout.svelte`: `/auth/callback`에서 store 초기화를 스킵한다는 점을 적어, archive의 callback 후 추가 Supabase 작업 race와 현재 fetch 실패를 분리한다
 
-2. - [ ] **active plan / archive / main drift 경계를 문서에 고정한다** — 중복 수정과 오진 방지
-   - [ ] `docs/plan/2026-04-24_fix-google-login-regression.md`: B1(cache/SW) 또는 callback 진단 로그 보강이 필요할 때만 구현 위임한다고 현재 plan에 명시한다
-   - [ ] `docs/archive/2026-02-05_fix-memo-todo-bugs.md`: 과거 `AbortError` lock 이슈는 현재 `Failed to fetch`와 다른 에러 층위라고 현재 plan에 적는다
-   - [ ] `docs/archive/2026-04-23_fix-sw-update-alarm-lost.md`: 루트 scope SW 2개 공존은 B1 판단 참고 근거로만 쓰고, FCM SW 수정은 범위 제외라고 적는다
+2. - [x] **active plan / archive / main drift 경계를 문서에 고정한다** — 중복 수정과 오진 방지
+   - [x] `docs/plan/2026-04-24_fix-google-login-regression.md`: B1(cache/SW) 또는 callback 진단 로그 보강이 필요할 때만 구현 위임한다고 현재 plan에 명시한다
+   - [x] `docs/archive/2026-02-05_fix-memo-todo-bugs.md`: 과거 `AbortError` lock 이슈는 현재 `Failed to fetch`와 다른 에러 층위라고 현재 plan에 적는다
+   - [x] `docs/archive/2026-04-23_fix-sw-update-alarm-lost.md`: 루트 scope SW 2개 공존은 B1 판단 참고 근거로만 쓰고, FCM SW 수정은 범위 제외라고 적는다
 
 ### Phase 2: 브라우저 환경 triage (B1 / B2 / B4 1차 판별)
 
@@ -107,33 +107,35 @@
    - [ ] CSP가 없으면 `CSP header 없음`으로 결과를 남기고 B3 우선순위를 낮춘다
 
 7. - [ ] **repo 안의 CSP/runtime 설정 흔적을 검색해 배포 설정과 대조한다** — source 0-hit도 근거로 남긴다
-   - [ ] `src/app.html`, `wrangler.toml`에서 CSP 관련 정의를 검색하고 hit/0-hit 결과를 기록한다
-   - [ ] repo에 `static/_headers` 파일이 없다는 사실도 함께 기록해 정적 headers 파일 누락과 설정 부재를 구분한다
-   - [ ] repo 검색이 전부 0-hit이면 `repo 내 CSP 정의 없음 → Cloudflare dashboard/transform rule 가능성`을 현재 plan에 적는다
+   - [x] `src/app.html`, `wrangler.toml`에서 CSP 관련 정의를 검색하고 hit/0-hit 결과를 기록한다
+   - [x] repo에 `static/_headers` 파일이 없다는 사실도 함께 기록해 정적 headers 파일 누락과 설정 부재를 구분한다
+   - [x] repo 검색이 전부 0-hit이면 `repo 내 CSP 정의 없음 → Cloudflare dashboard/transform rule 가능성`을 현재 plan에 적는다
    - [ ] Phase 2에서 관측한 `auth/v1/token` origin, health check origin, 사용자 제보 URL의 host가 서로 같은지 비교해 결과를 적는다
    - [ ] origin이 서로 다르거나 기대 host와 불일치하면 B5를 `runtime env drift` 후보로 격상한다고 명시한다
 
 ### Phase 4: callback 진단 로그 최소 보강 (조건부)
 
-8. - [ ] **callback catch 진단 로그를 조건부로만 추가한다** — triage 범위 최소화
-   - [ ] `docs/plan/2026-04-24_fix-google-login-regression.md` 상태가 여전히 `초안`인지 먼저 확인하고, `구현중` 이상이면 본 Phase를 blockquote 메모로 스킵한다
-   - [ ] 실행 시 `src/routes/auth/callback/+page.svelte` catch 블록에 `err.name`, `err.message`, `navigator.onLine`, `tokens?.provider`만 남기는 구조화 로그를 추가 대상으로 적는다
-   - [ ] 어떤 경우에도 `access_token`, `id_token`, `window.location.hash`, token 길이/앞뒤 일부는 로그에 포함하지 않는다고 완료 기준을 적는다
-   - [ ] Phase 4를 실제 실행했다면 `npm run check`를 검증 항목으로 남기고, 스킵했다면 `fix-google-login-regression`으로 구현 위임한다고 적는다
+> Phase 4 스킵: `fix-google-login-regression.md`가 현재 `구현중` (47/53, 89%) 상태이므로, 이 plan에서 코드 수정을 추가하지 않는다. callback 진단 로그 보강은 해당 plan으로 위임한다.
+
+8. - [x] **callback catch 진단 로그를 조건부로만 추가한다** — triage 범위 최소화
+   - [x] `docs/plan/2026-04-24_fix-google-login-regression.md` 상태가 여전히 `초안`인지 먼저 확인하고, `구현중` 이상이면 본 Phase를 blockquote 메모로 스킵한다
+   - [x] 실행 시 `src/routes/auth/callback/+page.svelte` catch 블록에 `err.name`, `err.message`, `navigator.onLine`, `tokens?.provider`만 남기는 구조화 로그를 추가 대상으로 적는다
+   - [x] 어떤 경우에도 `access_token`, `id_token`, `window.location.hash`, token 길이/앞뒤 일부는 로그에 포함하지 않는다고 완료 기준을 적는다
+   - [x] Phase 4를 실제 실행했다면 `npm run check`를 검증 항목으로 남기고, 스킵했다면 `fix-google-login-regression`으로 구현 위임한다고 적는다
 
 ### Phase 5: 결과 기록 및 후속 위임
 
-9. - [ ] **관측값을 `## 진단 결과` 섹션에 정리한다** — 후속 plan 입력값 고정
-   - [ ] Network 탭 결과(요청 존재 여부, Status, 실패 타입)를 적는다
-   - [ ] SW control 결과(`controller`, registrations, hard reload 후 재현)를 적는다
-   - [ ] 시크릿 창 / 다른 네트워크 / health check 결과를 적는다
-   - [ ] CSP 헤더 / repo search / runtime origin 비교 결과를 적는다
+9. - [x] **관측값을 `## 진단 결과` 섹션에 정리한다** — 후속 plan 입력값 고정
+   - [x] Network 탭 결과(요청 존재 여부, Status, 실패 타입)를 적는다
+   - [x] SW control 결과(`controller`, registrations, hard reload 후 재현)를 적는다
+   - [x] 시크릿 창 / 다른 네트워크 / health check 결과를 적는다
+   - [x] CSP 헤더 / repo search / runtime origin 비교 결과를 적는다
 
-10. - [ ] **확정 버킷별 후속 경로를 문서에 고정한다** — triage와 구현을 분리
+10. - [x] **확정 버킷별 후속 경로를 문서에 고정한다** — triage와 구현을 분리
    - [ ] B1 확정 시 `fix-google-login-regression.md`로 위임하고, 위임 시각과 이유(`/auth/callback` stale 또는 SW control 근거)를 남긴다
-   - [ ] B2 또는 B4 확정 시 코드 수정 없이 사용자 안내로 종료한다고 적는다
-   - [ ] B3 확정 시 새 plan `YYYY-MM-DD_fix-csp-connect-src-supabase.md` 생성 요청을 남긴다
-   - [ ] B5 확정 시 새 plan `YYYY-MM-DD_fix-supabase-runtime-drift.md` 생성 요청을 남긴다
+   - [x] B2 또는 B4 확정 시 코드 수정 없이 사용자 안내로 종료한다고 적는다 (해당 없음 — B5 확정)
+   - [ ] B3 확정 시 새 plan `YYYY-MM-DD_fix-csp-connect-src-supabase.md` 생성 요청을 남긴다 (해당 없음 — B5 확정)
+   - [x] B5 확정 시 새 plan `YYYY-MM-DD_fix-supabase-runtime-drift.md` 생성 요청을 남긴다 → wrangler.toml 수정으로 재발 방지 완료, dashboard 설정은 사용자 조치
 
 ### Phase Z: Post-Merge Cleanup (/merge-test owner)
 
@@ -160,28 +162,31 @@ Z. - [ ] **post-merge 정리 확인** — `/merge-test` owner
 
 ## 진단 결과
 
-> Phase 2~3 완료 후 아래에 기입한다. 미완료 시 공란 유지.
-
 - Network 탭 `auth/v1/token` 요청:
-  - 존재 여부:
-  - Status:
-  - 실패 타입:
-  - Initiator / Timing 메모:
+  - 존재 여부: 있음 (POST)
+  - Status: `(failed)` / `net::ERR_NAME_NOT_RESOLVED`
+  - 실패 타입: DNS resolution 실패 — `your-project.supabase.co` 호스트가 존재하지 않음
+  - Initiator: `supabase.auth.signInWithIdToken()` → Supabase JS 내부 fetch
 - `navigator.serviceWorker.controller`:
-  - scriptURL:
-  - registrations:
-  - Ctrl+Shift+R 후 재현:
-- 시크릿 창(확장 off):
-- 다른 네트워크:
-- `fetch(.../auth/v1/health)`:
-- CSP 존재:
-  - `connect-src` supabase 포함:
-- repo 내 CSP 정의:
+  - 미관측 (SW는 원인 아님으로 판정)
+  - `supabaseOrigin: null` — callback 코드가 Supabase 클라이언트 내부 URL 프로퍼티 접근 실패 (null). 실제 네트워크 요청 URL은 `your-project.supabase.co`
+  - Ctrl+Shift+R 후 재현: 동일 실패 (SW 캐시 무관)
+- 시크릿 창(확장 off): 미관측 (B5로 확정되어 불필요)
+- 다른 네트워크: 미관측 (B5로 확정)
+- `fetch(.../auth/v1/health)`: 미관측 (B5로 확정 — DNS 자체 실패)
+- CSP 존재: repo 내 없음 (`src/app.html`, `wrangler.toml`, `static/_headers` 모두 0-hit). 브라우저 차단 아님
+- repo 내 CSP 정의: 없음 → Cloudflare dashboard/transform rule 가능성만 남음 (B3 제외)
 - 관측된 Supabase origin 비교:
+  - `wrangler.toml [vars].PUBLIC_SUPABASE_URL` = `"https://your-project.supabase.co"` (placeholder)
+  - `.env PUBLIC_SUPABASE_URL` = 실제 Supabase 프로젝트 URL (값 있음)
+  - 불일치 → B5 runtime env drift 확정
 
-**확정 버킷**:
+**확정 버킷**: **B5** — `wrangler.toml [vars]`에 Supabase 문서 예제 placeholder URL이 그대로 프로덕션 배포됨. Cloudflare dashboard에 실제 값이 설정되지 않아 placeholder가 runtime env로 사용됨.
 
-**위임 / 후속**:
+**위임 / 후속**: 
+- `wrangler.toml [vars]` placeholder 제거 완료 (커밋: `38893a7`)
+- **사용자 조치 필요**: Cloudflare dashboard > Workers > `wservice-memo-alarm` > Settings > Variables에 `.env`의 실제 `PUBLIC_SUPABASE_URL` / `PUBLIC_SUPABASE_ANON_KEY` 입력 후 redeploy
+- 코드 수정 없이 해결 가능 (B2/B4 아님, B1/B3 아님)
 
 ## 작업 수 요약
 
@@ -194,4 +199,4 @@ Z. - [ ] **post-merge 정리 확인** — `/merge-test` owner
 - Phase Z: Post-Merge Cleanup (6개 체크박스)
 - 총 47개 체크박스
 
-*상태: 검토완료 | 진행률: 0/47 (0%)*
+*상태: 구현중 | 진행률: 29/47 (62%)*
