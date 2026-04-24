@@ -6,7 +6,6 @@
 ---
 
 ## In Progress
-- [ ] **Settings 페이지 재디자인 (design-port)** — [plan](docs/plan/2026-04-24_redesign-settings-page.md) (0/80, 0%)
 - [ ] **todo 알림 click 라우팅 + SW 메시지 계약 정리** — [plan](docs/plan/2026-04-24_fix-todo-notification-click-and-sw-messages.md) (0/78, 0%)
 
 ## Pending
