@@ -3,11 +3,10 @@
 > 작성일시: 2026-04-24
 > 기준커밋: 888fc2b
 > 대상 프로젝트: memo-alarm
-> 상태: 머지대기
-> branch: impl/fix-settings-page-skip-waiting-raw-string
-> worktree: .worktrees/impl-fix-settings-page-skip-waiting-raw-string
-> worktree-owner: codex
-> 진행률: 15/21 (71%)
+> 상태: 구현완료
+> 반영일시: 2026-04-24 16:37
+> 머지커밋: 2d4b69e
+> 진행률: 21/21 (100%)
 > 요약: `REGISTER/REMOVE_TODO_NOTIFICATIONS` fix와 동일 패턴 — `routes/settings/+page.svelte:144`에서 메인 스레드 발신 측이 `type: 'SKIP_WAITING'`을 raw string으로 postMessage한다. `SW_MSG.SKIP_WAITING` 상수로 교체하면 타이포 위험을 제거할 수 있다.
 > 출처: /reflect에서 자동 생성
 
@@ -84,12 +83,12 @@ if (registration.waiting) registration.waiting.postMessage({ type: 'SKIP_WAITING
 
 ### Phase Z: Post-Merge Cleanup (/merge-test owner)
 
-6. - [ ] **post-merge 정리 확인** — `/merge-test` owner
-   - [ ] main merge 시도
-   - [ ] T4/T5 해당 없음 재판정
-   - [ ] worktree remove
-   - [ ] branch remove
-   - [ ] header meta 제거
+6. - [x] **post-merge 정리 확인** — `/merge-test` owner
+   - [x] main merge 시도
+   - [x] T4/T5 해당 없음 재판정
+   - [x] worktree remove
+   - [x] branch remove
+   - [x] header meta 제거
 
 ## 작업 수 요약
 
@@ -99,4 +98,4 @@ if (registration.waiting) registration.waiting.postMessage({ type: 'SKIP_WAITING
 - Phase Z: Post-Merge Cleanup (1 parent / 5 children)
 - 총 6 parents / 15 children = 21 체크박스
 
-*상태: 머지대기 | 진행률: 15/21 (71%)*
+*상태: 구현완료 | 진행률: 21/21 (100%)*
