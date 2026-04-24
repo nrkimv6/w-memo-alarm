@@ -3,11 +3,11 @@
 > 작성일시: 2026-04-24 10:40
 > 기준커밋: 38eb43a
 > 대상 프로젝트: memo-alarm
-> 상태: 초안
+> 상태: 검토완료
 > branch:
 > worktree:
 > worktree-owner:
-> 진행률: 0/76 (0%)
+> 진행률: 0/78 (0%)
 > 요약: SW todo 알림은 `data.type === 'todo-*'` 인데도 `notificationclick`이 `memoId`만 보고 `/?memo=...`로 라우팅한다. 또한 SW가 `TODO_NOTIFICATION_SENT`를 보내지만 메인 스레드 소비자가 없어 기록/디버깅 경로가 단절되어 있다. click 라우팅/메시지 상수/히스토리 기록을 정합하게 맞춘다.
 > 출처: /reflect에서 자동 생성
 
@@ -37,6 +37,7 @@
 - 현재 `NotificationHistory` 타입은 `reminderType: 'default' | 'additional'`, `channel: 'sw-push' | 'capacitor-local' | 'fcm-push'`만 허용한다. plan대로 todo 전용 값을 기록하려면 `src/lib/types/memo.ts`와 이를 소비하는 UI 계약을 함께 넓혀야 한다.
 - 현재 `data/migrations/006_notification_history.sql`의 `ma_notification_history` 테이블은 `reminder_type`, `channel`에 CHECK 제약이 있다. 즉 `sw-todo`, `todo-remind`, `todo-alert`, `todo-overdue`를 쓰려면 TypeScript 수정만이 아니라 SQL 마이그레이션과 running DB 직접 반영이 함께 필요하다.
 - `src/lib/components/notifications/HistoryCard.svelte`는 현재 `sw-todo` 채널 라벨을 모른다. 이 값을 그대로 기록하면 UI에 raw string이 노출되므로 label 매핑 보강 여부를 plan 범위에 포함한다.
+- `src/lib/components/notifications/HistoryCard.svelte`는 클릭 시 항상 `goto('/memos')`를 호출하지만, 실제 `src/lib/stores/filter.svelte.ts`는 `/memos` 기본 목록에서 `memoType === 'todo'`를 숨긴다. 즉 todo history를 추가하면 카드 클릭이 대상 리스트를 못 보여주는 회귀가 생기므로, history click 동선도 함께 고쳐야 한다.
 - `docs/plan/todo-feature/phase-2-alarm-postpone.md` 7장에 "할일 알림도 기존 notificationHistoryStore에 기록" backlog가 이미 있다. 이번 fix plan은 그 중 **Service Worker click 라우팅 + SW history contract**만 선반영하고, native/FCM/전반 UI 확장은 범위에서 제외한다고 명시해야 중복 구현을 피할 수 있다.
 - `git diff --name-only 38eb43a..main` 기준으로 현재 main drift는 `TODO.md`, 본 계획서 2개뿐이다. 대상 코드(`src/service-worker.ts`, `src/lib/stores/notifications.svelte.ts`, `src/lib/types/memo.ts`, `data/migrations/`)에는 기준커밋 이후 추가 drift가 없다.
 
@@ -57,7 +58,7 @@
 1. - [ ] **`notificationclick`에서 todo 알림을 `/todos`로 라우팅한다**
    - [ ] `src/service-worker.ts`: `notificationclick`의 `data?.type === 'todo-merged'` 분기가 이미 `/todos`로 가는지 기준선으로 다시 확인한다
    - [ ] `src/routes/todos/+page.svelte`: 현재 페이지가 `?id=` 같은 쿼리 파라미터로 특정 todo를 여는 로직이 없는지 확인하고, 이번 click target을 `/todos` 고정으로 문서에 남긴다
-   - [ ] `src/service-worker.ts`: 기존 `todo-merged` exact-match 분기는 그대로 유지하고, 새 `data?.type?.startsWith('todo-')` 분기는 그 아래에서 `data?.memoId` 분기보다 먼저 배치한다
+   - [ ] `src/service-worker.ts`: 기존 `todo-merged` exact-match 분기는 그대로 유지하고, 새 `data?.type?.startsWith('todo-')` 분기는 `data?.type === 'merged'` 분기 직후, `data?.memoId` 분기 직전에 삽입한다 (`notificationclick` 핸들러 내 `} else if (data?.memoId)` 앞)
    - [ ] `src/service-worker.ts`: 단일 todo 알림(`todo-remind|todo-alert|todo-overdue`)이 모두 `/todos`로 가도록 분기 조건을 추가한다
    - [ ] `src/service-worker.ts`: todo 단일 알림 click 로그를 `type`, `memoId`가 함께 보이도록 추가한다
    - [ ] `src/service-worker.ts`: memo 알림 click 라우팅(`data?.type === 'merged'`와 `/?memo=...`)은 기존 동작을 유지한다
@@ -68,10 +69,10 @@
 
 2. - [ ] **SW todo 발송 payload를 성공/실패 경로 모두에서 동일한 shape로 맞춘다**
    - [ ] `src/service-worker.ts`: merged success path의 `TODO_NOTIFICATION_SENT` payload에 `notificationId`, `notificationType`, `status`, `sentAt`, `errorMessage` 키를 고정한다
-   - [ ] `src/service-worker.ts`: merged failed path도 success path와 같은 키 집합을 유지하고 `errorMessage`만 실제 에러 문자열로 채운다
+   - [ ] `src/service-worker.ts`: merged failed path도 success path와 같은 키 집합을 유지하고 `errorMessage: e instanceof Error ? e.message : String(e)`를 추가한다 (`showMergedTodoNotification` catch 블록에서 `e`가 이미 스코프에 있음)
    - [ ] `src/service-worker.ts`: single success path도 merged path와 같은 키 집합을 유지하고 `errorMessage`는 `null` 또는 생략 중 하나로 일관되게 맞춘다
    - [ ] `src/service-worker.ts`: single catch path에서 `swLog(...)`만 남기지 말고 `TODO_NOTIFICATION_SENT` failed payload를 추가로 보낸다
-   - [ ] `src/service-worker.ts`: batch 안의 여러 todo는 동일 `sentAt`을 공유할지, 항목별 개별 `sentAt`을 쓸지 한 가지로 고정하고 계획서에 남긴다
+   - [ ] `src/service-worker.ts`: batch 안의 여러 todo는 동일 `sentAt`을 공유한다 — `showMergedTodoNotification`에서 이미 `const sentAt = new Date().toISOString()`을 `todos.forEach` 전에 선언하여 공유하므로 현행 방식 유지로 결정
    - [ ] `src/service-worker.ts`: `notificationId`가 기존 history schema의 `reminderId` 슬롯으로 매핑될 예정임을 주석 또는 계획서 비고로 남긴다
 
 3. - [ ] **메인 스레드 상수와 `NotificationHistory` 타입을 todo 경로까지 확장한다**
@@ -79,7 +80,7 @@
    - [ ] `src/lib/types/memo.ts`: `NotificationHistory['reminderType']` 유니온을 `default | additional | todo-remind | todo-alert | todo-overdue`로 확장한다
    - [ ] `src/lib/types/memo.ts`: `NotificationHistory['channel']` 유니온을 `sw-push | sw-todo | capacitor-local | fcm-push`로 확장한다
    - [ ] `src/lib/types/memo.ts`: 기존 `NotificationHistory` 모델에 `notificationId` 전용 필드를 새로 만들지 않고, todo 경로도 기존 `reminderId` 필드를 재사용한다는 결정을 문서에 남긴다
-   - [ ] `src/lib/stores/notificationHistory.svelte.ts`: 타입 확장 후 `rowToRecord` / `recordToRow`가 새 문자열을 그대로 통과시키는 구조인지 재확인한다
+   - [ ] `src/lib/stores/notificationHistory.svelte.ts`: 타입 확장 후 `rowToRecord`의 `row.reminder_type as NotificationHistory['reminderType']`와 `recordToRow`의 `record.reminderType` 모두 type cast 방식이므로 TypeScript 유니온 확장만으로 새 값이 자동 통과하는지 확인
 
 4. - [ ] **메인 스레드 listener에서 todo 발송 기록을 저장한다**
    - [ ] `src/lib/stores/notifications.svelte.ts`: SW message listener에 `event.data.type === SW_MSG.TODO_NOTIFICATION_SENT` 분기를 추가한다
@@ -91,6 +92,8 @@
 
 5. - [ ] **알림 내역 UI가 새 channel 값을 읽을 수 있게 한다**
    - [ ] `src/lib/components/notifications/HistoryCard.svelte`: `getChannelLabel('sw-todo')`를 추가해 raw string 대신 읽을 수 있는 라벨을 표시한다
+   - [ ] `src/lib/components/notifications/HistoryCard.svelte`: `handleClick()`에서 `record.channel === 'sw-todo'`면 `goto('/todos')`, 그 외는 기존 `goto('/memos')`를 유지하도록 분기한다
+   - [ ] `src/lib/components/notifications/HistoryCard.svelte`: todo history click은 `/todos` 리스트 진입으로 고정하고, memo history click만 `/memos`로 남긴다는 점을 코드와 계획서에 일치시킨다
    - [ ] `src/routes/notifications/+page.svelte`: 목록 필터/그룹핑이 `channel` 값에 의존하지 않으므로 추가 분기 없이 새 기록이 노출되는지 확인한다
    - [ ] `src/lib/components/notifications/HistoryCard.svelte`: todo 기록이 생겨도 status badge / 에러 펼침 로직은 공통으로 그대로 재사용 가능한지 확인한다
 
@@ -138,10 +141,16 @@ R2. - [ ] **중복/범위 충돌을 현재 plan에 명시한다**
 | `src/service-worker.ts` `TODO_NOTIFICATION_SENT` producer | 방어 대상 | todo SW 발송 기록의 payload parity와 실패 경로 누락을 이번 plan에서 수정 |
 | `src/lib/stores/notifications.svelte.ts` SW listener | 방어 대상 | 현재 `SW_MSG.NOTIFICATION_SENT`만 소비하고 todo payload를 버림 |
 | `src/lib/types/memo.ts` + `data/migrations/006_notification_history.sql` | 방어 대상 | 새 channel/reminderType 값을 막는 타입/DB 제약이 존재 |
-| `src/lib/components/notifications/HistoryCard.svelte` | 방어 대상 | `sw-todo` 라벨 미정의 상태라 raw string 노출 가능 |
+| `src/lib/components/notifications/HistoryCard.svelte` | 방어 대상 | `sw-todo` 라벨 미정의 + 클릭 시 `/memos` 고정이라 todo 기록 동선이 깨질 수 있음 |
 | `static/firebase-messaging-sw.js` `notificationclick` | 대상 아님 | FCM memo push 경로이며 todo SW payload를 사용하지 않음 |
 | `src/lib/utils/capacitor.ts` todo/native 경로 | 별도 plan 필요 | broader todo history integration 범위이며 이번 fix의 SW click/message 계약 밖 |
 | `docs/plan/todo-feature/phase-2-alarm-postpone.md` 7장 | 중복 회피 | todo history 전반 backlog는 유지, 이번 plan은 SW subset만 선반영 |
+
+### Phase T3/T4/T5: 자동 테스트
+
+> T3 해당 없음: TypeScript/Svelte 프론트엔드 프로젝트 — Python/백엔드 변경 없음, 통합 테스트 인프라 미구성. 검증은 Phase 4 수동 시나리오로 대체.
+> T4 해당 없음: `tests/**/*e2e*`, `tests/**/*integration*` Glob 탐색 결과 0건 — e2e 테스트 파일 없음.
+> T5 해당 없음: SvelteKit SSG/SPA 구조이며 서버 측 HTTP 엔드포인트 없음. `tests/**/*http*`, `tests/**/*api*` Glob 탐색 결과 0건.
 
 ### Phase 4: 수동 검증
 
@@ -164,15 +173,16 @@ Z. - [ ] **post-merge 정리 확인** — `/merge-test` owner
 
 - Phase 0: Worktree 준비 (5개 체크박스)
 - Phase 1: 단일 todo 알림 click 라우팅 정합 (9개 체크박스)
-- Phase 2: SW→메인 메시지 계약 정리 (24개 체크박스)
+- Phase 2: SW→메인 메시지 계약 정리 (26개 체크박스)
 - Phase DB-Direct: notification_history 제약 직접 확장 (14개 체크박스)
 - Phase R: 재발 경로 분석 (13개 체크박스)
 - Phase 4: 수동 검증 운영 문서화 (4개 체크박스)
 - Phase Z: Post-Merge Cleanup (7개 체크박스)
-- 총 76개 체크박스
+- 총 78개 체크박스
 
 > fix plan 재검토 결과: `NotificationHistory` 타입/DB CHECK 제약, `HistoryCard` 채널 라벨, repo-wide `notificationclick` 탐색 범위를 보강했다. 수동 검증은 `MANUAL_TASKS.md` 운영 규칙만 유지하고 본 plan 완료 조건에서는 제외한다.
+> review-plan 검토(2026-04-24): 소스코드 대조 — 단일 todo catch path의 failed payload 누락(`errorMessage` 미전달), merged 양 경로의 `errorMessage` 누락, `sentAt` 공유 방식 확인(현행 유지), T3/T4/T5 해당 없음(Glob 0건 확인), 로컬 drift 없음(38eb43a 이후 대상 코드 무변경).
 
 ---
 
-*상태: 초안 | 진행률: 0/76 (0%)*
+*상태: 검토완료 | 진행률: 0/78 (0%)*
