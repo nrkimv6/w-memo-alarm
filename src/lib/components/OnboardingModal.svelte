@@ -10,7 +10,6 @@
 
 	let currentStep = $state(0);
 	let dialogRef: HTMLDialogElement;
-	const step = $derived(steps[currentStep]);
 
 	const steps = [
 		{
@@ -53,6 +52,7 @@
 			]
 		}
 	];
+	const step = $derived(steps[currentStep]);
 
 	function next() {
 		if (currentStep < steps.length - 1) {

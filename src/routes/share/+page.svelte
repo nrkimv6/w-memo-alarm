@@ -227,7 +227,7 @@
 					{#if showUrlInput}
 						<label for="share-url" class="text-sm font-medium">URL (북마크)</label>
 						<div class="flex gap-2">
-							<EmojiPicker {emoji} onSelect={(e) => (emoji = e)} />
+							<EmojiPicker selected={emoji} onSelect={(e) => (emoji = e)} />
 							<Input
 								id="share-url"
 								type="url"

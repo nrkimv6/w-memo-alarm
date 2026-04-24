@@ -3,6 +3,7 @@
 	import { memosStore } from '$lib/stores/memos.svelte';
 	import { settingsStore } from '$lib/stores/settings.svelte';
 	import { toastStore } from '$lib/stores/toast.svelte';
+	import { generateReminderId } from '$lib/utils/memoIdGenerator';
 	import { cn } from '$lib/utils';
 
 	let inputValue = $state('');
@@ -40,7 +41,7 @@
 		// Apply auto reminder if enabled
 		if (useAutoReminder) {
 			const defaultReminder = settingsStore.getDefaultReminder();
-			data.reminder = { ...defaultReminder };
+			data.reminder = { ...defaultReminder, id: generateReminderId() };
 		}
 
 		memosStore.add(data);

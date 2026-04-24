@@ -148,7 +148,7 @@
 				<div
 					class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20 text-sm"
 				>
-					<span class="text-primary font-medium truncate">{filterMemoTitle()}</span>
+					<span class="text-primary font-medium truncate">{filterMemoTitle}</span>
 					<span class="text-muted-foreground">메모의 알림 내역</span>
 					<button onclick={clearMemoFilter} class="ml-auto shrink-0 text-muted-foreground hover:text-foreground">
 						<X class="w-4 h-4" />
@@ -258,7 +258,7 @@
 						{formatDateLabel(dateKey)}
 					</h2>
 					<div class="space-y-2">
-						{#each visibleGrouped()[dateKey] as record (record.id)}
+						{#each visibleGrouped[dateKey] as record (record.id)}
 							<HistoryCard {record} />
 						{/each}
 					</div>

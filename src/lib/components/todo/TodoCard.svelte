@@ -168,7 +168,7 @@
 				{/if}
 
 				<!-- Priority Badge -->
-				{#if todo.todoPriority && !completed && todo.todoPriority !== "none"}
+				{#if todo.todoPriority && !completed}
 					<span
 						class="px-1.5 py-0.5 text-[10px] font-medium rounded-md border {getPriorityStyle(
 							todo.todoPriority,

@@ -10,6 +10,8 @@
 		children,
 		footer,
 		class: className = '',
+		size = 'lg',
+		onClose,
 		useHistory = true
 	}: {
 		open?: boolean;
@@ -17,13 +19,25 @@
 		children?: any;
 		footer?: any;
 		class?: string;
+		size?: 'sm' | 'md' | 'lg' | 'xl';
+		onClose?: () => void;
 		useHistory?: boolean;
 	} = $props();
 
 	let hasAddedHistory = $state(false);
+	const sizeClass = $derived(
+		size === 'sm'
+			? 'max-w-sm'
+			: size === 'md'
+				? 'max-w-md'
+				: size === 'xl'
+					? 'max-w-xl'
+					: 'max-w-lg'
+	);
 
 	function close() {
 		open = false;
+		onClose?.();
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
@@ -51,7 +65,7 @@
 			if (open && hasAddedHistory) {
 				// back 버튼으로 모달 닫기
 				hasAddedHistory = false;
-				open = false;
+				close();
 			}
 		}
 
@@ -81,8 +95,9 @@
 	<div class="fixed inset-0 z-[200] flex items-center justify-center p-4 pointer-events-none">
 		<div
 			class={cn(
-				'bg-card w-full max-w-lg rounded-xl border border-border shadow-lg pointer-events-auto',
+				'bg-card w-full rounded-xl border border-border shadow-lg pointer-events-auto',
 				'modal-appear flex flex-col max-h-[90dvh]',
+				sizeClass,
 				className
 			)}
 			role="dialog"
