@@ -11,6 +11,7 @@
 
 ## Pending
 - [ ] **FCM 알림 덮어쓰기 + 6개 미전송 원인 수정** — [plan](docs/plan/2026-04-23_fix-fcm-notification-tag-and-missing-sends.md) (0/73, 0%)
+- [ ] **auth/callback 토큰 위생 강화 (URL hash 제거)** — [plan](docs/plan/2026-04-24_harden-auth-callback-token-hygiene.md) (0/37, 0%)
 - [ ] **settings/developer 페이지 827줄 → 컴포넌트 분할 리팩토링** — [plan](docs/plan/2026-04-24_refactor-settings-developer-page.md) (0/13, 0%)
 - [ ] **북마크 필터에서 할일 카드 렌더링 개선** — [plan](docs/plan/2026-03-30_bookmark-filter-todo-card.md) (0/6, 0%)
 - [x] **메모↔할일 전환 시 북마크 소실 재발 이슈 수정** — [plan](docs/plan/2026-04-07_fix-bookmark-disappear-recurrence.md) — 구현완료 (Phase 6 수동 검증 별도)
