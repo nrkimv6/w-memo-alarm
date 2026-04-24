@@ -6,7 +6,7 @@
 > branch: impl/fix-todo-notification-merge-in-sw
 > worktree: .worktrees/impl-fix-todo-notification-merge-in-sw
 > worktree-owner: D:\work\project\service\wtools\memo-alarm\docs\plan\2026-04-24_fix-todo-notification-merge-in-sw.md
-> 상태: 검증중
+> 상태: 머지대기
 > 유형: fix
 > 진행률: 54/71 (76%)
 > 요약: SW `checkTodoNotifications`가 동일 HH:MM 시간대의 할일 알림을 `todosToNotify.forEach(showNotification)` 로 개별 발송 — 메모 reminder 동일 버그(fix-notification-merge-in-foreground)의 todo 버전. 상기(remind) 알림이 여러 할일에 같은 시간으로 설정된 경우 동일 폭주 발생. 병합 발송으로 수정.
@@ -204,4 +204,4 @@ Z. - [ ] **post-merge 정리 확인** — `/merge-test` owner
 
 ---
 
-*상태: 검증중 | 진행률: 54/71 (76%)*
+*상태: 머지대기 | 진행률: 54/71 (76%)*
