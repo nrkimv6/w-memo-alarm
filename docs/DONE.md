@@ -3,6 +3,7 @@
 > 이전 기록: [DONE-2026-03.md](archive/DONE-2026-03.md) | [DONE-2026-04-early.md](archive/DONE-2026-04-early.md)
 
 - [x] 2026-04-24: auth/callback 토큰 위생 강화 — URL hash 제거 + Supabase origin 로그 env source 정합 — [archive](archive/2026-04-24_harden-auth-callback-token-hygiene.md)
+- [x] 2026-04-24: Supabase signInWithIdToken `Failed to fetch` triage — `wrangler.toml [vars]` placeholder로 인한 runtime env drift(B5) 확정, placeholder 제거 — [archive](archive/2026-04-24_triage-supabase-signin-failed-to-fetch.md)
 - [x] 2026-04-24: settings/developer 페이지 컴포넌트 분할 리팩토링 — 827줄 단일 파일 → 섹션 컴포넌트화(`src/lib/components/settings/dev/*`), `+page.svelte` 500줄 이하 달성 — [archive](archive/2026-04-24_refactor-settings-developer-page.md)
 - [x] 2026-04-24: swMessages.ts REGISTER/REMOVE_TODO_NOTIFICATIONS 상수 추가 — 메인 스레드 발신 측 raw string → SW_MSG 상수 교체, SW 수신 측 주석 보강 — [archive](archive/2026-04-24_fix-sw-messages-register-todo-constants.md)
 - [x] 2026-04-24: todo 알림 click 라우팅 + SW 메시지 계약 정리 — SW notificationclick todo-* → /todos, TODO_NOTIFICATION_SENT consumer + NotificationHistory 타입/DB 제약 확장, HistoryCard sw-todo 라벨/클릭 동선 — [archive](archive/2026-04-24_fix-todo-notification-click-and-sw-messages.md)

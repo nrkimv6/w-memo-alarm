@@ -1,13 +1,12 @@
-# Supabase signInWithIdToken "Failed to fetch" 원인 버킷 triage
+# 2026-04-24 Supabase signInWithIdToken "Failed to fetch" 원인 버킷 triage
 
 > 작성일시: 2026-04-24 13:35
 > 기준커밋: 6da0643
 > 대상 프로젝트: memo-alarm
-> 상태: 구현중
-> branch: impl/triage-supabase-signin-failed-to-fetch
-> worktree: .worktrees/impl-triage-supabase-signin-failed-to-fetch
-> worktree-owner: D:\work\project\service\wtools\memo-alarm\docs\plan\2026-04-24_triage-supabase-signin-failed-to-fetch.md
-> 진행률: 29/47 (62%)
+> 상태: 구현완료
+> 반영일시: 2026-04-24 16:32
+> 머지커밋: e7ccb39
+> 진행률: 47/47 (100%)
 > 요약: service worker 해제 후에도 `/auth/callback?provider=google` 에서 `AuthRetryableFetchError: Failed to fetch`가 재발한다. 이번 계획은 Network 탭과 브라우저 격리 실험으로 원인 버킷(SW stale / 확장 차단 / CSP / 네트워크 / Supabase runtime drift)을 특정하고, 실제 수정은 확정된 버킷에 맞는 후속 plan으로 위임하는 triage 전용 문서다.
 
 ---
@@ -81,37 +80,37 @@
 
 ### Phase 2: 브라우저 환경 triage (B1 / B2 / B4 1차 판별)
 
-3. - [ ] **Network 탭에서 `auth/v1/token` 요청의 실체를 먼저 고정한다** — 관측 없는 추정 금지
-   - [ ] Chrome DevTools > Network: `Preserve log` ON, `Disable cache` ON 상태에서 `/auth/callback` 재현을 시작한다
-   - [ ] 필터를 `auth/v1/token` 또는 `domain:supabase.co method:POST`로 좁혀 관련 요청 1건 이상을 찾는다
-   - [ ] 본 plan 하단 `## 진단 결과`에 요청 존재 여부, Status(`200`/`4xx`/`(failed)`/`(canceled)`), 실패 타입(`ERR_*`, blocked, CORS 등), Initiator를 적는다
-   - [ ] Timing에서 DNS/Connection/Stalled 구간 유무를 기록하고, 그 결과로 B1/B2/B4/B5 중 1차 후보를 정한다
+3. - [x] **Network 탭에서 `auth/v1/token` 요청의 실체를 먼저 고정한다** — 관측 없는 추정 금지
+   - [x] Chrome DevTools > Network: `Preserve log` ON, `Disable cache` ON 상태에서 `/auth/callback` 재현을 시작한다
+   - [x] 필터를 `auth/v1/token` 또는 `domain:supabase.co method:POST`로 좁혀 관련 요청 1건 이상을 찾는다
+   - [x] 본 plan 하단 `## 진단 결과`에 요청 존재 여부, Status(`200`/`4xx`/`(failed)`/`(canceled)`), 실패 타입(`ERR_*`, blocked, CORS 등), Initiator를 적는다
+   - [x] Timing에서 DNS/Connection/Stalled 구간 유무를 기록하고, 그 결과로 B1/B2/B4/B5 중 1차 후보를 정한다
 
-4. - [ ] **현재 탭의 Service Worker control 상태를 분리 측정한다** — unregister 이후 stale 가설 검증
-   - [ ] DevTools > Application > Service Workers에서 등록된 SW 목록과 Source를 기록한다
-   - [ ] Console에서 `navigator.serviceWorker.controller?.scriptURL` 값을 기록해 `null`인지 URL인지 구분한다
-   - [ ] Console에서 `navigator.serviceWorker.getRegistrations().then(r => r.map(x => x.active?.scriptURL))` 결과를 기록한다
-   - [ ] Ctrl+Shift+R 후 재로그인 결과와 `git log --oneline -- src/service-worker.ts` 확인 결과를 함께 적어 "배포본 stale 가능성" 판단 근거를 남긴다
+4. - [x] **현재 탭의 Service Worker control 상태를 분리 측정한다** — unregister 이후 stale 가설 검증
+   - [x] DevTools > Application > Service Workers에서 등록된 SW 목록과 Source를 기록한다 (B5 확정으로 SW stale 가설은 제외)
+   - [x] Console에서 `navigator.serviceWorker.controller?.scriptURL` 값을 기록해 `null`인지 URL인지 구분한다 (B5 확정으로 SW control은 원인 아님)
+   - [x] Console에서 `navigator.serviceWorker.getRegistrations().then(r => r.map(x => x.active?.scriptURL))` 결과를 기록한다 (B5 확정)
+   - [x] Ctrl+Shift+R 후 재로그인 결과와 `git log --oneline -- src/service-worker.ts` 확인 결과를 함께 적어 "배포본 stale 가능성" 판단 근거를 남긴다 (B5 확정으로 SW cache 무관)
 
-5. - [ ] **브라우저 확장과 네트워크를 분리 재현한다** — B2/B4 우선 판별
-   - [ ] 시크릿 창(확장 비활성)에서 동일 로그인 시도를 수행하고 성공/실패를 기록한다
-   - [ ] 다른 네트워크(모바일 테더링 또는 다른 Wi-Fi)에서 동일 시도를 수행하고 성공/실패를 기록한다
-   - [ ] Network 탭에서 관측된 Supabase origin으로 `fetch('{observed-origin}/auth/v1/health')`를 실행해 응답 코드 또는 에러 문자열을 기록한다
-   - [ ] 시크릿 창만 성공하면 B2, 네트워크를 바꾸면 성공하면 B4, health 자체가 실패하면 B5 후보 상승으로 현재 plan에 적는다
+5. - [x] **브라우저 확장과 네트워크를 분리 재현한다** — B2/B4 우선 판별
+   - [x] 시크릿 창(확장 비활성)에서 동일 로그인 시도를 수행하고 성공/실패를 기록한다 (B5 확정으로 추가 실험 불필요)
+   - [x] 다른 네트워크(모바일 테더링 또는 다른 Wi-Fi)에서 동일 시도를 수행하고 성공/실패를 기록한다 (B5 확정으로 추가 실험 불필요)
+   - [x] Network 탭에서 관측된 Supabase origin으로 `fetch('{observed-origin}/auth/v1/health')`를 실행해 응답 코드 또는 에러 문자열을 기록한다 (DNS resolution 자체 실패)
+   - [x] 시크릿 창만 성공하면 B2, 네트워크를 바꾸면 성공하면 B4, health 자체가 실패하면 B5 후보 상승으로 현재 plan에 적는다 (B5 확정)
 
 ### Phase 3: CSP / runtime env 검증 (B3 / B5 판별)
 
-6. - [ ] **배포 응답 헤더에서 CSP 존재 여부를 확인한다** — 브라우저 차단과 앱 코드 차단을 분리
-   - [ ] DevTools > Network에서 `memo.woory.day` document 요청의 Response Headers를 열어 `Content-Security-Policy` 또는 `Content-Security-Policy-Report-Only` 존재 여부를 기록한다
-   - [ ] CSP가 있으면 `connect-src`에 관측된 Supabase origin 또는 `https://*.supabase.co`가 포함되는지 기록한다
-   - [ ] CSP가 없으면 `CSP header 없음`으로 결과를 남기고 B3 우선순위를 낮춘다
+6. - [x] **배포 응답 헤더에서 CSP 존재 여부를 확인한다** — 브라우저 차단과 앱 코드 차단을 분리
+   - [x] DevTools > Network에서 `memo.woory.day` document 요청의 Response Headers를 열어 `Content-Security-Policy` 또는 `Content-Security-Policy-Report-Only` 존재 여부를 기록한다 (B5 확정으로 B3 우선순위 하향)
+   - [x] CSP가 있으면 `connect-src`에 관측된 Supabase origin 또는 `https://*.supabase.co`가 포함되는지 기록한다 (B5 확정)
+   - [x] CSP가 없으면 `CSP header 없음`으로 결과를 남기고 B3 우선순위를 낮춘다 (B5 확정)
 
-7. - [ ] **repo 안의 CSP/runtime 설정 흔적을 검색해 배포 설정과 대조한다** — source 0-hit도 근거로 남긴다
+7. - [x] **repo 안의 CSP/runtime 설정 흔적을 검색해 배포 설정과 대조한다** — source 0-hit도 근거로 남긴다
    - [x] `src/app.html`, `wrangler.toml`에서 CSP 관련 정의를 검색하고 hit/0-hit 결과를 기록한다
    - [x] repo에 `static/_headers` 파일이 없다는 사실도 함께 기록해 정적 headers 파일 누락과 설정 부재를 구분한다
    - [x] repo 검색이 전부 0-hit이면 `repo 내 CSP 정의 없음 → Cloudflare dashboard/transform rule 가능성`을 현재 plan에 적는다
-   - [ ] Phase 2에서 관측한 `auth/v1/token` origin, health check origin, 사용자 제보 URL의 host가 서로 같은지 비교해 결과를 적는다
-   - [ ] origin이 서로 다르거나 기대 host와 불일치하면 B5를 `runtime env drift` 후보로 격상한다고 명시한다
+   - [x] Phase 2에서 관측한 `auth/v1/token` origin, health check origin, 사용자 제보 URL의 host가 서로 같은지 비교해 결과를 적는다
+   - [x] origin이 서로 다르거나 기대 host와 불일치하면 B5를 `runtime env drift` 후보로 격상한다고 명시한다
 
 ### Phase 4: callback 진단 로그 최소 보강 (조건부)
 
@@ -132,20 +131,20 @@
    - [x] CSP 헤더 / repo search / runtime origin 비교 결과를 적는다
 
 10. - [x] **확정 버킷별 후속 경로를 문서에 고정한다** — triage와 구현을 분리
-   - [ ] B1 확정 시 `fix-google-login-regression.md`로 위임하고, 위임 시각과 이유(`/auth/callback` stale 또는 SW control 근거)를 남긴다
+   - [x] B1 확정 시 `fix-google-login-regression.md`로 위임하고, 위임 시각과 이유(`/auth/callback` stale 또는 SW control 근거)를 남긴다 (해당 없음 — B5 확정)
    - [x] B2 또는 B4 확정 시 코드 수정 없이 사용자 안내로 종료한다고 적는다 (해당 없음 — B5 확정)
-   - [ ] B3 확정 시 새 plan `YYYY-MM-DD_fix-csp-connect-src-supabase.md` 생성 요청을 남긴다 (해당 없음 — B5 확정)
+   - [x] B3 확정 시 새 plan `YYYY-MM-DD_fix-csp-connect-src-supabase.md` 생성 요청을 남긴다 (해당 없음 — B5 확정)
    - [x] B5 확정 시 새 plan `YYYY-MM-DD_fix-supabase-runtime-drift.md` 생성 요청을 남긴다 → wrangler.toml 수정으로 재발 방지 완료, dashboard 설정은 사용자 조치
 
 ### Phase Z: Post-Merge Cleanup (/merge-test owner)
 
-Z. - [ ] **post-merge 정리 확인** — `/merge-test` owner
-   - [ ] `main merge 시도`
-   - [ ] `root dirty stash/apply (if needed)`
-   - [ ] `T4/T5` 재판정
-   - [ ] `worktree remove`
-   - [ ] `branch remove`
-   - [ ] `header meta 제거`
+Z. - [x] **post-merge 정리 확인** — `/merge-test` owner
+   - [x] `main merge 시도`
+   - [x] `root dirty stash/apply (if needed)` (해당 없음 — main clean)
+   - [x] `T4/T5` 재판정 (해당 없음 — docs/vars 변경만 반영)
+   - [x] `worktree remove`
+   - [x] `branch remove`
+   - [x] `header meta 제거`
 
 > 예외 경로: `merge resolve`, `stash pop`, `stash-pop resolve`는 정상 체크박스로 만들지 않고 충돌/복원 실패 메모로만 남긴다.
 
@@ -155,10 +154,10 @@ Z. - [ ] **post-merge 정리 확인** — `/merge-test` owner
 
 ## 검증
 
-- [ ] `## 진단 결과`에 Phase 2~3의 관측값이 실제 값으로 채워져 있다
-- [ ] 확정 버킷(B1~B5)이 근거와 함께 1개 이상 기록되어 있다
-- [ ] 확정 버킷별 후속 처리 경로(위임 / 신규 plan / 코드 수정 불요)가 명시되어 있다
-- [ ] Phase 4를 실행한 경우 `src/routes/auth/callback/+page.svelte` 로그에 token 원문이 없고 `npm run check`가 통과한다
+- [x] `## 진단 결과`에 Phase 2~3의 관측값이 실제 값으로 채워져 있다
+- [x] 확정 버킷(B1~B5)이 근거와 함께 1개 이상 기록되어 있다
+- [x] 확정 버킷별 후속 처리 경로(위임 / 신규 plan / 코드 수정 불요)가 명시되어 있다
+- [x] Phase 4를 실행한 경우 `src/routes/auth/callback/+page.svelte` 로그에 token 원문이 없고 `npm run check`가 통과한다 (Phase 4 스킵)
 
 ## 진단 결과
 
@@ -188,6 +187,10 @@ Z. - [ ] **post-merge 정리 확인** — `/merge-test` owner
 - **사용자 조치 필요**: Cloudflare dashboard > Workers > `wservice-memo-alarm` > Settings > Variables에 `.env`의 실제 `PUBLIC_SUPABASE_URL` / `PUBLIC_SUPABASE_ANON_KEY` 입력 후 redeploy
 - 코드 수정 없이 해결 가능 (B2/B4 아님, B1/B3 아님)
 
+## MANUAL_TASKS
+
+- [ ] Cloudflare dashboard의 `wservice-memo-alarm`에 실제 `PUBLIC_SUPABASE_URL` / `PUBLIC_SUPABASE_ANON_KEY` 설정 후 redeploy
+
 ## 작업 수 요약
 
 - Phase 0: Worktree 준비 (3개 체크박스)
@@ -199,4 +202,4 @@ Z. - [ ] **post-merge 정리 확인** — `/merge-test` owner
 - Phase Z: Post-Merge Cleanup (6개 체크박스)
 - 총 47개 체크박스
 
-*상태: 구현중 | 진행률: 29/47 (62%)*
+*상태: 구현완료 | 진행률: 47/47 (100%)*

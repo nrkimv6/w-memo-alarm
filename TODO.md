@@ -7,8 +7,6 @@
 
 ## In Progress
 
-- [ ] **Supabase signInWithIdToken "Failed to fetch" 원인 버킷 triage** — [plan](docs/plan/2026-04-24_triage-supabase-signin-failed-to-fetch.md) (0/47, 0%)
- 
 ## Pending
 - [ ] **설정 페이지 SKIP_WAITING raw string 교체** — [plan](docs/plan/2026-04-24_fix-settings-page-skip-waiting-raw-string.md) (0/21, 0%)
 - [ ] **FCM 알림 덮어쓰기 + 6개 미전송 원인 수정** — [plan](docs/plan/2026-04-23_fix-fcm-notification-tag-and-missing-sends.md) (0/73, 0%)
