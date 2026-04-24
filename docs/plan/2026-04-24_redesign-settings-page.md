@@ -2,20 +2,17 @@
 
 > **소스**: `C:\Users\Narang\Downloads\settings-hub-main.zip` (React + TanStack Router + Tailwind v4, "Memo & Todo Settings Hub")
 > **타겟**: `memo-alarm/src/routes/settings/+page.svelte` (SvelteKit + Svelte 5 + Tailwind v4)
-> **모드**: 🟤 **브라운필드** — 기존 단일 파일(1929줄) → Hub+서브페이지 구조로 리팩토링 + 디자인 토큰 재적용
+> **모드**: 🟤 **브라운필드** — 기존 단일 파일(1929줄) → Hub+서브페이지 구조로 리팩토링 + 디자인/배치만 이식
 
 ---
 
-## 0. 결정 사항 (2026-04-24 확정)
+## 0. 고정 전제 (사용자 결정 반영)
 
-| # | 항목 | 결정 | 근거 |
-|---|------|------|------|
-| Q1 | 색상 테마 정책 | **B** — 기존 gentle-notes(HSL sage/coral) 유지, 소스의 구조 토큰만 이식 | 앱 전체 일관성. `memo-card`·`sketchy-*`·`btn-*`이 이미 고착되어 있고, OKLCH 전면 전환은 settings 외 페이지 회귀 리스크 큼 |
-| Q2 | 페이지 분리 범위 | **C** — 핵심 섹션만 서브라우트 분리 (`developer`, `notifications`) | 1929줄 중 개발자 모드가 700줄+로 단일 파일 비대 주요 원인. data/danger 등은 인라인 유지가 동선상 자연스러움 |
-| Q3 | 서체 | **B** — Fraunces 미도입, Noto Sans KR 유지 | 한글 타이틀 우선. 영문 headline 노출 빈도 낮음 |
-| Q4 | 기존 컴포넌트 재사용 | **A 기반 + 필요한 것만 B에서 추가** — `Toggle`/`Button`/`ConfirmDialog`/`memo-card`/`btn-*` 유지, 신규로 `Section`/`Row`/`NavRow`/`Pill`/`SegmentedControl`/`ImpactNote` 추가 | 중복 구현 방지 + 허브 레이아웃 이식에 필요한 최소 원시 컴포넌트만 신설 |
-
-### 이후 Phase 내용은 위 결정을 전제로 작성됨.
+- **색상 테마는 이식하지 않는다.** 소스의 OKLCH paper-warmth / deep-ink, Fraunces, 전역 body gradient는 참고만 하고 직접 포팅하지 않는다.
+- **가져올 범위는 디자인 구조와 배치다.** 정보 구조(IA), 그룹 라벨, 카드-행 밀도, sticky 헤더, hero/summary 카드, NavRow 이동 패턴, 서브페이지 shell만 차용한다.
+- **기존 동작 계약은 바꾸지 않는다.** `themeStore`, `settingsStore`, `authStore`, `notificationStore`, `devLogStore`, `memosStore`, `AlarmManager`, `PinLockModal`, `ConfirmDialog`, 백업 스키마는 이번 작업에서 API/데이터 범위를 넓히지 않는다.
+- **최소 분리 범위는 `developer`, `notifications` 두 페이지다.** 나머지 섹션은 허브에 인라인 유지한다.
+- **스타일 클래스는 settings 전용 네임스페이스를 쓴다.** 소스의 `.row`, `.pill`, `.surface-card`를 그대로 전역 추가하지 않고 `.settings-row`, `.settings-pill`, `.settings-surface-card`처럼 격리한다.
 
 ---
 
@@ -24,228 +21,235 @@
 ### 1-1. 라우트 트리
 ```
 routes/
-├── settings.tsx                  # <Outlet/> 레이아웃
-├── settings.index.tsx            # 허브 (/settings)
-├── settings.account.tsx          # 계정/클라우드 동기화
-├── settings.reminders.tsx        # 기본 알림
-├── settings.lock.tsx             # 메모 PIN
-├── settings.todos.tsx            # 할일 기본
-├── settings.notifications.tsx    # 알림 목록 관리
-├── settings.data.tsx             # 백업/복원
-├── settings.danger.tsx           # 위험 영역
-├── settings.about.tsx            # 앱 정보
-└── settings.developer.tsx        # 개발자 모드
+├── settings.tsx
+├── settings.index.tsx
+├── settings.account.tsx
+├── settings.reminders.tsx
+├── settings.lock.tsx
+├── settings.todos.tsx
+├── settings.notifications.tsx
+├── settings.data.tsx
+├── settings.danger.tsx
+├── settings.about.tsx
+└── settings.developer.tsx
 ```
 
 ### 1-2. 공통 원시 컴포넌트 (`src/components/settings/`)
 - `primitives.tsx` — `Section`, `Row`, `ImpactNote`, `FootNote`, `Toggle`, `Pill`, `SegmentedControl`
-- `NavRow.tsx` — `NavRow`, `NavGroup`, `GroupLabel` (허브용 링크 행)
-- `SubPageShell.tsx` — 서브페이지 공통 헤더(뒤로가기 + eyebrow + title + description)
+- `NavRow.tsx` — `NavRow`, `NavGroup`, `GroupLabel`
+- `SubPageShell.tsx` — 뒤로가기 + eyebrow + title + description
 
-### 1-3. 디자인 토큰 (핵심)
-| 카테고리 | 값 | 타겟 매핑 |
-|---------|----|---------|
-| **색상 정책** | OKLCH paper-warmth (light) / deep-ink (dark) | Q1=B → 이식 안 함, 기존 HSL 유지 |
-| **반경** | `--radius: 0.875rem`, `--radius-2xl: 1.375rem` | 기존 `--radius-xl: 1rem` 유지, `2xl` 신설 검토 |
-| **폰트** | Inter(sans) / Fraunces(display) / JetBrains Mono | Q3=B → 미도입 |
-| **그림자** | `--shadow-soft`, `--shadow-pop` (color-mix 기반) | **신규 도입** (구조 토큰) |
-| **배경 그라디언트** | fixed radial-gradient (accent 12% + info 10%) | **인라인, settings 페이지 한정 적용** |
-| **유틸 클래스** | `.surface-card`, `.row`, `.pill` | **Svelte 컴포넌트로 이식** (app.css에 추가) |
-| **헤더** | `sticky top-0 z-30 backdrop-blur-md bg-background/80` | 기존 header 공통화 검토 |
-| **컨테이너** | `mx-auto max-w-2xl px-4 space-y-6` | **그대로 채택** (현재 타겟도 유사) |
-| **Row min-height** | 56px, padding 0.875rem 1rem, gap 1rem | **핵심 이식 대상** |
-| **GroupLabel** | `text-[11px] uppercase tracking-[0.14em]` | **채택** (섹션 그룹 명확화) |
+### 1-3. 구조/배치 패턴 (이식 대상)
+- `mx-auto max-w-2xl px-4 space-y-6` 중심의 허브 레이아웃
+- 카드 내부 `row` 밀도: `min-height: 56px`, `px-4`, `py-3.5`, `gap-4`
+- `GroupLabel` 기반 섹션 묶음: `Account`, `Reminders`, `Memos & todos`, `Data`, `App`
+- hero 카드 + quick control + NavRow 이동 혼합 구조
+- sticky 헤더 + backdrop blur
+- `ImpactNote`, `Pill`, `SegmentedControl`를 통한 상태 강조
 
-### 1-4. 인터랙션 & 시그니처 패턴
-- **NavRow**: 아이콘 박스(36×36 `rounded-xl bg-muted`) + label + hint + trailing Pill + `>` chevron
-- **Pill tones**: `neutral/success/warning/info/destructive/accent` (상태 시각화)
-- **SegmentedControl**: `p-1 rounded-xl bg-muted` + active `bg-surface-elevated shadow-sm`
-- **ImpactNote**: 경고/영향 메시지(`bg-impact`) — 타겟의 "영향받는 메모" 경고 (line 921) 에 매핑
-- **Toggle**: 48×28 rounded-full, thumb 20×20 — 기존 `toggle-switch`(40×20)와 규격 다름 → 기존 유지
+### 1-4. 이번 포팅에서 제외할 것
+- 소스의 색상 토큰 / OKLCH 팔레트
+- Fraunces / Inter / JetBrains Mono 도입
+- 소스의 48×28 토글 규격
+- 소스의 전체 페이지용 배경 그라디언트
 
 ---
 
-## 2B. 전수 비교표 (소스 ↔ 기존 타겟)
+## 2. 현재 타겟 기준 추가 제약 / 누락 보정
 
-| # | 소스 서브/인라인 | 타겟 섹션(라인) | 커버리지 | 비고 |
-|---|-----------------|----------------|---------|------|
-| 1 | Hero 배너 ("Make it yours") | 없음 | ❌ 추가 | 간단한 그라디언트 hero 도입 가능 |
-| 2 | Appearance (인라인 SegmentedControl) | 테마 (L741-773) | ✅ 구조 상이 | 현재 Sun/Moon/Monitor 버튼 → SegmentedControl로 개선 |
-| 3 | Markdown toggle (인라인) | 메모 표시 설정 (L994-1021) | ✅ | Appearance 섹션에 병합 검토 |
-| 4 | settings.account | 클라우드 동기화 (L775-847) | ✅ | NavRow + 서브페이지 분리 검토(Q2=C이면 인라인 유지) |
-| 5 | settings.reminders | 기본 알림 설정 (L849-934) | ✅ | 영향받는 메모 경고 → ImpactNote 적용 |
-| 6 | settings.lock | 메모 잠금 PIN (L936-992) | ✅ | PinLockModal 기존 재사용 |
-| 7 | settings.todos | 할일 기본설정 (L1023-1160) | ✅ | 5개 하위 토글 — Row로 정렬 |
-| 8 | settings.notifications | 알림 관리 (L1162-1172) | ✅ | AlarmManager 컴포넌트 분리 유지 |
-| 9 | settings.data | 데이터 관리 (L1174-1207) | ✅ | export/import/clear |
-| 10 | settings.danger | 위험 영역 (L1209-1222) | ✅ | destructive Pill + ConfirmDialog |
-| 11 | settings.about | 앱 정보 (L1224-1262) | ✅ | 버전 탭 → 개발자 모드 토글 (기존 동작) |
-| 12 | settings.developer | 개발자 모드 (L1264-1927) | ✅ 비대 | **별도 라우트 분리 강력 권장** (700줄+) |
-| 13 | — | PinLockModal, AlarmManager 분리 | — | 유지 |
+| 항목 | 현재 코드 사실 | 계획 반영 |
+|------|----------------|-----------|
+| 상단 헤더 | 현재 `/settings`는 `sticky top-14` 헤더 사용 (`+layout` 상단 UI와 겹침 방지) | 소스의 `top-0`를 그대로 쓰지 말고 `top-14` 기준 유지 |
+| 하단 구조 | `src/routes/+layout.svelte`에 `BottomNav`가 있고 settings 페이지 하단에 `Footer`도 있음 | 허브/서브페이지 모두 하단 여백과 footer 가림 여부 확인 필요 |
+| 테마 상태 | `themeStore`는 `theme`와 `resolved`를 분리 보유 | 허브의 상태 Pill은 `themeStore.resolved` 기준으로 표시 |
+| 개발자 모드 해금 | 현재 버전 탭은 **7회가 아니라 10회** (`handleVersionTap`) | 완료 기준과 검증 항목을 10회 탭으로 수정 |
+| 기본 알림/할일 설정 | `settingsStore` 변경 시 `memosStore.updateDefaultReminderMemos`, `updateGlobalRemindTodos`, `updateGlobalAutoAlertTodos`가 연쇄 호출됨 | 단순 UI 이동이 아니라 side effect 회귀 검증을 계획에 포함 |
+| 기본 알림 autoOpen | store/알림 파이프라인에는 존재하지만 현재 settings UI에는 노출 안 됨 | 이번 포트에서 새 설정을 추가하지 않고 기존 UI 범위 유지 |
+| 데이터 백업 범위 | `importFullBackup`은 `defaultReminderTime`, `defaultReminderDays`, `autoReminderEnabled`만 복원 | 디자인 변경으로 백업 스키마 확장 오해가 생기지 않게 명시 |
+| 테스트/검증 | `package.json`에는 `check`, `build`만 있고 `lint`/컴포넌트 테스트 스크립트 없음 | `bun run lint`, snapshot TC는 계획에서 제거 |
+| 개발자 모드 상태 | FCM/SW/Capacitor/로그 뷰어 상태와 helper가 `+page.svelte` 로컬 state/effect로 묶여 있음 | `developer/+page.svelte` 이관 시 state/effect/helper를 함께 이동 |
 
 ### 커버리지 결론
-- 소스의 기능 체계(Hub+11섹션)는 타겟과 **완전 정합** — 기능 누락 없음
-- 타겟에만 있고 소스에 없음: **개발자 모드 전체(FCM/SW/로그 뷰어/테스트 알림)** — 포팅 시 반드시 보존
-- 소스에만 있고 타겟에 없음: Hero 배너, ImpactNote, SegmentedControl 패턴, GroupLabel
+- 소스의 정보 구조는 타겟과 **대체로 정합**하다.
+- 다만 타겟에는 소스에 없는 **웹/Capacitor/FCM 개발자 도구**, **BottomNav 오프셋**, **백업 스키마 제약**이 있으므로 단순 마크업 포팅으로 처리하면 안 된다.
 
 ---
 
-## 3B. 심각도 분류 (이식 대상)
+## 3. 소스 ↔ 타겟 매핑
 
-### 🔴 High — 구조적 개선 (사용자 체감 큼)
-1. **개발자 모드 분리** — 1929→~1100줄로 축소, 빌드 파서 부하 감소
-2. **섹션 그룹화 + GroupLabel** — `Account / Reminders / Memos & todos / Data / App` 그룹 헤더
-3. **NavRow 패턴 도입** — 서브페이지로 이동할 항목(최소 dev, notifications, data)에 적용
-4. **SegmentedControl(테마)** — 3버튼 horizontal → 통합 segmented pill
-5. **ImpactNote 도입** — "영향받는 메모 N개" 경고(L921)를 명확한 박스로
+| 소스 패턴 | 타겟 매핑 | 반영 방식 |
+|----------|-----------|----------|
+| Hero 카드 ("This device") | 현재 없음 | settings 전용 hero/snapshot 카드로 추가 |
+| `SegmentedControl` 테마 | 현재 3버튼 카드 | `themeStore.theme` + `themeStore.resolved` 기준으로 재구성 |
+| `Row` + hint + trailing | 현재 각 섹션별 bespoke 레이아웃 | `Section`/`Row` primitive로 정리 |
+| `NavRow` + chevron | 현재 인라인 섹션만 존재 | `developer`, `notifications` 진입 row로 적용 |
+| `ImpactNote` | 기본 알림 영향받는 메모 경고 | settings 전용 강조 박스로 치환 |
+| `GroupLabel` | 현재 없음 | 허브 섹션 그룹 구분용 채택 |
+| `SubPageShell` | 현재 없음 | `developer`, `notifications` 공통 헤더로 채택 |
+| `Pill` 상태 표기 | 로그인/PIN/Dev/카운트 | 기존 기능 상태만 시각화 |
 
-### 🟡 Medium — 디자인 토큰 정리
-6. **surface-card 유틸 클래스 추가** (`app.css @layer components`) — `bg-card border rounded-2xl shadow-soft`
-7. **row 유틸 클래스 추가** — `flex items-center justify-between gap-4 min-h-14 px-4 py-3.5` + `row + row { border-top }`
-8. **pill 유틸 클래스 추가** — tone 변형(neutral/success/warning/info/destructive/accent)
-9. **그림자 토큰** — `--shadow-soft`, `--shadow-pop` 추가 (color-mix 기반)
-10. **radial 배경 (settings 한정)** — `+layout.svelte` 또는 settings 페이지 wrapper에 fixed gradient
-
-### 🟢 Low — 선택적
-11. Hero 배너 ("이 기기") — 간단한 카드 추가
-12. 서브페이지 SubPageShell 공통화 (Q2=A/C일 때만)
-13. Fraunces 서체 도입 (Q3=A일 때만)
-
-### ⛔ Skip (기존 유지)
-- 색상 팔레트 (Q1=B)
-- `memo-card`, `btn-*`, `toggle-switch`, `sketchy-*` — 앱 전체 공통
-- `PinLockModal`, `AlarmManager`, `ConfirmDialog` — 동작/계약 유지
+### Skip
+- 소스의 `account`, `data`, `danger`, `about`까지 전면 서브라우트 분리는 이번 범위에서 보류
+- 색상/타이포그래피 재설계는 보류
 
 ---
 
-## 4B. 구현 TODO
+## 4. 구현 TODO
 
-### Phase 1 — 디자인 토큰 기반 (독립, 회귀 위험 낮음)
-- [ ] **app.css**: `@theme`에 `--radius-2xl: 1.375rem`, `--shadow-soft`, `--shadow-pop` 추가
-- [ ] **app.css**: `@layer components`에 `.surface-card`, `.row`, `.row + .row`, `.pill`, `.pill-{tone}` 추가
-- [ ] **app.css**: `.settings-bg-gradient` 유틸 추가 (fixed radial, accent/info 약채도로 조정 — gentle-notes 팔레트에 맞게)
-- [ ] 타겟 기존 `app.css` 값과 충돌 없는지 확인 (특히 `.row`가 프로젝트 전역 중복 여부 Grep)
-- [ ] **검증**: 기존 페이지(memos/todos/stats/notifications)가 영향 없는지 `bun run check` + 눈확인
+### Phase 1 — settings 전용 스타일 토대
 
-### Phase 2 — 공통 원시 컴포넌트 (Svelte 5 runes)
-- [ ] `src/lib/components/settings/Section.svelte` — title/description/icon/action snippet
-- [ ] `src/lib/components/settings/Row.svelte` — label/hint/trailing snippet + `onclick`
-- [ ] `src/lib/components/settings/NavRow.svelte` — `href`(`<a>` with SvelteKit navigation) + icon/label/hint/trailing + chevron
-- [ ] `src/lib/components/settings/NavGroup.svelte` — `.surface-card divide-y` 래퍼
-- [ ] `src/lib/components/settings/GroupLabel.svelte`
-- [ ] `src/lib/components/settings/Pill.svelte` — tone prop, `.pill-{tone}` 클래스 매핑
-- [ ] `src/lib/components/settings/SegmentedControl.svelte` — generic value/options/onchange (svelte generics)
-- [ ] `src/lib/components/settings/ImpactNote.svelte`
-- [ ] **기존 `Toggle.svelte` 재사용 여부**: 기존 디자인(40×20 dashed) 유지 → Row의 trailing에 그대로 배치 (소스 48×28 미도입)
-- [ ] **TC**: 각 컴포넌트 최소 렌더 테스트 (props snapshot)
+1. - [ ] **settings 전용 클래스 네임스페이스를 확정한다**
+   - [ ] `src/app.css`: 소스의 `.surface-card`, `.row`, `.pill`를 그대로 복사하지 말고 `.settings-surface-card`, `.settings-row`, `.settings-pill`, `.settings-group-label`, `.settings-bg-gradient`로 추가한다.
+   - [ ] `src/app.css`: 신규 스타일은 기존 HSL 토큰(`--color-card`, `--color-muted`, `--color-border`, `--color-primary`, `--color-info`)만 조합하고 OKLCH 팔레트/새 폰트는 추가하지 않는다.
+   - [ ] `src/app.css`: radius/shadow helper가 필요하면 settings 전용 변수 또는 직접 값으로 한정하고 전역 `body` 배경은 건드리지 않는다.
 
-### Phase 3 — Hub 페이지 (허브만 먼저)
-- [ ] `src/routes/settings/+page.svelte` 허브화 — 기존 11섹션 중 **인라인 유지할 것** (테마/계정/기본알림/메모잠금/할일/데이터/위험/앱정보)과 **서브라우트 유도할 것**(Q2=C이면 **개발자 모드**, **알림 관리**만) 구분
-- [ ] 섹션 그룹: `Appearance` · `Account` · `Reminders` · `Memos & todos` · `Data` · `App` · (dev-mode on일 때) `Developer`
-- [ ] 각 `<section>`을 `<Section>` 컴포넌트로 치환, 제목 옆 아이콘(lucide-svelte) 추가
-- [ ] 테마 선택: 3버튼 → `<SegmentedControl value={themeStore.theme} options={light/dark/system}>`
-- [ ] 기본 알림 "영향받는 메모" 경고 → `<ImpactNote>`
-- [ ] Pill 활용: "로그인됨"(success) / "로그아웃"(neutral) / "PIN 설정됨"(success) / "Dev"(warning) / 카운트(neutral)
+2. - [ ] **현재 레이아웃 제약을 반영한 shell 기준을 잡는다**
+   - [ ] `src/routes/settings/+page.svelte`: 현재 `sticky top-14` 헤더와 `max-w-2xl px-4 py-6` 컨테이너를 기준선으로 삼아 소스의 `top-0` 헤더를 그대로 쓰지 않도록 명시한다.
+   - [ ] `src/routes/+layout.svelte`: `BottomNav`가 존재하므로 허브/서브페이지의 하단 padding, footer 간격, safe-area 가림 여부를 확인 항목으로 포함한다.
+   - [ ] `docs/plan/2026-04-24_redesign-settings-page.md`: 전역 body gradient가 아니라 settings wrapper 한정 배경 장식을 쓰도록 범위를 고정한다.
 
-### Phase 4 — 서브라우트 분리 (Q2=C 기준 최소 2개)
-- [ ] `src/routes/settings/developer/+page.svelte` 신설 — 기존 L1264-1927 개발자 모드 전부 이관
-- [ ] `src/routes/settings/notifications/+page.svelte` 신설 — AlarmManager + 관련 UI
-- [ ] `src/lib/components/settings/SubPageShell.svelte` — 뒤로가기(`<a href="/settings">`) + eyebrow + title + description + children
-- [ ] 허브의 해당 섹션 → `<NavRow href="/settings/developer">` 등으로 치환
-- [ ] `authStore`/`themeStore`/`settingsStore`/`notificationStore`/`devLogStore` — 서브 페이지에서도 동일하게 import (전역 store라 문제 없음)
-- [ ] **state 분리 주의**: 기존 1929줄의 `let devMode = $state(false)` 등 로컬 state 중 개발자 모드 관련 전부 `developer/+page.svelte`로 이관. 다른 섹션과 공유하는 state가 있으면 store로 승격
-- [ ] Q2=A로 변경 시 나머지 7개 서브 페이지도 추가 (이 TODO는 Q2 확정 후 확장)
+### Phase 2 — 공통 settings 원시 컴포넌트 정리
+
+1. - [ ] **허브/서브페이지 공용 primitive를 만든다**
+   - [ ] `src/lib/components/settings/Section.svelte`: title / description / icon / action / children snippet을 받는 공통 섹션 컴포넌트를 만든다.
+   - [ ] `src/lib/components/settings/Row.svelte`: label / hint / trailing snippet과 button/div 변형을 지원하는 row 컴포넌트를 만든다.
+   - [ ] `src/lib/components/settings/GroupLabel.svelte`: 그룹 헤더용 소문자/uppercase 보조 텍스트 컴포넌트를 만든다.
+   - [ ] `src/lib/components/settings/NavGroup.svelte`: 카드 래퍼 + divide-y 역할을 담당하는 그룹 컨테이너를 만든다.
+
+2. - [ ] **상태/이동 표현 컴포넌트를 만든다**
+   - [ ] `src/lib/components/settings/NavRow.svelte`: `<a href="/settings/...">` 기반으로 icon/label/hint/trailing/chevron/focus style을 포함한 이동 row를 만든다.
+   - [ ] `src/lib/components/settings/Pill.svelte`: tone(`neutral|success|warning|info|destructive|accent`)에 따라 settings 전용 pill 클래스를 매핑한다.
+   - [ ] `src/lib/components/settings/ImpactNote.svelte`: 기본 알림 영향 범위 같은 경고/안내 메시지 박스를 만든다.
+   - [ ] `src/lib/components/settings/SegmentedControl.svelte`: `themeStore.theme`의 `'light' | 'dark' | 'system'` 값을 처리하는 제네릭 또는 유니온 기반 control을 만든다.
+
+3. - [ ] **기존 공용 컴포넌트와의 경계를 고정한다**
+   - [ ] `src/lib/components/ui/Toggle.svelte`: 기존 `toggle-switch`는 그대로 재사용하고 새로운 settings primitive는 trailing slot으로만 감싼다.
+   - [ ] `src/lib/components/ui/Button.svelte`, `src/lib/components/ui/ConfirmDialog.svelte`, `src/lib/components/memo/PinLockModal.svelte`, `src/lib/components/settings/AlarmManager.svelte`: props/계약 변경 없이 조합만 바꾸는 것으로 계획 범위를 제한한다.
+   - [ ] 테스트 러너 부재를 전제로 컴포넌트 unit test 대신 Phase 5의 통합 smoke 검증으로 대체한다.
+
+### Phase 3 — 허브 페이지 재구성
+
+1. - [ ] **허브 상단 구조를 재설계한다**
+   - [ ] `src/routes/settings/+page.svelte`: 현재 헤더 아래에 settings 전용 hero/snapshot 카드를 추가하되 색상 토큰 교체 없이 spacing, hierarchy, copy만 이식한다.
+   - [ ] `src/routes/settings/+page.svelte`: `Appearance`, `Account`, `Reminders`, `Memos & todos`, `Data`, `App`, `Developer` 그룹으로 섹션을 재배치한다.
+   - [ ] `src/routes/settings/+page.svelte`: `Footer`는 유지하고 hub 전체 세로 간격을 `space-y-6` 중심으로 재정렬한다.
+
+2. - [ ] **인라인 유지 섹션을 Row/Section 패턴으로 옮긴다**
+   - [ ] `src/routes/settings/+page.svelte`: 테마 UI를 3버튼 카드에서 `SegmentedControl` + `themeStore.resolved` 상태 pill 조합으로 치환한다.
+   - [ ] `src/routes/settings/+page.svelte`: 메모 표시 설정(`useMarkdown`), 클라우드 동기화, 메모 PIN, 할일 기본설정, 데이터 관리, 위험 영역, 앱 정보를 `Section`/`Row` 기반으로 다시 배치한다.
+   - [ ] `src/routes/settings/+page.svelte`: 기본 알림 섹션의 "영향받는 메모 N개" 문구를 `ImpactNote`로 승격한다.
+
+3. - [ ] **기존 동작 계약을 허브에서 그대로 유지한다**
+   - [ ] `src/routes/settings/+page.svelte`: `handleImport`, `handleExport`, `confirmClearAll`, `handleUpdateCheck`, `handlePinSetup|Change|Remove`를 유지하고 마크업만 재배치한다.
+   - [ ] `src/routes/settings/+page.svelte`: 개발자 모드 해금은 현재 코드대로 **버전 10회 탭** 조건을 유지한다.
+   - [ ] `src/routes/settings/+page.svelte`: `settingsStore.setDefaultReminderTime`, `setDefaultReminderDays`, `setTodoRemindTime`, `setTodoAutoAlertMinutes`가 연쇄적으로 `memosStore`를 갱신하므로 핸들러 이름/호출 순서를 보존한다.
+   - [ ] `src/routes/settings/+page.svelte`: `defaultReminder.autoOpen`이나 백업 스키마 확장처럼 범위 밖 기능 추가는 하지 않는다.
+
+4. - [ ] **허브에서 서브페이지 진입점을 만든다**
+   - [ ] `src/routes/settings/+page.svelte`: `notifications`와 `developer`는 인라인 섹션 대신 `NavRow`로 연결한다.
+   - [ ] `src/routes/settings/+page.svelte`: developer entry는 현재 `devMode`가 켜졌을 때만 렌더링하고 warning pill 또는 보조 문구로 상태를 표시한다.
+   - [ ] `src/routes/settings/+page.svelte`: notifications entry는 `AlarmManager`가 보여주던 정보를 요약 hint/pill(알림 수, 활성 상태 등)로 축약한다.
+
+### Phase 4 — 서브페이지 분리
+
+1. - [ ] **공용 서브페이지 shell을 만든다**
+   - [ ] `src/lib/components/settings/SubPageShell.svelte`: back link, eyebrow, title, description, children snippet을 받는 공통 shell을 만든다.
+   - [ ] `src/lib/components/settings/SubPageShell.svelte`: 상단 오프셋은 `top-14` 기준으로 잡아 기존 layout header와 충돌하지 않게 한다.
+   - [ ] `src/lib/components/settings/SubPageShell.svelte`: 허브와 동일하게 `max-w-2xl px-4` 컨테이너와 하단 여백을 유지한다.
+
+2. - [ ] **알림 관리 페이지를 분리한다**
+   - [ ] `src/routes/settings/notifications/+page.svelte`: `AlarmManager.svelte`와 관련 안내 문구를 옮기고 `SubPageShell` 안에서 렌더링한다.
+   - [ ] `src/routes/settings/notifications/+page.svelte`: 허브에서 제거된 섹션의 데이터 흐름이 `AlarmManager` 단독으로 유지되는지 확인한다.
+   - [ ] `src/routes/settings/+page.svelte`: 알림 관리 섹션의 기존 인라인 마크업을 제거하고 NavRow 링크로 교체한다.
+
+3. - [ ] **개발자 모드 페이지를 분리한다**
+   - [ ] `src/routes/settings/developer/+page.svelte`: `devMode` 관련 local state(`testDelaySeconds`, `swScheduleStatus`, `fcmStatus`, `logFilter`, `showLogViewer` 등)를 함께 옮긴다.
+   - [ ] `src/routes/settings/developer/+page.svelte`: `$effect` 기반 초기화(`devLogStore.init`, `checkCapacitorStatus`, `checkFCMStatus`, `checkServiceWorker`)와 helper 함수들을 분리 페이지로 이동한다.
+   - [ ] `src/routes/settings/developer/+page.svelte`: Supabase 조회(`user_devices`, `alarm_schedules`, `notification_logs`), Service Worker 테스트, Capacitor 테스트, 로그 뷰어, 디버그 정보 UI를 기존 기능과 동일하게 보존한다.
+   - [ ] `src/routes/settings/+page.svelte`: 개발자 모드 인라인 마크업을 제거하고 devMode 노출 조건만 유지한 채 NavRow 링크로 대체한다.
 
 ### Phase 5 — 검증
-- [ ] `bun run check` (svelte-check) 0 에러
-- [ ] `bun run lint` 통과
-- [ ] 빌드: `bun run build` 성공
-- [ ] 시각 검증: 각 섹션 light/dark 양쪽 스크린샷 비교 (이전 vs 이후)
-- [ ] 기능 검증 체크리스트:
-  - [ ] 테마 전환(light/dark/system) 즉시 반영
-  - [ ] 마크다운 토글 저장/반영
-  - [ ] 클라우드 로그인/로그아웃
-  - [ ] 기본 알림 on/off + 시간/요일 변경
-  - [ ] 메모 PIN 설정/잠금 해제
-  - [ ] 할일 토글 5종
-  - [ ] 알림 관리 (AlarmManager) — 서브 페이지에서 정상 동작
-  - [ ] 백업 내보내기/복원/전체 삭제(ConfirmDialog)
-  - [ ] 위험 영역 전체 삭제 경고
-  - [ ] 앱 버전 표시 + 업데이트 확인 + 버전 7회 탭 → devMode
-  - [ ] 개발자 모드 서브 페이지: FCM 상태/SW 테스트/알림 권한/로그 뷰어 전부 동작
-- [ ] Capacitor(Android) 빌드 확인 — `capacitor.config.ts` 영향 없음 확인 (라우트 추가만)
+
+1. - [ ] **정적 검증을 실행한다**
+   - [ ] 프로젝트 루트: `bun run check`로 Svelte 타입/문법 오류가 없는지 확인한다.
+   - [ ] 프로젝트 루트: `bun run build`로 라우트 분리와 CSS 변경 이후 빌드가 유지되는지 확인한다.
+   - [ ] `bun run lint`는 현재 스크립트가 없으므로 이번 계획의 완료 조건에서 제외한다.
+
+2. - [ ] **핵심 동작 smoke 검증을 수행한다**
+   - [ ] `/settings`: 테마 변경(light/dark/system), 현재 적용 상태 pill, Markdown 토글이 정상 동작하는지 확인한다.
+   - [ ] `/settings`: 로그인/로그아웃, 기본 알림 시간·요일 변경, 영향받는 메모 경고, PIN 설정/변경/해제, 할일 기본설정 5종이 기존과 동일하게 동작하는지 확인한다.
+   - [ ] `/settings/notifications`: `AlarmManager` 편집/토글/메모 진입이 깨지지 않는지 확인한다.
+   - [ ] `/settings`: 데이터 내보내기/가져오기/전체 삭제, 앱 업데이트 확인, 버전 **10회 탭** → developer entry 노출이 유지되는지 확인한다.
+   - [ ] `/settings/developer`: FCM 상태 조회, SW 테스트, Capacitor 테스트, 로그 뷰어, 수동 알림 체크가 기존과 동일하게 동작하는지 확인한다.
+
+3. - [ ] **시각/레이아웃 회귀를 확인한다**
+   - [ ] light/dark 양쪽에서 hero, group label, row 밀도, sticky header, footer 간격, BottomNav와의 충돌 여부를 확인한다.
+   - [ ] 모바일 폭에서 NavRow, segmented control, 영향 안내 박스가 줄바꿈/overflow 없이 표시되는지 확인한다.
+   - [ ] 가능하면 Android/Capacitor 환경에서 `/settings/developer`의 네이티브 알림 테스트 화면이 레이아웃상 깨지지 않는지 확인하고, 장비가 없으면 follow-up으로 남긴다.
 
 ---
 
-## 5B. 커버리지 검증 체크리스트 (완료 기준)
+## 5. 완료 기준
 
 | 항목 | 기준 | 검증 방법 |
 |------|------|-----------|
-| 기능 누락 없음 | 타겟 기존 11 섹션의 모든 토글/버튼/입력이 이식 후에도 동작 | Phase 5 기능 체크리스트 |
-| 기존 store 계약 유지 | `themeStore`, `settingsStore`, `authStore`, `notificationStore`, `devLogStore`, `memosStore` API 변경 없음 | grep으로 외부 호출처 변경 여부 확인 |
-| 외부 컴포넌트 호환 | `AlarmManager`, `PinLockModal`, `ConfirmDialog`, `Button`, `Footer` props 그대로 | import 변화 외 없음 |
-| 디자인 토큰 범위 | 신규 유틸(surface-card/row/pill)이 settings 외 페이지에 침범하지 않음 | class 사용 사이트 grep, 다른 페이지 스크린샷 비교 |
-| 회귀 없음 | 기존 페이지(memos/todos/stats/notifications/share 등) 시각/기능 변화 없음 | 각 페이지 스모크 |
-| 번들 크기 | 코드 스플리팅으로 허브 초기 로드 감소(개발자 모드 분리) | `bun run build` 번들 리포트 |
+| 구조 이식 | settings 허브가 hero + grouped sections + NavRow 패턴으로 재구성됨 | Phase 5 시각 검증 |
+| 범위 준수 | 색상 팔레트, 폰트, 백업 스키마, hidden setting 범위를 넓히지 않음 | 코드 리뷰 |
+| 기능 보존 | 기존 settings 동작과 developer tooling이 유지됨 | Phase 5 smoke 검증 |
+| side effect 보존 | 기본 알림/할일 기본설정 변경 시 기존 `memosStore` 연쇄 업데이트가 유지됨 | 기능 검증 + 코드 확인 |
+| 라우트 분리 | `developer`, `notifications`가 독립 페이지로 이동함 | build + 수동 이동 확인 |
+| 전역 영향 최소화 | settings 전용 CSS가 다른 페이지 스타일을 오염시키지 않음 | class grep + 타 페이지 smoke |
 
 ---
 
-## 6. 참고 — React→Svelte 변환 주의점
-
-| 소스 패턴 | Svelte 5 치환 |
-|----------|---------------|
-| `<Link to="/settings/x">` | `<a href="/settings/x">` (SvelteKit) |
-| `useSettings()` + `setSettings({...})` | `settingsStore.xxx = v` (runes store) |
-| `useAppliedTheme(s.theme)` | `$derived(applyTheme(themeStore.theme))` 또는 store 내부 |
-| `<Section title="X" description="Y"><Row/></Section>` | `<Section title="X" description="Y">{#snippet children()}...{/snippet}</Section>` — **snippet 전달 필수** |
-| `<SegmentedControl<ThemeMode> value onChange options>` | Svelte 5 generics: `<script lang="ts" generics="T extends string">` |
-| `className={cn(a, b)}` | `class={cn(a, b)}` — 기존 `$lib/utils` `cn` 이미 존재 |
-| `onChange={v => setSettings({theme: v})}` | `onchange={(v) => themeStore.theme = v}` |
-
----
-
-## 7. 리스크 & 완화
+## 6. 리스크 & 완화
 
 | 리스크 | 영향 | 완화 |
 |--------|------|------|
-| `.row` 클래스 이름 충돌 (타겟 전역에 이미 있을 가능성) | 다른 페이지 레이아웃 깨짐 | Phase 1 착수 전 `grep -r '\.row\b'` 확인. 충돌 시 `.settings-row`로 네임스페이스 |
-| 개발자 모드 서브 페이지 분리 중 state 누락 | FCM/SW 테스트 깨짐 | 각 `$state` 이관 목록을 PR에 열거, 기존 `$effect` 그대로 복사 |
-| 서브페이지로 이동 시 AlarmManager 초기화 타이밍 | 알림 목록 빈 상태로 보일 수 있음 | `onMount` 동작 확인, 필요 시 store 구독을 허브에서 유지 |
-| Svelte 5 snippet children 오용 | 컴포넌트 렌더 실패 | Phase 2 TC에서 snippet 전달 테스트 필수 |
-| SegmentedControl generics | 타입 추론 실패 | Fallback으로 `value: string` + 호출측 캐스팅 |
+| 전역 CSS 충돌 | 다른 페이지 레이아웃/텍스트 스타일 오염 | `.settings-*` 네임스페이스 사용 |
+| `top-0` 헤더 포팅 | 기존 global header와 겹침 | `top-14` 유지 |
+| 설정 변경 side effect 누락 | 기본 알림/할일 데이터가 실제 메모에 반영되지 않음 | `settingsStore` setter와 `memosStore` 연쇄 경로 유지 |
+| developer state 분리 누락 | FCM/SW/Capacitor 진단 UI 일부 오동작 | local state + `$effect` + helper를 묶어서 이동 |
+| 백업 섹션 디자인 오해 | UI가 더 많은 settings를 백업한다고 사용자가 오해 | 현재 백업 범위를 텍스트로 명시 |
+| 테스트 인프라 가정 오류 | 존재하지 않는 lint/test 작업으로 plan 완료가 막힘 | `check`/`build` 중심으로 검증 기준 수정 |
 
 ---
 
-## 8. 파일 인덱스
+## 7. 파일 인덱스
 
 ### 신규 생성
 - `src/lib/components/settings/Section.svelte`
 - `src/lib/components/settings/Row.svelte`
-- `src/lib/components/settings/NavRow.svelte`
-- `src/lib/components/settings/NavGroup.svelte`
 - `src/lib/components/settings/GroupLabel.svelte`
+- `src/lib/components/settings/NavGroup.svelte`
+- `src/lib/components/settings/NavRow.svelte`
 - `src/lib/components/settings/Pill.svelte`
-- `src/lib/components/settings/SegmentedControl.svelte`
 - `src/lib/components/settings/ImpactNote.svelte`
+- `src/lib/components/settings/SegmentedControl.svelte`
 - `src/lib/components/settings/SubPageShell.svelte`
 - `src/routes/settings/developer/+page.svelte`
 - `src/routes/settings/notifications/+page.svelte`
 
 ### 수정
-- `src/app.css` — @theme 토큰 + @layer components 유틸 추가
-- `src/routes/settings/+page.svelte` — 허브화 (1929→예상 ~600줄)
+- `src/app.css`
+- `src/routes/settings/+page.svelte`
 
-### 유지 (변경 없음)
+### 유지
 - `src/lib/components/settings/AlarmManager.svelte`
-- `src/lib/components/ui/Toggle.svelte` / `Button.svelte` / `ConfirmDialog.svelte`
+- `src/lib/components/ui/Toggle.svelte`
+- `src/lib/components/ui/Button.svelte`
+- `src/lib/components/ui/ConfirmDialog.svelte`
 - `src/lib/components/memo/PinLockModal.svelte`
-- `src/lib/stores/*.svelte.ts`
+- `src/lib/stores/theme.svelte.ts`
+- `src/lib/stores/settings.svelte.ts`
+- `src/lib/stores/memos.svelte.ts`
+- `src/lib/stores/notifications.svelte.ts`
+- `src/lib/stores/devLogs.svelte.ts`
 
 ---
 
-## 9. 다음 액션
+## 8. 다음 액션
 
-1. ✅ Q1~Q4 결정 완료 (§0)
-2. Phase 1 (app.css 토큰·유틸) 구현 — `/implement`
-3. Phase 2 (공통 원시 컴포넌트 9종) 구현
-4. Phase 3-4 순차 진행, 섹션 단위 커밋
+1. 이 계획 기준으로 implementation scope를 고정한다.
+2. Phase 1부터 settings 전용 스타일/primitive를 만들고 허브를 먼저 정리한다.
+3. Phase 4에서 `developer`, `notifications`를 분리한 뒤 `check`/`build` 및 smoke 검증으로 마무리한다.
