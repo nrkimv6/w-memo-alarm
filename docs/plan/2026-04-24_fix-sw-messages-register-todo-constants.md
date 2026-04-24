@@ -29,6 +29,7 @@
 - `swMessages.ts`를 SW scope에서 import하는 것은 번들 제약 때문에 피하므로, SW(`service-worker.ts`) 수신 측은 raw string 그대로 유지한다 (기존 정책 동일).
 - 변경 대상은 **메인 스레드 발신 측**(`todoNotifications.ts`)만이다: `SW_MSG.REGISTER_TODO_NOTIFICATIONS`, `SW_MSG.REMOVE_TODO_NOTIFICATIONS` 사용으로 교체.
 - `swMessages.ts` 상수값이 SW raw string과 정확히 일치하는지 확인 필수.
+- **Main 드리프트 점검 (strict, fix: plan)**: `git diff --name-only 5a01690..main` 실행 결과 `src/` 변경 0건. 대상 3개 파일(`src/lib/constants/swMessages.ts`, `src/lib/utils/todoNotifications.ts`, `src/service-worker.ts`) 모두 `영향 없음` (근거: 기준커밋=5a01690, 검사범위=`5a01690..main`).
 
 ---
 
@@ -57,6 +58,14 @@
    - [ ] L573 `if (event.data.type === 'REGISTER_TODO_NOTIFICATIONS')` 바로 위 라인에 주석 `// matches SW_MSG.REGISTER_TODO_NOTIFICATIONS (raw string retained: SW bundle cannot import $lib)` 추가
    - [ ] L592 `if (event.data.type === 'REMOVE_TODO_NOTIFICATIONS')` 바로 위 라인에 주석 `// matches SW_MSG.REMOVE_TODO_NOTIFICATIONS (raw string retained: SW bundle cannot import $lib)` 추가
 
+### Phase T1: TC 작성
+
+> T1 해당 없음: memo-alarm은 TypeScript 프런트 전용이며 프로젝트 테스트 프레임워크 미구성. 확인 — `Glob src/**/*.test.ts` 0건, `tests/` 디렉토리 미존재, `package.json`에 vitest/jest script 없음. 단순 상수 추출 + 1:1 대치이므로 테스트 프레임워크 도입은 범위 밖.
+
+### Phase T2: TC 실행 및 수정
+
+> T2 해당 없음: T1 미작성이므로 실행 대상 없음.
+
 ### Phase R: 재발 경로 분석 (fix: plan 필수)
 
 6. - [ ] **수정 대상 메시지 타입의 모든 호출/참조 경로 열거**
@@ -68,14 +77,6 @@
    - [ ] 메인 스레드(발신 측)에 남은 raw `'REGISTER_TODO_NOTIFICATIONS'` / `'REMOVE_TODO_NOTIFICATIONS'` 참조가 0건임을 `rg -n "'REGISTER_TODO_NOTIFICATIONS'|'REMOVE_TODO_NOTIFICATIONS'" src/ --glob '!service-worker.ts'`로 재검증
    - [ ] `postMessage.*(REGISTER|REMOVE)_TODO_NOTIFICATIONS` 크로스 검색으로 다른 모듈에 신설된 호출 0건 확인
    - [ ] "전체 방어 완료" 명시 (근본 수정 표현 금지)
-
-### Phase T1: TC 작성
-
-> T1 해당 없음: memo-alarm은 TypeScript 프런트 전용이며 프로젝트 테스트 프레임워크 미구성. 확인 — `Glob src/**/*.test.ts` 0건, `tests/` 디렉토리 미존재, `package.json`에 vitest/jest script 없음. 단순 상수 추출 + 1:1 대치이므로 테스트 프레임워크 도입은 범위 밖.
-
-### Phase T2: TC 실행 및 수정
-
-> T2 해당 없음: T1 미작성이므로 실행 대상 없음.
 
 ### Phase T3: 재현/통합 TC
 
