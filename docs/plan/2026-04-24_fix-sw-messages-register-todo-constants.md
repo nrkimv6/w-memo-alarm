@@ -3,11 +3,11 @@
 > 작성일시: 2026-04-24
 > 기준커밋: 5a01690
 > 대상 프로젝트: memo-alarm
-> 상태: 검토완료
-> branch:
-> worktree:
-> worktree-owner:
-> 진행률: 0/30 (0%)
+> 상태: 구현중
+> branch: impl/fix-sw-messages-register-todo-constants
+> worktree: .worktrees/impl-fix-sw-messages-register-todo-constants
+> worktree-owner: docs/plan/2026-04-24_fix-sw-messages-register-todo-constants.md
+> 진행률: 24/30 (80%)
 > 요약: `TODO_NOTIFICATION_SENT`는 이번 fix에서 `swMessages.ts`에 추가됐지만, `REGISTER_TODO_NOTIFICATIONS`와 `REMOVE_TODO_NOTIFICATIONS`는 여전히 raw string으로 남아 있다. `todoNotifications.ts`(메인→SW)와 `service-worker.ts`(SW 수신) 모두 raw string을 사용하므로 타이포/불일치 위험이 있다.
 > 출처: /reflect에서 자동 생성
 
@@ -37,26 +37,26 @@
 
 ### Phase 1: swMessages 상수 추가 및 메인 스레드 발신 측 교체
 
-1. - [ ] **`src/lib/constants/swMessages.ts`에 todo 관리용 상수 2개 추가**
-   - [ ] `SW_MSG` 객체의 `TODO_NOTIFICATION_SENT` 섹션(L21) 근처에 todo 관리 섹션 주석 `// todo 알림 관리` 추가
-   - [ ] `REGISTER_TODO_NOTIFICATIONS: 'REGISTER_TODO_NOTIFICATIONS'` 항목을 같은 섹션에 추가 (key 값 = raw string)
-   - [ ] `REMOVE_TODO_NOTIFICATIONS: 'REMOVE_TODO_NOTIFICATIONS'` 항목을 바로 아래 줄에 추가하고, 값이 SW 수신부 문자열과 정확히 일치하는지 diff로 확인
+1. - [x] **`src/lib/constants/swMessages.ts`에 todo 관리용 상수 2개 추가**
+   - [x] `SW_MSG` 객체의 `TODO_NOTIFICATION_SENT` 섹션(L21) 근처에 todo 관리 섹션 주석 `// todo 알림 관리` 추가
+   - [x] `REGISTER_TODO_NOTIFICATIONS: 'REGISTER_TODO_NOTIFICATIONS'` 항목을 같은 섹션에 추가 (key 값 = raw string)
+   - [x] `REMOVE_TODO_NOTIFICATIONS: 'REMOVE_TODO_NOTIFICATIONS'` 항목을 바로 아래 줄에 추가하고, 값이 SW 수신부 문자열과 정확히 일치하는지 diff로 확인
 
-2. - [ ] **`src/lib/utils/todoNotifications.ts` 상단 import 블록에 `SW_MSG` 추가**
-   - [ ] 기존 import 블록(L1-L2) 바로 아래에 `import { SW_MSG } from '$lib/constants/swMessages';` 추가
-   - [ ] import 경로 alias(`$lib/...`)가 동일 패턴(`notifications.svelte.ts:6`)과 일치하는지 확인
+2. - [x] **`src/lib/utils/todoNotifications.ts` 상단 import 블록에 `SW_MSG` 추가**
+   - [x] 기존 import 블록(L1-L2) 바로 아래에 `import { SW_MSG } from '$lib/constants/swMessages';` 추가
+   - [x] import 경로 alias(`$lib/...`)가 동일 패턴(`notifications.svelte.ts:6`)과 일치하는지 확인
 
-3. - [ ] **`todoNotifications.ts:315` 발신 측 raw string 교체**
-   - [ ] L315 `type: 'REGISTER_TODO_NOTIFICATIONS'`를 `type: SW_MSG.REGISTER_TODO_NOTIFICATIONS`로 교체
-   - [ ] postMessage payload 내 `notifications` 필드(L316)는 그대로 유지
+3. - [x] **`todoNotifications.ts:315` 발신 측 raw string 교체**
+   - [x] L315 `type: 'REGISTER_TODO_NOTIFICATIONS'`를 `type: SW_MSG.REGISTER_TODO_NOTIFICATIONS`로 교체
+   - [x] postMessage payload 내 `notifications` 필드(L316)는 그대로 유지
 
-4. - [ ] **`todoNotifications.ts:333` 발신 측 raw string 교체**
-   - [ ] L333 `type: 'REMOVE_TODO_NOTIFICATIONS'`를 `type: SW_MSG.REMOVE_TODO_NOTIFICATIONS`로 교체
-   - [ ] postMessage payload 내 `todoId` 필드(L334)는 그대로 유지
+4. - [x] **`todoNotifications.ts:333` 발신 측 raw string 교체**
+   - [x] L333 `type: 'REMOVE_TODO_NOTIFICATIONS'`를 `type: SW_MSG.REMOVE_TODO_NOTIFICATIONS`로 교체
+   - [x] postMessage payload 내 `todoId` 필드(L334)는 그대로 유지
 
-5. - [ ] **`src/service-worker.ts` SW 수신 측 주석 보강 (raw string 유지, 번들 제약)**
-   - [ ] L573 `if (event.data.type === 'REGISTER_TODO_NOTIFICATIONS')` 바로 위 라인에 주석 `// matches SW_MSG.REGISTER_TODO_NOTIFICATIONS (raw string retained: SW bundle cannot import $lib)` 추가
-   - [ ] L592 `if (event.data.type === 'REMOVE_TODO_NOTIFICATIONS')` 바로 위 라인에 주석 `// matches SW_MSG.REMOVE_TODO_NOTIFICATIONS (raw string retained: SW bundle cannot import $lib)` 추가
+5. - [x] **`src/service-worker.ts` SW 수신 측 주석 보강 (raw string 유지, 번들 제약)**
+   - [x] L573 `if (event.data.type === 'REGISTER_TODO_NOTIFICATIONS')` 바로 위 라인에 주석 `// matches SW_MSG.REGISTER_TODO_NOTIFICATIONS (raw string retained: SW bundle cannot import $lib)` 추가
+   - [x] L592 `if (event.data.type === 'REMOVE_TODO_NOTIFICATIONS')` 바로 위 라인에 주석 `// matches SW_MSG.REMOVE_TODO_NOTIFICATIONS (raw string retained: SW bundle cannot import $lib)` 추가
 
 ### Phase T1: TC 작성
 
@@ -68,15 +68,15 @@
 
 ### Phase R: 재발 경로 분석 (fix: plan 필수)
 
-6. - [ ] **수정 대상 메시지 타입의 모든 호출/참조 경로 열거**
-   - [ ] `rg "REGISTER_TODO_NOTIFICATIONS" src/` 실행 → SW 수신(service-worker.ts:573-574) + 메인 발신(todoNotifications.ts:315) 2개소만 존재함을 확인
-   - [ ] `rg "REMOVE_TODO_NOTIFICATIONS" src/` 실행 → SW 수신(service-worker.ts:592-593) + 메인 발신(todoNotifications.ts:333) 2개소만 존재함을 확인
-   - [ ] 경로별 방어표 작성 (경로 | 방어여부 | 근거): `service-worker.ts`=정책상 raw string 유지(SW 번들 제약), `todoNotifications.ts`=SW_MSG 상수 사용(방어됨), 그 외=0건
+6. - [x] **수정 대상 메시지 타입의 모든 호출/참조 경로 열거**
+   - [x] `rg "REGISTER_TODO_NOTIFICATIONS" src/` 실행 → SW 수신(service-worker.ts:581,582) + 메인 발신(todoNotifications.ts:316) + 상수정의(swMessages.ts:20)
+   - [x] `rg "REMOVE_TODO_NOTIFICATIONS" src/` 실행 → SW 수신(service-worker.ts:601,602) + 메인 발신(todoNotifications.ts:334) + 상수정의(swMessages.ts:21)
+   - [x] 경로별 방어표: `service-worker.ts`=정책상 raw string 유지(SW 번들 제약), `todoNotifications.ts`=SW_MSG 상수 사용(방어됨), 그 외=0건
 
-7. - [ ] **미방어 경로 수정 및 완료 확인**
-   - [ ] 메인 스레드(발신 측)에 남은 raw `'REGISTER_TODO_NOTIFICATIONS'` / `'REMOVE_TODO_NOTIFICATIONS'` 참조가 0건임을 `rg -n "'REGISTER_TODO_NOTIFICATIONS'|'REMOVE_TODO_NOTIFICATIONS'" src/ --glob '!service-worker.ts'`로 재검증
-   - [ ] `postMessage.*(REGISTER|REMOVE)_TODO_NOTIFICATIONS` 크로스 검색으로 다른 모듈에 신설된 호출 0건 확인
-   - [ ] "전체 방어 완료" 명시 (근본 수정 표현 금지)
+7. - [x] **미방어 경로 수정 및 완료 확인**
+   - [x] 메인 스레드(발신 측) raw string 잔존 0건 확인 — `swMessages.ts` 상수 정의부 제외 시 0건
+   - [x] 다른 모듈에 신설된 postMessage 호출 0건 확인
+   - [x] 전체 방어 완료
 
 ### Phase T3: 재현/통합 TC
 
@@ -107,4 +107,4 @@
 - Phase Z: Post-Merge Cleanup (1 parent / 5 children)
 - 총 8 parents / 22 children = 30 체크박스
 
-*상태: 검토완료 | 진행률: 0/30 (0%)*
+*상태: 구현중 | 진행률: 24/30 (80%)*

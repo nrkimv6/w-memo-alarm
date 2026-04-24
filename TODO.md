@@ -8,11 +8,11 @@
 ## In Progress
 
 - [ ] **Google 로그인 갑작스런 실패 회귀 조사 및 최소 수정** — [plan](docs/plan/2026-04-24_fix-google-login-regression.md) (37/53, 70%)
+- [ ] **Supabase signInWithIdToken "Failed to fetch" 원인 버킷 triage** — [plan](docs/plan/2026-04-24_triage-supabase-signin-failed-to-fetch.md) (0/47, 0%)
+- [ ] **swMessages.ts REGISTER/REMOVE_TODO_NOTIFICATIONS 상수 추가** — [plan](docs/plan/2026-04-24_fix-sw-messages-register-todo-constants.md) (24/30, 80%)
 
 ## Pending
-- [ ] **Supabase signInWithIdToken "Failed to fetch" 원인 버킷 triage** — [plan](docs/plan/2026-04-24_triage-supabase-signin-failed-to-fetch.md) (0/17, 0%)
 - [ ] **FCM 알림 덮어쓰기 + 6개 미전송 원인 수정** — [plan](docs/plan/2026-04-23_fix-fcm-notification-tag-and-missing-sends.md) (0/73, 0%)
-- [ ] **swMessages.ts REGISTER/REMOVE_TODO_NOTIFICATIONS 상수 추가** — [plan](docs/plan/2026-04-24_fix-sw-messages-register-todo-constants.md) (0/10, 0%)
 - [ ] **settings/developer 페이지 827줄 → 컴포넌트 분할 리팩토링** — [plan](docs/plan/2026-04-24_refactor-settings-developer-page.md) (0/13, 0%)
 - [ ] **북마크 필터에서 할일 카드 렌더링 개선** — [plan](docs/plan/2026-03-30_bookmark-filter-todo-card.md) (0/6, 0%)
 - [x] **메모↔할일 전환 시 북마크 소실 재발 이슈 수정** — [plan](docs/plan/2026-04-07_fix-bookmark-disappear-recurrence.md) — 구현완료 (Phase 6 수동 검증 별도)
