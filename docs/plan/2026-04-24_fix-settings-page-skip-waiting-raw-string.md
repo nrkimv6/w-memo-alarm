@@ -1,7 +1,7 @@
 # fix: settings/+page.svelte SKIP_WAITING postMessage raw string 교체
 
 > 작성일시: 2026-04-24
-> 기준커밋: (현재 main HEAD)
+> 기준커밋: 888fc2b
 > 대상 프로젝트: memo-alarm
 > 상태: 검토완료
 > branch:
@@ -29,6 +29,8 @@ if (registration.waiting) registration.waiting.postMessage({ type: 'SKIP_WAITING
 
 - archive `2026-04-24_fix-sw-messages-register-todo-constants.md`와 동일하게 `swMessages.ts`를 SW scope에서 import하는 것은 번들 제약 때문에 피하므로, SW(`service-worker.ts`) 수신 측(`if (event.data.type === 'SKIP_WAITING')`)은 raw string 그대로 유지한다.
 - 변경 대상은 **메인 스레드 발신 측**(`src/routes/settings/+page.svelte:144`)만이다. `service-worker.ts` 주석 보강은 이번 범위에 포함하지 않는다.
+- 연관 active plan 검토: `docs/plan/2026-04-24_triage-supabase-signin-failed-to-fetch.md`는 `src/service-worker.ts`를 읽지만 `/auth/callback` stale triage 범위만 다루므로, 이번 `settings/+page.svelte` 발신 상수화와 직접 충돌하지 않는다.
+- Main 드리프트 점검 (strict, fix: plan): 기준커밋=`888fc2b`, 검사범위=`src/routes/settings/+page.svelte`, `src/lib/constants/swMessages.ts`, `src/service-worker.ts`. `git diff --name-only 888fc2b..main -- {3개 파일}` 결과 `0-hit`.
 - 로컬 드리프트 점검: 현재 워킹트리의 staged/unstaged 변경 0건이며, 입력 계획서와 겹치는 추가 로컬 수정은 없다.
 - 헤더 메타의 `진행률: 0/0`은 보존하고, 실제 체크박스 수와 진행률은 하단 `작업 수 요약` 기준으로 관리한다.
 
