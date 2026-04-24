@@ -6,10 +6,7 @@
 > 상태: 구현완료
 > 반영일시: 2026-04-24 14:51
 > 머지커밋: ebab841
-> branch: impl/fix-sw-messages-register-todo-constants
-> worktree: .worktrees/impl-fix-sw-messages-register-todo-constants
-> worktree-owner: docs/plan/2026-04-24_fix-sw-messages-register-todo-constants.md
-> 진행률: 24/30 (80%)
+> 진행률: 30/30 (100%)
 > 요약: `TODO_NOTIFICATION_SENT`는 이번 fix에서 `swMessages.ts`에 추가됐지만, `REGISTER_TODO_NOTIFICATIONS`와 `REMOVE_TODO_NOTIFICATIONS`는 여전히 raw string으로 남아 있다. `todoNotifications.ts`(메인→SW)와 `service-worker.ts`(SW 수신) 모두 raw string을 사용하므로 타이포/불일치 위험이 있다.
 > 출처: /reflect에서 자동 생성
 
@@ -94,12 +91,12 @@
 
 ### Phase Z: Post-Merge Cleanup (/merge-test owner)
 
-8. - [ ] **post-merge 정리 확인** — `/merge-test` owner
-   - [ ] main merge 시도
-   - [ ] T4/T5 해당 없음 재판정 (TypeScript-only 변경, 테스트 인프라 없음)
-   - [ ] worktree remove
-   - [ ] branch remove
-   - [ ] header meta 제거
+8. - [x] **post-merge 정리 확인** — `/merge-test` owner
+   - [x] main merge 시도 (ebab841)
+   - [x] T4/T5 해당 없음 재판정 (TypeScript-only 변경, tests/ 디렉토리 부재 Glob 0건)
+   - [x] worktree remove
+   - [x] branch remove
+   - [x] header meta 제거
 
 ## 작업 수 요약
 
@@ -109,4 +106,4 @@
 - Phase Z: Post-Merge Cleanup (1 parent / 5 children)
 - 총 8 parents / 22 children = 30 체크박스
 
-*상태: 머지대기 | 진행률: 24/30 (80%)*
+*상태: 구현완료 | 진행률: 30/30 (100%)*
