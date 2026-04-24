@@ -189,7 +189,7 @@ Z. - [x] **post-merge 정리 확인** — `/merge-test` owner
 
 ## MANUAL_TASKS
 
-- [ ] Cloudflare dashboard의 `wservice-memo-alarm`에 실제 `PUBLIC_SUPABASE_URL` / `PUBLIC_SUPABASE_ANON_KEY` 설정 후 redeploy
+- [x] Cloudflare dashboard의 `wservice-memo-alarm`에 실제 `PUBLIC_SUPABASE_URL` / `PUBLIC_SUPABASE_ANON_KEY` 설정 후 redeploy — 2026-04-24 완료, 로그인 정상 확인
 
 ## 작업 수 요약
 
