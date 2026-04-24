@@ -27,9 +27,10 @@ if (registration.waiting) registration.waiting.postMessage({ type: 'SKIP_WAITING
 
 ## 기술적 고려사항
 
-- `swMessages.ts`를 SW scope에서 import하는 것은 번들 제약 때문에 피하므로, SW(`service-worker.ts`) 수신 측(`if (event.data?.type === 'SKIP_WAITING')`)은 raw string 그대로 유지한다 (기존 정책 동일).
-- 변경 대상은 **메인 스레드 발신 측**(`settings/+page.svelte:144`)만이다.
-- 변경 범위가 1줄로 매우 작다.
+- archive `2026-04-24_fix-sw-messages-register-todo-constants.md`와 동일하게 `swMessages.ts`를 SW scope에서 import하는 것은 번들 제약 때문에 피하므로, SW(`service-worker.ts`) 수신 측(`if (event.data.type === 'SKIP_WAITING')`)은 raw string 그대로 유지한다.
+- 변경 대상은 **메인 스레드 발신 측**(`src/routes/settings/+page.svelte:144`)만이다. `service-worker.ts` 주석 보강은 이번 범위에 포함하지 않는다.
+- 로컬 드리프트 점검: 현재 워킹트리의 staged/unstaged 변경 0건이며, 입력 계획서와 겹치는 추가 로컬 수정은 없다.
+- 헤더 메타의 `진행률: 0/0`은 보존하고, 실제 체크박스 수와 진행률은 하단 `작업 수 요약` 기준으로 관리한다.
 
 ---
 
@@ -37,26 +38,35 @@ if (registration.waiting) registration.waiting.postMessage({ type: 'SKIP_WAITING
 
 ### Phase 1: SKIP_WAITING 발신 측 교체
 
-1. - [ ] **`src/routes/settings/+page.svelte`에 `SW_MSG` import 추가 및 raw string 교체**
-   - [ ] 파일 상단 import 블록에 `import { SW_MSG } from '$lib/constants/swMessages';` 추가
-   - [ ] L144 `type: 'SKIP_WAITING'`를 `type: SW_MSG.SKIP_WAITING`으로 교체
+1. - [ ] **`src/lib/constants/swMessages.ts`의 `SKIP_WAITING` 상수 계약 확인**
+   - [ ] `SW_MSG.SKIP_WAITING` 항목이 이미 존재하고 값이 `'SKIP_WAITING'`인지 확인
+   - [ ] `src/service-worker.ts:499` 수신 문자열과 값이 일치하므로 SW 수신 측 수정 범위에서 제외한다고 유지
 
-2. - [ ] **`src/service-worker.ts` 수신 측 주석 보강 (raw string 유지, 번들 제약)**
-   - [ ] SKIP_WAITING 수신부(`if (event.data?.type === 'SKIP_WAITING')` 또는 `addEventListener('message')`) 바로 위에 주석 `// matches SW_MSG.SKIP_WAITING (raw string retained: SW bundle cannot import $lib)` 추가
+2. - [ ] **`src/routes/settings/+page.svelte` 상단 import 블록에 `SW_MSG` 추가**
+   - [ ] 기존 `$lib/...` import 묶음에 `import { SW_MSG } from '$lib/constants/swMessages';` 추가
+   - [ ] import 추가 후 기존 식별자와 충돌이 없는지 확인
 
-### Phase R: 재발 경로 분석 (fix: plan 필수)
-
-3. - [ ] **메인 스레드 발신 측 raw string postMessage 잔존 여부 전수 확인**
-   - [ ] `rg "postMessage.*type.*'" src/ --glob '*.ts' --glob '*.svelte'` 실행 후 service-worker.ts 제외 결과 0건 확인
-   - [ ] 전체 방어 완료 명시
+3. - [ ] **`src/routes/settings/+page.svelte`의 `handleUpdateCheck()` 발신 타입 교체**
+   - [ ] `registration.waiting.postMessage({ type: 'SKIP_WAITING' })`를 `registration.waiting.postMessage({ type: SW_MSG.SKIP_WAITING })`로 교체
+   - [ ] `registration.waiting`, `registration.update()`, `window.location.reload()` 흐름은 그대로 유지
 
 ### Phase T1: TC 작성
 
-> T1 해당 없음: memo-alarm은 TypeScript 프런트 전용이며 프로젝트 테스트 프레임워크 미구성. 단순 상수 교체.
+> T1 해당 없음: memo-alarm은 TypeScript 프런트엔드 변경이며 `tests/` 디렉토리 부재, `e2e/` 디렉토리 부재, `package.json`에 `test`/`vitest`/`jest`/`playwright`/`cypress` 스크립트가 없다. 단순 상수 참조 교체이므로 테스트 프레임워크 도입은 범위 밖이다.
 
 ### Phase T2: TC 실행 및 수정
 
 > T2 해당 없음: T1 미작성이므로 실행 대상 없음.
+
+### Phase R: 재발 경로 분석 (fix: plan 필수)
+
+4. - [ ] **`SKIP_WAITING` 호출/참조 경로를 전수 확인**
+   - [ ] `rg -n "SKIP_WAITING" src/` 실행 후 `swMessages.ts`, `settings/+page.svelte`, `service-worker.ts` 3경로만 존재하는지 확인
+   - [ ] 메인 스레드 발신 raw string은 `settings/+page.svelte` 1건뿐이었다고 기록
+
+5. - [ ] **메인 스레드 → SW `postMessage` 발신부 raw string 잔존 여부 확인**
+   - [ ] `rg -n "postMessage\\(" src/ --glob '*.ts' --glob '*.svelte'` 결과에서 메인 스레드 발신부를 검토해 `type: '...'` raw string 잔존 0건 확인
+   - [ ] 전체 방어 완료 명시
 
 ### Phase T3: 재현/통합 TC
 
@@ -64,15 +74,15 @@ if (registration.waiting) registration.waiting.postMessage({ type: 'SKIP_WAITING
 
 ### Phase T4: E2E 테스트
 
-> T4 해당 없음: tests/ 디렉토리 미존재, E2E 인프라 없음.
+> T4 해당 없음: `tests/` 디렉토리 부재, `e2e/` 디렉토리 부재. Glob `tests/**/*e2e*`, `tests/**/*integration*`, `e2e/**/*` 대상 경로가 없다.
 
 ### Phase T5: HTTP 통합 테스트
 
-> T5 해당 없음: SvelteKit + Supabase 구성, 자체 백엔드 HTTP API 부재.
+> T5 해당 없음: `tests/` 디렉토리 부재로 `tests/**/*http*`, `tests/**/*api*` 대상 경로가 없고, 이번 변경은 `src/routes/settings/+page.svelte`의 SW 메시지 상수 참조 교체 1건뿐이라 HTTP 테스트 작성 범위가 아니다.
 
 ### Phase Z: Post-Merge Cleanup (/merge-test owner)
 
-4. - [ ] **post-merge 정리 확인** — `/merge-test` owner
+6. - [ ] **post-merge 정리 확인** — `/merge-test` owner
    - [ ] main merge 시도
    - [ ] T4/T5 해당 없음 재판정
    - [ ] worktree remove
@@ -81,10 +91,10 @@ if (registration.waiting) registration.waiting.postMessage({ type: 'SKIP_WAITING
 
 ## 작업 수 요약
 
-- Phase 1: SKIP_WAITING 교체 (2 parents / 3 children)
-- Phase R: 재발 경로 전수 확인 (1 parent / 2 children)
+- Phase 1: SKIP_WAITING 발신 측 교체 (3 parents / 6 children)
 - Phase T1~T5: 블록쿼트만 (체크박스 0)
+- Phase R: 재발 경로 전수 확인 (2 parents / 4 children)
 - Phase Z: Post-Merge Cleanup (1 parent / 5 children)
-- 총 4 parents / 10 children = 14 체크박스
+- 총 6 parents / 15 children = 21 체크박스
 
-*상태: 초안 | 진행률: 0/14 (0%)*
+*상태: 검토완료 | 진행률: 0/21 (0%)*
