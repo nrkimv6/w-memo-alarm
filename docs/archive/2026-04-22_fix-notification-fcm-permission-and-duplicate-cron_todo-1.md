@@ -5,11 +5,9 @@
 > 실행순서: 1
 > 선행조건: 없음
 > 테스트명령: Supabase SQL editor + Edge Function 로그 + `cron.job`/`notification_logs` 확인
-> 상태: 구현중
-> 진행률: 26/34 (76%)
-> branch: impl/fix-notification-fcm-permission-and-duplicate-cron
-> worktree: D:/work/project/tools/gifticon-manager/.worktrees/impl-fix-notification-fcm-permission-and-duplicate-cron
-> worktree-owner: D:\work\project\service\wtools\memo-alarm\docs\plan\2026-04-22_fix-notification-fcm-permission-and-duplicate-cron.md
+> 상태: 구현완료 (대체됨)
+> 진행률: 26/34 — 미완료 8개는 realign plan(2026-04-22_realign-fcm-to-wservice-crossnoti)으로 이관·대체됨
+> 대체 근거: Phase 5 운영 secret 교체 방향(lineminder-23489)이 realign plan에서 wservice-cross-noti로 뒤집힘 → 2026-04-23 배포·검증 완료
 > 요약: `send-notifications` Edge Function의 서비스 계정 진단과 FCM 오류 정규화를 추가하고, 중복 cron job 정리 및 운영 반영 절차를 명시한다.
 
 ## Phase 1: Edge Function 진단 강화

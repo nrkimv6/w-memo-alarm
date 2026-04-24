@@ -6,10 +6,7 @@
 > 선행조건: ../../../../../tools/gifticon-manager/docs/plan/2026-04-22_realign-fcm-to-wservice-crossnoti_todo-1.md
 > 테스트명령: `npm run check` + 개발자 모드 FCM 재등록/로그 확인
 > 진행률: 3/3 (100%)
-> 상태: 머지대기
-> branch: impl/realign-fcm-to-wservice-crossnoti
-> worktree: .worktrees/impl-realign-fcm-to-wservice-crossnoti
-> worktree-owner: D:\work\project\service\wtools\memo-alarm\docs\plan\2026-04-22_realign-fcm-to-wservice-crossnoti.md
+> 상태: 구현완료
 > 요약: memo-alarm의 Firebase public config를 `wservice-cross-noti` 기준으로 되돌리고, 자동 FCM 등록 흐름에 project marker 기반 강제 재등록 단계를 추가한다.
 
 > **선행 plan 전제**: 본 todo는 `2026-04-22_fix-notification-fcm-permission-and-duplicate-cron` plan이 이미 `settings/+page.svelte`에 추가해둔 "서버측 FCM 상태" 카드, `notificationLogs`/`lastErrorMessage` 상태, `[CODE]` 접두 표시 위에서 동작한다. 이번 todo는 같은 파일에 **추가 카드/배지**를 붙이는 형태이며, 기존 카드를 제거하거나 대체하지 않는다.

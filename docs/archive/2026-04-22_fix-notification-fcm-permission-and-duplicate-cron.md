@@ -3,8 +3,9 @@
 > 작성일시: 2026-04-22 11:24
 > 기준커밋: 34b8d3a
 > 대상 프로젝트: memo-alarm, gifticon-manager
-> 상태: 구현중
-> 진행률: 5/6 (83%)
+> 상태: 구현완료
+> 진행률: 6/6 (100%) — Phase 5(운영 secret 교체) lineminder-23489 방향은 후속 plan `2026-04-22_realign-fcm-to-wservice-crossnoti`(wservice-cross-noti 방향 재정렬, 구현완료)에 의해 대체됨
+> 대체 근거: 2026-04-23 사용자 배포 검증 — Cloudflare env 7종 정합 + Firebase 도메인 승인 + 새 토큰 등록 후 실제 알림 수신 확인 → realign plan으로 FCM 파이프라인 정상화 완료
 > 요약: 2026-04-22 운영 DB와 `notification_logs`, `cron.job` 실조회 결과 현재 알림 미발생의 주원인은 브라우저 Firebase key가 아니라 `send-notifications` Edge Function의 FCM 권한 부재와 중복 cron 호출이다. 서버 자격증명 정합성, cron 단일화, 앱 내 진단 노출을 함께 정리해 같은 오진이 반복되지 않도록 한다.
 >
 > **실행 TODO:**
