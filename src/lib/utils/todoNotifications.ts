@@ -1,5 +1,6 @@
 import type { Memo, TodoRemindEntry, TodoAlertEntry } from '$lib/types/memo';
 import { isNative } from './capacitor';
+import { SW_MSG } from '$lib/constants/swMessages';
 
 /**
  * Todo 알림 스케줄링 유틸리티
@@ -312,7 +313,7 @@ async function registerNotificationsInServiceWorker(
 
 	try {
 		navigator.serviceWorker.controller.postMessage({
-			type: 'REGISTER_TODO_NOTIFICATIONS',
+			type: SW_MSG.REGISTER_TODO_NOTIFICATIONS,
 			notifications
 		});
 	} catch (e) {
@@ -330,7 +331,7 @@ export async function cancelTodoNotifications(todoId: string): Promise<void> {
 
 	try {
 		navigator.serviceWorker.controller.postMessage({
-			type: 'REMOVE_TODO_NOTIFICATIONS',
+			type: SW_MSG.REMOVE_TODO_NOTIFICATIONS,
 			todoId
 		});
 	} catch (e) {

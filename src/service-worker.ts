@@ -576,6 +576,7 @@ sw.addEventListener('message', (event) => {
 		});
 	}
 
+	// matches SW_MSG.REGISTER_TODO_NOTIFICATIONS (raw string retained: SW bundle cannot import $lib)
 	// Todo 알림 등록 (Phase 2)
 	if (event.data.type === 'REGISTER_TODO_NOTIFICATIONS') {
 		swLog('info', '📝 REGISTER_TODO_NOTIFICATIONS received');
@@ -595,6 +596,7 @@ sw.addEventListener('message', (event) => {
 		startReminderCheck();
 	}
 
+	// matches SW_MSG.REMOVE_TODO_NOTIFICATIONS (raw string retained: SW bundle cannot import $lib)
 	// Todo 알림 제거 (Phase 2)
 	if (event.data.type === 'REMOVE_TODO_NOTIFICATIONS') {
 		swLog('info', `🗑️ REMOVE_TODO_NOTIFICATIONS: ${event.data.todoId}`);
