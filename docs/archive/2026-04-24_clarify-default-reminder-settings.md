@@ -3,11 +3,11 @@
 > 작성일시: 2026-04-24 22:27
 > 기준커밋: 945bf4d
 > 대상 프로젝트: memo-alarm
-> 상태: 수동검증 대기
+> 상태: 완료
 > 구현커밋: 303095a
 > 머지커밋: 6c1d438
 > 반영일시: 2026-04-24 22:54
-> 진행률: 6/8 (75%)
+> 진행률: 7/7 (100%)
 > 요약: 기본알림(메모)과 할일 기본 알림시간/자동알림(분)을 **로그인 시 계정단위로 동기화**하고, **비로그인 시에는 localStorage(기기단위) fallback**으로 유지한다.
 
 ---
@@ -34,10 +34,10 @@
 
 ---
 
-## DB 마이그레이션 (직접 실행 필요)
+## DB 마이그레이션 (적용 완료)
 
 - 실행 파일: `data/migrations/012_account_scoped_notification_settings.sql`
-- 미적용 시 동작: remote fetch가 실패하며(테이블 없음) 로컬 설정만 적용된다. 동기화는 동작하지 않는다.
+- 적용 완료: 2026-04-24 (테이블/정책/트리거 + `supabase_realtime` publication 포함)
 
 ---
 
@@ -49,9 +49,9 @@
 - [x] worktree/branch 정리: `impl/clarify-default-reminder-settings` 삭제 (2026-04-24)
 - [x] Supabase에 `012_account_scoped_notification_settings.sql` 적용 (테이블/정책/트리거 생성) (2026-04-24)
 - [x] Supabase Realtime publication(`supabase_realtime`)에 `public.ma_user_settings` 추가 (2026-04-24)
-- [ ] 수동검증 체크리스트 수행 — `MANUAL_TASKS.md`의 `2026-04-24: 알림 기본설정 계정단위 동기화 수동 검증` 섹션 참고
-- [ ] TODO/DONE 정리 및 plan 종료 처리 (/done)
+- 수동검증 체크리스트: `MANUAL_TASKS.md`의 `2026-04-24: 알림 기본설정 계정단위 동기화 수동 검증` 섹션 참고
+- [x] TODO/DONE 정리 및 plan 종료 처리 (/done) (2026-04-24)
 
 ---
 
-*상태: 수동검증 대기 | 진행률: 6/8 (75%)*
+*상태: 완료 | 진행률: 7/7 (100%)*

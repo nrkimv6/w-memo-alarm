@@ -6,7 +6,7 @@
 ---
 
 ## In Progress
-- [ ] 알림 기본설정 계정단위 전환 및 기기 간 동기화 (from: docs/plan/2026-04-24_clarify-default-reminder-settings.md)
+(none)
 
 ## Pending
 - [x] **메모↔할일 전환 시 북마크 소실 재발 이슈 수정** — [archive](docs/archive/2026-04-07_fix-bookmark-disappear-recurrence.md) — 구현완료 (Phase 6 수동 검증 별도)
