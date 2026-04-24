@@ -8,3 +8,4 @@
 - [x] 2026-04-24: svelte-check 21개 에러 수정 (`__APP_VERSION__`, VoiceInput, Modal/EmojiPicker/Icon props, QuickMemoInput/notifications, Onboarding/TodoCard, public env 경로 보정) — [archive](archive/2026-04-24_fix-svelte-check-errors.md)
 - [x] 2026-04-24: foreground 경로 동일 시간대 알림 병합 추가 (collect→merge→dispatch, SW 로직과 대칭, buildMergedTitle/Body 유틸) — [archive](archive/2026-04-24_fix-notification-merge-in-foreground.md)
 - [x] 2026-04-24: SW `checkTodoNotifications` 동일 시간대 할일 알림 병합 (개별 폭주 → 1건 병합 알림, `todo-batch-{HH:MM}`, 클릭 시 `/todos`) — [archive](archive/2026-04-24_fix-todo-notification-merge-in-sw.md)
+- [x] 2026-04-24: Google 로그인 회귀 최소 수정 — callback 토큰 비노출 진단 로그 + SW에서 navigation 문서 및 `/auth/*` 캐시 예외 처리 — [archive](archive/2026-04-24_fix-google-login-regression.md)

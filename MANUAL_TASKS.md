@@ -117,6 +117,18 @@
 
 ---
 
+## 2026-04-24: Google 로그인 운영 재현 검증
+
+> from: `docs/archive/2026-04-24_fix-google-login-regression.md` (수동 DevTools 재현)
+
+- [ ] Chrome DevTools Application: SW unregister 직후와 hard reload 후 각각 `navigator.serviceWorker.controller?.scriptURL`을 기록해 callback 페이지가 최신 SW control 상태인지 비교한다
+- [ ] Chrome DevTools Network: `/auth/callback` document 응답이 SW on/off 각각에서 최신 번들로 로드되는지 비교 확인한다
+- [ ] Chrome DevTools Network: `signInWithIdToken()` 호출의 실제 URL, 상태코드, 실패 타입(`blocked`, `cancelled`, `net::ERR_*`, CORS)을 기록한다
+- [ ] 브라우저 콘솔: callback 로그에 토큰 원문이 남지 않으면서도 `provider`, `hasGoogleTokens`, `hasSupabaseTokens`, `navigator.onLine`이 보이는지 확인한다
+- [ ] 회귀 확인: Kakao 로그인, 기존 `returnTo=/settings` 복귀, 재배포 직후 `/auth/callback` 최신 반영이 유지되는지 확인한다
+
+---
+
 ## 2026-04-24: Settings 페이지 재디자인 UI 검증
 
 > from: [`2026-04-24_redesign-settings-page`](docs/archive/2026-04-24_redesign-settings-page.md)
