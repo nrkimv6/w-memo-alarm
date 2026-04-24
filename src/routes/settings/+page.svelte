@@ -15,6 +15,7 @@
 	import { themeStore } from '$lib/stores/theme.svelte';
 	import { settingsStore } from '$lib/stores/settings.svelte';
 	import { authStore } from '$lib/stores/auth.svelte';
+	import { SW_MSG } from '$lib/constants/swMessages';
 	import { downloadFullBackup, importFullBackup, clearAllData } from '$lib/utils/data';
 	import { cn } from '$lib/utils';
 	import { hasPinSet } from '$lib/utils/memoPinLock';
@@ -141,7 +142,7 @@
 			await Promise.all(cacheNames.map(name => caches.delete(name)));
 			const registration = await navigator.serviceWorker.getRegistration();
 			if (registration) {
-				if (registration.waiting) registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+				if (registration.waiting) registration.waiting.postMessage({ type: SW_MSG.SKIP_WAITING });
 				await registration.update();
 			}
 			window.location.reload();
