@@ -3,11 +3,11 @@
 > 작성일시: 2026-04-24 13:25
 > 기준커밋: 5a01690
 > 대상 프로젝트: memo-alarm
-> 상태: 초안
-> branch:
-> worktree:
-> worktree-owner:
-> 진행률: 0/11 (0%)
+> 상태: 구현중
+> branch: impl/fix-google-login-regression
+> worktree: .worktrees/impl-fix-google-login-regression
+> worktree-owner: docs/plan/2026-04-24_fix-google-login-regression.md
+> 진행률: 29/53 (55%)
 > 요약: 2026-04-24 기준 Google 로그인 콜백에서 `AuthRetryableFetchError: Failed to fetch`가 재발했다. 이번 계획은 로그인 구조 개편이 아니라, 운영 드리프트와 SW 캐시 회귀를 먼저 고정하고 callback 진단 로그와 캐시 범위를 최소 수정하는 데 목적이 있다.
 
 ---
@@ -35,47 +35,47 @@
 
 ### Phase 0: Worktree 준비
 
-0. - [ ] **worktree 준비 상태를 문서에 고정** — `/implement` 진입 게이트
-   - [ ] `docs/plan/2026-04-24_fix-google-login-regression.md`: `> branch:`, `> worktree:`, `> worktree-owner:` 슬롯을 유지한다
-   - [ ] `docs/plan/2026-04-24_fix-google-login-regression.md`: blank `> branch:`, `> worktree:`, `> worktree-owner:`는 신규 초기 상태이며 다른 `impl/*` 잔여와 무관하다고 적는다
-   - [ ] `docs/plan/2026-04-24_fix-google-login-regression.md`: worktree 생성 또는 재개 판단은 `/implement` 또는 plan-runner owner flow가 담당한다고 적는다
+0. - [x] **worktree 준비 상태를 문서에 고정** — `/implement` 진입 게이트
+   - [x] `docs/plan/2026-04-24_fix-google-login-regression.md`: `> branch:`, `> worktree:`, `> worktree-owner:` 슬롯을 유지한다
+   - [x] `docs/plan/2026-04-24_fix-google-login-regression.md`: blank `> branch:`, `> worktree:`, `> worktree-owner:`는 신규 초기 상태이며 다른 `impl/*` 잔여와 무관하다고 적는다
+   - [x] `docs/plan/2026-04-24_fix-google-login-regression.md`: worktree 생성 또는 재개 판단은 `/implement` 또는 plan-runner owner flow가 담당한다고 적는다
 
 ### Phase 1: 회귀 기준선 고정
 
-1. - [ ] **현재 로그인 경로와 연관 plan 경계를 코드 기준으로 고정한다** — 회귀 원인 후보를 문서화
-   - [ ] `src/routes/auth/callback/+page.svelte:133-166`: `if (tokens.supabase_access_token...)` / `else if (tokens.id_token && tokens.access_token)` 분기를 기준선으로 적어 provider별 세션 생성 경로를 고정한다
-   - [ ] `../auth-worker/src/providers/google.ts:141-160`: Google callback이 `id_token`과 `access_token`을 `redirectToWebApp()`으로 넘기는 현재 계약을 근거로 적는다
-   - [ ] `src/lib/services/supabase.ts:5-13`: Supabase 대상이 `PUBLIC_SUPABASE_URL` 런타임 값에 의존한다는 점을 drift 후보로 기술적 고려사항에 남긴다
-   - [ ] `docs/plan/2026-04-24_fix-google-login-regression.md`: `triage-supabase-signin-failed-to-fetch`는 원인 특정 전용, 본 plan은 B1/cache-drift 수정 전용이라고 범위를 적는다
+1. - [x] **현재 로그인 경로와 연관 plan 경계를 코드 기준으로 고정한다** — 회귀 원인 후보를 문서화
+   - [x] `src/routes/auth/callback/+page.svelte:133-166`: `if (tokens.supabase_access_token...)` / `else if (tokens.id_token && tokens.access_token)` 분기를 기준선으로 적어 provider별 세션 생성 경로를 고정한다
+   - [x] `../auth-worker/src/providers/google.ts:141-160`: Google callback이 `id_token`과 `access_token`을 `redirectToWebApp()`으로 넘기는 현재 계약을 근거로 적는다
+   - [x] `src/lib/services/supabase.ts:5-13`: Supabase 대상이 `PUBLIC_SUPABASE_URL` 런타임 값에 의존한다는 점을 drift 후보로 기술적 고려사항에 남긴다
+   - [x] `docs/plan/2026-04-24_fix-google-login-regression.md`: `triage-supabase-signin-failed-to-fetch`는 원인 특정 전용, 본 plan은 B1/cache-drift 수정 전용이라고 범위를 적는다
 
-2. - [ ] **서비스워커와 callback 문서 캐시 위험을 구현 범위로 고정한다** — stale callback 번들 가능성 판단 기준
-   - [ ] `src/service-worker.ts:121-148`: fetch 핸들러가 같은 origin `GET`을 넓게 캐시하고 `/api`만 예외 처리한다는 점을 구현 기준선으로 적는다
-   - [ ] `static/firebase-messaging-sw.js:1-16`: 별도 루트 스코프 SW가 동시에 존재해 진단을 혼탁하게 만들 수 있음을 적되, 이번 plan 수정 대상에서는 제외한다고 명시한다
-   - [ ] `docs/plan/2026-04-24_fix-google-login-regression.md`: `/auth/callback` 문서와 navigation document는 캐시 대상에서 제외하는 최소 수정안으로 고정한다
+2. - [x] **서비스워커와 callback 문서 캐시 위험을 구현 범위로 고정한다** — stale callback 번들 가능성 판단 기준
+   - [x] `src/service-worker.ts:121-148`: fetch 핸들러가 같은 origin `GET`을 넓게 캐시하고 `/api`만 예외 처리한다는 점을 구현 기준선으로 적는다
+   - [x] `static/firebase-messaging-sw.js:1-16`: 별도 루트 스코프 SW가 동시에 존재해 진단을 혼탁하게 만들 수 있음을 적되, 이번 plan 수정 대상에서는 제외한다고 명시한다
+   - [x] `docs/plan/2026-04-24_fix-google-login-regression.md`: `/auth/callback` 문서와 navigation document는 캐시 대상에서 제외하는 최소 수정안으로 고정한다
 
 ### Phase 2: callback 진단 로그 최소 강화
 
-3. - [ ] **callback 진입 직후 남길 메타 로그를 토큰 비노출 형태로 정리한다** — 실패 타입을 네트워크/세션/토큰 부재로 분리
-   - [ ] `src/routes/auth/callback/+page.svelte:64-69`: `console.log("[Auth Callback] Query metadata:", ...)`를 token 비노출 메타 객체 로그로 바꾸고 `provider`, `appId`, `returnTo`, `error`, `navigator.onLine`만 남긴다
-   - [ ] `src/routes/auth/callback/+page.svelte:95-104`: `queryMetadata/hashTokens present|none` 2개 로그를 제거하고 `hasGoogleTokens`, `hasSupabaseTokens`, `provider`, `returnTo`를 한 번에 기록하는 진단 로그 1개로 통합한다
-   - [ ] `src/routes/auth/callback/+page.svelte`: `window.location.hash`, `access_token`, `id_token`, token 길이/앞자리/뒷자리 등 유사 식별 정보는 어떤 로그에도 포함하지 않는다는 완료 기준을 문장에 포함한다
+3. - [x] **callback 진입 직후 남길 메타 로그를 토큰 비노출 형태로 정리한다** — 실패 타입을 네트워크/세션/토큰 부재로 분리
+   - [x] `src/routes/auth/callback/+page.svelte:64-69`: `console.log("[Auth Callback] Query metadata:", ...)`를 token 비노출 메타 객체 로그로 바꾸고 `provider`, `appId`, `returnTo`, `error`, `navigator.onLine`만 남긴다
+   - [x] `src/routes/auth/callback/+page.svelte:95-104`: `queryMetadata/hashTokens present|none` 2개 로그를 제거하고 `hasGoogleTokens`, `hasSupabaseTokens`, `provider`, `returnTo`를 한 번에 기록하는 진단 로그 1개로 통합한다
+   - [x] `src/routes/auth/callback/+page.svelte`: `window.location.hash`, `access_token`, `id_token`, token 길이/앞자리/뒷자리 등 유사 식별 정보는 어떤 로그에도 포함하지 않는다는 완료 기준을 문장에 포함한다
 
-4. - [ ] **`signInWithIdToken()` 직전과 catch 로그를 실패 분류용으로 보강한다** — 동작 변경 최소화
-   - [ ] `src/routes/auth/callback/+page.svelte:145-152`: Google branch 진입 직전에 Supabase origin, provider, pathname, search, `navigator.onLine`만 기록하는 `console.log` 1개를 추가한다
-   - [ ] `src/routes/auth/callback/+page.svelte:173-178`: catch에서 `err instanceof Error ? err.name : 'unknown'`, `err instanceof Error ? err.message : String(err)`, `navigator.onLine`을 구조화 로그로 남긴다
-   - [ ] `src/routes/auth/callback/+page.svelte:175-178`: 사용자 노출 문구는 `네트워크 또는 세션 교환 실패` 수준으로만 보강하고, 기존 `setSession()` 우선/Google fallback/`returnTo` 정규화는 그대로 유지한다
+4. - [x] **`signInWithIdToken()` 직전과 catch 로그를 실패 분류용으로 보강한다** — 동작 변경 최소화
+   - [x] `src/routes/auth/callback/+page.svelte:145-152`: Google branch 진입 직전에 Supabase origin, provider, pathname, search, `navigator.onLine`만 기록하는 `console.log` 1개를 추가한다
+   - [x] `src/routes/auth/callback/+page.svelte:173-178`: catch에서 `err instanceof Error ? err.name : 'unknown'`, `err instanceof Error ? err.message : String(err)`, `navigator.onLine`을 구조화 로그로 남긴다
+   - [x] `src/routes/auth/callback/+page.svelte:175-178`: 사용자 노출 문구는 `네트워크 또는 세션 교환 실패` 수준으로만 보강하고, 기존 `setSession()` 우선/Google fallback/`returnTo` 정규화는 그대로 유지한다
 
 ### Phase 3: SW 캐시 범위 축소
 
-5. - [ ] **앱 Service Worker가 navigation document를 캐시하지 않도록 제한한다** — 재배포 직후 stale callback 방지
-   - [ ] `src/service-worker.ts:121-131`: fetch 핸들러 상단에 `const isNavigationRequest = event.request.mode === 'navigate' || event.request.destination === 'document'` 계산을 추가한다
-   - [ ] `src/service-worker.ts:121-131`: `isNavigationRequest`가 true면 `event.respondWith`에 들어가기 전에 즉시 return 하도록 분기한다
-   - [ ] `src/service-worker.ts:132-147`: navigation bypass 추가 후에도 기존 `cache.match -> fetch -> cache.put` 경로는 정적 자산 요청에서만 유지된다는 완료 기준을 적는다
+5. - [x] **앱 Service Worker가 navigation document를 캐시하지 않도록 제한한다** — 재배포 직후 stale callback 방지
+   - [x] `src/service-worker.ts:121-131`: fetch 핸들러 상단에 `const isNavigationRequest = event.request.mode === 'navigate' || event.request.destination === 'document'` 계산을 추가한다
+   - [x] `src/service-worker.ts:121-131`: `isNavigationRequest`가 true면 `event.respondWith`에 들어가기 전에 즉시 return 하도록 분기한다
+   - [x] `src/service-worker.ts:132-147`: navigation bypass 추가 후에도 기존 `cache.match -> fetch -> cache.put` 경로는 정적 자산 요청에서만 유지된다는 완료 기준을 적는다
 
-6. - [ ] **`/auth` 계열 경로를 캐시 예외로 고정한다** — callback 문서 stale 방지
-   - [ ] `src/service-worker.ts:124-131`: `const isAuthPath = url.pathname.startsWith('/auth')` 계산을 추가한다
-   - [ ] `src/service-worker.ts:124-131`: 같은 origin이어도 `isAuthPath`면 fetch passthrough 하도록 분기해 `/auth/callback`을 캐시 read/write 대상에서 제외한다
-   - [ ] `src/service-worker.ts:126-131`: `same-origin -> navigation/auth -> /api` 순서 중 어떤 가드가 먼저 실행되는지 문서와 코드가 일치하는지 점검한다
+6. - [x] **`/auth` 계열 경로를 캐시 예외로 고정한다** — callback 문서 stale 방지
+   - [x] `src/service-worker.ts:124-131`: `const isAuthPath = url.pathname.startsWith('/auth')` 계산을 추가한다
+   - [x] `src/service-worker.ts:124-131`: 같은 origin이어도 `isAuthPath`면 fetch passthrough 하도록 분기해 `/auth/callback`을 캐시 read/write 대상에서 제외한다
+   - [x] `src/service-worker.ts:126-131`: `same-origin -> navigation/auth -> /api` 순서 중 어떤 가드가 먼저 실행되는지 문서와 코드가 일치하는지 점검한다
 
 ### Phase 4: 검증 및 회귀 방지
 
@@ -150,4 +150,4 @@ npm run build
 
 ---
 
-*상태: 초안 | 진행률: 0/11 (0%)*
+*상태: 구현중 | 진행률: 29/53 (55%)*

@@ -126,6 +126,13 @@ sw.addEventListener('fetch', (event) => {
 	// 같은 origin만 캐시
 	if (url.origin !== location.origin) return;
 
+	// navigation document 및 auth callback 문서는 캐시하지 않음 (stale 번들/콜백 방지)
+	const isNavigationRequest = event.request.mode === 'navigate' || event.request.destination === 'document';
+	if (isNavigationRequest) return;
+
+	const isAuthPath = url.pathname.startsWith('/auth');
+	if (isAuthPath) return;
+
 	// API 요청은 캐시하지 않음
 	if (url.pathname.startsWith('/api')) return;
 

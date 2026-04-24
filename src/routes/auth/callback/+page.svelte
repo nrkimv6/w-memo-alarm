@@ -61,13 +61,6 @@
 		const returnTo = searchParams.get("returnTo");
 		const errorParam = searchParams.get("error");
 
-		console.log("[Auth Callback] Query metadata:", {
-			provider,
-			appId,
-			returnTo,
-			error: errorParam,
-		});
-
 		if (errorParam) {
 			return { error: errorParam };
 		}
@@ -94,14 +87,23 @@
 			// 통합: 메타데이터 우선, 토큰은 hash에서
 			const tokens = { ...hashTokens, ...queryMetadata };
 
-			console.log(
-				"[Auth Callback] Query metadata:",
-				queryMetadata ? "present" : "none"
+			// NOTE: 토큰 원문(access_token/id_token/refresh_token 등)은 어떤 로그에도 남기지 않는다.
+			const hasGoogleTokens = Boolean(tokens?.id_token && tokens?.access_token);
+			const hasSupabaseTokens = Boolean(
+				tokens?.supabase_access_token && tokens?.supabase_refresh_token
 			);
-			console.log(
-				"[Auth Callback] Hash tokens:",
-				hashTokens ? "present" : "none"
-			);
+			const swController = navigator.serviceWorker?.controller?.scriptURL ?? null;
+
+			console.log("[Auth Callback] Entry:", {
+				provider: tokens?.provider,
+				appId: tokens?.appId,
+				returnTo: tokens?.returnTo,
+				error: tokens?.error,
+				hasGoogleTokens,
+				hasSupabaseTokens,
+				online: navigator.onLine,
+				swController,
+			});
 
 			// 에러 처리
 			if (tokens?.error) {
@@ -144,6 +146,20 @@
 			} else if (tokens.id_token && tokens.access_token) {
 				// 구글은 기존 방식 (signInWithIdToken)
 				console.log("[Auth Callback] Using signInWithIdToken (Google)");
+				const supabaseOrigin = (() => {
+					try {
+						return new URL(import.meta.env.PUBLIC_SUPABASE_URL).origin;
+					} catch {
+						return null;
+					}
+				})();
+				console.log("[Auth Callback] signInWithIdToken begin:", {
+					provider: tokens.provider,
+					supabaseOrigin,
+					pathname: window.location.pathname,
+					search: window.location.search,
+					online: navigator.onLine,
+				});
 				const { data, error: signInError } =
 					await supabase.auth.signInWithIdToken({
 						provider: "google",
@@ -171,11 +187,17 @@
 				tokens.returnTo === "/login" ? "/" : tokens.returnTo || "/";
 			await finishLogin(safeReturnTo);
 		} catch (err) {
-			console.error("[Auth Callback] Error:", err);
-			error =
-				err instanceof Error
-					? err.message
-					: "로그인 처리 중 오류가 발생했습니다.";
+			const errName = err instanceof Error ? err.name : "unknown";
+			const errMessage = err instanceof Error ? err.message : String(err);
+			console.error("[Auth Callback] Error:", {
+				name: errName,
+				message: errMessage,
+				online: navigator.onLine,
+			});
+
+			// NOTE: 브라우저 fetch-level 실패는 사용자 메시지를 과도하게 기술적으로 만들지 않는다.
+			const userMessage = "네트워크 또는 세션 교환 실패";
+			error = errMessage.includes("Failed to fetch") ? userMessage : errMessage || userMessage;
 		}
 	});
 
