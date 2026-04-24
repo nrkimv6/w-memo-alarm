@@ -1,9 +1,13 @@
 # 북마크 필터에서 할일 카드 렌더링 개선
 
 > 작성일: 2026-03-30
+> 기준커밋: b900531
 > 대상 프로젝트: memo-alarm
-> 상태: 초안
-> 진행률: 0/6 (0%)
+> 상태: 머지대기
+> branch: impl/bookmark-filter-todo-card
+> worktree: .worktrees/impl-bookmark-filter-todo-card
+> worktree-owner: codex
+> 진행률: 6/6 (100%)
 > 요약: 북마크 필터 선택 시 todo가 MemoCard로 렌더링되어 기한/상태 등 할일 정보가 누락되는 문제 수정
 > 출처: /reflect에서 자동 생성
 
@@ -30,21 +34,21 @@
 
 ### Phase 1: 현황 파악
 
-1. - [ ] **TodoCard/할일 카드 컴포넌트 확인**
-   - [ ] `src/routes/todos/+page.svelte`: 할일 목록에서 사용하는 카드 컴포넌트 이름 확인
-   - [ ] `src/lib/components/todo/` 또는 `src/lib/components/memo/`: TodoCard 컴포넌트 존재 여부 확인
+1. - [x] **TodoCard/할일 카드 컴포넌트 확인**
+   - [x] `src/routes/todos/+page.svelte`: 할일 목록에서 사용하는 카드 컴포넌트 이름 확인
+   - [x] `src/lib/components/todo/` 또는 `src/lib/components/memo/`: TodoCard 컴포넌트 존재 여부 확인
 
 ### Phase 2: 메모 페이지 카드 렌더링 분기
 
-2. - [ ] **북마크 필터에서 todo 렌더링 분기 추가**
-   - [ ] `src/routes/memos/+page.svelte:274-286`: `{#each filteredMemos as memo}` 내부에서 `memo.memoType === 'todo'`이면 TodoCard, 아니면 MemoCard로 분기 렌더링
-   - [ ] `src/routes/memos/+page.svelte`: TodoCard import 추가
+2. - [x] **북마크 필터에서 todo 렌더링 분기 추가**
+   - [x] `src/routes/memos/+page.svelte:274-286`: `{#each filteredMemos as memo}` 내부에서 `memo.memoType === 'todo'`이면 TodoCard, 아니면 MemoCard로 분기 렌더링
+   - [x] `src/routes/memos/+page.svelte`: TodoCard import 추가
 
 ### Phase 3: 빌드 검증
 
-3. - [ ] **빌드 확인**
-   - [ ] `npm run build` 타입 에러 없이 성공
+3. - [x] **빌드 확인**
+   - [x] `npm run build` 타입 에러 없이 성공
 
 ---
 
-*상태: 초안 | 진행률: 0/6 (0%)*
+*상태: 머지대기 | 진행률: 6/6 (100%)*

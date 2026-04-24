@@ -14,6 +14,7 @@
 		ShareModal,
 		DuplicateUrlDialog
 	} from '$lib/components/memo';
+	import TodoCard from '$lib/components/todo/TodoCard.svelte';
 	import { findDuplicatesByUrl } from '$lib/utils';
 	import { memosStore } from '$lib/stores/memos.svelte';
 	import { filterStore } from '$lib/stores/filter.svelte';
@@ -272,17 +273,28 @@
 				)}
 			>
 				{#each filteredMemos as memo (memo.id)}
-					<MemoCard
-						{memo}
-						compact={viewMode === 'list' || viewMode === 'compact'}
-						ultraCompact={viewMode === 'compact'}
-						onClick={handleView}
-						onEdit={handleEdit}
-						onDelete={handleDelete}
-						onTogglePin={(id) => memosStore.togglePin(id)}
-						onToggleFavorite={(id) => memosStore.toggleFavorite(id)}
-						onToggleActive={(id) => memosStore.toggleActive(id)}
-					/>
+					{#if memo.memoType === 'todo'}
+						<TodoCard
+							todo={memo}
+							compact={viewMode === 'list' || viewMode === 'compact'}
+							onEdit={handleView}
+							isMultiSelectMode={isSelectionMode}
+							isSelected={selectionStore.isSelected(memo.id)}
+							onToggleSelection={(todoId) => selectionStore.toggleSelection(todoId)}
+						/>
+					{:else}
+						<MemoCard
+							{memo}
+							compact={viewMode === 'list' || viewMode === 'compact'}
+							ultraCompact={viewMode === 'compact'}
+							onClick={handleView}
+							onEdit={handleEdit}
+							onDelete={handleDelete}
+							onTogglePin={(id) => memosStore.togglePin(id)}
+							onToggleFavorite={(id) => memosStore.toggleFavorite(id)}
+							onToggleActive={(id) => memosStore.toggleActive(id)}
+						/>
+					{/if}
 				{/each}
 			</div>
 		{/if}
