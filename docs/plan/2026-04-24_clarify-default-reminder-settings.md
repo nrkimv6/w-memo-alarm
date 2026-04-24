@@ -3,11 +3,11 @@
 > 작성일시: 2026-04-24 22:27
 > 기준커밋: 945bf4d
 > 대상 프로젝트: memo-alarm
-> 상태: 초안
-> branch:
-> worktree:
-> worktree-owner:
-> 진행률: 0/6 (0%)
+> 상태: 구현중
+> branch: impl/clarify-default-reminder-settings
+> worktree: .worktrees/impl-clarify-default-reminder-settings
+> worktree-owner: /D:/work/project/service/wtools/memo-alarm/docs/plan/2026-04-24_clarify-default-reminder-settings.md
+> 진행률: 5/6 (83%)
 > 요약: 현재 기본알림과 할일 기본 알림시간은 `localStorage` 기반이라 기기마다 달라질 수 있다. 이번 계획은 알림 기본설정을 Supabase의 계정 설정으로 승격하고, 다른 기기 변경도 자동 반영되도록 스토어와 초기화 순서를 재구성하는 데 목적이 있다.
 
 ---
@@ -100,4 +100,4 @@ Z. ☐ **post-merge 정리 확인** — `/merge-test` owner
 
 ---
 
-*상태: 초안 | 진행률: 0/6 (0%)*
+*상태: 구현중 | 진행률: 5/6 (83%)*

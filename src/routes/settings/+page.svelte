@@ -55,6 +55,11 @@
 	const todoShowOverdue = $derived(settingsStore.settings.todoDefaults.showOverdue);
 	const todoShowProgress = $derived(settingsStore.settings.todoDefaults.showProgress);
 	const todoShowUpcomingOnEmpty = $derived(settingsStore.settings.todoDefaults.showUpcomingOnEmpty);
+	const accountSyncHint = $derived(
+		authStore.isAuthenticated
+			? '이 기본 알림 설정은 계정에 동기화됩니다.'
+			: '로그인하면 이 기본 알림 설정이 계정에 동기화됩니다.'
+	);
 
 	const dayLabels = ['일', '월', '화', '수', '목', '금', '토'];
 	const themeOptions = [
@@ -227,7 +232,7 @@
 									<p class="text-xs text-muted-foreground">{getUserEmail(authStore.user)}</p>
 								{/if}
 							{/if}
-							<p class="mt-1 text-xs text-success">클라우드 동기화 활성</p>
+							<p class="mt-1 text-xs text-success">메모와 알림 기본설정 동기화 활성</p>
 						</div>
 						<Button variant="ghost" size="sm" onclick={() => authStore.signOut()} class="w-full justify-start gap-2">
 							<LogOut class="h-4 w-4" />
@@ -236,7 +241,7 @@
 					</div>
 				{:else}
 					<div class="space-y-3 px-4 py-4">
-						<p class="text-xs text-muted-foreground">로그인하면 데이터가 자동으로 클라우드에 백업됩니다.</p>
+						<p class="text-xs text-muted-foreground">로그인하면 메모와 알림 기본설정이 계정에 자동 동기화됩니다.</p>
 						<button
 							onclick={() => authStore.signInWithGoogle()}
 							class="flex w-full items-center justify-center gap-2 rounded-lg border border-border p-3 text-sm font-medium transition-colors hover:bg-muted"
@@ -284,6 +289,10 @@
 						</button>
 					{/snippet}
 				</Row>
+
+				<ImpactNote>
+					{accountSyncHint}
+				</ImpactNote>
 
 				{#if autoReminderOnCreate}
 					<div class="space-y-4 bg-muted/40 px-4 py-3">
@@ -398,6 +407,10 @@
 						</button>
 					{/snippet}
 				</Row>
+
+				<ImpactNote>
+					{accountSyncHint}
+				</ImpactNote>
 
 				{#if todoRemindEnabled}
 					<div class="bg-muted/40 px-4 py-3">
