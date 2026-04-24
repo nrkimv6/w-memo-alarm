@@ -1,15 +1,16 @@
 # fix: memo-alarm svelte-check 에러 수정
 
+> 완료일: 2026-04-24
+> 아카이브됨
 > 출처: /reflect에서 자동 생성
 > 작성일시: 2026-04-24 14:30
 > 기준커밋: 3772a31
 > 대상 프로젝트: memo-alarm
-> 상태: 머지대기
+> 상태: 구현완료
+> 반영일시: 2026-04-24 10:17
+> 머지커밋: 64a218a
 > 유형: fix
-> branch: impl/fix-svelte-check-errors
-> worktree: .worktrees/impl-fix-svelte-check-errors
-> worktree-owner: D:\work\project\service\wtools\memo-alarm\docs\plan\2026-04-24_fix-svelte-check-errors.md
-> 진행률: 57/64 (89%)
+> 진행률: 64/64 (100%)
 > 요약: `npm run check` 21개 에러를 ambient 선언, VoiceInput, Modal/EmojiPicker/Icon props, QuickMemoInput/notifications, Onboarding/TodoCard, env runtime 경로 보정으로 해소했고 `npm run build`도 통과
 
 ---
@@ -163,14 +164,14 @@
 
 ### Phase Z: Post-Merge Cleanup (/merge-test owner)
 
-Z. - [ ] **post-merge 정리 확인** — `/merge-test` owner
-   - [ ] main merge 시도
-   - [ ] `npm run check` 재실행 (main 머지 후 0 errors 재확인)
-   - [ ] `npm run build` 재실행 (main 머지 후 빌드 성공 재확인)
-   - [ ] worktree remove
-   - [ ] branch remove
-   - [ ] header meta 제거 (`> branch:`, `> worktree:`, `> worktree-owner:`)
+Z. - [x] **post-merge 정리 확인** — `/merge-test` owner
+   - [x] main merge 시도
+   - [x] `npm run check` 재실행 (main 머지 후 0 errors 재확인)
+   - [x] `npm run build` 재실행 (main 머지 후 빌드 성공 재확인)
+   - [x] worktree remove
+   - [x] branch remove
+   - [x] header meta 제거 (`> branch:`, `> worktree:`, `> worktree-owner:`)
 
 ---
 
-*상태: 머지대기 | 진행률: 57/64 (89%)*
+*상태: 구현완료 | 진행률: 64/64 (100%)*
