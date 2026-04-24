@@ -3,7 +3,7 @@
 > 작성일시: 2026-04-24
 > 기준커밋: 5a01690
 > 대상 프로젝트: memo-alarm
-> 상태: 구현중
+> 상태: 머지대기
 > branch: impl/fix-sw-messages-register-todo-constants
 > worktree: .worktrees/impl-fix-sw-messages-register-todo-constants
 > worktree-owner: docs/plan/2026-04-24_fix-sw-messages-register-todo-constants.md
@@ -107,4 +107,4 @@
 - Phase Z: Post-Merge Cleanup (1 parent / 5 children)
 - 총 8 parents / 22 children = 30 체크박스
 
-*상태: 구현중 | 진행률: 24/30 (80%)*
+*상태: 머지대기 | 진행률: 24/30 (80%)*
