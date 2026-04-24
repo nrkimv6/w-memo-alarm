@@ -49,7 +49,7 @@ export function getFCMConfigStatus() {
 const FCM_PROJECT_MARKER_KEY = 'fcm.projectMarker';
 
 function buildCurrentProjectMarker(): string {
-	return `${env.PUBLIC_FIREBASE_PROJECT_ID ?? ''}|${env.PUBLIC_FIREBASE_MESSAGING_SENDER_ID ?? ''}`;
+	return `${PUBLIC_FIREBASE_PROJECT_ID ?? ''}|${PUBLIC_FIREBASE_MESSAGING_SENDER_ID ?? ''}`;
 }
 
 export function readStoredProjectMarker(): string | null {
@@ -121,12 +121,12 @@ export async function registerFCMToken(userId: string): Promise<FCMToken | null>
 		const registration = await navigator.serviceWorker.ready;
 
 		// 3. FCM 토큰 발급 (VAPID 키 사용)
-		if (!env.PUBLIC_FIREBASE_VAPID_KEY) {
+		if (!PUBLIC_FIREBASE_VAPID_KEY) {
 			throw new Error('VAPID key not configured');
 		}
 
 		const fcmToken = await getToken(messaging, {
-			vapidKey: env.PUBLIC_FIREBASE_VAPID_KEY,
+			vapidKey: PUBLIC_FIREBASE_VAPID_KEY,
 			serviceWorkerRegistration: registration
 		});
 
