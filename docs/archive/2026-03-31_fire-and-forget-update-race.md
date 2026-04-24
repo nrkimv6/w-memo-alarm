@@ -1,6 +1,6 @@
 # fire-and-forget update() 호출의 잠재적 race condition 방지
 
-> ⚠️ **SUPERSEDED by [2026-04-07_fix-bookmark-disappear-recurrence.md](../plan/2026-04-07_fix-bookmark-disappear-recurrence.md)**
+> ⚠️ **SUPERSEDED by [2026-04-07_fix-bookmark-disappear-recurrence.md](./2026-04-07_fix-bookmark-disappear-recurrence.md)**
 > PGRST116 단건 재시도 + per-memo 큐로 근본 해결을 04-07 plan에 통합. 체크리스트 토글 회귀 시나리오도 흡수.
 >
 > 작성일: 2026-03-31

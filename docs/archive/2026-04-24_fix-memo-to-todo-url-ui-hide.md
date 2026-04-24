@@ -30,7 +30,7 @@
 
 ### 관련 선행 plan / archive
 
-- `docs/plan/2026-04-07_fix-bookmark-disappear-recurrence.md` (구현완료): `isPinned`/`isFavorite` 보존 및 race condition 수정. 본 plan과 수정 파일이 겹치지만(`convertMemoToTodo`/`convertTodoToMemo`) URL 필드는 다루지 않았다. `memoToSupabase`의 `undefined → null` 동작 규약은 선행 plan에서 확정된 전제.
+- `docs/archive/2026-04-07_fix-bookmark-disappear-recurrence.md` (구현완료): `isPinned`/`isFavorite` 보존 및 race condition 수정. 본 plan과 수정 파일이 겹치지만(`convertMemoToTodo`/`convertTodoToMemo`) URL 필드는 다루지 않았다. `memoToSupabase`의 `undefined → null` 동작 규약은 선행 plan에서 확정된 전제.
 - `docs/archive/2026-03-31_fix-bookmark-conversion-bug.md` (완료): `isPinned`/`isFavorite` 보존을 위한 명시 전달 패턴 도입. 본 plan은 동일 함수의 `url`/`todoUrls` 필드에 같은 패턴(명시 전달)을 적용한다.
 - `docs/archive/2026-01-24_url-sharing-feature.md`, `docs/archive/2026-02-10_fix-memo-share-url-null.md`: 메모 공유 URL 관련. 본 plan과 다른 도메인(공유 vs 마이그레이션) — 0-hit 충돌.
 

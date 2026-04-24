@@ -7,7 +7,7 @@
 - [x] 2026-04-22: FCM 프로젝트 원복 — wservice-cross-noti 기준 public config/토큰/발송 경로 재정렬 (Cloudflare env 7종, Firebase 도메인 승인, project marker 기반 강제 재등록) — [archive](2026-04-22_realign-fcm-to-wservice-crossnoti.md)
 - [x] 2026-04-22: FCM 권한 오류 및 중복 cron 정리 (service account 진단 표준화, cron 단일화, settings devMode notification_logs 노출) — Phase 5는 realign plan으로 대체 — [archive](2026-04-22_fix-notification-fcm-permission-and-duplicate-cron.md)
 - [x] 2026-04-09: openHistory dead code 제거 (DB 미저장 기능 정리, 3개 경로 방어 완료) — [archive](2026-04-07_fix-openhistory-dead-code.md)
-- [x] 2026-04-07: 메모↔할일 전환 시 북마크 소실 재발 수정 — [plan](../plan/2026-04-07_fix-bookmark-disappear-recurrence.md) (매퍼 undefined→null, per-memo 큐, PGRST116 크로스 디바이스 가드, 빈 업데이트 차단)
+- [x] 2026-04-07: 메모↔할일 전환 시 북마크 소실 재발 수정 — [archive](2026-04-07_fix-bookmark-disappear-recurrence.md) (매퍼 undefined→null, per-memo 큐, PGRST116 크로스 디바이스 가드, 빈 업데이트 차단)
 - [x] 2026-03-31: 메모→할일 전환 시 기본값 불일치 수정 — [archive](2026-03-31_memo-task-conversion-defaults.md)
 - [x] 2026-03-31: 북마크 전환 버그 수정 (3개 경로 방어 완료) — [archive](2026-03-31_fix-bookmark-conversion-bug.md)
 - [x] 2026-03-30: 북마크 가시성 유지, 북마크 필터 추가, 태그 항상표시 속성 구현 — [archive](2026-03-30_bookmark-visibility-filter.md)

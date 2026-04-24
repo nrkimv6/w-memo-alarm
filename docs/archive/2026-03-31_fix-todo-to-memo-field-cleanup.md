@@ -1,6 +1,6 @@
 # 할일→메모 전환 시 할일 전용 필드 클리어 누락 수정
 
-> ⚠️ **SUPERSEDED by [2026-04-07_fix-bookmark-disappear-recurrence.md](../plan/2026-04-07_fix-bookmark-disappear-recurrence.md)**
+> ⚠️ **SUPERSEDED by [2026-04-07_fix-bookmark-disappear-recurrence.md](./2026-04-07_fix-bookmark-disappear-recurrence.md)**
 > cleanup 필드만 추가했으나 `memoToSupabase()`가 `undefined`를 스킵하여 DB에 실제 적용되지 않음. 04-07 plan에서 매퍼 수정 + cleanup을 함께 처리.
 >
 > 작성일: 2026-03-31
