@@ -7,7 +7,7 @@
 > branch: impl/fix-google-login-regression
 > worktree: .worktrees/impl-fix-google-login-regression
 > worktree-owner: docs/plan/2026-04-24_fix-google-login-regression.md
-> 진행률: 20/53 (38%)
+> 진행률: 29/53 (55%)
 > 요약: 2026-04-24 기준 Google 로그인 콜백에서 `AuthRetryableFetchError: Failed to fetch`가 재발했다. 이번 계획은 로그인 구조 개편이 아니라, 운영 드리프트와 SW 캐시 회귀를 먼저 고정하고 callback 진단 로그와 캐시 범위를 최소 수정하는 데 목적이 있다.
 
 ---
@@ -42,16 +42,16 @@
 
 ### Phase 1: 회귀 기준선 고정
 
-1. - [ ] **현재 로그인 경로와 연관 plan 경계를 코드 기준으로 고정한다** — 회귀 원인 후보를 문서화
-   - [ ] `src/routes/auth/callback/+page.svelte:133-166`: `if (tokens.supabase_access_token...)` / `else if (tokens.id_token && tokens.access_token)` 분기를 기준선으로 적어 provider별 세션 생성 경로를 고정한다
-   - [ ] `../auth-worker/src/providers/google.ts:141-160`: Google callback이 `id_token`과 `access_token`을 `redirectToWebApp()`으로 넘기는 현재 계약을 근거로 적는다
-   - [ ] `src/lib/services/supabase.ts:5-13`: Supabase 대상이 `PUBLIC_SUPABASE_URL` 런타임 값에 의존한다는 점을 drift 후보로 기술적 고려사항에 남긴다
-   - [ ] `docs/plan/2026-04-24_fix-google-login-regression.md`: `triage-supabase-signin-failed-to-fetch`는 원인 특정 전용, 본 plan은 B1/cache-drift 수정 전용이라고 범위를 적는다
+1. - [x] **현재 로그인 경로와 연관 plan 경계를 코드 기준으로 고정한다** — 회귀 원인 후보를 문서화
+   - [x] `src/routes/auth/callback/+page.svelte:133-166`: `if (tokens.supabase_access_token...)` / `else if (tokens.id_token && tokens.access_token)` 분기를 기준선으로 적어 provider별 세션 생성 경로를 고정한다
+   - [x] `../auth-worker/src/providers/google.ts:141-160`: Google callback이 `id_token`과 `access_token`을 `redirectToWebApp()`으로 넘기는 현재 계약을 근거로 적는다
+   - [x] `src/lib/services/supabase.ts:5-13`: Supabase 대상이 `PUBLIC_SUPABASE_URL` 런타임 값에 의존한다는 점을 drift 후보로 기술적 고려사항에 남긴다
+   - [x] `docs/plan/2026-04-24_fix-google-login-regression.md`: `triage-supabase-signin-failed-to-fetch`는 원인 특정 전용, 본 plan은 B1/cache-drift 수정 전용이라고 범위를 적는다
 
-2. - [ ] **서비스워커와 callback 문서 캐시 위험을 구현 범위로 고정한다** — stale callback 번들 가능성 판단 기준
-   - [ ] `src/service-worker.ts:121-148`: fetch 핸들러가 같은 origin `GET`을 넓게 캐시하고 `/api`만 예외 처리한다는 점을 구현 기준선으로 적는다
-   - [ ] `static/firebase-messaging-sw.js:1-16`: 별도 루트 스코프 SW가 동시에 존재해 진단을 혼탁하게 만들 수 있음을 적되, 이번 plan 수정 대상에서는 제외한다고 명시한다
-   - [ ] `docs/plan/2026-04-24_fix-google-login-regression.md`: `/auth/callback` 문서와 navigation document는 캐시 대상에서 제외하는 최소 수정안으로 고정한다
+2. - [x] **서비스워커와 callback 문서 캐시 위험을 구현 범위로 고정한다** — stale callback 번들 가능성 판단 기준
+   - [x] `src/service-worker.ts:121-148`: fetch 핸들러가 같은 origin `GET`을 넓게 캐시하고 `/api`만 예외 처리한다는 점을 구현 기준선으로 적는다
+   - [x] `static/firebase-messaging-sw.js:1-16`: 별도 루트 스코프 SW가 동시에 존재해 진단을 혼탁하게 만들 수 있음을 적되, 이번 plan 수정 대상에서는 제외한다고 명시한다
+   - [x] `docs/plan/2026-04-24_fix-google-login-regression.md`: `/auth/callback` 문서와 navigation document는 캐시 대상에서 제외하는 최소 수정안으로 고정한다
 
 ### Phase 2: callback 진단 로그 최소 강화
 
@@ -150,4 +150,4 @@ npm run build
 
 ---
 
-*상태: 구현중 | 진행률: 20/53 (38%)*
+*상태: 구현중 | 진행률: 29/53 (55%)*
