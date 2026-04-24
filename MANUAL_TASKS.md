@@ -95,4 +95,17 @@
 
 ---
 
+## 2026-04-24: todo 알림 click 라우팅 + SW 메시지 계약 검증
+
+> from: [`2026-04-24_fix-todo-notification-click-and-sw-messages`](docs/plan/2026-04-24_fix-todo-notification-click-and-sw-messages.md)
+
+- [ ] todo 상기(remind) 알림 1건 발송 → 클릭 시 `/todos` 리스트로 이동하는지 확인 — 단일 todo click → /todos
+- [ ] todo 병합 알림(2건 이상, 동일 시각) → 클릭 시 `/todos`로 이동하는지 확인 — 병합 todo click → /todos
+- [ ] devtools console에서 `TODO_NOTIFICATION_SENT` success payload(memoId, notificationId, notificationType, status, errorMessage, sentAt)가 SW에서 전달되는지 확인
+- [ ] 알림 내역 페이지(`/notifications`)에서 todo 기록이 `channel=sw-todo`, `채널 라벨="Todo"`로 표시되는지 확인
+- [ ] 알림 내역 카드의 클릭이 `sw-todo` 채널 기록은 `/todos`, 메모 채널 기록은 `/memos`로 이동하는지 확인 — todo history click → /todos
+- [ ] 기존 메모 알림 click(단일/병합) 동작이 변경 없음(회귀 없음) — smoke: memo click → /memos 또는 `/?memo=...`
+
+---
+
 *마지막 업데이트: 2026-04-24*
