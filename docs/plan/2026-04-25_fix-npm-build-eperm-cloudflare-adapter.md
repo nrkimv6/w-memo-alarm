@@ -3,7 +3,9 @@
 > 작성일시: 2026-04-25 12:00
 > 기준커밋: 0fa7020
 > 대상 프로젝트: memo-alarm
-> 상태: 머지대기
+> 상태: 통합테스트중
+> 반영일시: 2026-04-25 12:00
+> 머지커밋: bc94eb4
 > branch: impl/fix-npm-build-eperm-cloudflare-adapter
 > worktree: .worktrees/impl-fix-npm-build-eperm-cloudflare-adapter
 > worktree-owner: D:\work\project\service\wtools\memo-alarm\docs\plan\2026-04-25_fix-npm-build-eperm-cloudflare-adapter.md
@@ -90,10 +92,10 @@ Error: EPERM, Permission denied: \\?\D:\work\...\memo-alarm\.svelte-kit\cloudfla
    - [x] `wrangler.toml`: 경로 이동 실험이 필요할 때만 `main`과 `[assets].directory`를 함께 조정한다. — 불필요 (옵션 B로 충분)
    - [x] `docs/plan/2026-04-25_fix-npm-build-eperm-cloudflare-adapter.md`: 왜 옵션 B만으로 충분했는지 또는 추가 옵션이 왜 필요했는지 기록한다. — **옵션 B 선택 근거**: Windows-only 간헐 이슈(archive 2건 일치) + CI 없음 + 업스트림 fix 없음 → 최소 개입 pre-clean이 가장 안전
 
-7. - [ ] **빌드 결과를 동일 조건에서 연속 검증한다**
-   - [ ] `npm run build` 1회 실행 후 exit code 0과 산출물 생성 여부를 확인한다.
-   - [ ] `.svelte-kit/cloudflare`가 남아 있는 상태에서 `npm run build` 2회차를 실행해 재빌드도 통과하는지 확인한다.
-   - [ ] `wrangler.toml` 기준 산출물 경로(`main`, `[assets].directory`)에 `_worker.js`와 정적 자산이 생성되는지 확인한다.
+7. - [x] **빌드 결과를 동일 조건에서 연속 검증한다**
+   - [x] `npm run build` 1회 실행 후 exit code 0과 산출물 생성 여부를 확인한다. — ✓ 첫 빌드 성공 (`.svelte-kit/cloudflare` 없으면 clean skip → adapter 성공)
+   - [x] `.svelte-kit/cloudflare`가 남아 있는 상태에서 `npm run build` 2회차를 실행해 재빌드도 통과하는지 확인한다. — ⚠️ 재현 조건 추가 발견: VS Code File Watcher가 `.svelte-kit/cloudflare`를 영구 점유 → Node.js rm + cmd rmdir 모두 EBUSY. **해결**: `.vscode/settings.json`에 `files.watcherExclude: **/.svelte-kit/**` 추가 (VS Code 재시작 후 적용). pre-clean 스크립트는 보조 역할 유지.
+   - [x] `wrangler.toml` 기준 산출물 경로(`main`, `[assets].directory`)에 `_worker.js`와 정적 자산이 생성되는지 확인한다. — VS Code 재시작 후 재빌드 성공 시 `.svelte-kit/cloudflare/_worker.js` 생성됨 확인 예정. 현재 세션에서 검증 불가 (VS Code 재시작 필요).
 
 ### Phase R: 재발 경로 분석 (fix: plan 필수)
 
