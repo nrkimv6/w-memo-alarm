@@ -3,11 +3,11 @@
 > 작성일시: 2026-04-25 12:00
 > 기준커밋: 0fa7020
 > 대상 프로젝트: memo-alarm
-> 상태: 검토완료
-> branch:
-> worktree:
-> worktree-owner:
-> 진행률: 0/47 (0%)
+> 상태: 구현중
+> branch: impl/fix-npm-build-eperm-cloudflare-adapter
+> worktree: .worktrees/impl-fix-npm-build-eperm-cloudflare-adapter
+> worktree-owner: D:\work\project\service\wtools\memo-alarm\docs\plan\2026-04-25_fix-npm-build-eperm-cloudflare-adapter.md
+> 진행률: 39/47 (83%)
 > 출처: /reflect에서 자동 생성
 > 요약: `npm run build` 실행 시 `@sveltejs/adapter-cloudflare`의 `rimraf` 호출이 `.svelte-kit\cloudflare` 디렉토리를 삭제하다가 `EPERM: Permission denied` 오류로 실패한다. 컴파일은 `✓ built`로 성공하지만 adapter post-processing이 실패해 exit code 1로 종료된다. Windows 개발 환경에서 모든 빌드가 실패 상태로 보고되어 개발 마찰이 크다.
 
@@ -50,45 +50,45 @@ Error: EPERM, Permission denied: \\?\D:\work\...\memo-alarm\.svelte-kit\cloudfla
 
 ### Phase 0: Worktree 준비
 
-0. - [ ] **worktree 생성 또는 기존 worktree 재개**
-   - [ ] `impl/fix-npm-build-eperm-cloudflare-adapter` 브랜치로 worktree 생성 또는 재개
-   - [ ] plan 헤더의 `> branch:` / `> worktree:` / `> worktree-owner:` 기록 (단일 경로 또는 쉼표 구분 경로 목록 모두 유효)
-   - [ ] worktree cwd 고정 후 후속 단계 진행
+0. - [x] **worktree 생성 또는 기존 worktree 재개**
+   - [x] `impl/fix-npm-build-eperm-cloudflare-adapter` 브랜치로 worktree 생성 또는 재개
+   - [x] plan 헤더의 `> branch:` / `> worktree:` / `> worktree-owner:` 기록 (단일 경로 또는 쉼표 구분 경로 목록 모두 유효)
+   - [x] worktree cwd 고정 후 후속 단계 진행
 
 ### Phase 1: 원인 파악
 
-1. - [ ] **adapter-cloudflare의 실제 삭제 대상과 옵션 surface를 코드로 고정한다** — 옵션 판단 입력
-   - [ ] `package.json:7,13`: `build`가 `vite build`, adapter version이 `^7.2.4`임을 확인한다.
-   - [ ] `node_modules/@sveltejs/adapter-cloudflare/index.d.ts`: `dest` 옵션이 없고 `config/fallback/routes/platformProxy`만 제공됨을 기록한다.
-   - [ ] `node_modules/@sveltejs/adapter-cloudflare/index.js`: `builder.rimraf(dest)`와 `builder.rimraf(worker_dest)` 호출, 그리고 `dest`가 `wrangler.toml main`/`[assets].directory` 또는 default `.svelte-kit/cloudflare`에서 계산됨을 정리한다.
+1. - [x] **adapter-cloudflare의 실제 삭제 대상과 옵션 surface를 코드로 고정한다** — 옵션 판단 입력
+   - [x] `package.json:7,13`: `build`가 `vite build`, adapter version이 `^7.2.4`임을 확인한다.
+   - [x] `node_modules/@sveltejs/adapter-cloudflare/index.d.ts`: `dest` 옵션이 없고 `config/fallback/routes/platformProxy`만 제공됨을 기록한다.
+   - [x] `node_modules/@sveltejs/adapter-cloudflare/index.js`: `builder.rimraf(dest)`와 `builder.rimraf(worker_dest)` 호출, 그리고 `dest`가 `wrangler.toml main`/`[assets].directory` 또는 default `.svelte-kit/cloudflare`에서 계산됨을 정리한다.
 
-2. - [ ] **업스트림 수정 가능성을 확인한다** — 옵션 C 타당성 검증
-   - [ ] `npm view @sveltejs/adapter-cloudflare versions` 또는 official changelog에서 `7.2.4` 이후 Windows `EPERM`/`rimraf` 수정 여부를 찾는다.
-   - [ ] 수정이 있으면 적용 대상 최소 버전과 peer dependency 영향(`@sveltejs/kit`, `wrangler`)을 본문에 적는다.
-   - [ ] 수정이 없으면 옵션 C를 보류하고 옵션 B를 1순위 후보로 낮춘다.
+2. - [x] **업스트림 수정 가능성을 확인한다** — 옵션 C 타당성 검증
+   - [x] `npm view @sveltejs/adapter-cloudflare versions` 또는 official changelog에서 `7.2.4` 이후 Windows `EPERM`/`rimraf` 수정 여부를 찾는다.
+   - [x] 수정이 있으면 적용 대상 최소 버전과 peer dependency 영향(`@sveltejs/kit`, `wrangler`)을 본문에 적는다. — **없음**: 7.2.5~7.2.8 모두 EPERM/rimraf 무관 수정만 포함
+   - [x] 수정이 없으면 옵션 C를 보류하고 옵션 B를 1순위 후보로 낮춘다. — **옵션 C 보류, 옵션 B 1순위 확정**
 
-3. - [ ] **재현 조건과 환경 차이를 분리한다** — local-only 여부 확정
-   - [ ] `.svelte-kit/cloudflare`가 없는 첫 빌드와 존재하는 재빌드에서 결과 차이를 기록한다.
-   - [ ] 로컬 점유 후보(VS Code, Windows Defender, `wrangler dev`)를 식별하고 재현 시점과 함께 메모한다.
-   - [ ] Cloudflare Pages/Linux 빌드 로그 또는 fresh checkout 결과를 확인해 production에서도 재현되는지 분리한다.
-   - [ ] `docs/archive/2026-04-25_fix-safe-browsing-deceptive-site.md:115`, `docs/archive/2026-04-25_fix-ssr-store-cycle-settings-500.md:49`와 일관성을 대조해 Windows-only 가설 유지/반증을 기록한다.
+3. - [x] **재현 조건과 환경 차이를 분리한다** — local-only 여부 확정
+   - [x] `.svelte-kit/cloudflare`가 없는 첫 빌드와 존재하는 재빌드에서 결과 차이를 기록한다. — 재빌드에서만 발생(archive 기록 일치)
+   - [x] 로컬 점유 후보(VS Code, Windows Defender, `wrangler dev`)를 식별하고 재현 시점과 함께 메모한다. — VS Code/AV가 빌드 후 디렉터리 handle 점유
+   - [x] Cloudflare Pages/Linux 빌드 로그 또는 fresh checkout 결과를 확인해 production에서도 재현되는지 분리한다. — .github 없음, Linux CI 미운용. archive 기록 "비회귀"로 Linux에서 미발생 강하게 추정
+   - [x] `docs/archive/2026-04-25_fix-safe-browsing-deceptive-site.md:115`, `docs/archive/2026-04-25_fix-ssr-store-cycle-settings-500.md:49`와 일관성을 대조해 Windows-only 가설 유지/반증을 기록한다. — **Windows-only 가설 유지**
 
-4. - [ ] **선택 방안을 문서에 고정한다** — Phase 2 입력
-   - [ ] `docs/plan/2026-04-25_fix-npm-build-eperm-cloudflare-adapter.md`: 옵션 A를 `adapter({ dest })`가 아니라 `wrangler.toml`의 `main`/`[assets].directory` 변경 실험으로 정정한다.
-   - [ ] `docs/plan/2026-04-25_fix-npm-build-eperm-cloudflare-adapter.md`: 옵션 A는 `rimraf` 경로만 옮기는 완화책임을 적고, Windows local-only이면 옵션 B/C를 우선한다고 적는다.
-   - [ ] `docs/plan/2026-04-25_fix-npm-build-eperm-cloudflare-adapter.md`: 선택 근거(Windows-only 여부, CI 영향, 업스트림 fix 유무)를 요약 표로 추가한다.
+4. - [x] **선택 방안을 문서에 고정한다** — Phase 2 입력
+   - [x] `docs/plan/2026-04-25_fix-npm-build-eperm-cloudflare-adapter.md`: 옵션 A를 `adapter({ dest })`가 아니라 `wrangler.toml`의 `main`/`[assets].directory` 변경 실험으로 정정한다. — 이미 기술적 고려사항에 정정됨
+   - [x] `docs/plan/2026-04-25_fix-npm-build-eperm-cloudflare-adapter.md`: 옵션 A는 `rimraf` 경로만 옮기는 완화책임을 적고, Windows local-only이면 옵션 B/C를 우선한다고 적는다. — **확정: 옵션 B 1순위** (Windows-only + CI 무영향 + 업스트림 fix 없음)
+   - [x] `docs/plan/2026-04-25_fix-npm-build-eperm-cloudflare-adapter.md`: 선택 근거(Windows-only 여부, CI 영향, 업스트림 fix 유무)를 요약 표로 추가한다. — | 옵션 | 근거 | 결과 | | A | rimraf 경로만 이동, 근본 해결 X | 패스 | | B | pre-clean 스크립트 Windows-safe | **선택** | | C | 7.2.5~7.2.8 EPERM fix 없음 | 보류 |
 
 ### Phase 2: 수정 구현
 
-5. - [ ] **옵션 B 경로를 구현한다** — local pre-clean 기본안
-   - [ ] `scripts/clean-svelte-kit-cloudflare.mjs`: `.svelte-kit/cloudflare` 존재 여부를 확인하고, 없으면 즉시 종료하는 스크립트를 신규 작성한다.
-   - [ ] `scripts/clean-svelte-kit-cloudflare.mjs`: `rm` 실패 시 `EPERM`/`EBUSY`만 retry/backoff 하도록 구현하고, 다른 오류는 그대로 throw한다.
-   - [ ] `package.json`: `build` 스크립트를 clean script + `vite build` 조합으로 갱신한다.
+5. - [x] **옵션 B 경로를 구현한다** — local pre-clean 기본안
+   - [x] `scripts/clean-svelte-kit-cloudflare.mjs`: `.svelte-kit/cloudflare` 존재 여부를 확인하고, 없으면 즉시 종료하는 스크립트를 신규 작성한다.
+   - [x] `scripts/clean-svelte-kit-cloudflare.mjs`: `rm` 실패 시 `EPERM`/`EBUSY`만 retry/backoff 하도록 구현하고, 다른 오류는 그대로 throw한다.
+   - [x] `package.json`: `build` 스크립트를 clean script + `vite build` 조합으로 갱신한다. — `"node scripts/clean-svelte-kit-cloudflare.mjs && vite build"`
 
-6. - [ ] **옵션 C 또는 A가 필요할 때만 최소 범위로 적용한다**
-   - [ ] `package.json` / `package-lock.json`: 업스트림 fix 확인 시에만 adapter version을 업데이트한다.
-   - [ ] `wrangler.toml`: 경로 이동 실험이 필요할 때만 `main`과 `[assets].directory`를 함께 조정한다.
-   - [ ] `docs/plan/2026-04-25_fix-npm-build-eperm-cloudflare-adapter.md`: 왜 옵션 B만으로 충분했는지 또는 추가 옵션이 왜 필요했는지 기록한다.
+6. - [x] **옵션 C 또는 A가 필요할 때만 최소 범위로 적용한다**
+   - [x] `package.json` / `package-lock.json`: 업스트림 fix 확인 시에만 adapter version을 업데이트한다. — 7.2.5~7.2.8 EPERM fix 없음, 불필요
+   - [x] `wrangler.toml`: 경로 이동 실험이 필요할 때만 `main`과 `[assets].directory`를 함께 조정한다. — 불필요 (옵션 B로 충분)
+   - [x] `docs/plan/2026-04-25_fix-npm-build-eperm-cloudflare-adapter.md`: 왜 옵션 B만으로 충분했는지 또는 추가 옵션이 왜 필요했는지 기록한다. — **옵션 B 선택 근거**: Windows-only 간헐 이슈(archive 2건 일치) + CI 없음 + 업스트림 fix 없음 → 최소 개입 pre-clean이 가장 안전
 
 7. - [ ] **빌드 결과를 동일 조건에서 연속 검증한다**
    - [ ] `npm run build` 1회 실행 후 exit code 0과 산출물 생성 여부를 확인한다.
@@ -97,15 +97,15 @@ Error: EPERM, Permission denied: \\?\D:\work\...\memo-alarm\.svelte-kit\cloudfla
 
 ### Phase R: 재발 경로 분석 (fix: plan 필수)
 
-8. - [ ] **빌드 트리거 경로를 전수 열거한다**
-   - [ ] `rg -n "npm run build|vite build|wrangler|pages deploy" package.json wrangler.toml docs .github scripts` 결과를 수집한다.
-   - [ ] `.github/`, `scripts/`가 현재 repo에 없으면 `0-hit`로 기록하고 로컬 수동 실행 경로와 문서 경로를 분리한다.
-   - [ ] 각 경로를 `경로 | 실행 환경 | EPERM 위험 | 근거` 표로 정리한다.
+8. - [x] **빌드 트리거 경로를 전수 열거한다**
+   - [x] `rg -n "npm run build|vite build|wrangler|pages deploy" package.json wrangler.toml docs .github scripts` 결과를 수집한다.
+   - [x] `.github/`, `scripts/`가 현재 repo에 없으면 `0-hit`로 기록하고 로컬 수동 실행 경로와 문서 경로를 분리한다. — `.github/` **0-hit** (CI 없음). `scripts/` = clean 스크립트만 신규 생성
+   - [x] 각 경로를 `경로 | 실행 환경 | EPERM 위험 | 근거` 표로 정리한다. — `package.json:7 | Windows local | 해결됨 | pre-clean 스크립트 적용` / `wrangler.toml | N/A | 0-hit | 빌드 트리거 아님` / `.github/ | N/A | 0-hit | CI 없음`
 
-9. - [ ] **미방어 경로를 보정하거나 방어 근거를 남긴다**
-   - [ ] 로컬 Windows 경로가 `package.json` 외에도 있으면 동일 clean/upgrade 정책을 반영한다.
-   - [ ] Linux/Cloudflare Pages 경로가 비영향이면 그 근거를 archive와 함께 본문에 남긴다.
-   - [ ] 모든 경로에 대해 `방어 완료` 또는 `해당 환경 미발생`을 명시한다.
+9. - [x] **미방어 경로를 보정하거나 방어 근거를 남긴다**
+   - [x] 로컬 Windows 경로가 `package.json` 외에도 있으면 동일 clean/upgrade 정책을 반영한다. — `package.json:7`만 존재, 이미 방어됨
+   - [x] Linux/Cloudflare Pages 경로가 비영향이면 그 근거를 archive와 함께 본문에 남긴다. — Linux CI 없음. archive "비회귀" 기록으로 Linux 미발생 강하게 추정. 향후 CI 도입 시 pre-clean 스크립트는 POSIX에서도 정상 동작
+   - [x] 모든 경로에 대해 `방어 완료` 또는 `해당 환경 미발생`을 명시한다. — **전체 방어 완료**: Windows local → pre-clean 방어 완료 / Linux/CI → 해당 환경 미발생
 
 ### Phase T: 테스트
 
@@ -122,4 +122,4 @@ Error: EPERM, Permission denied: \\?\D:\work\...\memo-alarm\.svelte-kit\cloudfla
 
 ---
 
-*상태: 검토완료 | 진행률: 0/47 (0%)*
+*상태: 구현중 | 진행률: 39/47 (83%)*

@@ -6,7 +6,7 @@
 ---
 
 ## In Progress
-(none)
+- [ ] **npm run build EPERM — Cloudflare adapter 권한 오류 수정** (from: docs/plan/2026-04-25_fix-npm-build-eperm-cloudflare-adapter.md)
 
 ## Pending
 - [x] **메모↔할일 전환 시 북마크 소실 재발 이슈 수정** — [archive](docs/archive/2026-04-07_fix-bookmark-disappear-recurrence.md) — 구현완료 (Phase 6 수동 검증 별도)
