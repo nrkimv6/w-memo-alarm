@@ -7,7 +7,7 @@
 > branch:
 > worktree:
 > worktree-owner:
-> 진행률: 0/39 (0%)
+> 진행률: 0/40 (0%)
 > 출처: /reflect에서 자동 생성
 > 요약: `firebase-messaging-sw.js`가 root scope(`/`)에 등록되어 SvelteKit SW(`service-worker.js`)와 scope가 겹친다. 두 SW가 동일 scope에서 경쟁하면 fetch 가로채기가 비결정적이 되고, Safe Browsing 진단에 혼탁 요인이 된다. scope 분리 또는 FCM 처리를 SvelteKit SW로 통합하여 SW가 1개만 root scope를 제어하도록 한다.
 
@@ -30,6 +30,8 @@
 - `src/service-worker.ts:107-148,159-177,608-662`는 root scope SW의 `fetch`, `push`, `notificationclick`, reminder scheduling을 담당한다. 이번 fix는 이 계약을 깨지 않고 root scope를 SvelteKit SW 1개로 고정해야 한다.
 - 기존 archive `docs/archive/2026-04-23_fix-sw-update-alarm-lost.md:80-81`, `docs/archive/2026-04-24_fix-google-login-regression.md:24-28`, `docs/archive/2026-04-25_fix-safe-browsing-deceptive-site.md:80`가 이미 동일한 root scope 충돌 위험을 기록했다. 이번 plan은 그 근거를 재사용하고 수정 범위를 `src/lib/fcm.ts` 중심으로 제한한다.
 - 수동 검증에는 이미 있는 개발자 도구 UI를 재사용할 수 있다: `src/lib/components/settings/dev/DevFcmStatusSection.svelte`(토큰 등록/상태)와 `src/lib/components/settings/dev/DevWebServiceWorkerNotificationSection.svelte`(root SW 상태/테스트 알림).
+- scope를 `/firebase-messaging/`로 좁히면 FCM SW가 root document(`/`, `/?memo=...`)를 더는 control하지 못한다. 따라서 `static/firebase-messaging-sw.js:110-122`의 `clients.matchAll({ type: 'window', includeUncontrolled: true })`로 가져온 `WindowClient`에 대한 `client.navigate(appUrl)` 호출이 `null`을 반환할 수 있다. 기존 `.catch(() => clients.openWindow(appUrl))`는 reject만 잡으므로 null 반환 시 fallback이 발동하지 않는다. Phase 2-4와 Phase 3-6에서 이 동선을 명시적으로 검증한다.
+- T1~T5 해당 없음: 본 plan은 SvelteKit 프론트엔드 + 브라우저 SW 동작 변경이며 Python 백엔드 코드 변경 없음. 프로젝트 루트에 `tests/` 디렉토리 0건 (`node_modules` 외부에서 `*.test.ts/js` 0건). 회귀 검증은 Phase 3-5/6의 수동 검증 + Phase R의 경로 전수 점검으로 커버한다.
 
 ---
 
@@ -58,6 +60,7 @@
    - [ ] `static/firebase-messaging-sw.js`: `onBackgroundMessage`와 `notificationclick`가 fetch 핸들러 없이도 FCM 전용 worker로 유지되도록 scope 변경 외 동작은 건드리지 않는다.
    - [ ] `src/service-worker.ts`: root scope SW의 `fetch`, `push`, `notificationclick`, reminder scheduling 경로를 수정 대상에서 제외한다고 plan 본문에 명시한다.
    - [ ] `docs/plan/2026-04-25_fix-fcm-sw-scope-conflict.md`: `clients.claim()`/`skipWaiting()`이 남더라도 root page를 더는 control하지 않는다는 검증 포인트를 추가한다.
+   - [ ] `static/firebase-messaging-sw.js:110-122`: scope 제한 후 `client.navigate(appUrl)`가 `null`을 반환할 가능성에 대비해 fallback을 보강한다 — `.then((result) => { if (result === null) clients.openWindow(appUrl); }).catch(() => clients.openWindow(appUrl))` 또는 동등한 동선으로 단일/병합 알림 클릭이 항상 앱 진입을 보장하도록 수정한다.
 
 ### Phase 3: push 알림 동작 검증
 
@@ -77,7 +80,7 @@
 7. - [ ] **SW registration 참조 경로를 전수 열거한다**
    - [ ] `rg -n "firebase-messaging-sw|navigator\\.serviceWorker\\.ready|serviceWorkerRegistration" src static docs` 결과에서 FCM 전용 등록 경로와 root SW 전용 경로를 분류한다.
    - [ ] `src/routes/+layout.svelte`, `src/lib/components/settings/dev/DevFcmStatusSection.svelte`: `registerFCMToken()` 호출부는 수정 후에도 별도 변경 없이 새 registration 흐름을 타는지 확인한다.
-   - [ ] `src/lib/stores/notifications.svelte`, `src/lib/components/settings/dev/DevWebServiceWorkerNotificationSection.svelte`: `navigator.serviceWorker.ready` 사용이 root SvelteKit SW 전용임을 표로 남긴다.
+   - [ ] `src/lib/stores/notifications.svelte.ts:38`, `src/lib/components/settings/dev/DevWebServiceWorkerNotificationSection.svelte`: `navigator.serviceWorker.ready` 사용이 root SvelteKit SW 전용임을 표로 남긴다.
 
 8. - [ ] **미방어 경로를 보정하거나 범위 제외를 명시한다**
    - [ ] FCM SW를 직접 root scope로 다시 등록하는 코드/문서가 남아 있으면 현재 plan 범위에서 제거 또는 수정 대상으로 승격한다.
@@ -95,4 +98,4 @@ Z. - [ ] **post-merge 정리 확인** — `/merge-test` owner
 
 ---
 
-*상태: 검토완료 | 진행률: 0/39 (0%)*
+*상태: 검토완료 | 진행률: 0/40 (0%)*
