@@ -9,6 +9,7 @@
 (none)
 
 ## Pending
+- [ ] **Google Search Console 사기성 페이지 경고 해제** — [plan](docs/plan/2026-04-25_gsc-deceptive-page-review.md) (5/8, 62%) — 점검 완료, 캐시 퍼지 + 검토 요청 제출 필요
 - [x] **메모↔할일 전환 시 북마크 소실 재발 이슈 수정** — [archive](docs/archive/2026-04-07_fix-bookmark-disappear-recurrence.md) — 구현완료 (Phase 6 수동 검증 별도)
 
 ---
