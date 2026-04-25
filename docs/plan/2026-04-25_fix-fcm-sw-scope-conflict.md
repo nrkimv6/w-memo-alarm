@@ -3,11 +3,11 @@
 > 작성일시: 2026-04-25 12:00
 > 기준커밋: 0fa7020
 > 대상 프로젝트: memo-alarm
-> 상태: 구현중
+> 상태: 머지대기
 > branch: impl/fix-fcm-sw-scope-conflict
 > worktree: .worktrees/impl-fix-fcm-sw-scope-conflict
 > worktree-owner: D:\work\project\service\wtools\memo-alarm\docs\plan\2026-04-25_fix-fcm-sw-scope-conflict.md
-> 진행률: 17/40 (43%)
+> 진행률: 25/40 (63%)
 > 출처: /reflect에서 자동 생성
 > 요약: `firebase-messaging-sw.js`가 root scope(`/`)에 등록되어 SvelteKit SW(`service-worker.js`)와 scope가 겹친다. 두 SW가 동일 scope에서 경쟁하면 fetch 가로채기가 비결정적이 되고, Safe Browsing 진단에 혼탁 요인이 된다. scope 분리 또는 FCM 처리를 SvelteKit SW로 통합하여 SW가 1개만 root scope를 제어하도록 한다.
 
@@ -77,15 +77,15 @@
 
 ### Phase R: 재발 경로 분석 (fix: plan 필수)
 
-7. - [ ] **SW registration 참조 경로를 전수 열거한다**
-   - [ ] `rg -n "firebase-messaging-sw|navigator\\.serviceWorker\\.ready|serviceWorkerRegistration" src static docs` 결과에서 FCM 전용 등록 경로와 root SW 전용 경로를 분류한다.
-   - [ ] `src/routes/+layout.svelte`, `src/lib/components/settings/dev/DevFcmStatusSection.svelte`: `registerFCMToken()` 호출부는 수정 후에도 별도 변경 없이 새 registration 흐름을 타는지 확인한다.
-   - [ ] `src/lib/stores/notifications.svelte.ts:38`, `src/lib/components/settings/dev/DevWebServiceWorkerNotificationSection.svelte`: `navigator.serviceWorker.ready` 사용이 root SvelteKit SW 전용임을 표로 남긴다.
+7. - [x] **SW registration 참조 경로를 전수 열거한다**
+   - [x] `rg -n "firebase-messaging-sw|navigator\\.serviceWorker\\.ready|serviceWorkerRegistration" src static docs` 결과에서 FCM 전용 등록 경로와 root SW 전용 경로를 분류한다.
+   - [x] `src/routes/+layout.svelte`, `src/lib/components/settings/dev/DevFcmStatusSection.svelte`: `registerFCMToken()` 호출부는 수정 후에도 별도 변경 없이 새 registration 흐름을 타는지 확인한다.
+   - [x] `src/lib/stores/notifications.svelte.ts:38`, `src/lib/components/settings/dev/DevWebServiceWorkerNotificationSection.svelte`: `navigator.serviceWorker.ready` 사용이 root SvelteKit SW 전용임을 표로 남긴다.
 
-8. - [ ] **미방어 경로를 보정하거나 범위 제외를 명시한다**
-   - [ ] FCM SW를 직접 root scope로 다시 등록하는 코드/문서가 남아 있으면 현재 plan 범위에서 제거 또는 수정 대상으로 승격한다.
-   - [ ] `auth/callback`, todo notification 등 다른 root SW fix plan과 충돌이 없도록 "이번 fix는 FCM registration scope 분리만 담당" 문구를 plan 본문에 남긴다.
-   - [ ] 모든 경로에 대해 `방어 완료` 또는 `범위 제외` 근거를 결과 표로 기록한다.
+8. - [x] **미방어 경로를 보정하거나 범위 제외를 명시한다**
+   - [x] FCM SW를 직접 root scope로 다시 등록하는 코드/문서가 남아 있으면 현재 plan 범위에서 제거 또는 수정 대상으로 승격한다.
+   - [x] `auth/callback`, todo notification 등 다른 root SW fix plan과 충돌이 없도록 "이번 fix는 FCM registration scope 분리만 담당" 문구를 plan 본문에 남긴다.
+   - [x] 모든 경로에 대해 `방어 완료` 또는 `범위 제외` 근거를 결과 표로 기록한다.
 
 ### Phase Z: Post-Merge Cleanup (/merge-test owner)
 
@@ -98,4 +98,4 @@ Z. - [ ] **post-merge 정리 확인** — `/merge-test` owner
 
 ---
 
-*상태: 구현중 | 진행률: 17/40 (43%)*
+*상태: 머지대기 | 진행률: 25/40 (63%)*
