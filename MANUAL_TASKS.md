@@ -178,3 +178,13 @@
 - [ ] scope 변경 뒤 기존 FCM 토큰이 재사용되는지, 실패 시 재등록이 필요한지 기록 — from: 2026-04-25_fix-fcm-sw-scope-conflict.md#6 (2026-04-25)
 
 *마지막 업데이트: 2026-04-25*
+
+---
+
+## 미완료
+
+- [ ] 메모 생성/수정 모달에서 기본 알림, 추가 알림, preset 추가가 모두 동작하는지 수동 확인 — from: 2026-04-25_memo-alarm-notification-ui-unify.md#15.2 (2026-04-26)
+- [ ] 할일 생성/수정 모달에서 반복 알림과 기한 알림이 분리되어 보이는지 수동 확인 — from: 2026-04-25_memo-alarm-notification-ui-unify.md#15.3 (2026-04-26)
+- [ ] 할일 생성/수정 모달에서 `showOverdue`와 Pung 설정이 `DueAlarmSection` 안에서 저장되는지 수동 확인 — from: 2026-04-25_memo-alarm-notification-ui-unify.md#15.4 (2026-04-26)
+
+## 완료
