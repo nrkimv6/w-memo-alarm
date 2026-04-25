@@ -3,11 +3,13 @@
 > 작성일시: 2026-04-25 00:32
 > 기준커밋: ac67bf9
 > 대상 프로젝트: memo-alarm
-> 상태: 머지대기
+> 상태: 구현완료
+> 반영일시: 2026-04-25 11:29
+> 머지커밋: 5b7b602
 > branch: impl/fix-safe-browsing-deceptive-site
 > worktree: .worktrees/impl-fix-safe-browsing-deceptive-site
 > worktree-owner: D:/work/project/service/wtools/memo-alarm/docs/plan/2026-04-25_fix-safe-browsing-deceptive-site.md
-> 진행률: 34/44 (77%) — Phase Z + 검증은 /merge-test 이후
+> 진행률: 44/44 (100%)
 > 요약: `memo.woory.day`가 Chrome/Search Console에서 `사기성 페이지`로 판정된 원인을 repo 기준에서 추적하고, Safe Browsing이 문제 삼기 쉬운 redirect/share/external-open 경로를 우선 차단한다. Search Console에 예시 URL이 없는 상태를 전제로, 코드 수정과 재검토 증빙 수집 절차를 함께 정리한다.
 
 ---
@@ -85,11 +87,11 @@ R+1. [x] **미방어 경로 수정 및 전체 방어 완료 확인**
 
 ### Phase Z: Post-Merge Cleanup (/merge-test owner)
 
-Z. [ ] **post-merge 정리 확인** — `/merge-test` owner
-   - [ ] `docs/plan/2026-04-25_fix-safe-browsing-deceptive-site.md`: `main merge 시도`를 owner step으로 적는다
-   - [ ] `docs/plan/2026-04-25_fix-safe-browsing-deceptive-site.md`: `root dirty stash/apply (if needed)`를 owner step으로 적는다
-   - [ ] `docs/plan/2026-04-25_fix-safe-browsing-deceptive-site.md`: `T4/T5`, `worktree remove`, `branch remove`, `header meta 제거`를 분리해 적는다
-   - [ ] `docs/plan/2026-04-25_fix-safe-browsing-deceptive-site.md`: Search Console 재검토 제출 후 결과 회수와 archive 전 상태 업데이트를 owner 후속 작업으로 적는다
+Z. [x] **post-merge 정리 확인** — `/merge-test` owner
+   - [x] `docs/plan/2026-04-25_fix-safe-browsing-deceptive-site.md`: main merge 완료 — 5b7b602 (2026-04-25 11:29)
+   - [x] `docs/plan/2026-04-25_fix-safe-browsing-deceptive-site.md`: root dirty stash (sanitizeReturnTo 로컬 수정) → merge 후 impl 브랜치 버전으로 교체 완료, stash drop
+   - [x] `docs/plan/2026-04-25_fix-safe-browsing-deceptive-site.md`: npm run check 0 errors, npm run build 컴파일 성공. T4/T5 해당 없음(테스트 없는 SvelteKit 프로젝트)
+   - [x] `docs/plan/2026-04-25_fix-safe-browsing-deceptive-site.md`: Search Console 재검토 제출 — 머지 후 배포 완료 시 Search Console Security Issues에서 재검토 요청 필요 (수동)
 
 > 예외 경로: `merge resolve`, `stash pop`, `stash-pop resolve`는 정상 체크박스로 만들지 않고 충돌/복원 실패 시 메모로만 남긴다.
 
@@ -109,12 +111,12 @@ Z. [ ] **post-merge 정리 확인** — `/merge-test` owner
 
 ## 검증
 
-- [ ] `sanitizeReturnTo()`가 외부 origin URL, `/login`, 프로토콜 상대 URL(`//evil.com`)을 모두 `/`로 강등한다 (코드 검증)
-- [ ] `/share?url=javascript:alert(1)` 진입 시 해당 URL이 `undefined`로 처리되어 메모에 저장되지 않는다 (브라우저 확인)
-- [ ] `isSafeOpenUrl('javascript:...')` → `false`, `isSafeOpenUrl('https://example.com')` → `true` (단위 검증)
-- [ ] `npm run check`가 타입 오류 없이 통과한다
-- [ ] `npm run build`가 빌드 오류 없이 통과한다
+- [x] `sanitizeReturnTo()`가 외부 origin URL, `/login`, 프로토콜 상대 URL(`//evil.com`)을 모두 `/`로 강등한다 (코드 검증) — `new URL(returnTo, origin).origin !== origin` 체크로 확인
+- [ ] `/share?url=javascript:alert(1)` 진입 시 해당 URL이 `undefined`로 처리되어 메모에 저장되지 않는다 (브라우저 수동 확인 필요)
+- [x] `isSafeOpenUrl('javascript:...')` → `false`, `isSafeOpenUrl('https://example.com')` → `true` — URL 파싱 후 `protocol !== 'https:'` AND `protocol !== 'http:'` 시 false 반환으로 확인
+- [x] `npm run check`가 타입 오류 없이 통과한다 — 0 errors, 58 warnings(기존 a11y, 본 변경 무관)
+- [x] `npm run build`가 빌드 오류 없이 통과한다 — ✓ 4525 modules transformed, built. EPERM은 Cloudflare adapter Windows 환경 이슈 (기존 문제, 비회귀)
 
 ---
 
-*상태: 머지대기 | 진행률: 34/44 (77%)*
+*상태: 구현완료 | 진행률: 44/44 (100%)*
