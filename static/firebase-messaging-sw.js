@@ -109,10 +109,14 @@ self.addEventListener('notificationclick', (event) => {
 	event.waitUntil(
 		clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
 			// 이미 열린 창이 있으면 포커스 후 네비게이트
+			// scope가 /firebase-messaging/로 제한되어 root 문서를 control하지 않으므로
+			// navigate()가 null을 반환할 수 있다 — null 반환 시 openWindow 폴백
 			for (const client of clientList) {
 				if (client.url.includes(self.location.origin) && 'focus' in client) {
 					return client.focus().then((focusedClient) => {
-						return focusedClient.navigate(appUrl).catch(() => clients.openWindow(appUrl));
+						return focusedClient.navigate(appUrl).then((result) => {
+							if (!result) return clients.openWindow(appUrl);
+						}).catch(() => clients.openWindow(appUrl));
 					});
 				}
 			}

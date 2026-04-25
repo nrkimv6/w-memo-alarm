@@ -97,6 +97,22 @@ export interface FCMToken {
 	platform: 'web';
 }
 
+// FCM SW가 /firebase-messaging/ scope로 등록된 뒤 activated 상태가 될 때까지 대기
+async function waitForFCMActivation(registration: ServiceWorkerRegistration): Promise<void> {
+	if (registration.active?.state === 'activated') return;
+	const sw = registration.installing ?? registration.waiting;
+	if (!sw) return;
+	await new Promise<void>((resolve) => {
+		const onStateChange = () => {
+			if (sw.state === 'activated') {
+				sw.removeEventListener('statechange', onStateChange);
+				resolve();
+			}
+		};
+		sw.addEventListener('statechange', onStateChange);
+	});
+}
+
 /**
  * FCM 토큰 발급 및 Supabase 등록 (웹/PWA)
  */
@@ -115,19 +131,21 @@ export async function registerFCMToken(userId: string): Promise<FCMToken | null>
 			return null;
 		}
 
-		// 2. Service Worker 등록 및 활성화 대기
-		// register()는 설치만 트리거하고 즉시 반환하므로 ready로 활성화까지 기다린다
-		await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-		const registration = await navigator.serviceWorker.ready;
+		// 2. FCM SW를 /firebase-messaging/ scope로 등록 (SvelteKit SW와 root scope 분리)
+		const fcmRegistration = await navigator.serviceWorker.register(
+			'/firebase-messaging-sw.js',
+			{ scope: '/firebase-messaging/' }
+		);
+		await waitForFCMActivation(fcmRegistration);
 
-		// 3. FCM 토큰 발급 (VAPID 키 사용)
+		// 3. FCM 토큰 발급 (VAPID 키 사용, FCM registration 명시 전달)
 		if (!PUBLIC_FIREBASE_VAPID_KEY) {
 			throw new Error('VAPID key not configured');
 		}
 
 		const fcmToken = await getToken(messaging, {
 			vapidKey: PUBLIC_FIREBASE_VAPID_KEY,
-			serviceWorkerRegistration: registration
+			serviceWorkerRegistration: fcmRegistration
 		});
 
 		if (!fcmToken) {
