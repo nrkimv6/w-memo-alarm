@@ -5,6 +5,7 @@ import { createLogger, devLogStore } from './devLogs.svelte';
 import { getCurrentTimeHHMM, getTodayDateISO } from '$lib/utils/timeUtils';
 import { SW_MSG } from '$lib/constants/swMessages';
 import { buildMergedTitle, buildMergedBody } from '$lib/utils/notificationMerge';
+import { isSafeOpenUrl } from '$lib/utils/url';
 
 // 메모에서 알림 목록 가져오기 (하위 호환성)
 function getRemindersFromMemo(memo: Memo): Reminder[] {
@@ -479,7 +480,7 @@ function createNotificationStore() {
 				const notification = new Notification(title, options);
 				notification.onclick = () => {
 					window.focus();
-					if (memo.url && memo.reminder?.autoOpen) {
+					if (memo.url && memo.reminder?.autoOpen && isSafeOpenUrl(memo.url)) {
 						window.open(memo.url, '_blank');
 						memosStore.incrementOpenCount(memo.id);
 					}

@@ -8,6 +8,20 @@
 	let error = $state<string | null>(null);
 	let status = $state<string>("로그인 처리 중...");
 
+	function sanitizeReturnTo(returnTo?: string): string {
+		if (!browser || !returnTo) return "/";
+		if (returnTo === "/login") return "/";
+
+		try {
+			const parsed = new URL(returnTo, window.location.origin);
+			if (parsed.origin !== window.location.origin) return "/";
+			if (!parsed.pathname.startsWith("/")) return "/";
+			return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+		} catch {
+			return "/";
+		}
+	}
+
 	// Hash fragment에서 토큰 파싱 (네이티브 앱 Intent URL에서 전달)
 	function parseHashFragment(): {
 		provider?: string;
@@ -108,7 +122,7 @@
 			console.log("[Auth Callback] Entry:", {
 				provider: tokens?.provider,
 				appId: tokens?.appId,
-				returnTo: tokens?.returnTo,
+				returnTo: tokens?.returnTo ? tokens.returnTo.slice(0, 50) : undefined,
 				error: tokens?.error,
 				hasGoogleTokens,
 				hasSupabaseTokens,
@@ -132,8 +146,7 @@
 
 				if (session) {
 					console.log("[Auth Callback] Using existing session");
-					const safeReturnTo =
-						tokens?.returnTo === "/login" ? "/" : tokens?.returnTo || "/";
+					const safeReturnTo = sanitizeReturnTo(tokens?.returnTo);
 					await finishLogin(safeReturnTo);
 					return;
 				}
@@ -196,8 +209,7 @@
 			}
 
 			console.log("[Auth Callback] Session created successfully");
-			const safeReturnTo =
-				tokens.returnTo === "/login" ? "/" : tokens.returnTo || "/";
+			const safeReturnTo = sanitizeReturnTo(tokens.returnTo);
 			await finishLogin(safeReturnTo);
 		} catch (err) {
 			const errName = err instanceof Error ? err.name : "unknown";
