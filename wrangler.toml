@@ -1,10 +1,10 @@
 name = "wservice-memo-alarm"
 compatibility_date = "2026-01-05"
 compatibility_flags = ["nodejs_compat"]
-main = ".svelte-kit/cloudflare/_worker.js"
+main = "build/_worker.js"
 
 [assets]
-directory = ".svelte-kit/cloudflare"
+directory = "build"
 binding = "ASSETS"
 
 # 알림은 Supabase Edge Function + FCM으로 처리

@@ -1,11 +1,30 @@
 import { rm, access, rename } from 'node:fs/promises';
-import { constants } from 'node:fs';
-import { resolve, dirname } from 'node:path';
+import { constants, readFileSync } from 'node:fs';
+import { resolve, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const targetDir = resolve(__dirname, '..', '.svelte-kit', 'cloudflare');
+const projectRoot = resolve(__dirname, '..');
+const wranglerConfigPath = resolve(projectRoot, 'wrangler.toml');
+
+function resolveCloudflareOutputDir() {
+	try {
+		const wranglerConfig = readFileSync(wranglerConfigPath, 'utf-8');
+		const assetsBlock = wranglerConfig.match(/\[assets\][\s\S]*?(?=\n\[|$)/);
+		const directoryMatch = assetsBlock?.[0].match(/directory\s*=\s*"([^"]+)"/);
+		if (directoryMatch?.[1]) {
+			return resolve(projectRoot, directoryMatch[1]);
+		}
+	} catch {
+		// no-op
+	}
+	return resolve(projectRoot, '.svelte-kit', 'cloudflare');
+}
+
+const targetDir = resolveCloudflareOutputDir();
+const targetLabel = targetDir.replaceAll('\\', '/');
+const backupPrefix = basename(targetDir) + '__old_';
 
 async function exists(path) {
 	try {
@@ -33,11 +52,11 @@ function deleteInBackground(path) {
 /** old 잔여물 정리 (이전 실행이 남긴 __old_* 디렉토리) */
 async function cleanupOldBackups() {
 	const parentDir = resolve(targetDir, '..');
-	const { readdir, stat } = await import('node:fs/promises');
+	const { readdir } = await import('node:fs/promises');
 	try {
 		const entries = await readdir(parentDir);
 		for (const entry of entries) {
-			if (entry.startsWith('cloudflare__old_')) {
+			if (entry.startsWith(backupPrefix)) {
 				deleteInBackground(resolve(parentDir, entry));
 			}
 		}
@@ -47,14 +66,14 @@ async function cleanupOldBackups() {
 }
 
 if (!(await exists(targetDir))) {
-	console.log('[clean] .svelte-kit/cloudflare not found — skipping.');
+	console.log(`[clean] ${targetLabel} not found — skipping.`);
 	process.exit(0);
 }
 
 // 이전 백업 잔여물 먼저 정리
 await cleanupOldBackups();
 
-console.log('[clean] renaming .svelte-kit/cloudflare → backup for background deletion...');
+console.log(`[clean] renaming ${targetLabel} → backup for background deletion...`);
 const backupDir = targetDir + '__old_' + Date.now();
 
 try {

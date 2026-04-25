@@ -1,7 +1,7 @@
 # Memo Alarm - TODO
 
 > 완료된 작업: [DONE.md](docs/DONE.md)
-> 현재 Phase: **merge-test failed**
+> 현재 Phase: **implement in progress**
 
 ---
 
