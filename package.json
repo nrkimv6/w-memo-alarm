@@ -1,6 +1,6 @@
 {
 	"name": "memo-alarm",
-	"version": "0.6.12",
+	"version": "0.6.13",
 	"private": true,
 	"scripts": {
 		"dev": "vite dev",

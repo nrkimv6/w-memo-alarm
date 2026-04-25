@@ -1,12 +1,12 @@
 # Memo Alarm - TODO
 
 > 완료된 작업: [DONE.md](docs/DONE.md)
-> 현재 Phase: **구현중**
+> 현재 Phase: **pending backlog only**
 
 ---
 
 ## In Progress
-- [ ] **Safe Browsing 사기성 페이지 판정 대응 계획** — [plan](docs/plan/2026-04-25_fix-safe-browsing-deceptive-site.md) (29/44, 66%) — 코드 완료, 머지 대기
+(none)
 
 ## Pending
 - [x] **메모↔할일 전환 시 북마크 소실 재발 이슈 수정** — [archive](docs/archive/2026-04-07_fix-bookmark-disappear-recurrence.md) — 구현완료 (Phase 6 수동 검증 별도)

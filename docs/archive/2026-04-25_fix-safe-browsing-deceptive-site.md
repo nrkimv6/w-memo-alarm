@@ -6,9 +6,6 @@
 > 상태: 구현완료
 > 반영일시: 2026-04-25 11:29
 > 머지커밋: 5b7b602
-> branch: impl/fix-safe-browsing-deceptive-site
-> worktree: .worktrees/impl-fix-safe-browsing-deceptive-site
-> worktree-owner: D:/work/project/service/wtools/memo-alarm/docs/plan/2026-04-25_fix-safe-browsing-deceptive-site.md
 > 진행률: 44/44 (100%)
 > 요약: `memo.woory.day`가 Chrome/Search Console에서 `사기성 페이지`로 판정된 원인을 repo 기준에서 추적하고, Safe Browsing이 문제 삼기 쉬운 redirect/share/external-open 경로를 우선 차단한다. Search Console에 예시 URL이 없는 상태를 전제로, 코드 수정과 재검토 증빙 수집 절차를 함께 정리한다.
 
