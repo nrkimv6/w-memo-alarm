@@ -113,7 +113,7 @@ Error: EPERM, Permission denied: \\?\D:\work\...\memo-alarm\.svelte-kit\cloudfla
 
 ### Phase Z: Post-Merge Cleanup (/merge-test owner)
 
-9. - [ ] **post-merge 정리 확인** — `/merge-test` owner
+10. - [ ] **post-merge 정리 확인** — `/merge-test` owner
    - [ ] main merge 시도 (`/merge-test`)
    - [ ] main 워킹트리에서 `npm run build` exit code 0 최종 확인
    - [ ] worktree remove
