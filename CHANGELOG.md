@@ -7,9 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.14] - 2026-04-25
+
 ### Fixed
 
 - fix: 메모→할일 전환 시 북마크 URL이 할일 UI에서 사라지던 문제 수정 (양방향 URL 마이그레이션) — `convertMemoToTodo`에서 `url`→`todoUrls` 자동 이전, `convertTodoToMemo`에서 `todoUrls[0]`→`url` 역복원, 할일→메모 다이얼로그에 다중 URL 삭제 경고 추가
+- `npm run build` EPERM 수정 — `@sveltejs/adapter-cloudflare` `.svelte-kit/cloudflare` 삭제 시 Windows EBUSY/EPERM 대응. pre-clean 스크립트(`scripts/clean-svelte-kit-cloudflare.mjs`) + `.vscode/settings.json` watcherExclude 추가. VS Code File Watcher 점유 해소.
 
 ## [0.6.12] - 2026-04-25
 
