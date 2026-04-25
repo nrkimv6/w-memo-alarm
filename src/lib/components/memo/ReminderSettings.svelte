@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { Bell, Plus, X } from 'lucide-svelte';
 	import Button from '$lib/components/ui/Button.svelte';
+	import AlarmPresets from '$lib/components/shared/AlarmPresets.svelte';
 	import ReminderCard from './ReminderCard.svelte';
-	import { cn } from '$lib/utils';
 	import { settingsStore } from '$lib/stores/settings.svelte';
 	import type { Reminder } from '$lib/types/memo';
 
@@ -34,6 +34,26 @@
 		return tomorrow.toISOString().split('T')[0];
 	}
 
+	const reminderPresets = [
+		{
+			label: '+ 매일 09:00',
+			mode: 'repeat' as const,
+			time: '09:00',
+			days: [0, 1, 2, 3, 4, 5, 6]
+		},
+		{
+			label: '+ 매일 07:00',
+			mode: 'repeat' as const,
+			time: '07:00',
+			days: [0, 1, 2, 3, 4, 5, 6]
+		},
+		{
+			label: '+ 내일 1회',
+			mode: 'once' as const,
+			time: defaultSettings.time
+		}
+	];
+
 	// 기본 알림 추가
 	function addDefaultReminder() {
 		const newReminder: Reminder = {
@@ -62,6 +82,21 @@
 		onRemindersChange([...reminders, newReminder]);
 	}
 
+	function addPresetReminder(preset: (typeof reminderPresets)[number]) {
+		const newReminder: Reminder = {
+			id: generateReminderId(),
+			enabled: true,
+			time: preset.time,
+			days: preset.mode === 'repeat' ? [...preset.days] : [],
+			autoOpen: defaultSettings.autoOpen,
+			type: preset.mode,
+			date: preset.mode === 'once' ? getTomorrowDate() : undefined,
+			isDefault: false
+		};
+
+		onRemindersChange([...reminders, newReminder]);
+	}
+
 	// 알림 수정
 	function updateReminder(id: string, changes: Partial<Reminder>) {
 		const updated = reminders.map(r =>
@@ -85,20 +120,19 @@
 <div class="space-y-3">
 	{#if !showSection}
 		<!-- 알림이 없을 때 -->
-		<div class="flex items-center gap-3">
+		<div class="space-y-2">
 			<button
 				type="button"
 				onclick={addDefaultReminder}
-				class="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+				class="w-full py-2.5 px-3 border border-primary/40 bg-primary/5 rounded-lg text-sm text-primary hover:bg-primary/10 transition-colors flex items-center justify-center gap-2"
 			>
 				<Bell class="w-4 h-4" />
 				기본 알림 추가
 			</button>
-			<span class="text-muted-foreground/40">|</span>
 			<button
 				type="button"
 				onclick={addReminder}
-				class="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+				class="w-full py-2.5 px-3 border border-border rounded-lg text-sm text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors flex items-center justify-center gap-2"
 			>
 				<Plus class="w-4 h-4" />
 				알림 추가
@@ -163,6 +197,11 @@
 				<Plus class="w-4 h-4" />
 				알림 추가
 			</button>
+
+			<AlarmPresets
+				presets={reminderPresets}
+				onSelect={(preset) => addPresetReminder(preset as (typeof reminderPresets)[number])}
+			/>
 		</div>
 	{/if}
 </div>
