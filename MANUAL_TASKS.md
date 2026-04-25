@@ -163,4 +163,18 @@
 
 ---
 
-*마지막 업데이트: 2026-04-24*
+---
+
+## 2026-04-25: FCM SW scope 분리 후 브라우저 수동 검증
+
+> from: [`2026-04-25_fix-fcm-sw-scope-conflict`](docs/archive/2026-04-25_fix-fcm-sw-scope-conflict.md) Phase 3
+
+- [ ] DevFcmStatusSection.svelte 기준으로 수동 FCM 토큰 등록 후 성공 여부와 active token 갱신을 확인 — from: 2026-04-25_fix-fcm-sw-scope-conflict.md#5 (2026-04-25)
+- [ ] DevWebServiceWorkerNotificationSection.svelte 기준으로 root SW 테스트 알림이 계속 동작하는지 확인 — from: 2026-04-25_fix-fcm-sw-scope-conflict.md#5 (2026-04-25)
+- [ ] 브라우저 DevTools → Application → Service Workers에서 `/`는 SvelteKit SW, `/firebase-messaging/`는 FCM SW로 분리됐는지 확인 — from: 2026-04-25_fix-fcm-sw-scope-conflict.md#5 (2026-04-25)
+- [ ] 포그라운드 FCM 메시지 수신 시 기존 `new Notification(...)` 경로가 유지되는지 확인 — from: 2026-04-25_fix-fcm-sw-scope-conflict.md#6 (2026-04-25)
+- [ ] 백그라운드 FCM push 수신 시 병합/단일 알림 표시가 유지되는지 실기기 또는 브라우저 수동 검증 — from: 2026-04-25_fix-fcm-sw-scope-conflict.md#6 (2026-04-25)
+- [ ] FCM 알림 클릭 시 `/?memo=...` 또는 병합 알림 홈 진입이 기존과 동일한지 확인 — from: 2026-04-25_fix-fcm-sw-scope-conflict.md#6 (2026-04-25)
+- [ ] scope 변경 뒤 기존 FCM 토큰이 재사용되는지, 실패 시 재등록이 필요한지 기록 — from: 2026-04-25_fix-fcm-sw-scope-conflict.md#6 (2026-04-25)
+
+*마지막 업데이트: 2026-04-25*

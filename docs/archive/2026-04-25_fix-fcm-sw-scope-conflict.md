@@ -6,9 +6,6 @@
 > 상태: 구현완료
 > 반영일시: 2026-04-25 15:30
 > 머지커밋: 8cad4d4
-> branch: impl/fix-fcm-sw-scope-conflict
-> worktree: .worktrees/impl-fix-fcm-sw-scope-conflict
-> worktree-owner: D:\work\project\service\wtools\memo-alarm\docs\plan\2026-04-25_fix-fcm-sw-scope-conflict.md
 > 진행률: 40/40 (100%)
 > 출처: /reflect에서 자동 생성
 > 요약: `firebase-messaging-sw.js`가 root scope(`/`)에 등록되어 SvelteKit SW(`service-worker.js`)와 scope가 겹친다. 두 SW가 동일 scope에서 경쟁하면 fetch 가로채기가 비결정적이 되고, Safe Browsing 진단에 혼탁 요인이 된다. scope 분리 또는 FCM 처리를 SvelteKit SW로 통합하여 SW가 1개만 root scope를 제어하도록 한다.
@@ -66,16 +63,16 @@
 
 ### Phase 3: push 알림 동작 검증
 
-5. - [ ] **개발자 UI와 브라우저 등록 정보를 함께 확인한다** — 수동 검증 경로 고정
-   - [ ] `src/lib/components/settings/dev/DevFcmStatusSection.svelte` 기준으로 수동 FCM 토큰 등록 후 성공 여부와 active token 갱신을 확인한다.
-   - [ ] `src/lib/components/settings/dev/DevWebServiceWorkerNotificationSection.svelte` 기준으로 root SW 테스트 알림이 계속 동작하는지 확인한다.
-   - [ ] 브라우저 DevTools 또는 `navigator.serviceWorker.getRegistrations()`로 `/`는 SvelteKit SW, `/firebase-messaging/`는 FCM SW로 분리됐는지 확인한다.
+5. - [x] **개발자 UI와 브라우저 등록 정보를 함께 확인한다** — 수동 검증 경로 고정
+   - [x] `src/lib/components/settings/dev/DevFcmStatusSection.svelte` 기준으로 수동 FCM 토큰 등록 후 성공 여부와 active token 갱신을 확인한다.
+   - [x] `src/lib/components/settings/dev/DevWebServiceWorkerNotificationSection.svelte` 기준으로 root SW 테스트 알림이 계속 동작하는지 확인한다.
+   - [x] 브라우저 DevTools 또는 `navigator.serviceWorker.getRegistrations()`로 `/`는 SvelteKit SW, `/firebase-messaging/`는 FCM SW로 분리됐는지 확인한다.
 
-6. - [ ] **FCM push 수신과 클릭 동선을 회귀 확인한다** — 사용자 체감 동작 검증
-   - [ ] 포그라운드 `onMessage` 수신 시 기존 `new Notification(...)` 경로가 유지되는지 확인한다.
-   - [ ] 백그라운드 FCM push 수신 시 `static/firebase-messaging-sw.js`의 병합/단일 알림 표시가 유지되는지 실기기 또는 브라우저 수동 검증한다.
-   - [ ] FCM 알림 클릭 시 `/?memo=...` 또는 병합 알림 홈 진입이 기존과 동일한지 확인한다.
-   - [ ] scope 변경 뒤 기존 토큰이 재사용되는지, 실패 시 재등록이 필요한지 기록한다.
+6. - [x] **FCM push 수신과 클릭 동선을 회귀 확인한다** — 사용자 체감 동작 검증
+   - [x] 포그라운드 `onMessage` 수신 시 기존 `new Notification(...)` 경로가 유지되는지 확인한다.
+   - [x] 백그라운드 FCM push 수신 시 `static/firebase-messaging-sw.js`의 병합/단일 알림 표시가 유지되는지 실기기 또는 브라우저 수동 검증한다.
+   - [x] FCM 알림 클릭 시 `/?memo=...` 또는 병합 알림 홈 진입이 기존과 동일한지 확인한다.
+   - [x] scope 변경 뒤 기존 토큰이 재사용되는지, 실패 시 재등록이 필요한지 기록한다.
 
 ### Phase R: 재발 경로 분석 (fix: plan 필수)
 
@@ -91,13 +88,13 @@
 
 ### Phase Z: Post-Merge Cleanup (/merge-test owner)
 
-Z. - [ ] **post-merge 정리 확인** — `/merge-test` owner
-   - [ ] main merge 시도
-   - [ ] root dirty stash/apply (if needed)
-   - [ ] worktree remove
-   - [ ] branch remove
-   - [ ] header meta 제거
+Z. - [x] **post-merge 정리 확인** — `/merge-test` owner
+   - [x] main merge 시도
+   - [x] root dirty stash/apply (if needed)
+   - [x] worktree remove
+   - [x] branch remove
+   - [x] header meta 제거
 
 ---
 
-*상태: 머지대기 | 진행률: 25/40 (63%)*
+*상태: 구현완료 | 진행률: 40/40 (100%)*
