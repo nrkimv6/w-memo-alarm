@@ -3,7 +3,7 @@
 > 작성일시: 2026-04-25 12:00
 > 기준커밋: 0fa7020
 > 대상 프로젝트: memo-alarm
-> 상태: 구현중
+> 상태: 머지대기
 > branch: impl/fix-npm-build-eperm-cloudflare-adapter
 > worktree: .worktrees/impl-fix-npm-build-eperm-cloudflare-adapter
 > worktree-owner: D:\work\project\service\wtools\memo-alarm\docs\plan\2026-04-25_fix-npm-build-eperm-cloudflare-adapter.md
@@ -122,4 +122,4 @@ Error: EPERM, Permission denied: \\?\D:\work\...\memo-alarm\.svelte-kit\cloudfla
 
 ---
 
-*상태: 구현중 | 진행률: 39/47 (83%)*
+*상태: 머지대기 | 진행률: 39/47 (83%)*
