@@ -3,11 +3,13 @@
 > 작성일시: 2026-04-25 12:00
 > 기준커밋: 0fa7020
 > 대상 프로젝트: memo-alarm
-> 상태: 머지대기
+> 상태: 구현완료
+> 반영일시: 2026-04-25 15:30
+> 머지커밋: 8cad4d4
 > branch: impl/fix-fcm-sw-scope-conflict
 > worktree: .worktrees/impl-fix-fcm-sw-scope-conflict
 > worktree-owner: D:\work\project\service\wtools\memo-alarm\docs\plan\2026-04-25_fix-fcm-sw-scope-conflict.md
-> 진행률: 25/40 (63%)
+> 진행률: 40/40 (100%)
 > 출처: /reflect에서 자동 생성
 > 요약: `firebase-messaging-sw.js`가 root scope(`/`)에 등록되어 SvelteKit SW(`service-worker.js`)와 scope가 겹친다. 두 SW가 동일 scope에서 경쟁하면 fetch 가로채기가 비결정적이 되고, Safe Browsing 진단에 혼탁 요인이 된다. scope 분리 또는 FCM 처리를 SvelteKit SW로 통합하여 SW가 1개만 root scope를 제어하도록 한다.
 
