@@ -5,6 +5,7 @@
 	import { notificationStore } from '$lib/stores/notifications.svelte';
 	import { memosStore } from '$lib/stores/memos.svelte';
 	import { cn } from '$lib/utils';
+	import { isSafeOpenUrl } from '$lib/utils/url';
 	import type { Memo } from '$lib/types/memo';
 
 	interface Props {
@@ -30,7 +31,7 @@
 
 	function handleUrlClick(memo: Memo, e: MouseEvent) {
 		e.stopPropagation();
-		if (memo.url) {
+		if (memo.url && isSafeOpenUrl(memo.url)) {
 			memosStore.incrementOpenCount(memo.id);
 			window.open(memo.url, '_blank');
 		}

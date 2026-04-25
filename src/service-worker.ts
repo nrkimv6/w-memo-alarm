@@ -630,8 +630,8 @@ sw.addEventListener('notificationclick', (event) => {
 		swLog('info', `📱 Notification clicked, no memoId, navigating to home`);
 	}
 
-	// 외부 URL이 있으면 별도로 열기 위해 저장
-	const externalUrl = data?.url && data.url !== '/' && data.url.startsWith('http') ? data.url : null;
+	// 외부 URL이 있으면 별도로 열기 위해 저장 (http:// 또는 https:// 스킴만 허용, isSafeOpenUrl 기준과 동일)
+	const externalUrl = data?.url && data.url !== '/' && (data.url.startsWith('https://') || data.url.startsWith('http://')) ? data.url : null;
 
 	event.waitUntil(
 		sw.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {

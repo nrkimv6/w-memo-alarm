@@ -26,7 +26,8 @@ export interface ParsedShareData {
 export function parseSharedDataFromParams(params: URLSearchParams): SharedData | null {
 	const title = params.get('title') || undefined;
 	const text = params.get('text') || undefined;
-	const url = params.get('url') || undefined;
+	const rawUrl = params.get('url') || undefined;
+	const url = sanitizeSharedUrl(rawUrl);
 
 	// 공유 데이터가 하나도 없으면 null 반환
 	if (!title && !text && !url) {
@@ -39,6 +40,17 @@ export function parseSharedDataFromParams(params: URLSearchParams): SharedData |
 		url,
 		source: 'pwa'
 	};
+}
+
+function sanitizeSharedUrl(url: string | undefined): string | undefined {
+	if (!url) return undefined;
+	try {
+		const parsed = new URL(url);
+		if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return undefined;
+		return url;
+	} catch {
+		return undefined;
+	}
 }
 
 /**
