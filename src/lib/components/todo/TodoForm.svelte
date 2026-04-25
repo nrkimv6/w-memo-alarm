@@ -13,26 +13,30 @@
 	} from "$lib/types/memo";
 	import {
 		Calendar,
-		Clock,
-		Bell,
-		BellRing,
-		AlertCircle,
 		Repeat,
 		FolderOpen,
 		ArrowRightLeft,
 		Plus,
-		X,
 		Link2,
 		Trash2,
 	} from "lucide-svelte";
-	import { getRecurrenceDescription } from "$lib/utils/recurrence";
 	import FutureSchedules from "./FutureSchedules.svelte";
+	import DueAlarmSection from "./DueAlarmSection.svelte";
+	import RepeatingAlarmSection from "../shared/RepeatingAlarmSection.svelte";
 
 	interface Props {
 		memo?: Memo;
 		onClose: () => void;
 		onSave?: (memo: Memo) => void;
 	}
+
+	type DueAlarmSectionChanges = {
+		alertTimes?: TodoAlertEntry[];
+		useGlobalAutoAlert?: boolean;
+		showOverdue?: boolean;
+		autoPung?: boolean;
+		pungDelay?: number;
+	};
 
 	let { memo, onClose, onSave }: Props = $props();
 
@@ -64,18 +68,6 @@
 		memo?.todoTiming?.alertTimes || [],
 	);
 
-	// Notification UI state
-	let showAddRemind = $state(false);
-	let newRemindType = $state<"time" | "before_due">("before_due");
-	let newRemindTime = $state("09:00");
-	let newRemindMinutes = $state(60);
-
-	let showAddAlert = $state(false);
-	let newAlertType = $state<"datetime" | "before_due">("before_due");
-	let newAlertDate = $state("");
-	let newAlertTime = $state("12:00");
-	let newAlertMinutes = $state(30);
-
 	// Recurrence state
 	let recurrenceType = $state<
 		"none" | "daily" | "weekly" | "monthly" | "custom"
@@ -102,7 +94,6 @@
 	let recurrenceEndAfter = $state(memo?.recurrence?.endAfter || 1);
 
 	// UI state
-	let showAlarmSection = $state(!!dueDate || !!memo?.dueDate);
 	let tagInput = $state("");
 
 	// Todo URL state
@@ -119,20 +110,10 @@
 	const globalRemindTime = $derived(
 		settingsStore.settings.todoDefaults.remind.time,
 	);
-	const globalAutoAlertEnabled = $derived(
-		settingsStore.settings.todoDefaults.autoAlert.enabled,
-	);
 	const globalAutoAlertMinutes = $derived(
 		settingsStore.settings.todoDefaults.autoAlert.minutesBefore,
 	);
 	const folders = $derived(foldersStore.getSorted());
-
-	// Watch dueDate changes
-	$effect(() => {
-		if (dueDate) {
-			showAlarmSection = true;
-		}
-	});
 
 	// Watch allDay toggle
 	$effect(() => {
@@ -215,70 +196,6 @@
 		} else {
 			recurrenceDaysOfWeek = [...recurrenceDaysOfWeek, day].sort();
 		}
-	}
-
-	// Remind entry helpers
-	function addRemindEntry() {
-		const entry: TodoRemindEntry = {
-			id: generateId(),
-			type: newRemindType,
-			time: newRemindType === "time" ? newRemindTime : undefined,
-			minutesBefore:
-				newRemindType === "before_due" ? newRemindMinutes : undefined,
-		};
-		remindTimes = [...remindTimes, entry];
-		showAddRemind = false;
-	}
-
-	function addRemindPreset(minutes: number) {
-		const entry: TodoRemindEntry = {
-			id: generateId(),
-			type: "before_due",
-			minutesBefore: minutes,
-		};
-		remindTimes = [...remindTimes, entry];
-	}
-
-	function removeRemindEntry(id: string) {
-		remindTimes = remindTimes.filter((r) => r.id !== id);
-	}
-
-	// Alert entry helpers
-	function addAlertEntry() {
-		const entry: TodoAlertEntry = {
-			id: generateId(),
-			type: newAlertType,
-			date: newAlertType === "datetime" ? newAlertDate : undefined,
-			time: newAlertType === "datetime" ? newAlertTime : undefined,
-			minutesBefore:
-				newAlertType === "before_due" ? newAlertMinutes : undefined,
-		};
-		alertTimes = [...alertTimes, entry];
-		showAddAlert = false;
-	}
-
-	function addAlertPreset(minutes: number) {
-		const entry: TodoAlertEntry = {
-			id: generateId(),
-			type: "before_due",
-			minutesBefore: minutes,
-		};
-		alertTimes = [...alertTimes, entry];
-	}
-
-	function removeAlertEntry(id: string) {
-		alertTimes = alertTimes.filter((a) => a.id !== id);
-	}
-
-	function formatMinutes(minutes: number): string {
-		if (minutes < 60) return `${minutes}분 전`;
-		if (minutes < 1440) {
-			const h = Math.floor(minutes / 60);
-			const m = minutes % 60;
-			return m > 0 ? `${h}시간 ${m}분 전` : `${h}시간 전`;
-		}
-		const d = Math.floor(minutes / 1440);
-		return `${d}일 전`;
 	}
 
 	async function handleSubmit() {
@@ -536,325 +453,51 @@
 				</label>
 			</div>
 
-			<!-- ============================================ -->
-			<!-- 알림 설정 (기한 설정 시 표시) -->
-			<!-- ============================================ -->
-			{#if showAlarmSection}
-				<div class="border border-border rounded-lg p-4 space-y-5 bg-muted/20">
-					<h3 class="font-medium text-foreground flex items-center gap-2">
-						<Bell class="w-4 h-4" />
-						알림 설정
-					</h3>
+			<div class="space-y-4">
+				<RepeatingAlarmSection
+					remindTimes={remindTimes}
+					useGlobal={useGlobalRemind}
+					globalTime={globalRemindTime}
+					hasDueDate={!!dueDate}
+					onUpdate={(
+						nextRemindTimes: TodoRemindEntry[],
+						nextUseGlobal: boolean,
+					) => {
+						remindTimes = nextRemindTimes;
+						useGlobalRemind = nextUseGlobal;
+					}}
+				/>
 
-					<!-- ── 매일 리마인더 ── -->
-					<div class="space-y-3">
-						<div>
-							<p class="text-sm font-medium text-foreground">
-								매일 리마인더
-							</p>
-							<p class="text-xs text-muted-foreground mt-0.5">
-								잊지 않도록 매일 정해진 시간에 알려드려요
-							</p>
-						</div>
-
-						<!-- 앱 기본 시간 토글 -->
-						<label class="flex items-center gap-2 cursor-pointer">
-							<input
-								type="checkbox"
-								bind:checked={useGlobalRemind}
-								class="rounded border-border text-primary focus:ring-primary"
-							/>
-							<span class="text-sm text-foreground">
-								앱 기본 시간 사용
-								<span class="text-muted-foreground">(매일 {globalRemindTime})</span>
-							</span>
-						</label>
-
-						<!-- 개별 리마인더 목록 -->
-						{#if !useGlobalRemind}
-							<div class="ml-1 space-y-2">
-								{#if remindTimes.length > 0}
-									<div class="space-y-1.5">
-										{#each remindTimes as entry}
-											<div class="flex items-center justify-between px-3 py-2 bg-card rounded-md border border-border/50">
-												<span class="text-sm text-foreground">
-													{#if entry.type === "time"}
-														매일 {entry.time}에 알림
-													{:else if entry.minutesBefore}
-														기한 {formatMinutes(entry.minutesBefore)}에 알림
-													{/if}
-												</span>
-												<button
-													type="button"
-													onclick={() => removeRemindEntry(entry.id)}
-													class="text-muted-foreground hover:text-destructive transition-colors p-0.5"
-												>
-													<X class="w-3.5 h-3.5" />
-												</button>
-											</div>
-										{/each}
-									</div>
-								{/if}
-
-								<!-- 빠른 추가 프리셋 -->
-								<div class="flex flex-wrap gap-1.5">
-									<button
-										type="button"
-										onclick={() => addRemindPreset(60)}
-										class="px-2.5 py-1 text-xs rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-									>
-										+ 1시간 전
-									</button>
-									<button
-										type="button"
-										onclick={() => addRemindPreset(180)}
-										class="px-2.5 py-1 text-xs rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-									>
-										+ 3시간 전
-									</button>
-									<button
-										type="button"
-										onclick={() => addRemindPreset(1440)}
-										class="px-2.5 py-1 text-xs rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-									>
-										+ 하루 전
-									</button>
-									<button
-										type="button"
-										onclick={() => addRemindPreset(4320)}
-										class="px-2.5 py-1 text-xs rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-									>
-										+ 3일 전
-									</button>
-								</div>
-
-								<!-- 직접 추가 -->
-								{#if showAddRemind}
-									<div class="p-3 bg-card rounded-md border border-border space-y-3">
-										<div class="flex gap-2">
-											<select
-												bind:value={newRemindType}
-												class="sketchy-input text-sm"
-											>
-												<option value="time">매일 특정 시간</option>
-												<option value="before_due">기한 전</option>
-											</select>
-											{#if newRemindType === "time"}
-												<input
-													type="time"
-													bind:value={newRemindTime}
-													class="sketchy-input text-sm"
-												/>
-											{:else}
-												<div class="flex items-center gap-1.5">
-													<input
-														type="number"
-														bind:value={newRemindMinutes}
-														min="1"
-														class="sketchy-input w-20 text-sm"
-													/>
-													<span class="text-sm text-muted-foreground whitespace-nowrap">분 전</span>
-												</div>
-											{/if}
-										</div>
-										<div class="flex gap-2">
-											<button
-												type="button"
-												onclick={addRemindEntry}
-												class="px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-md hover:opacity-90"
-											>
-												추가
-											</button>
-											<button
-												type="button"
-												onclick={() => (showAddRemind = false)}
-												class="px-3 py-1.5 text-sm border border-border rounded-md text-foreground hover:bg-muted"
-											>
-												취소
-											</button>
-										</div>
-									</div>
-								{:else}
-									<button
-										type="button"
-										onclick={() => (showAddRemind = true)}
-										class="flex items-center gap-1 text-sm text-primary hover:text-primary/80 transition-colors"
-									>
-										<Plus class="w-3.5 h-3.5" />
-										직접 시간 지정하기
-									</button>
-								{/if}
-							</div>
-						{/if}
-					</div>
-
-					<!-- 구분선 -->
-					<div class="border-t border-border/50"></div>
-
-					<!-- ── 마감 알람 ── -->
-					{#if dueDate}
-						<div class="space-y-3">
-							<div>
-								<p class="text-sm font-medium text-foreground flex items-center gap-1.5">
-									<BellRing class="w-3.5 h-3.5" />
-									마감 알람
-								</p>
-								<p class="text-xs text-muted-foreground mt-0.5">
-									기한이 다가올 때 강하게 알려드려요 (진동/소리)
-								</p>
-							</div>
-
-							<!-- 자동 알람 토글 -->
-							<label class="flex items-center gap-2 cursor-pointer">
-								<input
-									type="checkbox"
-									bind:checked={useGlobalAutoAlert}
-									class="rounded border-border text-primary focus:ring-primary"
-								/>
-								<span class="text-sm text-foreground">
-									자동 알람
-									<span class="text-muted-foreground">(기한 {formatMinutes(globalAutoAlertMinutes)})</span>
-								</span>
-							</label>
-
-							<!-- 개별 알람 목록 -->
-							<div class="ml-1 space-y-2">
-								{#if alertTimes.length > 0}
-									<div class="space-y-1.5">
-										{#each alertTimes as entry}
-											<div class="flex items-center justify-between px-3 py-2 bg-card rounded-md border border-border/50">
-												<span class="text-sm text-foreground">
-													{#if entry.type === "datetime" && entry.date && entry.time}
-														{entry.date} {entry.time}에 알람
-													{:else if entry.type === "before_due" && entry.minutesBefore}
-														기한 {formatMinutes(entry.minutesBefore)}에 알람
-													{/if}
-												</span>
-												<button
-													type="button"
-													onclick={() => removeAlertEntry(entry.id)}
-													class="text-muted-foreground hover:text-destructive transition-colors p-0.5"
-												>
-													<X class="w-3.5 h-3.5" />
-												</button>
-											</div>
-										{/each}
-									</div>
-								{/if}
-
-								<!-- 빠른 추가 프리셋 -->
-								<div class="flex flex-wrap gap-1.5">
-									<button
-										type="button"
-										onclick={() => addAlertPreset(30)}
-										class="px-2.5 py-1 text-xs rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors"
-									>
-										+ 30분 전
-									</button>
-									<button
-										type="button"
-										onclick={() => addAlertPreset(60)}
-										class="px-2.5 py-1 text-xs rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors"
-									>
-										+ 1시간 전
-									</button>
-									<button
-										type="button"
-										onclick={() => addAlertPreset(180)}
-										class="px-2.5 py-1 text-xs rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors"
-									>
-										+ 3시간 전
-									</button>
-									<button
-										type="button"
-										onclick={() => addAlertPreset(1440)}
-										class="px-2.5 py-1 text-xs rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors"
-									>
-										+ 하루 전
-									</button>
-								</div>
-
-								<!-- 직접 추가 -->
-								{#if showAddAlert}
-									<div class="p-3 bg-card rounded-md border border-border space-y-3">
-										<div class="flex gap-2 flex-wrap">
-											<select
-												bind:value={newAlertType}
-												class="sketchy-input text-sm"
-											>
-												<option value="before_due">기한 전</option>
-												<option value="datetime">특정 날짜/시간</option>
-											</select>
-											{#if newAlertType === "datetime"}
-												<input
-													type="date"
-													bind:value={newAlertDate}
-													class="sketchy-input text-sm"
-												/>
-												<input
-													type="time"
-													bind:value={newAlertTime}
-													class="sketchy-input text-sm"
-												/>
-											{:else}
-												<div class="flex items-center gap-1.5">
-													<input
-														type="number"
-														bind:value={newAlertMinutes}
-														min="1"
-														class="sketchy-input w-20 text-sm"
-													/>
-													<span class="text-sm text-muted-foreground whitespace-nowrap">분 전</span>
-												</div>
-											{/if}
-										</div>
-										<div class="flex gap-2">
-											<button
-												type="button"
-												onclick={addAlertEntry}
-												class="px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-md hover:opacity-90"
-											>
-												추가
-											</button>
-											<button
-												type="button"
-												onclick={() => (showAddAlert = false)}
-												class="px-3 py-1.5 text-sm border border-border rounded-md text-foreground hover:bg-muted"
-											>
-												취소
-											</button>
-										</div>
-									</div>
-								{:else}
-									<button
-										type="button"
-										onclick={() => (showAddAlert = true)}
-										class="flex items-center gap-1 text-sm text-primary hover:text-primary/80 transition-colors"
-									>
-										<Plus class="w-3.5 h-3.5" />
-										직접 알람 추가하기
-									</button>
-								{/if}
-							</div>
-						</div>
-
-						<!-- 구분선 -->
-						<div class="border-t border-border/50"></div>
-					{/if}
-
-					<!-- ── 기한 초과 강조 ── -->
-					<label class="flex items-center gap-2 cursor-pointer">
-						<input
-							type="checkbox"
-							bind:checked={showOverdue}
-							class="rounded border-border text-primary focus:ring-primary"
-						/>
-						<span class="text-sm text-foreground">
-							기한이 지나면 빨간색으로 강조 표시
-						</span>
-					</label>
-				</div>
-			{/if}
+				{#if dueDate}
+					<DueAlarmSection
+						{dueDate}
+						{alertTimes}
+						{useGlobalAutoAlert}
+						{globalAutoAlertMinutes}
+						{showOverdue}
+						{autoPung}
+						{pungDelay}
+						onUpdate={(changes: DueAlarmSectionChanges) => {
+							if (changes.alertTimes !== undefined) {
+								alertTimes = changes.alertTimes;
+							}
+							if (changes.useGlobalAutoAlert !== undefined) {
+								useGlobalAutoAlert =
+									changes.useGlobalAutoAlert;
+							}
+							if (changes.showOverdue !== undefined) {
+								showOverdue = changes.showOverdue;
+							}
+							if (changes.autoPung !== undefined) {
+								autoPung = changes.autoPung;
+							}
+							if (changes.pungDelay !== undefined) {
+								pungDelay = changes.pungDelay;
+							}
+						}}
+					/>
+				{/if}
+			</div>
 
 			<!-- 반복 -->
 			<div
@@ -1159,47 +802,6 @@
 					</button>
 				{/if}
 			</div>
-
-			<!-- ============================================ -->
-			<!-- Pung (자동삭제) 설정 -->
-			<!-- ============================================ -->
-			{#if dueDate}
-				<div class="border border-border rounded-lg p-4 space-y-3 bg-muted/20">
-					<div class="flex items-start gap-2">
-						<input
-							type="checkbox"
-							id="autoPung"
-							bind:checked={autoPung}
-							class="mt-0.5 rounded border-border text-destructive focus:ring-destructive"
-						/>
-						<div class="flex-1">
-							<label for="autoPung" class="text-sm font-medium text-foreground cursor-pointer">
-								💥 기한 초과 시 자동 삭제 (펑)
-							</label>
-							<p class="text-xs text-muted-foreground mt-0.5">
-								기한이 지나면 자동으로 할일이 삭제됩니다
-							</p>
-						</div>
-					</div>
-
-					{#if autoPung}
-						<div class="ml-6 space-y-2">
-							<label class="block text-xs font-medium text-foreground">
-								삭제 시점
-							</label>
-							<select
-								bind:value={pungDelay}
-								class="sketchy-input w-full text-sm"
-							>
-								<option value={0}>즉시</option>
-								<option value={60}>1시간 후</option>
-								<option value={1440}>1일 후</option>
-								<option value={4320}>3일 후</option>
-							</select>
-						</div>
-					{/if}
-				</div>
-			{/if}
 
 			<!-- 폴더 -->
 			{#if folders.length > 0}
