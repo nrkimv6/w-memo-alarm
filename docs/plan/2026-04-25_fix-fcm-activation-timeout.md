@@ -3,12 +3,13 @@
 > 작성일시: 2026-04-25 16:00
 > 기준커밋: 74c4a78
 > 대상 프로젝트: memo-alarm
-> 상태: 검토완료
+> 상태: 보류
 > branch:
 > worktree:
 > worktree-owner:
 > 진행률: 0/16 (0%)
 > 출처: /reflect에서 자동 생성
+> 보류사유: 가상 시나리오 방어 — 실제 행업/타임아웃 보고 0건. 회귀 아님(기존 `navigator.serviceWorker.ready`도 무타임아웃). `'redundant'` 발생 가능성 거의 없음(고유 scope 단독 등록). 실제 이슈 발생 시 활성화하거나 다음 fcm.ts 변경 시 끼워서 처리. 활성화 트리거: SW activation 행업 사용자 보고, 또는 `awaitActivatedServiceWorker()` vs `waitForFCMActivation()` 패턴 통일 의사결정.
 > 요약: `waitForFCMActivation()`에 타임아웃과 `'redundant'` 상태 처리가 없어, FCM SW 설치가 실패하거나 지연될 경우 `registerFCMToken()`이 무한 대기 상태에 빠질 수 있다. 또한 `registration.active`가 `'activating'` 상태이고 `installing/waiting`이 null인 경우 즉시 리턴하여 활성화 전 SW로 `getToken()`이 진행되는 엣지 케이스가 있다. 기존 `awaitActivatedServiceWorker()` 패턴(8초 타임아웃 + `redundant` 처리)과 통일한다.
 
 ---
@@ -74,4 +75,4 @@ Z. - [ ] **post-merge 정리 확인** — `/merge-test` owner
 
 ---
 
-*상태: 검토완료 | 진행률: 0/16 (0%)*
+*상태: 보류 | 진행률: 0/16 (0%)*
