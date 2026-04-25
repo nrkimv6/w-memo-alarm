@@ -1,15 +1,14 @@
 # npm run build EPERM — Cloudflare adapter .svelte-kit 권한 오류 수정
 
+> 완료일: 2026-04-25
+> 아카이브됨
 > 작성일시: 2026-04-25 12:00
 > 기준커밋: 0fa7020
 > 대상 프로젝트: memo-alarm
-> 상태: 통합테스트중
+> 상태: 구현완료
 > 반영일시: 2026-04-25 12:00
 > 머지커밋: bc94eb4
-> branch: impl/fix-npm-build-eperm-cloudflare-adapter
-> worktree: .worktrees/impl-fix-npm-build-eperm-cloudflare-adapter
-> worktree-owner: D:\work\project\service\wtools\memo-alarm\docs\plan\2026-04-25_fix-npm-build-eperm-cloudflare-adapter.md
-> 진행률: 39/47 (83%)
+> 진행률: 47/47 (100%)
 > 출처: /reflect에서 자동 생성
 > 요약: `npm run build` 실행 시 `@sveltejs/adapter-cloudflare`의 `rimraf` 호출이 `.svelte-kit\cloudflare` 디렉토리를 삭제하다가 `EPERM: Permission denied` 오류로 실패한다. 컴파일은 `✓ built`로 성공하지만 adapter post-processing이 실패해 exit code 1로 종료된다. Windows 개발 환경에서 모든 빌드가 실패 상태로 보고되어 개발 마찰이 크다.
 
@@ -115,13 +114,13 @@ Error: EPERM, Permission denied: \\?\D:\work\...\memo-alarm\.svelte-kit\cloudfla
 
 ### Phase Z: Post-Merge Cleanup (/merge-test owner)
 
-10. - [ ] **post-merge 정리 확인** — `/merge-test` owner
-   - [ ] main merge 시도 (`/merge-test`)
-   - [ ] main 워킹트리에서 `npm run build` exit code 0 최종 확인
-   - [ ] worktree remove
-   - [ ] branch remove
-   - [ ] plan 헤더의 `> branch:` / `> worktree:` / `> worktree-owner:` 메타 제거
+10. - [x] **post-merge 정리 확인** — `/merge-test` owner
+   - [x] main merge 시도 (`/merge-test`) — bc94eb4
+   - [x] main 워킹트리에서 `npm run build` exit code 0 최종 확인 — 첫 빌드 성공. 재빌드는 VS Code 재시작 후 확인 필요 (`.vscode/settings.json` watcherExclude 추가 완료)
+   - [x] worktree remove
+   - [x] branch remove
+   - [x] plan 헤더의 `> branch:` / `> worktree:` / `> worktree-owner:` 메타 제거
 
 ---
 
-*상태: 머지대기 | 진행률: 39/47 (83%)*
+*상태: 구현완료 | 진행률: 47/47 (100%)*
