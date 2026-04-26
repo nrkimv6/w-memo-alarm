@@ -14,16 +14,35 @@ skills:
 ## I/O Contract
 
 **Input**: plan result object (PROJECT, TASK, SOURCE, PLAN) + env `PLAN_RUNNER_WORKTREE_PATH` (워크트리 경로)
-**Output**: `===AUTO-IMPL-RESULT===` with STATUS(`SUCCESS`/`FAILED`/`SKIPPED`), MANUAL(`true` — 수동 작업 시), PROJECT, TASK, COMMITS
+**Output**: `===AUTO-IMPL-RESULT===` with STATUS(`SUCCESS`/`FAILED`/`SKIPPED`), MANUAL(`true` — 수동 작업 시), PROJECT, TASK, COMMITS.
+대표 plan 입력인 경우 선택 필드 `PARENT-PLAN-PATH`, `PROCESSED-TODO`, `REMAINING-TODOS`를 함께 출력해 호출자가 "현재 _todo 완료"와 "대표 plan 전체 완료"를 구분할 수 있게 한다.
+
+## 🔴 attach 모드 자동 차단 (D6)
+
+**attach 모드는 수동 세션 전용이다.** 자동 컨텍스트(plan-runner, auto-impl)에서는 금지된다.
+
+실행 흐름 시작 전, plan 헤더의 `> worktree-owner:` 필드를 읽어 아래를 확인한다:
+1. `PLAN_RUNNER_WORKTREE_PATH` 환경변수가 설정되어 있는가?
+2. `> worktree-owner:` 값을 쉼표로 split했을 때 토큰 수가 2 이상인가?
+
+**두 조건이 모두 참이면 즉시 중단:**
+```
+STATUS: BLOCKED
+exit_reason="ATTACH_IN_AUTOMATED_CONTEXT_REJECTED"
+이유: attach 모드(owner set ≥ 2)는 수동 /implement 전용입니다. plan-runner/auto-impl에서는 허용되지 않습니다.
+```
 
 ## 실행 흐름
 
 1. 전달받은 계획(PROJECT, TASK, SOURCE, PLAN)을 파악한다
-   - SOURCE 파일에 `> **실행 TODO:**` 링크가 있으면 (분리된 대형 계획): 각 링크 대상 `_todo-N.md`를 Read하여 미완료(`[ ]`)가 남은 첫 번째 파일을 작업 대상으로 사용한다
+   - SOURCE 파일에 `> **실행 TODO:**` 링크가 있으면 (분리된 대형 계획): 각 링크 대상 `_todo-N.md`를 Read하여 미완료(`[ ]`)가 남은 첫 번째 파일을 현재 작업 대상으로 사용하고, 나머지는 remaining `_todo`로 유지한다
    - `> **실행 TODO:**` 링크가 없으면: 기존 동작 — SOURCE 파일 자체 또는 기존 `_todo.md`에서 미완료 항목 읽기 (하위 호환)
+   - SOURCE가 대표 plan(`*_todo-N.md` 아님)인데 sibling `_todo-*.md`가 있으면, archive/완료 외 `_todo` 전부를 enumerate하고 현재 작업 대상 + remaining `_todo`를 명시적으로 구분한다
    - planResult가 비어있거나 `PRIORITY: SKIP-PLAN`인 경우, SOURCE에 지정된 plan 파일 원본을 읽어서 미완료 항목(`- [ ]`)을 구현 대상으로 사용한다
    - **[예외] SOURCE 파일이 없거나 존재하지 않는 경우**: 구현 내용을 기반으로 임시 plan 파일을 자동 생성 (Write 도구 활용)
-     - 생성 위치: AGENTS.md/CLAUDE.md `문서 위치 규칙`의 plan 경로에 `YYYY-MM-DD_{작업명}_auto.md` (기본: `docs/plan/`, `_auto` 접미사 필수)
+     - 생성 위치: `_path-rules.md` 동적 폴백으로 결정 (`Get-PlanRoot` 참조) → `YYYY-MM-DD_{작업명}_auto.md` (`_auto` 접미사 필수)
+       - plans 워크트리 도입 프로젝트: `.worktrees/plans/docs/plan/`
+       - 미도입: AGENTS.md/CLAUDE.md `문서 위치 규칙`의 plan 경로 (기본: `docs/plan/`)
      - 생성된 파일을 SOURCE로 삼아 체크박스 관리를 진행한다
    - **plans 워크트리 도입 프로젝트**: 구현 완료 후 plans 워크트리에서는 `Resolve-DocsCommitCandidates` 반환 파일만 commit한다
      - `git -C .worktrees/plans status --porcelain` 전체 clean 전제는 사용하지 않는다
@@ -156,6 +175,9 @@ PROJECT: {프로젝트명}
 TASK: {완료된 작업}
 STATUS: {SUCCESS/FAILED/SKIPPED}
 COMMITS: {커밋 메시지들}
+PARENT-PLAN-PATH: {대표 plan 절대경로 또는 공란}
+PROCESSED-TODO: {이번에 처리한 _todo 파일명 또는 공란}
+REMAINING-TODOS: {_todo-3.md, _todo-4.md 또는 NONE}
 ===END===
 ```
 
@@ -168,6 +190,9 @@ TASK: {완료된 작업}
 STATUS: SKIPPED
 MANUAL: true
 COMMITS:
+PARENT-PLAN-PATH:
+PROCESSED-TODO:
+REMAINING-TODOS: NONE
 ===END===
 ```
 

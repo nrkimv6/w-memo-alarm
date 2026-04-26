@@ -15,7 +15,8 @@ skills:
 ## I/O Contract
 
 **Input**: plan result object (PROJECT, TASK, SOURCE, PLAN) + 머지 완료 상태
-**Output**: `===AUTO-IMPL-RESULT===` with STATUS(`SUCCESS`/`FAILED`/`SKIPPED`), PROJECT, TASK, COMMITS
+**Output**: `===AUTO-IMPL-RESULT===` with STATUS(`SUCCESS`/`FAILED`/`SKIPPED`), PROJECT, TASK, COMMITS.
+대표 plan 후속 처리인 경우 선택 필드 `PARENT-PLAN-PATH`, `PROCESSED-TODO`, `REMAINING-TODOS`를 함께 출력한다.
 
 ## 컨텍스트
 
@@ -28,13 +29,14 @@ skills:
 ## 실행 흐름
 
 1. 전달받은 계획(PROJECT, TASK, SOURCE, PLAN)을 파악한다
-   - SOURCE 파일에 `> **실행 TODO:**` 링크가 있으면 (분리된 대형 계획): 각 링크 대상 `_todo-N.md`를 Read하여 미완료(`[ ]`)가 남은 첫 번째 파일을 작업 대상으로 사용한다
+   - SOURCE 파일에 `> **실행 TODO:**` 링크가 있으면 (분리된 대형 계획): 각 링크 대상 `_todo-N.md`를 Read하여 미완료(`[ ]`)가 남은 첫 번째 파일을 현재 작업 대상으로 사용하고, 나머지는 remaining `_todo`로 유지한다
    - `> **실행 TODO:**` 링크가 없으면: SOURCE 파일 자체 또는 기존 `_todo.md`에서 미완료 항목 읽기
+   - SOURCE가 대표 plan(`*_todo-N.md` 아님)인데 sibling `_todo-*.md`가 있으면, archive/완료 외 `_todo` 전부를 enumerate하고 현재 작업 대상 + remaining `_todo`를 명시적으로 구분한다
    - planResult가 비어있거나 `PRIORITY: SKIP-PLAN`인 경우, SOURCE에 지정된 plan 파일 원본을 읽어서 미완료 항목(`- [ ]`)을 구현 대상으로 사용한다
    - **plan의 미완료 `[ ]` 항목을 TodoWrite에 등록한다** (각 항목 = 하나의 task)
 
 2. **모든 미완료 항목을 구현한다** — Phase 구분 없이 전부 처리
-   - **프론트엔드(.svelte, .ts) 수정 전**: `.agents/skills/recurring-patterns/SKILL.md`를 Read한 후 코딩
+   - **프론트엔드(.svelte, .ts) 수정 전**: `.agents/skills/recurring-patterns/SKILL.md`를 Read한 후 코딩 <!-- engine-tune: agent reads from .agents/skills/ (harness-specific root) -->
    - **금지**: 메인 레포에서 `git checkout {plan 브랜치}` 실행
    - 한 항목 완료 후 남은 항목이 있으면 이어서 다음 항목도 진행한다
    - **사람의 눈/판단이 필수인 항목**(디자인 일치, 색상 가독성, 레이아웃 미관 등)만 스킵하고 MANUAL_TASKS로 분리
@@ -83,7 +85,7 @@ plan 문서 없이 진행된 소규모 수정이나 버그 픽스의 경우:
 
 ### 기록 위치
 - **단일 프로젝트**: 해당 `{project}/docs/DONE.md`에 추가 기입
-- **공통/다중 프로젝트**: AGENTS.md/CLAUDE.md `문서 위치 규칙`의 history 경로에 `YYYY-MM-DD_{작업명}-changes.md` 신규 생성 (기본: `docs/history/`)
+- **공통/다중 프로젝트**: CLAUDE.md `문서 위치 규칙`의 history 경로에 `YYYY-MM-DD_{작업명}-changes.md` 신규 생성 (기본: `docs/history/`)
 
 ## 출력 형식 (반드시 이 형식으로)
 
@@ -93,6 +95,9 @@ PROJECT: {프로젝트명}
 TASK: {완료된 작업}
 STATUS: {SUCCESS/FAILED/SKIPPED}
 COMMITS: {커밋 메시지들}
+PARENT-PLAN-PATH: {대표 plan 절대경로 또는 공란}
+PROCESSED-TODO: {이번에 처리한 _todo 파일명 또는 공란}
+REMAINING-TODOS: {_todo-3.md, _todo-4.md 또는 NONE}
 ===END===
 ```
 

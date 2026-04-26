@@ -14,13 +14,30 @@ skills:
 ## I/O Contract
 
 **Input**: plan result object (PROJECT, TASK, SOURCE, PLAN) + env `PLAN_RUNNER_WORKTREE_PATH` (워크트리 경로)
-**Output**: `===AUTO-IMPL-RESULT===` with STATUS(`SUCCESS`/`FAILED`/`SKIPPED`), MANUAL(`true` — 수동 작업 시), PROJECT, TASK, COMMITS
+**Output**: `===AUTO-IMPL-RESULT===` with STATUS(`SUCCESS`/`FAILED`/`SKIPPED`), MANUAL(`true` — 수동 작업 시), PROJECT, TASK, COMMITS.
+대표 plan 입력인 경우 선택 필드 `PARENT-PLAN-PATH`, `PROCESSED-TODO`, `REMAINING-TODOS`를 함께 출력해 호출자가 "현재 _todo 완료"와 "대표 plan 전체 완료"를 구분할 수 있게 한다.
+
+## 🔴 attach 모드 자동 차단 (D6)
+
+**attach 모드는 수동 세션 전용이다.** 자동 컨텍스트(plan-runner, auto-impl)에서는 금지된다.
+
+실행 흐름 시작 전, plan 헤더의 `> worktree-owner:` 필드를 읽어 아래를 확인한다:
+1. `PLAN_RUNNER_WORKTREE_PATH` 환경변수가 설정되어 있는가?
+2. `> worktree-owner:` 값을 쉼표로 split했을 때 토큰 수가 2 이상인가?
+
+**두 조건이 모두 참이면 즉시 중단:**
+```
+STATUS: BLOCKED
+exit_reason="ATTACH_IN_AUTOMATED_CONTEXT_REJECTED"
+이유: attach 모드(owner set ≥ 2)는 수동 /implement 전용입니다. plan-runner/auto-impl에서는 허용되지 않습니다.
+```
 
 ## 실행 흐름
 
 1. 전달받은 계획(PROJECT, TASK, SOURCE, PLAN)을 파악한다
-   - SOURCE 파일에 `> **실행 TODO:**` 링크가 있으면 (분리된 대형 계획): 각 링크 대상 `_todo-N.md`를 Read하여 미완료(`[ ]`)가 남은 첫 번째 파일을 작업 대상으로 사용한다
+   - SOURCE 파일에 `> **실행 TODO:**` 링크가 있으면 (분리된 대형 계획): 각 링크 대상 `_todo-N.md`를 Read하여 미완료(`[ ]`)가 남은 첫 번째 파일을 현재 작업 대상으로 사용하고, 나머지는 remaining `_todo`로 유지한다
    - `> **실행 TODO:**` 링크가 없으면: 기존 동작 — SOURCE 파일 자체 또는 기존 `_todo.md`에서 미완료 항목 읽기 (하위 호환)
+   - SOURCE가 대표 plan(`*_todo-N.md` 아님)인데 sibling `_todo-*.md`가 있으면, archive/완료 외 `_todo` 전부를 enumerate하고 현재 작업 대상 + remaining `_todo`를 명시적으로 구분한다
    - planResult가 비어있거나 `PRIORITY: SKIP-PLAN`인 경우, SOURCE에 지정된 plan 파일 원본을 읽어서 미완료 항목(`- [ ]`)을 구현 대상으로 사용한다
    - **[예외] SOURCE 파일이 없거나 존재하지 않는 경우**: 구현 내용을 기반으로 임시 plan 파일을 자동 생성 (Write 도구 활용)
      - 생성 위치: `_path-rules.md` 동적 폴백으로 결정 (`Get-PlanRoot` 참조)
@@ -34,6 +51,8 @@ skills:
      - 이렇게 하면 TodoWrite의 in_progress 항목이 곧 plan 체크박스 업데이트 의무가 된다
 2. `/implement` 스킬 로직으로 미완료 항목을 구현한다
    - **🔴 워크트리 스킵 금지**: `PLAN_RUNNER_WORKTREE_PATH`가 설정되어 있으면 파일 유형(md/py/ts 등)에 관계없이 해당 워크트리 경로에서 작업한다. "문서만 수정", "markdown만", "코드 수정 없음" 등의 이유로 원본 디렉토리에서 작업하지 않는다.
+   - plan에 `### Phase 0: Worktree 준비`가 있더라도, 현재 워크트리 컨텍스트를 검증/기록하는 gate로만 해석한다. 이미 `PLAN_RUNNER_WORKTREE_PATH`가 주어졌다면 두 번째 worktree 생성이나 루트(main)에서의 임의 branch 전환을 시도하지 않는다.
+   - plan에 `### Phase Z: Post-Merge Cleanup (/merge-test owner)`가 있으면 post-merge owner phase로 취급한다. auto-impl은 이 phase를 구현 체크박스로 처리하거나 `[x]`로 바꾸지 않는다.
    - **프론트엔드(.svelte, .ts) 수정 전**: `.claude/skills/recurring-patterns/SKILL.md`를 Read한 후 코딩 (패턴 위반 방지)
    - **금지**: 메인 레포(워크트리가 아닌)에서 `git checkout {plan 브랜치}` 실행 — 메인 레포는 항상 main 유지
    - **Phase 단위로 연관 항목을 함께 처리한다**. 형제 항목이 같은 파일/모듈을 다루면 자연스럽게 연속 처리한다
@@ -42,6 +61,7 @@ skills:
    - **사람의 눈/판단이 필수인 항목**(디자인 일치, 색상 가독성, 레이아웃 미관 등)만 수동 작업으로 판정하고, `STATUS: SKIPPED` + `MANUAL: true`를 출력하라. plan-runner가 해당 항목에 `(→ MANUAL_TASKS)` 태그를 자동 추가한다.
    - 스크립트 실행, 빌드 확인, T1/T2 테스트 등 CLI로 실행 가능한 항목은 **수동이 아님** — 직접 실행하라
    - **단, T4(E2E)/T5(HTTP 통합) Phase 체크박스는 터치 금지** — `/merge-test` 전담. "단위 TC로 커버됨", "수동 테스트", "실제 환경 필요" 등의 사유로 스킵 체크도 금지
+   - **T4/T5 실행 금지 조건 3축**: (1) pre-merge — impl 워크트리 구현 단계, (2) non-root-worktree — `.worktrees/*` 경로, (3) non-main — impl/* 브랜치. 3축 중 하나라도 해당하면 금지이며, T4/T5를 시도했다면 `STATUS: FAILED` + `exit_reason="t4t5_context_violation[pre_merge|non_root_worktree|non_main]"`을 출력하고 즉시 중단한다.
    - **T3(재현/통합TC)는 T1/T2와 동일하게 실행 대상** — T2 직후 실행하고 체크
    - **fix: plan인 경우** (파일명에 `_fix-`가 포함되거나 제목이 `fix:`로 시작):
      구현 시작 전 plan 본문에 `### Phase R` 또는 `재발 경로 분석` 문자열이 존재하는지 확인한다. 미존재 시 `STATUS: BLOCKED` + `exit_reason="phase_r_missing"` 출력 후 중단 (auto-expand-plan 재실행 유도).
@@ -156,6 +176,9 @@ PROJECT: {프로젝트명}
 TASK: {완료된 작업}
 STATUS: {SUCCESS/FAILED/SKIPPED}
 COMMITS: {커밋 메시지들}
+PARENT-PLAN-PATH: {대표 plan 절대경로 또는 공란}
+PROCESSED-TODO: {이번에 처리한 _todo 파일명 또는 공란}
+REMAINING-TODOS: {_todo-3.md, _todo-4.md 또는 NONE}
 ===END===
 ```
 
@@ -168,6 +191,9 @@ TASK: {완료된 작업}
 STATUS: SKIPPED
 MANUAL: true
 COMMITS:
+PARENT-PLAN-PATH:
+PROCESSED-TODO:
+REMAINING-TODOS: NONE
 ===END===
 ```
 
