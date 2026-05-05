@@ -3,7 +3,10 @@
 > 작성일시: 2026-04-25 17:30
 > 기준커밋: ec3d455
 > 대상 프로젝트: memo-alarm
-> 상태: 초안
+> 상태: 검증중
+> branch: plan/2026-04-25_gsc-deceptive-page-review
+> worktree: .worktrees/2026-04-25_gsc-deceptive-page-review
+> worktree-owner: D:\work\project\service\wtools\memo-alarm\docs\plan\2026-04-25_gsc-deceptive-page-review.md
 > 진행률: 5/8 (62%)
 > 요약: Google Search Console에서 memo.woory.day에 "사기성 페이지" 경고 발생 — 코드베이스·라이브 사이트 점검 후 Google 검토 요청 제출
 
