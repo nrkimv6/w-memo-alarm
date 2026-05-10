@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.16] - 2026-05-10
+
+### Fixed
+
+- 고정/즐겨찾기 대시보드 섹션에서 할일 항목을 `TodoCard`로 렌더링하도록 수정해, 메모에서 할일로 전환된 항목이 메모 카드로 남아 복제처럼 보이는 문제를 해소
+
 ## [0.6.14] - 2026-04-25
 
 ### Fixed
