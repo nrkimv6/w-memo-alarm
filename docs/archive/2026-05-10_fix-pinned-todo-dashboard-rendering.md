@@ -1,5 +1,10 @@
 # fix: 고정/즐겨찾기 할일 대시보드 카드 렌더링 수정
 
+> 완료일: 2026-05-10
+> 아카이브됨
+> 진행률: 11/11 (100%)
+> 요약: 메모를 할일로 전환할 때 데이터는 복제되지 않지만, 고정/즐겨찾기 대시보드 섹션에서 할일이 메모 카드로 렌더링되어 복제처럼 보이는 문제를 수정한다. 고정된 메모와 고정된 할일은 같은 북마크 섹션에 남기되 카드 UI를 타입에 맞게 분기한다.
+
 > 작성일시: 2026-05-10 22:59
 > 기준커밋: 600265d
 > 대상 프로젝트: memo-alarm
@@ -7,7 +12,7 @@
 > branch:
 > worktree:
 > worktree-owner:
-> 진행률: 8/8 (100%)
+> 진행률: 11/11 (100%)
 > 요약: 메모를 할일로 전환할 때 데이터는 복제되지 않지만, 고정/즐겨찾기 대시보드 섹션에서 할일이 메모 카드로 렌더링되어 복제처럼 보이는 문제를 수정한다. 고정된 메모와 고정된 할일은 같은 북마크 섹션에 남기되 카드 UI를 타입에 맞게 분기한다.
 
 ---
@@ -59,6 +64,13 @@
    - [x] `src/lib/components/dashboard/PinnedMemosSection.svelte`: 새 import와 prop 연결이 Svelte 진단을 통과하는지 확인한다.
    - [x] `src/lib/components/dashboard/FavoriteMemosSection.svelte`: 새 import와 prop 연결이 Svelte 진단을 통과하는지 확인한다.
 
+### Phase R: 재발 경로 분석
+
+6. [x] **대시보드 북마크 섹션 재발 경로 방어 확인** — 같은 표시 오류 재발 가능성 점검
+   - [x] `src/routes/+page.svelte`: 고정/즐겨찾기 섹션은 todo를 제외하지 않고 북마크 상태를 유지하는 현재 정책을 확인한다.
+   - [x] `src/lib/components/dashboard/PinnedMemosSection.svelte`: todo 항목이 `TodoCard`로 렌더링되어 고정 메모와 고정 할일이 다르게 보이는지 확인한다.
+   - [x] `src/lib/components/dashboard/FavoriteMemosSection.svelte`: todo 항목이 `TodoCard`로 렌더링되어 즐겨찾기 메모와 즐겨찾기 할일이 다르게 보이는지 확인한다.
+
 ---
 
 ## 검증 결과
@@ -67,4 +79,4 @@
 
 ---
 
-*상태: 구현완료 | 진행률: 8/8 (100%)*
+*상태: 구현완료 | 진행률: 11/11 (100%)*

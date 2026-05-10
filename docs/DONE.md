@@ -2,6 +2,8 @@
 
 > 이전 기록: [DONE-2026-03.md](archive/DONE-2026-03.md) | [DONE-2026-04-early.md](archive/DONE-2026-04-early.md) | [DONE-2026-04-late.md](archive/DONE-2026-04-late.md)
 
+- [x] 2026-05-10: 고정/즐겨찾기 할일 카드 렌더링 수정 — 대시보드 북마크 섹션에서 할일 항목을 `TodoCard`로 표시해 메모 전환 후 복제처럼 보이는 문제 해소 — [archive](archive/2026-05-10_fix-pinned-todo-dashboard-rendering.md)
+
 - [x] 2026-04-26: 알림 UI 통합 — 반복 알림 공통 컴포넌트와 기한 알림 분리, 메모 preset 패턴 정렬, Cloudflare build output 경로 조정으로 `npm run build` EPERM 해소 — [archive](archive/2026-04-25_memo-alarm-notification-ui-unify.md)
 - [x] 2026-04-25: FCM SW scope 분리 — `/firebase-messaging/` scope 등록으로 SvelteKit SW와 root scope 충돌 해소. `waitForFCMActivation` helper + `client.navigate()` null 폴백 보강. 3개 경로 방어 완료 — [archive](archive/2026-04-25_fix-fcm-sw-scope-conflict.md)
 - [x] 2026-04-25: npm run build EPERM 수정 — Cloudflare adapter `.svelte-kit/cloudflare` 권한 오류 해소. pre-clean 스크립트 + VS Code watcherExclude 추가 — [archive](archive/2026-04-25_fix-npm-build-eperm-cloudflare-adapter.md)
