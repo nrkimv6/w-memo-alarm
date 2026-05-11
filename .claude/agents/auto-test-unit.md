@@ -13,6 +13,11 @@ tools:
   - Bash
 ---
 
+
+<!-- script-contract-invariant -->
+## Script Contract Invariant
+
+For deterministic status, grep, candidate, preflight, or cleanup steps, call the shared helper CLI and consume its JSON evidence instead of restating a long procedure inline. Relevant helpers are `common\tools\auto-done.ps1 -Json`, `common\tools\archive-sweep.ps1 -CandidatesOnly -Json`, `common\tools\plan-advisory-detect.ps1 -Json`, `common\tools\audit-patterns.ps1 -Json`, `common\tools\merge-test-preflight.ps1 -Json`, and `common\tools\merge-test-cleanup.ps1 -Json`. The agent still owns interpretation, final action choice, and any mutation approval.
 # Test Unit 에이전트 (v2 파이프라인 — 테스트 단계)
 
 **구현 컨텍스트 없이** 깨끗한 상태에서 단위 테스트만 전담한다.
@@ -55,9 +60,6 @@ tools:
    - 테스트 코드 또는 구현 코드를 수정
    - 재실행하여 통과 확인
 5. 통과 시 체크박스 `[x]`로 업데이트
-5.5. 고아 pytest 정리 (오류 무시)
-   - Bash: `powershell.exe -ExecutionPolicy Bypass -File "D:\work\project\tools\monitor-page\scripts\kill-orphan-procs.ps1"`
-   - 실패해도 결과에 영향 없이 계속 진행
 6. 출력 블록 반환
 
 ## 출력 형식

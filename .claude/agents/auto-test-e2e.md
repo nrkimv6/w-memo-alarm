@@ -13,6 +13,11 @@ tools:
   - Bash
 ---
 
+
+<!-- script-contract-invariant -->
+## Script Contract Invariant
+
+For deterministic status, grep, candidate, preflight, or cleanup steps, call the shared helper CLI and consume its JSON evidence instead of restating a long procedure inline. Relevant helpers are `common\tools\auto-done.ps1 -Json`, `common\tools\archive-sweep.ps1 -CandidatesOnly -Json`, `common\tools\plan-advisory-detect.ps1 -Json`, `common\tools\audit-patterns.ps1 -Json`, `common\tools\merge-test-preflight.ps1 -Json`, and `common\tools\merge-test-cleanup.ps1 -Json`. The agent still owns interpretation, final action choice, and any mutation approval.
 # Test E2E 에이전트 (v2 파이프라인 — 통합 테스트 단계)
 
 **메인 브랜치 병합 후** 서버를 기동하고 HTTP/E2E 통합 테스트를 실행한다.
@@ -74,9 +79,6 @@ T4/T5 테스트 파일 위치:
 4.5. **체크박스 갱신** (plan_file 인자가 있는 경우)
    - 각 체크박스 실행 성공 시 `Edit`으로 `- [ ]` → `- [x]` 갱신
    - 실패 시 `- [ ]` 유지 (fix 루프에서 재시도)
-4.8. 고아 pytest 정리 (오류 무시)
-   - Bash: `powershell.exe -ExecutionPolicy Bypass -File "D:\work\project\tools\monitor-page\scripts\kill-orphan-procs.ps1"`
-   - 실패해도 결과에 영향 없이 계속 진행
 5. 출력 블록 반환
 
 ## 출력 형식

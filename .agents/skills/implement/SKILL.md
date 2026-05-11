@@ -3,28 +3,65 @@ name: implement
 description: "구현 워크플로우 (plan→TODO→DONE). Use when: 구현해, 진행해, 시작해, implement"
 ---
 
+
+
+<!-- script-contract-invariant -->
+## Script Contract Invariant
+
+Deterministic setup, status, and advisory scanning must prefer helper CLI evidence over re-implementing long inline procedures when `common\tools` exists. Use `common\tools\plan-advisory-detect.ps1 -PlanFile <plan> -Json` for advisory-only plan triggers and `common\tools\merge-test-preflight.ps1 -PlanFile <plan> -RepoRoot <repo> -Json` when branch/worktree or pending-merge evidence is needed. If a downstream repo has no `common\tools` helper surface, record `helper_unavailable` and use the merge-test direct read-back checklist rather than treating helper absence as `GIT_GUARD_NOT_ACTIVE`. AI keeps ownership of interpretation and scope decisions; helper output is evidence, not automatic approval to mutate.
+> Routing gate: branch/worktree present -> /merge-test; absent -> /done
 # 구현 워크플로우
 
 > **본문 분리 원칙**: 호출 컨텍스트가 다르면 본문도 다르다. 공유 레시피는 [`_recipes.md`](./_recipes.md)로만.
 > **호출 컨텍스트**: 독립 워커(Codex/plan-runner). 결과는 plan 파일 체크박스 갱신 + artifact 출력 기준으로 구조화.
 
+## Skill Path Precedence
+- 사용자가 `[$implement](...SKILL.md)` 또는 파일시스템 경로로 local/project skill 파일을 명시한 경우, 반드시 그 exact file을 Read 기준으로 삼는다.
+- 같은 name의 global/duplicate skill(`C:\Users\Narang\.codex\skills\implement\SKILL.md` 등)은 대체 사용하지 않는다.
+- 명시 경로가 없거나 읽기 실패한 경우에만 fallback 후보를 검토하며, fallback 사용 전에는 실제로 읽을 경로와 이유를 사용자에게 먼저 보고한다.
+- 예: 입력이 `D:\work\project\tools\monitor-page\.agents\skills\implement\SKILL.md`이면 `C:\Users\Narang\.codex\skills\implement\SKILL.md`를 읽지 않는다.
+
 ## PRE-EDIT HARD GATE
 - `/implement`의 첫 액션은 구현 파일 수정이 아니라 workflow 준비다.
 - 대상 파일을 건드리기 전에 plan 상태를 `구현중`으로 맞춘다.
-- 같은 시점에 `TODO.md` 현재 작업 항목을 먼저 동기화한다.
+- 같은 시점에 docs commit root 기준 `TODO.md` 현재 작업 항목을 먼저 동기화한다. wtools에서는 이 파일이 `.worktrees/plans/TODO.md`다.
 - plan 상단 `> branch:`, `> worktree:`, `> worktree-owner:`가 모두 채워지기 전에는 구현 파일을 수정하지 않는다.
 - 편집이 먼저 시작됐더라도 메타 누락 상태면 추가 수정 전에 plan/TODO/worktree 메타부터 복구한다.
+- pre-edit status/header mutation 뒤 plan/TODO가 touched whitelist dirty로 남으면 구현 파일 수정 전 docs commit을 수행하거나, 명시적 handoff evidence를 plan에 남긴 뒤 중단한다.
+- SSOT 위치와 edit 허용 위치를 혼동하지 않는다. `.agents/skills/`, `.claude/skills/`, `.worktrees/plans/docs/*`가 canonical 원본이어도 현재 impl worktree 밖이면 직접 수정 금지다.
 - unrelated `main` dirty를 무시할 수는 있어도 이 gate 자체는 생략할 수 없다.
+
+## Git Guard Session Gate
+- wtools 또는 `common\tools`가 있는 repo에서 `/implement`를 실행할 때 첫 git mutation 전 `common\tools\enable-git-guard.ps1 -Action enable-session`을 실행한다.
+- 이어서 `common\tools\enable-git-guard.ps1 -Action status`로 현재 세션 PATH가 `common\tools`를 앞세우고 `git`이 `common\tools\git.cmd`를 해석하는지 확인한다.
+- repo에 `common\tools`가 있는데 guard entrypoint가 없거나 session 활성화/상태 확인이 실패하면 `GIT_GUARD_NOT_ACTIVE`로 중단한다. linked worktree에서 `git checkout main`/`git switch main`이 가능한 상태로 계속 진행하면 안 된다.
+- repo에 `common\tools`가 없으면 guard hard stop이 아니라 `helper_unavailable` downstream fallback으로 기록하고, `/merge-test` handoff에서 직접 read-back checklist를 사용한다.
+- `.agents`와 `.claude`는 문구를 맞추는 대상이 아니지만, 이 guard 불변조건은 두 엔진 표면에서 동등해야 한다.
 
 ## 세션 targets / continue 계약 (필수)
 
 - 사용자가 같은 세션에 plan 경로를 2개 이상 명시하면, 그 목록은 **session targets**로 고정한다.
+- 같은 턴에 사용자가 명시한 plan 경로 수는 `declared_target_count`로 기록한다. 대표 plan에서 `> **실행 TODO:**` 링크나 sibling `_todo-*`로 확장한 수는 `expanded_target_count`로 별도 기록한다.
+- 사용자가 여러 plan/branch의 병렬 진행이나 일괄 상태 보고를 요구하면 **batch target ledger**를 유지한다.
+  - ledger 컬럼은 최소 `target`, `plan`, `branch`, `worktree`, `status`, `next owner`, `user_declared`, `discovered`, `eligible`, `excluded`, `processed`, `remaining`을 포함한다.
+  - 각 target의 상태를 `done`, `pending`, `failed`, `unknown`, `planless`, `excluded`, `discarded`로 분리해 기록한다.
+  - `제외`가 포함된 지시는 제외 대상과 남은 진행 대상을 ledger로 먼저 read-back한 뒤 진행한다.
+  - 제외 대상이 plan title/status 기준인지, 이미 구현 중인 외부 runner 기준인지 불명확하면 해당 row는 `excluded_unconfirmed`로 두고 count mismatch blocker를 남긴다.
+  - 명시 제외 row만 `user_confirmed=true` evidence를 가질 수 있다. `user_confirmed`가 없으면 excluded row를 완료 집계에 포함하지 않는다.
+  - 사용자가 `N건 진행`, `계획서 N건`처럼 기대 수를 언급하면 closeout 직전에 `processed + remaining + excluded = expected_count`를 검증한다.
+  - `processed_count < expected_count - excluded_count`이면 final closeout 대신 다음 eligible target으로 같은 턴에서 계속 진행한다.
+  - `excluded_unconfirmed` row는 전체 완료 집계에 넣지 않는다.
+  - 하나라도 `pending/failed/unknown/planless`이면 `전체 완료`, `모두 완료`, `마무리 완료` 표현을 금지한다.
 - 사용자가 명시한 경로가 대표 plan(`*_todo-N.md` 아님)이고 `> **실행 TODO:**` 링크 또는 sibling `_todo-*.md`가 있으면, 미완료 `_todo` 전부를 **session targets**에 자동 추가한다.
   - 출력은 `대표 plan`, `discovered _todo`, `session targets 추가`, `남은 target N개` 형식으로 남긴다.
   - 현재 작업 대상은 첫 번째 실행 가능한 `_todo` 1개뿐이며, 나머지는 **remaining targets**로 유지한다.
   - `_todo`가 남아 있는 동안 `대표 plan 전체 완료`, `session 종료` 표현을 금지한다.
 - 현재 target의 구현이 끝났더라도 **remaining targets**가 있으면 전체 완료로 말하지 않는다.
   - 출력은 `현재 target 완료, 남은 target N개` 형태로 남기고, 다음 target으로 **같은 턴에서 계속** 진행한다.
+- post-merge 검증 실패는 `product_regression`, `contract_regression`, `test_fixture_stale`, `environment_failure` 중 하나로 `failure_class`를 분류하고, `blocks_archive`, `blocks_other_targets`, `next_owner`를 남기기 전에는 전체 보류/전체 중지로 말하지 않는다.
+  - `test_fixture_stale` 또는 `environment_failure`이고 `blocks_other_targets=false`이면 현재 target의 warning/blocker로만 남기고 다른 eligible target이나 remaining leaf 진행을 계속한다.
+- explicit continue 재지시가 없어도 **current target에 실행 가능한 leaf가 남아 있으면 같은 턴에서 계속 진행**한다.
+- `leaf 몇 개 완료`, `Phase 일부 완료`, `현재 target 일부 완료`는 종료 사유가 아니다.
 - 사용자가 `계속`, `멈추지마`, `끝날 때까지` 등으로 재지시한 경우:
   - 중간 성공(leaf 몇 개 완료, T1/T2 통과)은 종료점이 아니라 **진행 업데이트**다.
   - owner chain의 다음 단계(`/merge-test`, `/done` 등)가 deterministic하게 남아 있으면 설명으로 멈추지 말고 **같은 턴에서 계속 실행**한다.
@@ -35,6 +72,12 @@ description: "구현 워크플로우 (plan→TODO→DONE). Use when: 구현해, 
 - 실행 대상은 **자식 없는 미완료 체크박스(leaf)** 만 허용한다.
 - 부모 체크박스는 **직접 실행/직접 체크 금지**다. 자식이 모두 끝난 뒤 자동 승격만 허용한다.
 - 각 leaf 완료 후에는 plan을 다시 파싱해 다음 실행 가능한 leaf를 고른다.
+- current target에 남은 executable leaf가 있으면 다음 leaf를 같은 턴에서 바로 선택한다. current target을 비우기 전에는 다음 target 또는 다음 owner step으로 넘어가지 않는다.
+- 종료/closeout 직전에는 반드시 `remaining executable leaf`, `remaining targets`, `split _todo-* 미완료`, `next owner step`, `remote evidence`를 다시 계산한다.
+  - 셋 이상 중 하나라도 남아 있으면 `구현완료`, `전체 완료`, `마무리` 표현을 금지하고 진행 업데이트 후 계속 실행하거나 hard blocker를 보고한다.
+  - 대표 plan와 split `_todo-N` plan은 parent/child 완료 판정을 분리해 read-back한다.
+  - leaf 본문에 `push`, `origin/main`, `remote`, 외부 repo 목록이 있으면 local commit만으로 체크하지 않고 `git ls-remote origin main`, `git show origin/main:<path>`, 또는 대상 repo의 `origin/main` content read-back evidence를 요구한다.
+  - remote evidence가 없으면 해당 leaf를 `[x]`로 올리지 않고 `remote evidence 대기`로 남긴다.
 
 plan → TODO → DONE 흐름으로 작업을 관리합니다.
 
@@ -78,11 +121,11 @@ plan 문서에서 구현할 항목 선택 시:
 **plan 문서 업데이트:**
 ```markdown
 ## 구현 순서 제안
-1. [→TODO] P1: 캘린더 내보내기 → {project}/TODO.md   ← 선택됨 + 목적지 표시
+1. [→TODO] P1: 캘린더 내보내기 → .worktrees/plans/TODO.md   ← 선택됨 + 목적지 표시
 2. [ ] P2: 지역 필터
 ```
 
-**TODO.md에 추가:**
+**docs commit root 기준 TODO.md에 추가:**
 ```markdown
 # TODO
 
@@ -114,7 +157,7 @@ plan 문서에서 구현할 항목 선택 시:
 
 ### 3. TODO → DONE 완료
 
-**TODO.md에서 제거, docs/DONE.md 상단에 추가:**
+**docs commit root 기준 TODO.md에서 제거, docs/DONE.md 상단에 추가:**
 ```markdown
 # DONE (최근 20개)
 
@@ -135,18 +178,54 @@ plan 문서에서 구현할 항목 선택 시:
 ```
 > 항목 완료 시마다 헤더와 푸터의 진행률을 함께 업데이트한다.
 
-### 4. 완료 → `/done` 스킬
+### 4. 완료 후 owner 선택
 
-구현이 끝나면 `/done` 스킬을 호출합니다. done 스킬이 아래를 모두 처리:
-- TODO→DONE 이동, plan [x] 체크, plan 아카이브
-- DONE.md 5개 초과 시 아카이브
-- wtools/TODO.md 동기화, 완료 검증, 커밋
+구현이 끝나면 plan 헤더의 worktree metadata로 다음 owner를 선택합니다.
+- `> branch:` 또는 `> worktree:`가 있으면 `/merge-test`를 호출한다. `/done`은 이 상태를 차단한다.
+- 두 필드가 모두 없으면 `/done`을 직접 호출한다.
+
+수동 안내 템플릿:
+```text
+Detected: branch={branch|none}, worktree={worktree|none}
+Decision: /merge-test | /done
+Gate: branch/worktree present -> /merge-test; absent -> /done
+```
+
+위 템플릿은 실행 전 read-back 근거다. `Decision: /merge-test`를 출력하는 것만으로 턴을 종료하지 않는다.
+
+**Hard handoff contract:** current target의 `remaining executable leaf = 0`, session `remaining targets = 0`, `next owner step = /merge-test`이고 plan/todo 헤더에 `> branch:` 또는 `> worktree:`가 있으면 `/merge-test`가 current target의 다음 실행 step이다. 이 상태에서는 final closeout을 금지하고, 사용자가 명시한 local/project skill path precedence를 유지한 채 같은 턴에서 exact local `/merge-test` skill을 읽고 실행한다.
+
+**Same-turn owner chain contract:** 위 조건에서 수동 `/implement`는 설명-only 종료가 아니라 `implement -> merge-test -> done` 실행 chain을 계속 탄다. `/merge-test`가 archive/TODO/DONE 후처리까지 끝내거나 hard blocker를 반환하기 전까지 `leaf 완료`, `T1/T2/T3 통과`, `머지대기 전이` 같은 중간 성공은 closeout으로 말하지 않는다. 종료 직전 read-back은 `remaining executable leaf`, `remaining targets`, `next owner step`, `remote evidence`를 출력하되, 실행 가능한 `/merge-test` 또는 `/done` next owner가 있으면 계속 실행한다.
+
+`/done` owner는 docs commit root 기준 TODO→DONE 이동, plan 체크, archive, DONE.md 정리, 완료 검증, 커밋을 처리합니다. wtools에서는 `.worktrees/plans/TODO.md`와 `.worktrees/plans/docs/DONE.md`가 canonical이며 root `TODO.md`/`docs/DONE.md`/`wtools/TODO.md`는 직접 갱신하지 않습니다.
 
 ## 실행 단계
 
 Codex가 구현 요청 받으면:
 
 ### Phase A: 사용자 입력 확인
+
+**-1. 탐색성/상담성 입력은 구현 요청이 아니다.**
+
+아래 입력은 구현 승인으로 간주하지 않는다:
+- "있을까?", "가능할까?", "추천해줘", "어떻게 할까?", "좋겠어"
+- "가능 여부", "현황 확인", "이런 방향 어때?", "이렇게 하면 좋겠어"
+
+이 경우 `/implement`를 시작하지 않는다. 상세 검토, 후보 정리, 계획 확장, 반례 점검까지는 가능하지만 코드/문서 수정, DB/프로세스 변경, `git add`/`git stash`/`git worktree`/커밋 같은 git mutation은 금지한다.
+응답은 현재 상태 요약, 가능한 선택지, 실행 시 필요한 명시 승인 문장까지로 제한한다.
+
+구현 요청으로 볼 수 있는 입력:
+- "구현해", "진행해", "고쳐", "수정해", "적용해", "지금 붙여"
+- "가능하면 바로 고쳐", "문제 맞으면 수정해", "검토 후 적용해"처럼 같은 발화에 조건부 실행 의도가 포함된 경우
+
+단, 실행 의도가 있어도 이후 worktree/precondition gate는 그대로 통과해야 한다. "조사해줘" 계열은 AGENTS.md의 조사 read-only gate가 우선한다.
+
+**Corrective action approval boundary**
+- corrective action은 실행 전 `data_cleanup`, `doc_correction`, `code_bugfix`, `feature_rollback`, `db_mutation`, `workflow_rule_change` 중 하나 이상으로 분류한다.
+- 코드/DB/git mutation 전 4줄 preview를 출력한다: `요청 해석`, `실행할 작업`, `실행하지 않을 작업`, `승인 근거`.
+- `TrackingItem id=5 삭제` 같은 특정 DB item 조치는 기능 코드 변경과 별도 approval unit으로 분리한다.
+- 기능 제거, scheduler 경로 삭제, commit revert, migration 제거는 `기능 롤백 승인` 또는 동등한 명시 문장이 있어야 실행한다. `재발 방지`, `정리`, `cleanup` 같은 일반 표현만으로 `feature_rollback`을 승인한 것으로 보지 않는다.
+- 같은 발화에 데이터 정리와 기능 rollback이 함께 있으면 두 approval unit으로 분리하고, 승인 근거가 없는 unit은 실행하지 않는다.
 
 **0. 사용자가 구현할 항목을 명시했는가?**
 
@@ -156,6 +235,7 @@ Codex가 구현 요청 받으면:
 
 **0.5. explicit 대표 plan _todo enumeration gate**
    - 사용자가 대표 plan 경로를 직접 넘겼고 `_todo` 분리 plan이면, `> **실행 TODO:**` 링크 또는 sibling `_todo-*.md`를 즉시 enumerate한다.
+   - 입력 경로 fallback: review-plan/SKILL.md의 "입력 경로 fallback (키워드 기반)" 섹션과 동일한 절차를 적용한다.
    - archive/`완료` 상태가 아닌 `_todo`는 전부 session targets에 추가한다.
    - 첫 번째 실행 가능한 `_todo`만 현재 작업 대상으로 잡고, 나머지는 remaining targets로 유지한다.
    - enumeration 결과 없이 대표 plan을 단일 target처럼 처리하거나, child 1개 완료 후 대표 plan 전체 완료로 말하면 안 된다.
@@ -181,6 +261,7 @@ Codex가 구현 요청 받으면:
    - `> 계획서:` 링크가 없거나 깨져서 부모 경로를 확정할 수 없으면 즉시 중단한다. (다른 계획서 워크트리 오사용 방지)
    - 이후 branch/worktree 생성·재개·정리는 모두 `parent_plan_path` 기준으로만 허용한다.
    - `parent_plan_path`는 **owner set의 primary owner**(첫 항목)다. 단일 plan 작업 시 owner set = `[parent_plan_path]` (길이 1). attach 모드에서는 owner set 길이가 2 이상이 된다.
+   - 계획 대상이 downstream child repo `.agents`/`.claude`/`.gemini` mirror 직접 수정이면 worktree 생성/커밋 전에 wtools owner plan, downstream sync evidence, 또는 `/pull-sync` 수신 검증 flow로 reroute한다. `git pull` 수신/검증 계획과 conflict resolution 계획은 차단 대상에서 제외한다.
 
 1.2. **워크트리 준비 (수동 세션 main 오염 방지)**
 
@@ -248,19 +329,20 @@ Codex가 구현 요청 받으면:
    - **T4(E2E)/T5(HTTP 통합)는 implement에서 실행/체크 금지** — `/merge-test`에서 main 머지 후 실행
    - **T3(재현/통합TC)는 implement에서 T2 직후 실행** — fix: plan이면 필수
 
-2. **TODO.md 업데이트**
+2. **plans TODO ledger 업데이트**
    - plan에서 선택 시: `[→TODO]` 표시, plan 상태 "구현중"
-   - TODO.md의 Pending에 추가 (출처 표시)
+   - docs commit root 기준 `TODO.md`의 Pending에 추가 (출처 표시)
    - 작업 시작 시 In Progress로 이동
 
-3. **wtools/TODO.md 동기화 (wtools만 해당)**
+3. **wtools plans ledger 경계 확인 (wtools만 해당)**
    - **wtools 감지 조건**: 현재 디렉토리에 `common/tools/` 폴더가 있는지 확인
-     - **있으면**: wtools 내부 → 아래 동기화 실행
+     - **있으면**: wtools 내부 → `.worktrees/plans/TODO.md`만 task ledger write 대상으로 사용
      - **없으면**: 외부 프로젝트 → 이 단계 **스킵**
-   - wtools/TODO.md 열기
+   - `.worktrees/plans/TODO.md` 열기
    - 해당 프로젝트 섹션 찾기
    - 변경된 항목 반영 (Pending → In Progress 이동, 진행률 갱신)
    - "마지막 업데이트" 날짜를 오늘로 갱신
+   - repo root `TODO.md`, `docs/DONE.md`, `wtools/TODO.md`는 legacy/stub 또는 downstream mirror read-back 대상이며 implement 단계에서 직접 쓰지 않는다.
 
    ### 🔴 항목 완료 후 반드시 실행 (다음 항목 진행 전 게이트)
    1. plan 파일 Edit → `[ ]` → `[x]` 변환
@@ -295,16 +377,28 @@ Codex가 구현 요청 받으면:
    - 기존 테스트 통과 확인
    - **⚠️ frontend verify (webapp-testing / `npm run build` / `npm run check` / `npm run check:watch` / `svelte-kit sync` / `svelte-check` / `vite build` / `node ... svelte-kit.js sync`)는 워크트리에서 실행 금지** — 반드시 `/merge-test`에서 main 머지 후 실행
    - `_build_worktree.ps1` 같은 helper 예외는 setup 전용이며, implement 중 임의 probe의 근거로 쓰면 안 된다.
+   - **Svelte compiler error / Vite compile overlay 입력 처리**: overlay가 입력이면 `file/line`, `compiler message`, 연결 docs URL(예: `https://svelte.dev/e/const_tag_invalid_placement`)을 plan evidence에 남긴다.
+   - implement 단계에서는 source edit, targeted unit/static test, `rg` 기반 static search evidence까지만 수행한다. `npm run check/build`, `svelte-check`, `vite build`, `svelte-kit sync`는 `/merge-test` owner로 넘긴다.
+   - compile overlay recurrence search: error symbol 또는 helper function 이름으로 `rg` 검색을 수행하고, 같은 directory related component와 sibling `.svelte` 파일을 확인한다.
+   - recurrence search 결과의 found-but-not-changed 파일은 같은 helper function이 있어도 markup nesting 또는 parent contract가 안전한 이유를 짧게 기록한다.
 
 5. **완료 처리**
    - plan 또는 `_todo`에 `Phase DB-Direct`가 있으면 종료 안내에 아래 잔여 항목을 반드시 남긴다: `main 머지 후 running DB 직접 실행 필요`, `실행 SQL/명령`, `존재 확인 쿼리`, `live API 또는 runtime 결과`
    - 위 잔여 항목이 남아 있는 상태를 `구현완료`, `마무리`, `닫힘`으로 표현하지 않는다. 이 상태는 `DB-direct 미실행`, `live 검증 미실행`, `직접 실행 대기`로만 보고한다.
    - 기본: 구현 체크박스를 마치고 plan 상태를 `머지대기`로 올린 뒤 `/merge-test` 스킬 호출 — 워크트리 머지 + T4/T5 통합테스트 + 완료 처리(archive, TODO→DONE, 커밋)까지 일괄 실행
+   - `머지대기` + `> branch:`/`> worktree:` 상태는 closeout 가능 상태가 아니라 hard handoff 상태다. `/merge-test` read-back 및 실행 없이 수동 안내 템플릿만 출력하고 턴을 닫지 않는다.
    - `_todo-N.md` 작업이고 같은 `parent_plan_path`의 다른 `_todo-*`가 이미 `머지대기` 상태면 `/merge-test`를 **부모 묶음 배치 모드**로 1회 실행해 같은 부모의 워크트리를 한 번에 정리한다.
-   - `/merge-test`가 `수정필요`로 종료되면 현재 iteration은 실패로 버려지는 것이 아니라 **다음 iteration continuation anchor를 남긴 상태**로 종료된 것으로 본다.
-   - 다음 iteration 입력은 최소 `충돌 파일 목록 또는 stash ref`, `merge-test failure reason`, `현재 parent_plan_path` 세 가지를 포함해야 한다.
-   - 다음 iteration은 `수정필요 -> 구현중`으로 상태를 되돌린 뒤, 위 입력을 기준으로 수정 -> 재검증 -> `/merge-test` 재시도 순서로 진행한다.
-   - 워크트리 미사용 시에는 `/merge-test`를 건너뛰고 `/done`을 직접 호출한다.
+   - `/merge-test`가 `수정필요`로 종료되는 경우는 merge conflict, stash/apply/drop 실패, merge lock timeout처럼 구현 재진입이 필요한 hard failure로 제한한다.
+   - frontend build/check 또는 T4/T5 post-merge 검증 실패는 plan 상태를 `머지대기`로 유지/복구하고, 실패 명령/로그/재시도 대상만 continuation anchor로 남긴다.
+   - `수정필요` 다음 iteration 입력은 최소 `충돌 파일 목록 또는 stash ref`, `merge-test failure reason`, `현재 parent_plan_path` 세 가지를 포함해야 한다.
+   - `수정필요` 다음 iteration은 `수정필요 -> 구현중`으로 상태를 되돌린 뒤, 위 입력을 기준으로 수정 -> 재검증 -> `/merge-test` 재시도 순서로 진행한다.
+   - 수동 안내에는 아래 3줄을 포함한다:
+     ```text
+     Detected: branch={branch|none}, worktree={worktree|none}
+     Decision: /merge-test | /done
+     Gate: branch/worktree present -> /merge-test; absent -> /done
+     ```
+   - 워크트리 미사용 시에는 `/merge-test`를 건너뛰고 `/done`을 직접 호출한다. 이 분기는 `/done`의 branch/worktree 차단 게이트와 같은 계약이다.
 
 ## plan 문서 상태 & 진행률
 
@@ -318,14 +412,14 @@ implement 고유 핵심 상태:
 | `구현중` | 워크트리 준비 + 구현 착수됨 |
 | `머지대기` | /implement 완료, `/merge-test` 대기. `Phase DB-Direct`가 있으면 `DB-direct 미실행` 상태 포함 |
 | `구현완료` | 모든 항목 완료. `Phase DB-Direct` plan은 running DB 직접 실행 + evidence 3종 확보 후 |
-| `수정필요` | `/merge-test` 실패 후 다음 iteration 입력 대기 (continuation anchor) |
+| `수정필요` | merge conflict, stash/apply/drop 실패, lock timeout처럼 구현 재진입이 필요한 hard failure 후 다음 iteration 입력 대기 |
 | `완료` | /done으로 archive 처리됨 |
 
 **진행률 계산:** `[x]` 개수 / 전체 체크박스 개수 → 헤더·푸터 동시 업데이트
 
 ## 커밋 규칙
 
-plan, TODO.md, DONE.md 변경도 함께 커밋:
+plan, docs commit root 기준 TODO.md/DONE.md 변경도 함께 커밋:
 ```powershell
 commit "feat: 기능 구현"
 ```
@@ -351,3 +445,4 @@ cd "{worktree_path}" && bash "/d/work/project/tools/common/commit.sh" "feat: ...
 ## 환경
 
 - **Windows**: 백슬래시(`\`), 절대경로, PowerShell 전용
+

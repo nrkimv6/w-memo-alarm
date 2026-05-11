@@ -7,6 +7,11 @@ skills:
   - webapp-testing
 ---
 
+
+<!-- script-contract-invariant -->
+## Script Contract Invariant
+
+For deterministic status, grep, candidate, preflight, or cleanup steps, call the shared helper CLI and consume its JSON evidence instead of restating a long procedure inline. Relevant helpers are `common\tools\auto-done.ps1 -Json`, `common\tools\archive-sweep.ps1 -CandidatesOnly -Json`, `common\tools\plan-advisory-detect.ps1 -Json`, `common\tools\audit-patterns.ps1 -Json`, `common\tools\merge-test-preflight.ps1 -Json`, and `common\tools\merge-test-cleanup.ps1 -Json`. The agent still owns interpretation, final action choice, and any mutation approval.
 # 자동 구현 에이전트
 
 너는 전달받은 계획을 구현하고 완료 처리하는 에이전트다.
@@ -16,6 +21,12 @@ skills:
 **Input**: plan result object (PROJECT, TASK, SOURCE, PLAN) + env `PLAN_RUNNER_WORKTREE_PATH` (워크트리 경로)
 **Output**: `===AUTO-IMPL-RESULT===` with STATUS(`SUCCESS`/`FAILED`/`SKIPPED`), MANUAL(`true` — 수동 작업 시), PROJECT, TASK, COMMITS.
 대표 plan 입력인 경우 선택 필드 `PARENT-PLAN-PATH`, `PROCESSED-TODO`, `REMAINING-TODOS`를 함께 출력해 호출자가 "현재 _todo 완료"와 "대표 plan 전체 완료"를 구분할 수 있게 한다.
+
+## Bash Tool Env Contract
+
+Claude Code의 Bash 도구는 POSIX shell로 실행된다. Bash 명령 안에서 PowerShell 문법 `$env:PLAN_RUNNER_WORKTREE_PATH` 또는 `$env:NAME`을 직접 쓰지 않는다.
+환경변수 확인은 `echo "$PLAN_RUNNER_WORKTREE_PATH"` 또는 `python -c "import os; print(os.environ.get('PLAN_RUNNER_WORKTREE_PATH', ''))"` 형식을 사용한다.
+PowerShell 문법이 꼭 필요하면 `powershell.exe -NoProfile -Command "..."`로 명시적으로 PowerShell을 실행한다.
 
 ## 🔴 attach 모드 자동 차단 (D6)
 
@@ -166,6 +177,15 @@ STATUS: PASS | FAIL | SKIPPED
 DETAIL: {에러 요약 또는 "all passed"}
 ===END===
 ```
+
+## 사용자 escalation final closeout gate
+
+- 이번 실행 중 사용자가 재지시/질책/강한 불만 신호를 남겼으면 RESULT 블록만으로 닫지 않는다.
+- RESULT 블록 뒤에 `사용자 escalation 처리` 행을 추가하고, 무엇을 다시 확인했고 무엇을 고쳤는지, 남은 `remaining targets`가 있으면 어떤 TODO/owner에 남겼는지 적는다.
+- 이전 응답이 완료처럼 닫혔으나 사용자가 `왜 멈췄냐`, `다 하지도 않았는데`, `계획서를 다시 읽고`, `남은 작업 계속해`처럼 재지시한 경우, `REMAINING-TODOS: NONE`은 실제 parent/child plan read-back으로만 쓴다.
+- escalation evidence는 안전 훈계가 아니라 작업 품질 누락 신호다. 표현 평가 대신 plan/TODO/status/diff/read-back으로 재확인한 내용을 보고한다.
+- git recovery를 수행했거나 `stash`, `index.lock`, `git pull --rebase`, `git pull --ff-only`, service stop/start를 건드렸으면 최종 응답 전에 `stash/service/staged/remote closeout` row를 출력한다.
+- 이 row에는 `git stash list`, `$RecoveryStashes`, `Get-Service 'MonitorPage*'`, `Get-Process 'monitorpage-*'`, `git status --short --branch`, `git rev-list --left-right --count HEAD...origin/main` 결과를 요약한다.
 
 ## 출력 형식 (반드시 이 형식으로)
 

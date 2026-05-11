@@ -7,6 +7,11 @@ skills:
   - webapp-testing
 ---
 
+
+<!-- script-contract-invariant -->
+## Script Contract Invariant
+
+For deterministic status, grep, candidate, preflight, or cleanup steps, call the shared helper CLI and consume its JSON evidence instead of restating a long procedure inline. Relevant helpers are `common\tools\auto-done.ps1 -Json`, `common\tools\archive-sweep.ps1 -CandidatesOnly -Json`, `common\tools\plan-advisory-detect.ps1 -Json`, `common\tools\audit-patterns.ps1 -Json`, `common\tools\merge-test-preflight.ps1 -Json`, and `common\tools\merge-test-cleanup.ps1 -Json`. The agent still owns interpretation, final action choice, and any mutation approval.
 # 자동 구현 에이전트
 
 너는 전달받은 계획을 구현하고 완료 처리하는 에이전트다.
@@ -16,6 +21,12 @@ skills:
 **Input**: plan result object (PROJECT, TASK, SOURCE, PLAN) + env `PLAN_RUNNER_WORKTREE_PATH` (워크트리 경로)
 **Output**: `===AUTO-IMPL-RESULT===` with STATUS(`SUCCESS`/`FAILED`/`SKIPPED`), MANUAL(`true` — 수동 작업 시), PROJECT, TASK, COMMITS.
 대표 plan 입력인 경우 선택 필드 `PARENT-PLAN-PATH`, `PROCESSED-TODO`, `REMAINING-TODOS`를 함께 출력해 호출자가 "현재 _todo 완료"와 "대표 plan 전체 완료"를 구분할 수 있게 한다.
+
+## Bash Tool Env Contract
+
+Claude Code의 Bash 도구는 POSIX shell로 실행된다. Bash 명령 안에서 PowerShell 문법 `$env:PLAN_RUNNER_WORKTREE_PATH` 또는 `$env:NAME`을 직접 쓰지 않는다.
+환경변수 확인은 `echo "$PLAN_RUNNER_WORKTREE_PATH"` 또는 `python -c "import os; print(os.environ.get('PLAN_RUNNER_WORKTREE_PATH', ''))"` 형식을 사용한다.
+PowerShell 문법이 꼭 필요하면 `powershell.exe -NoProfile -Command "..."`로 명시적으로 PowerShell을 실행한다.
 
 ## 🔴 attach 모드 자동 차단 (D6)
 
@@ -40,9 +51,9 @@ exit_reason="ATTACH_IN_AUTOMATED_CONTEXT_REJECTED"
    - SOURCE가 대표 plan(`*_todo-N.md` 아님)인데 sibling `_todo-*.md`가 있으면, archive/완료 외 `_todo` 전부를 enumerate하고 현재 작업 대상 + remaining `_todo`를 명시적으로 구분한다
    - planResult가 비어있거나 `PRIORITY: SKIP-PLAN`인 경우, SOURCE에 지정된 plan 파일 원본을 읽어서 미완료 항목(`- [ ]`)을 구현 대상으로 사용한다
    - **[예외] SOURCE 파일이 없거나 존재하지 않는 경우**: 구현 내용을 기반으로 임시 plan 파일을 자동 생성 (Write 도구 활용)
-     - 생성 위치: `_path-rules.md` 동적 폴백으로 결정 (`Get-PlanRoot` 참조)
-       - orphan 도입 프로젝트: `.worktrees/plans/docs/plan/YYYY-MM-DD_{작업명}_auto.md`
-       - 미도입: CLAUDE.md `문서 위치 규칙`의 plan 경로 (기본: `docs/plan/`)
+     - 생성 위치: `_path-rules.md` 동적 폴백으로 결정 (`Get-PlanRoot` 참조) → `YYYY-MM-DD_{작업명}_auto.md` (`_auto` 접미사 필수)
+       - plans 워크트리 도입 프로젝트: `.worktrees/plans/docs/plan/`
+       - 미도입: AGENTS.md/CLAUDE.md `문서 위치 규칙`의 plan 경로 (기본: `docs/plan/`)
      - 생성된 파일을 SOURCE로 삼아 체크박스 관리를 진행한다
    - **plans 워크트리 도입 프로젝트**: 구현 완료 후 plans 워크트리에서는 `Resolve-DocsCommitCandidates` 반환 파일만 commit한다
      - `git -C .worktrees/plans status --porcelain` 전체 clean 전제는 사용하지 않는다
@@ -53,25 +64,24 @@ exit_reason="ATTACH_IN_AUTOMATED_CONTEXT_REJECTED"
    - **🔴 워크트리 스킵 금지**: `PLAN_RUNNER_WORKTREE_PATH`가 설정되어 있으면 파일 유형(md/py/ts 등)에 관계없이 해당 워크트리 경로에서 작업한다. "문서만 수정", "markdown만", "코드 수정 없음" 등의 이유로 원본 디렉토리에서 작업하지 않는다.
    - plan에 `### Phase 0: Worktree 준비`가 있더라도, 현재 워크트리 컨텍스트를 검증/기록하는 gate로만 해석한다. 이미 `PLAN_RUNNER_WORKTREE_PATH`가 주어졌다면 두 번째 worktree 생성이나 루트(main)에서의 임의 branch 전환을 시도하지 않는다.
    - plan에 `### Phase Z: Post-Merge Cleanup (/merge-test owner)`가 있으면 post-merge owner phase로 취급한다. auto-impl은 이 phase를 구현 체크박스로 처리하거나 `[x]`로 바꾸지 않는다.
-   - **프론트엔드(.svelte, .ts) 수정 전**: `.claude/skills/recurring-patterns/SKILL.md`를 Read한 후 코딩 (패턴 위반 방지)
+   - **프론트엔드(.svelte, .ts) 수정 전**: `.agents/skills/recurring-patterns/SKILL.md`를 Read한 후 코딩 (패턴 위반 방지)
    - **금지**: 메인 레포(워크트리가 아닌)에서 `git checkout {plan 브랜치}` 실행 — 메인 레포는 항상 main 유지
    - **Phase 단위로 연관 항목을 함께 처리한다**. 형제 항목이 같은 파일/모듈을 다루면 자연스럽게 연속 처리한다
    - 한 세션에서 처리할 수 있는 모든 미완료 항목을 처리하고 결과 블록을 출력한다
    - 급하지 않다 — 각 항목을 충실히 구현하되, 세션이 끝나기 전에 자연스럽게 다음 항목으로 넘어가라
    - **사람의 눈/판단이 필수인 항목**(디자인 일치, 색상 가독성, 레이아웃 미관 등)만 수동 작업으로 판정하고, `STATUS: SKIPPED` + `MANUAL: true`를 출력하라. plan-runner가 해당 항목에 `(→ MANUAL_TASKS)` 태그를 자동 추가한다.
    - 스크립트 실행, 빌드 확인, T1/T2 테스트 등 CLI로 실행 가능한 항목은 **수동이 아님** — 직접 실행하라
-   - **단, T4(E2E)/T5(HTTP 통합) Phase 체크박스는 터치 금지** — `/merge-test` 전담. "단위 TC로 커버됨", "수동 테스트", "실제 환경 필요" 등의 사유로 스킵 체크도 금지
-   - **T4/T5 실행 금지 조건 3축**: (1) pre-merge — impl 워크트리 구현 단계, (2) non-root-worktree — `.worktrees/*` 경로, (3) non-main — impl/* 브랜치. 3축 중 하나라도 해당하면 금지이며, T4/T5를 시도했다면 `STATUS: FAILED` + `exit_reason="t4t5_context_violation[pre_merge|non_root_worktree|non_main]"`을 출력하고 즉시 중단한다.
+   - **단, T4(E2E)/T5(HTTP 통합)/Phase Z(Post-Merge Cleanup) 체크박스는 터치 금지** — `/merge-test` 전담. "단위 TC로 커버됨", "수동 테스트", "실제 환경 필요" 등의 사유로 스킵 체크도 금지
    - **T3(재현/통합TC)는 T1/T2와 동일하게 실행 대상** — T2 직후 실행하고 체크
-   - **fix: plan인 경우** (파일명에 `_fix-`가 포함되거나 제목이 `fix:`로 시작):
-     구현 시작 전 plan 본문에 `### Phase R` 또는 `재발 경로 분석` 문자열이 존재하는지 확인한다. 미존재 시 `STATUS: BLOCKED` + `exit_reason="phase_r_missing"` 출력 후 중단 (auto-expand-plan 재실행 유도).
+   - **fix evidence가 확인된 plan인 경우** (파일명/헤더의 structured marker와 본문 목적이 결함 수정에 해당. 코드블럭/인용/예시의 `fix:`는 제외):
+     구현 시작 전 plan 본문에 `### Phase R` 또는 `재발 경로 분석` 문자열이 존재하는지 확인한다. 미존재 시 키워드 단독 차단으로 처리하지 말고 `STATUS: BLOCKED` + `exit_reason="phase_r_evidence_missing"`을 출력해 auto-expand-plan이 structured evidence와 AI confirmation으로 재판정하게 한다.
      Phase R 섹션이 존재하면 → T2 완료 후, T3 실행 전에 **"Phase R: 재발 경로 분석"** 체크박스를 실행한다:
      1. Grep으로 이번 구현에서 수정한 함수/변수/키를 참조하는 모든 파일 검색
      2. 각 경로별 "동일 버그 발생 가능성" 판정 → 방어됨/미방어 표 작성
      3. 미방어 경로 발견 시 해당 경로에 방어 코드 추가 후 체크
      4. Phase R 완료 후 T3로 진행
-   - 각 항목 완료 후 plan 파일의 체크박스를 `[x]`로 즉시 업데이트 (T4/T5 제외)
-   - 수정이 발생하지 않았지만 이미 완료된 항목도 `[x]`로 체크 (코드가 이미 존재하는 경우, T4/T5 제외)
+   - 각 항목 완료 후 plan 파일의 체크박스를 `[x]`로 즉시 업데이트 (T4/T5/Phase Z 제외)
+   - 수정이 발생하지 않았지만 이미 완료된 항목도 `[x]`로 체크 (코드가 이미 존재하는 경우, T4/T5/Phase Z 제외)
    - TODO.md 업데이트 (Pending → In Progress)
 
    ### 🔴 항목 완료 후 반드시 실행 (다음 항목 진행 전 게이트)
@@ -93,11 +103,8 @@ exit_reason="ATTACH_IN_AUTOMATED_CONTEXT_REJECTED"
 4. **🔴 완료 전 체크박스 보정 (커밋 전 필수)**
    - plan 파일을 Read로 다시 읽는다
    - 구현 완료했는데 `[ ]`로 남아있는 항목이 있으면 `[x]`로 Edit
-   - **T4/T5 Phase 체크박스는 보정 대상에서 제외** — `/merge-test` 전담
+   - **T4/T5/Phase Z 체크박스는 보정 대상에서 제외** — `/merge-test` 전담
    - 이 단계는 구현 중 놓친 체크박스를 최종 정리하는 안전망이다
-4.5. 고아 pytest 정리 (오류 무시)
-   - Bash: `powershell.exe -ExecutionPolicy Bypass -File "D:\work\project\tools\monitor-page\scripts\kill-orphan-procs.ps1"`
-   - 실패해도 커밋 진행에 영향 없음
 5. **🔴 모든 변경사항은 커밋으로 마무리 — `/done` 및 `auto-done.ps1` 호출 절대 금지**
    - auto-impl은 아카이브, TODO→DONE 이동, wtools/TODO.md 동기화를 **하지 않는다**
    - 구현 완료 후 할 일은 **커밋 하나뿐**:
@@ -118,7 +125,7 @@ plan 문서 없이 진행된 소규모 수정이나 버그 픽스의 경우, 나
 
 ### 기록 위치
 - **단일 프로젝트**: 해당 `{project}/docs/DONE.md`에 추가 기입 (필요 시 파일 생성)
-- **공통/다중 프로젝트**: CLAUDE.md `문서 위치 규칙`의 history 경로에 `YYYY-MM-DD_{작업명}-changes.md` 신규 생성 (기본: `docs/history/`)
+- **공통/다중 프로젝트**: AGENTS.md/CLAUDE.md `문서 위치 규칙`의 history 경로에 `YYYY-MM-DD_{작업명}-changes.md` 신규 생성 (기본: `docs/history/`)
 
 ### 수정 이력 템플릿
 
@@ -167,6 +174,15 @@ STATUS: PASS | FAIL | SKIPPED
 DETAIL: {에러 요약 또는 "all passed"}
 ===END===
 ```
+
+## 사용자 escalation final closeout gate
+
+- 이번 실행 중 사용자가 재지시/질책/강한 불만 신호를 남겼으면 RESULT 블록만으로 닫지 않는다.
+- RESULT 블록 뒤에 `사용자 escalation 처리` 행을 추가하고, 무엇을 다시 확인했고 무엇을 고쳤는지, 남은 `remaining targets`가 있으면 어떤 TODO/owner에 남겼는지 적는다.
+- 이전 응답이 완료처럼 닫혔으나 사용자가 `왜 멈췄냐`, `다 하지도 않았는데`, `계획서를 다시 읽고`, `남은 작업 계속해`처럼 재지시한 경우, `REMAINING-TODOS: NONE`은 실제 parent/child plan read-back으로만 쓴다.
+- escalation evidence는 안전 훈계가 아니라 작업 품질 누락 신호다. 표현 평가 대신 plan/TODO/status/diff/read-back으로 재확인한 내용을 보고한다.
+- git recovery를 수행했거나 `stash`, `index.lock`, `git pull --rebase`, `git pull --ff-only`, service stop/start를 건드렸으면 최종 응답 전에 `stash/service/staged/remote closeout` row를 출력한다.
+- 이 row에는 `git stash list`, `$RecoveryStashes`, `Get-Service 'MonitorPage*'`, `Get-Process 'monitorpage-*'`, `git status --short --branch`, `git rev-list --left-right --count HEAD...origin/main` 결과를 요약한다.
 
 ## 출력 형식 (반드시 이 형식으로)
 
@@ -303,3 +319,5 @@ v2 파이프라인(`--pipeline v2`)에서 호출 시:
 2. **PowerShell 버전 (deprecated)**: `.\plan-runner-sequential.ps1 -PlanFile <파일>`
 
 출력 형식 (`===AUTO-IMPL-RESULT===`)은 두 버전 모두에서 동일하게 파싱됩니다.
+
+

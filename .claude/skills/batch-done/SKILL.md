@@ -3,6 +3,11 @@ name: batch-done
 description: "완료 plan 일괄 done 처리 (full done flow). Use when: 일괄 done, batch done, 전체 완료 처리"
 ---
 
+
+<!-- script-contract-invariant -->
+## Script Contract Invariant
+
+Completed-plan discovery is a helper contract. Use `common\tools\archive-sweep.ps1 -CandidatesOnly -Json` to collect checkbox-complete candidates and branch/worktree skips, then call `common\tools\auto-done.ps1 -PlanFile <plan> -Json` for the full TODO->DONE/archive flow. Do not duplicate candidate tables by ad hoc grep unless the helper is unavailable and the failure is reported.
 # 완료 plan 일괄 done 처리
 
 체크박스 100% 완료된 `_todo.md` 파일을 기계적으로 탐색하여 full done flow(아카이브 이동, TODO→DONE, wtools 동기화, 커밋)를 일괄 처리합니다.
@@ -41,6 +46,8 @@ CLAUDE.md 문서 위치 규칙의 plan 경로/*_todo.md  (모든 프로젝트)
 
 - 파일 헤더에서 `> 진행률: N/N (100%)` 정규식 매치
 - 또는 파일 전체에서 `- [ ]` 패턴이 0개 + `- [x]` 패턴이 1개 이상
+
+**deterministic parser 허용 범위**: 위 checkbox/header 정규식과 `> branch:`/`> worktree:` 추출은 구조화된 문법을 읽는 deterministic parser다. 자연어 키워드로 완료/스킵/아카이브를 판단하지 않는다.
 
 ### 2단계: 전제조건 검증 (worktree/branch 존재 여부)
 

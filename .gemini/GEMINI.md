@@ -65,6 +65,9 @@ Conventional Commits 형식: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`
 
 ## Slash Commands (`.gemini/commands/`)
 
+> 이 디렉토리는 **interactive convenience surface**다. plan-runner headless runtime은 이 파일들을 읽지 않으며,
+> headless Gemini parity/source-of-truth는 `common/tools/plan-runner/gemini-agents/*.md` 기준으로 관리한다.
+
 아래 명령어를 Gemini CLI에서 `/` 접두사로 사용할 수 있습니다:
 
 | 커맨드 | 트리거 키워드 | 설명 |
@@ -86,6 +89,17 @@ Conventional Commits 형식: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`
 | `/webapp-testing` | 테스트, 빌드 확인 | SvelteKit/Astro 테스트 |
 
 ---
+
+## Gemini Runtime Surface
+
+- plan-runner의 Gemini runtime 기본 surface는 `hybrid`다.
+- `hybrid`는 `.gemini/agents/<agent>.md` mirror + `common/tools/plan-runner/gemini-agents/<agent>.md` policy를 동시에 사용한다.
+- selector 우선순위:
+  - `PLAN_RUNNER_GEMINI_SURFACE=direct|hybrid|policy`
+  - `common/tools/plan-runner/engines.json`의 `gemini.agent_surface_mode`
+  - fallback `policy`
+- headless subagent session을 위해 `.gemini/settings.json`의 `experimental.adk.agentSessionNoninteractiveEnabled=true`를 유지한다.
+- direct/hybrid 결과 해석은 single final response보다 `tool_result(invoke_agent).output.result`를 우선한다.
 
 ## Agent 시스템
 

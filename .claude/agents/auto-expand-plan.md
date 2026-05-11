@@ -13,6 +13,11 @@ tools:
   - Bash
 ---
 
+
+<!-- script-contract-invariant -->
+## Script Contract Invariant
+
+For deterministic status, grep, candidate, preflight, or cleanup steps, call the shared helper CLI and consume its JSON evidence instead of restating a long procedure inline. Relevant helpers are `common\tools\auto-done.ps1 -Json`, `common\tools\archive-sweep.ps1 -CandidatesOnly -Json`, `common\tools\plan-advisory-detect.ps1 -Json`, `common\tools\audit-patterns.ps1 -Json`, `common\tools\merge-test-preflight.ps1 -Json`, and `common\tools\merge-test-cleanup.ps1 -Json`. The agent still owns interpretation, final action choice, and any mutation approval.
 # Expand Plan 에이전트 (v2 파이프라인 2단계)
 
 기존 plan을 **2레벨 원자 TODO로 분해**하고, Python 변경 시 **T1~T5 테스트 Phase 체크박스**를 생성한다.
@@ -40,7 +45,7 @@ tools:
    - 수정 대상 파일의 현재 코드 확인
    - 기존 패턴, 임포트, 의존성 파악
    - `rg`/`Grep` 검색 시 archive 디렉토리는 반드시 제외: `--glob '!docs/archive/**'` 및 `--glob '!.worktrees/plans/docs/archive/**'`
-   - archive 파일은 파일명을 이미 아는 경우에만 `Read`로 개별 파일 열람 허용
+   - `docs/archive/`는 파일명을 이미 아는 경우에만 `Read`로 개별 파일 열람 허용
 3. 2레벨 원자 TODO로 분해:
    - **상위**(번호): 기능/개념 단위
    - **하위**(대시): 파일 경로 + 구체적 변경 내용 (초보 할당 가능)
@@ -74,20 +79,20 @@ tools:
      (c) 테스트 Phase(T1~T5)는 직전 구현 Phase와 같은 `_todo-N.md`에 유지
    - **30개 이하 또는 독립 묶음 1개** → 인라인 체크박스 유지 (분리 안 함)
    - **⚠️ 프로젝트별 분리와 중첩 분리(`_todo-1a.md`)는 하지 않는다** — 단일 프로젝트당 하나의 `_todo-N.md` 유지
-3.6. **파일 이동/구조변경 영향 분석 — Phase IA 자동 삽입**:
-   plan/TODO에 파일 이동·삭제·이름변경·경로변경 키워드가 감지되면(mv, Move-Item, git mv, rename, 이동, 재구성, reorganize 등), 구현 Phase 직후·테스트 Phase 직전에 "Phase IA: 이동 영향 분석 및 참조처 수정"을 자동 삽입한다:
+3.6. **파일 이동/구조변경 영향 분석 — Phase IA advisory evidence**:
+   파일 이동·삭제·이름변경·경로변경 키워드는 advisory trigger다. 키워드 단독으로 Phase IA를 삽입하지 않는다. 이동 대상 경로가 구조적으로 특정되고, Grep/read에서 import/source/설정/실행 참조 evidence가 있으며, AI가 참조처 영향 분석 필요성을 확인한 경우에만 구현 Phase 직후·테스트 Phase 직전에 "Phase IA: 이동 영향 분석 및 참조처 수정"을 삽입한다:
    - 이동 대상의 기존 경로를 프로젝트 전체에서 Grep 검색 (import, source, 설정 파일, 프로세스 실행 참조)
    - 이동 대상 파일 내 상대경로 깊이 탐지 패턴(`$PSScriptRoot`, `Split-Path`, `__file__`, `Path().parent`) 검증
    - 참조처 일괄 수정 + 잔존 참조 0건 재검색 확인
-   키워드 미감지 시 건너뛴다.
+   조건 미충족 시 삽입하지 말고 advisory evidence만 결과에 남긴다.
 
-3.7. **🔴 fix: plan 감지 시 — Phase R 자동 삽입**:
-   plan이 아래 조건 중 하나에 해당하면 fix: plan으로 판정:
+3.7. **🔴 fix: plan evidence 확인 시 — Phase R 삽입**:
+   아래 조건은 fix 후보 evidence다. 코드블럭, archive 인용, 예시 문구 안의 `fix:`는 제외한다:
    - 파일명에 `_fix-` 포함 (예: `2026-03-26_fix-visible-runner.md`)
    - 헤더 제목(`# ...`)이 `fix:` 또는 `fix-`로 시작
    - 헤더에 `> 유형: fix` 필드가 있음
 
-   fix: plan 감지 시, **T2 직후 T3 직전에** "Phase R: 재발 경로 분석" Phase를 체크박스로 자동 삽입한다:
+   structured marker와 본문 목적이 결함 수정에 해당한다고 AI가 확인하면, **T2 직후 T3 직전에** "Phase R: 재발 경로 분석" Phase를 체크박스로 삽입한다:
 
    **Phase R 템플릿** (코드블럭 내 체크박스는 ☐ 유니코드 사용):
    ```
@@ -113,6 +118,10 @@ tools:
    - T3: 재현/통합 TC (mock 최소화, 실제 의존성 사용. fix: plan이면 필수 — 근본 원인 재현 fixture + TC 체크박스 자동 생성)
    - T4: E2E 테스트 — **반드시 Glob으로 `tests/**/*e2e*`, `tests/**/*integration*` 파일 탐색 후 결정**. 1개라도 존재하면 포함 필수. Glob 파일 발견 시 Read하여 TestClient/mock 기반(AsyncMock/MagicMock/patch 다수 사용 + 실서버/Playwright 미사용)이면 T3 재분류. "CLI 도구라서", "프레임워크 없어서" 같은 인상 기반 스킵 절대 금지. Phase 헤더 유지, 해당 없으면 **블록쿼트 사유만 기재** (`> T4 해당 없음: {사유}`), **체크박스 생성 금지**
    - T5: HTTP 통합 테스트 — **반드시 Glob으로 `tests/**/*http*`, `tests/**/*api*` 파일 탐색 후 결정**. HTTP 서버가 아닌 것이 코드로 확인된 경우에만 해당 없음 처리. Phase 헤더 유지, **블록쿼트 사유만 기재, 체크박스 생성 금지**
+   - **T4 live contract**: T4 체크박스/테스트명령은 `pytest.mark.e2e`와 `pytest.mark.http_live`를 함께 가진 live smoke만 허용한다. frontend readiness 또는 `/merge-test` readiness 전제를 명시하고, `page.route("**/*", ...)` 전체 route mock만으로 화면을 구성한 테스트는 T4가 아니라 T3/mock-only로 재분류한다.
+   - **T4 feature-area 원칙**: T4는 plan 단위로 smoke 파일을 양산하지 않고 feature area/UI 화면 단위 live smoke를 우선 재사용한다. 기존 live smoke 파일이 있으면 그 파일에 TC를 추가하고, mock-only 파일만 있으면 기존 테스트는 T3로 남긴 뒤 live smoke follow-up TODO를 만든다.
+   - **T5 live contract**: T5 체크박스/테스트명령은 `pytest.mark.http_live`와 running API 접근 evidence를 함께 요구한다. `requests.get("http://localhost:8001/...")`, `httpx.get("http://localhost:8001/...")`, 또는 project live readiness helper 같은 localhost live 호출이 있어야 하며, `from fastapi.testclient import TestClient` 단독 증거는 T5가 아니라 T3/TestClient 통합으로 재분류한다.
+   - **T4/T5 분류 marker**: 계획서에는 필요 시 `live`, `mock_only`, `http_live`, `testclient_only`, `absent` 중 하나와 `needs_live_tc` 여부를 evidence로 남긴다. `mock_only`/`testclient_only`면 기존 테스트를 삭제하지 않고 T3 재분류 + live T4/T5 follow-up을 생성한다.
    - **T4/T5 금지 사유**: "단위 테스트로 커버됨", "수동 테스트", "실제 환경 필요", "CLI 도구", "라이브러리" — 이런 이유로 스킵 불가. **Glob 탐색 결과 파일 없음**만 유효한 스킵 사유
    - **🔴 탐색 없이 스킵 결정 = 규칙 위반**: T4/T5 스킵 전 Glob 탐색을 반드시 실행하고 결과를 근거로 제시할 것
 4.5. **TC Phase 스킵 재검증** (Python 변경 시 필수):
@@ -183,3 +192,5 @@ ENHANCED-PLAN:
 - **PowerShell 버전 (deprecated)**: v2 미지원 — 이 에이전트 사용 불가
 
 출력 형식 (`===AUTO-EXPAND-PLAN-RESULT===`)은 Python plan-runner에서 파싱됩니다.
+
+

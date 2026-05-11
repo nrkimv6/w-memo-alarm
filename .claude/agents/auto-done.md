@@ -5,6 +5,11 @@ model: haiku
 tools: [Read, Edit, Bash, Glob, Grep]
 ---
 
+
+<!-- script-contract-invariant -->
+## Script Contract Invariant
+
+For deterministic status, grep, candidate, preflight, or cleanup steps, call the shared helper CLI and consume its JSON evidence instead of restating a long procedure inline. Relevant helpers are `common\tools\auto-done.ps1 -Json`, `common\tools\archive-sweep.ps1 -CandidatesOnly -Json`, `common\tools\plan-advisory-detect.ps1 -Json`, `common\tools\audit-patterns.ps1 -Json`, `common\tools\merge-test-preflight.ps1 -Json`, and `common\tools\merge-test-cleanup.ps1 -Json`. For `auto-done.ps1 -Json`, blocked results are machine-readable contract JSON payloads on stdout; parse the `tool=auto-done` object and do not require trailing human `Write-Error` text. The agent still owns interpretation, final action choice, and any mutation approval.
 # auto-done
 
 ## I/O Contract
@@ -20,6 +25,12 @@ tools: [Read, Edit, Bash, Glob, Grep]
 > **직접 호출 금지**: 이 agent는 plan-runner가 자동 호출. 수동 완료 처리는 `/done` 스킬 사용.
 > **스킬 경로 참조**: 프롬프트에 `스킬 파일:` 줄이 있으면 해당 파일을 우선 참조하여 done 절차를 수행한다.
 > 기본 참조 경로: `D:\work\project\tools\monitor-page\.agents\skills\done\SKILL.md`
+
+## Helper JSON Resume/Evidence Contract
+
+- T4/T5 inline code evidence table 셀은 helper가 보존해야 한다. `command`, `cwd`, `blocker_code` 값이 backtick으로 감싸져 있어도 사람이 먼저 parser-safe rewrite를 수행하지 않는다.
+- `common\tools\auto-done.ps1 -Json` 또는 Python helper가 `already_archived_resume=true`를 반환하면 archive 이동을 반복하지 않는다.
+- already-archived resume에서는 JSON의 `searched_paths`와 `resumed_steps`를 read-back하고, archive 이동 이후 TODO/DONE/read-back/commit 잔여 단계만 계속한다.
 
 ## 입력 규약
 
@@ -48,12 +59,7 @@ tools: [Read, Edit, Bash, Glob, Grep]
 
 done SKILL.md 2단계~8단계를 순서대로 실행:
 
-### 0. 고아 pytest 선제 정리
-
-- Bash: `powershell.exe -ExecutionPolicy Bypass -File "D:\work\project\tools\monitor-page\scripts\kill-orphan-procs.ps1"`
-- 실패해도 done 절차 계속 진행
-
-### 0.5. done 사전 검증 (구현완료 설정 전 게이트)
+### 0. done 사전 검증 (구현완료 설정 전 게이트)
 
 > **🔴 이 검증은 Step 1(구현완료 설정) 전에 반드시 통과해야 한다.**
 > branch/worktree 검증은 면제 (plan-runner가 이미 정리).
@@ -132,6 +138,8 @@ auto-done 완료: {plan 제목}
 - archive: {archive 경로}
 - todo_archive: {_todo archive 경로}
 - commit: {커밋 해시 또는 "완료"}
+- 사용자 escalation 처리: {무엇을 다시 확인했고 무엇을 고쳤는지 또는 해당 없음}
+- remaining targets: {없음 또는 남은 TODO/owner}
 ```
 
 실패 시:
@@ -139,4 +147,11 @@ auto-done 완료: {plan 제목}
 ```
 auto-done 실패: {plan 제목}
 ERROR: {오류 메시지}
+- 사용자 escalation 처리: {재지시/질책이 있었다면 다시 확인한 범위와 blocked owner}
 ```
+
+## 사용자 escalation closeout gate
+
+- 같은 세션에 사용자 재지시/질책/강한 불만 신호가 있었으면 최종 출력에서 active plan/archive/DONE/root/head/service 상태와 `사용자 escalation 처리`를 분리해 보고한다.
+- `사용자 escalation 처리`에는 무엇을 다시 확인했고 무엇을 고쳤는지, 남은 `remaining targets` 또는 blocked owner를 포함한다.
+- escalation evidence는 안전 훈계가 아니라 작업 품질 누락 신호다. 표현 평가 대신 plan/TODO/status/read-back 근거를 남긴다.

@@ -7,6 +7,10 @@
 **절대 금지**: `docs/plan/` 또는 `.worktrees/plans/docs/plan/`을 직접 문자열로 스킬에 하드코딩하지 않는다.  
 모든 스킬/에이전트는 아래 **경로 해석 우선순위**를 따라 plan 루트를 결정한다.
 
+wtools task ledger는 `.worktrees/plans/TODO.md`와 `.worktrees/plans/docs/DONE.md`가 canonical이다. repo root `TODO.md`/`docs/DONE.md`는 legacy/stub로만 취급한다.
+
+plan root 해석 규칙은 plan 문서의 저장/조회 위치에만 적용한다. `/plan` 스킬이 읽는 `_template.md`는 plan 출력 폴더가 아니라 `SKILL.md`가 있는 스킬 디렉터리의 파일이다.
+
 ## 경로 해석 우선순위 (Get-PlanRoot 로직)
 
 스킬이 plan 경로를 결정해야 할 때 아래 순서로 확인한다:
@@ -44,13 +48,13 @@ function Resolve-DocsCommitRoot {
 }
 
 function Resolve-DocsCommitCandidates {
-    param($RepoRoot, $EditedPaths)
+    param($RepoRoot, $EditedPaths, [switch]$IncludeFixtures)
 
     # 경로 정규화: Windows 백슬래시 → 슬래시로 통일 후 매칭 (혼용 입력 허용)
     $commitRoot = (Resolve-DocsCommitRoot $RepoRoot).Replace('\','/').TrimEnd('/')
     if (-not (Test-Path $commitRoot)) { return @() }
 
-    $dirPrefixes = @("docs/plan/", "docs/archive/")
+    $dirPrefixes = @("docs/plan/", "docs/archive/", "docs/history/")
     $fileExact   = @("TODO.md", "docs/DONE.md")
 
     $candidates = foreach ($editedPath in $EditedPaths) {
@@ -70,6 +74,12 @@ function Resolve-DocsCommitCandidates {
                 if ($rel -ieq $exact) { $rel; break }
             }
         }
+        if (-not $matched -and $IncludeFixtures) {
+            if ($rel.StartsWith("tests/", [StringComparison]::OrdinalIgnoreCase) -and
+                ($rel -like "tests/*/fixtures/*" -or $rel.StartsWith("tests/fixtures/", [StringComparison]::OrdinalIgnoreCase))) {
+                $rel
+            }
+        }
     }
 
     return @($candidates | Sort-Object -Unique)
@@ -81,6 +91,16 @@ function Test-PlansDirty {
     if (-not (Test-Path "$RepoRoot\.worktrees\plans")) { return $false }
     $dirty = git -C "$RepoRoot\.worktrees\plans" status --porcelain
     return [bool]$dirty
+}
+
+function Test-WorktreeDirty {
+    param($RepoRoot, [bool]$IncludeMain = $true)
+
+    if ($IncludeMain) {
+        $mainDirty = git -C "$RepoRoot" status --porcelain
+        if ($mainDirty) { return $true }
+    }
+    return (Test-PlansDirty $RepoRoot)
 }
 ```
 
@@ -108,7 +128,8 @@ impl 워크트리(`.worktrees/impl-{slug}/`)에서 plans 워크트리(`.worktree
 
 1. `.worktrees/plans/docs/plan/`이 존재하면 -> 표 값에 관계없이 이 경로 사용 (canonical)
 2. `.worktrees/plans/docs/plan/`이 없으면 -> `docs/plan/` 사용 (orphan 기본값)
-3. `common/docs/plan/`은 2026-04-21 cutover로 폐지. 새 문서 작성·참조에서 사용하지 않는다.
+3. `common/docs/plan/`은 2026-04-21 cutover로 폐지. 새 문서 작성·참조 후보로 사용하지 않는다.
+4. 같은 literal string이 남아도 되는 경우는 cutover 이전 history 설명 또는 legacy drift detection 규칙뿐이다.
 
 **실수 패턴 금지**: CLAUDE.md 표의 `docs/plan/`을 읽고 바로 그 경로에 파일을 생성하지 말 것.
 반드시 `.worktrees/plans/docs/plan/` 존재 여부를 먼저 확인하라.
@@ -135,4 +156,5 @@ git push
 
 - `Resolve-DocsCommitRoot` 반환 경로에서만 커밋한다.
 - `Resolve-DocsCommitCandidates` 반환 파일만 `git add`한다.
+- plans commit root 기준 exact file은 `TODO.md`, `docs/DONE.md`이고, directory lineage는 `docs/plan/`, `docs/archive/`, `docs/history/`다.
 - `git add -A` / `git add .` / `git add docs/`는 plans 워크트리에서도 금지한다.

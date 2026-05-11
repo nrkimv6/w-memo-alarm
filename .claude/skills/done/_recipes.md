@@ -52,6 +52,97 @@ plan 문서에서:
 
 ---
 
+## baseline dirty 기록
+
+스킬 시작 직후 1회 실행:
+
+```powershell
+$BaseDirty = (git -C $RepoRoot status --short) | ForEach-Object { $_.Substring(3).Trim() }
+$PlansRoot = Join-Path $RepoRoot ".worktrees/plans"
+$PlansBaseDirty = (git -C $PlansRoot status --short) | ForEach-Object { $_.Substring(3).Trim() }
+$TouchedPaths = [System.Collections.Generic.HashSet[string]]::new()
+```
+
+docs commit root 기준 `TODO.md`는 wtools에서 `.worktrees/plans/TODO.md`, `docs/DONE.md`는 `.worktrees/plans/docs/DONE.md`다.
+
+### self residual dirty 계산 inline snippet
+
+```powershell
+$CurrentDirty = (git -C $RepoRoot status --short) | ForEach-Object { $_.Substring(3).Trim() }
+$SelfResidual = $CurrentDirty | Where-Object { $TouchedPaths.Contains($_) }
+
+# whitelist는 candidate classification 전용이다. stage pathspec에는 broad glob을 쓰지 않는다.
+$Whitelist = @("TODO.md", "docs/DONE.md")
+$InWhitelist  = $SelfResidual | Where-Object { $_ -in $Whitelist -or $_ -like "docs/plan/*.md" -or $_ -like "docs/archive/*.md" -or $_ -like "docs/history/*.md" }
+$OutWhitelist = $SelfResidual | Where-Object { $_ -notin $InWhitelist }
+
+# touched whitelist dirty는 exact path set만 stage하고, commit 실패 시 hard-fail한다.
+$Expected = [string[]]$InWhitelist
+foreach ($f in $Expected) { git -C $RepoRoot add -- $f }
+$Staged = git -C $RepoRoot diff --cached --name-only
+if (@(Compare-Object $Expected $Staged).Count -ne 0) {
+  throw "staged mismatch: expected exact path set과 cached set이 다릅니다."
+}
+if ($Expected) {
+  & commit.ps1 "docs: flush self residual dirty" -Files $Expected
+  if ($LASTEXITCODE -ne 0) { throw "touched whitelist dirty commit failed" }
+}
+
+if ($OutWhitelist) { Write-Host "남은 dirty: $($OutWhitelist -join ', ')" }
+```
+
+### related-plan dirty 분류 표
+
+| 분류 | 조건 | 자동 처리 |
+|------|------|----------|
+| `self` | `current dirty ∩ $TouchedPaths` | exact path set만 commit wrapper로 커밋 |
+| `related-plan` | 현재 plan 본문, Phase Z, 검증 로그, 직전 `/merge-test` 출력에 등장한 path가 현재 dirty | 관련성 evidence와 exact path set을 기록하고 커밋 |
+| `post-merge-owned` | 직전 `impl/post-merge-*` branch, repair commit, final merge commit evidence에 포함된 path가 현재 dirty | repair evidence를 남기고 커밋 |
+| `preexisting-unrelated` | baseline dirty였고 현재 plan/검증 evidence와 무관 | 커밋하지 않고 보존 evidence로 보고 |
+| `UNTRACKED_ORIGIN_BLOB_RESIDUE` | current HEAD deleted + upstream tracked + local hash equals upstream hash | archive move 전 hard blocker. `commit`, `quarantine`, `explicit preserve with owner plan` evidence 중 하나가 필요 |
+| `UNTRACKED_OVERWRITE_RISK` | current HEAD deleted + upstream tracked + local untracked path가 pull/merge overwrite 대상 | origin blob residue와 분리해 표에 남기고 owner/evidence를 확인 |
+| `protected-secret` | `.env*`, `credentials.json`, `*.key`, `*.pem`, `secrets/**` | 제품 커밋 금지, fail-fast 또는 별도 보존 보고 |
+| `unknown-protected` | protected path인데 owner/evidence 불명 | 보존 branch 또는 명시 보고. 성공 종료 시 dirty 0 또는 보존 evidence 필수 |
+
+`tests/*.py`, `app/*`, `frontend/*`, `scripts/*`는 whitelist에 추가하지 않는다. 이 경로들은 `related-plan dirty` 또는 `post-merge-owned dirty`로 분류될 때만 커밋 대상이 된다.
+
+**broad stage 금지 예시:**
+- 금지: `git add -u -- docs/plan`
+- 금지: `git add docs/plan/*.md`
+- 금지: `git add -A`
+- 허용: `$TouchedPaths`와 현재 dirty 교집합에서 계산한 exact path set만 `git add -- <path>` 또는 `commit.ps1 -Files <paths>`로 stage
+
+archive rename pair는 원본 삭제(`docs/plan/foo.md`)와 archive 추가(`docs/archive/foo.md`)를 expected staged set에 함께 넣는다. 기존 dirty plan은 자동 수리 대상이 아니라 baseline dirty로 보존한다.
+
+---
+
+## 세션 plan 목록 추출과 remaining targets 판정
+
+대화 텍스트에서 사용자가 명시한 절대경로/상대 plan 링크만 수집해 session targets를 만든다. sibling `_todo-*`는 대표 plan 본문 링크 또는 같은 stem의 미완료 파일을 확인한 뒤 추가한다.
+
+```powershell
+$Mentioned = Select-String -InputObject $ConversationText -Pattern '([A-Za-z]:\\[^\\r\\n`]*docs\\plan\\[^\\r\\n` ]+\\.md|docs/plan/[^\\r\\n` )]+\\.md)' -AllMatches |
+  ForEach-Object { $_.Matches.Value } |
+  Sort-Object -Unique
+
+$SessionTargets = $Mentioned | Where-Object {
+  Test-Path $_ -and -not (Select-String -Path $_ -Pattern '^> 상태:\\s*(완료|폐기)|docs[\\/]archive' -Quiet)
+}
+```
+
+- `remaining targets = session targets - 완료/폐기/archive`
+- global backlog scan은 session targets 산정 이후 참고용으로만 수행한다.
+- remaining targets가 0건이면 예시처럼 출력한다:
+
+```text
+남은 session target 없음.
+참고 backlog: .worktrees/plans/TODO.md에 남은 항목은 사용자가 명시할 때만 진행합니다.
+```
+
+global backlog를 보여줄 때는 반드시 `참고 backlog` label을 붙이고, 그 항목을 자동 실행 대상으로 승격하지 않는다.
+
+---
+
 ## archive 이동 (`git mv` 분기)
 
 ### orphan 도입 프로젝트 — plans 워크트리 내에서 git mv
@@ -128,11 +219,14 @@ CHANGELOG.md가 없으면 파일 자동 생성 후 추가.
 
 ---
 
-## plans dirty 사전 점검 경고 템플릿
+## main+plans dirty 사전 점검 경고 템플릿
 
 ```powershell
-⚠️ plans 워크트리에 미커밋 변경 N건. main cwd의 git status에서는 보이지 않습니다.
+⚠️ main/plans 워크트리에 미커밋 변경 N건. 화이트리스트 후보와 블랙리스트 후보를 먼저 분리하세요.
+화이트리스트: docs/plan/**, docs/archive/**, docs/history/**, TODO.md, docs/DONE.md, tests/**/fixtures/**
+블랙리스트: .env*, credentials.json, *.key, *.pem, secrets/**
 현재 실행이 수정한 파일만 add하세요. 기존 잔존 dirty와 묶어서 커밋하지 마세요.
+git -C "$RepoRoot" status --porcelain
 Set-Location "$RepoRoot\.worktrees\plans"
 git status --porcelain
 git add <파일명>   # 이번 실행이 수정한 파일만 개별 add

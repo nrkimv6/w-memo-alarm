@@ -3,9 +3,9 @@ name: pull-sync
 description: "git pull 후 plan/TODO 자동 동기화. Use when: 풀 동기화, pull sync, 풀 받아, 업데이트 받아"
 ---
 
-# git pull 후 TODO 자동 동기화
+# git pull 후 plans task ledger 자동 동기화
 
-하위 프로젝트들을 git pull하고, 변경된 plan 문서를 분석하여 TODO/DONE을 자동으로 동기화합니다.
+하위 프로젝트들을 git pull하고, 변경된 plan 문서를 분석하여 `.worktrees/plans/TODO.md`와 `.worktrees/plans/docs/DONE.md`를 자동으로 동기화합니다. repo root `TODO.md`, `docs/DONE.md`, `wtools/TODO.md`는 legacy/stub 또는 downstream mirror read-back 대상이며 직접 갱신하지 않습니다.
 
 ## 트리거
 
@@ -46,7 +46,7 @@ BEFORE_HASH=$(git rev-parse HEAD)
 
 # 4. pull 실행 (1+2 모두 통과 시에만)
 git pull origin main
-# → 실패/충돌 시 → 스킵 + 보고
+# → 실패/충돌 시 → 1.7단계 conflict 분류로 전환
 ```
 
 **병렬 실행:**
@@ -57,6 +57,54 @@ git pull origin main
 - 각 프로젝트: (상태, 변경 파일 수, 이전 해시)
 - clean + pull 성공 → 2단계로 진행
 - dirty/비main/실패 → 스킵 (보고 목록에 추가)
+
+### 1.7단계: conflict 분류
+
+`git pull`이 conflict로 멈춘 경우 방치하거나 무조건 스킵하지 않고 파일 성격별로 분류한다.
+
+| 분류 | 대상 | 처리 |
+|---|---|---|
+| 일반 코드/문서 | `app/`, `frontend/`, `scripts/`, `docs/plan` 등 | 해당 repo owner flow에서 resolve/test/commit한다. |
+| plans lineage ledger | `.worktrees/plans/TODO.md`, `.worktrees/plans/docs/DONE.md` | docs commit root owner flow에서 resolve/test/commit한다. |
+| 운영 긴급 | 서비스 복구에 필요한 설정/운영 파일 | 복구 우선으로 resolve하고 사유와 검증 evidence를 남긴다. |
+| mirror surface | `.agents/`, `.claude/`, `.gemini/` | root에서 resolve/commit하지 않는다. literal `git pull --ff-only` 수신만 허용하고 실패 시 abort/preserve 후 사용자 push 또는 sync worker handoff로 ahead를 해소한 뒤 ff-only retry한다. |
+| unknown | 파일 성격을 판정할 수 없음 | 사용자에게 conflict 파일과 상태를 보고하고 결정 대기한다. |
+
+mirror surface conflict는 수동 sync 구현이 아니다. 아래 evidence를 확보한 뒤 root에서 merge resolution으로 닫지 않는다. remote sync commit은 `git pull --ff-only`로만 수신하고, ff-only 실패나 conflict가 있으면 abort/preserve evidence를 남긴 뒤 upstream sync 재생성 또는 원격 정리를 요구한다.
+- `MERGE_HEAD`
+- `git merge-base ours theirs`
+- `git log --oneline ours..theirs`
+- divergent child-local commit hash
+- conflict 파일 surface 종류
+
+**ff-only 실패 시 복구 절차**:
+0. Remote state source of truth는 `git fetch origin` 후 `git rev-list --left-right --count HEAD...origin/main` tuple이다. `git status --short --branch`는 display evidence이며 routing source of truth가 아니다.
+1. `(left>0,right=0)=ahead-only`, `(left=0,right>0)=behind-only`, `(left>0,right>0)=diverged`, `(left=0,right=0)=equal`로 분류한다.
+2. `behind-only`는 `git pull --ff-only` 수신 후보이며, remote sync commit을 local merge로 닫지 않는다.
+3. `ahead-only`이고 `behind=0`일 때만 `git push origin main`으로 origin 정렬 후 `git pull --ff-only` retry를 push-first 후보로 삼을 수 있다. push 후에는 fetch/recheck로 late remote update race를 다시 확인한다.
+4. `diverged`(`left>0 && right>0`)이면 push-first 금지다. 사용자가 "push하고 pull" 순서를 말해도 먼저 diverged evidence를 보고하고 `DOWNSTREAM_DIVERGED_PUSH_BLOCKED` 또는 동등 blocker로 중단한 뒤 owner-approved merge/rebase/source regeneration/abort 중 하나를 요구한다.
+5. push가 거절되거나 권한이 없으면 sync worker handoff 또는 upstream sync 재생성 evidence를 요구하고, root receiver에서는 `NON_FF_SYNC_BLOCKED`와 diverged blocker를 구분해 보고한다.
+6. 이미 remote sync commit이 생성돼 있으면 receiver는 fetch 후 fast-forward 가능 여부만 확인하고, conflict resolution commit을 만들지 않는다.
+
+mirror conflict resolution을 `git checkout --theirs -- <path>` 또는 `git merge --strategy-option=theirs` 같은 local merge resolution으로 처리하지 않는다. child repo mirror 파일을 직접 edit/commit해서 wtools 원본과 맞추는 구현 계획으로 승격하지 않으며, root receiver는 remote fast-forward 수신 또는 upstream sync 재생성 evidence만 인정한다.
+
+### 1.8단계: git recovery closeout gate
+
+강제 rebase/pull 복구, lock 제거, 서비스 정지, stash 생성이 한 번이라도 발생하면 완료 보고 전에 recovery closeout 표를 출력한다.
+
+| 항목 | evidence | 완료 조건 |
+|------|----------|-----------|
+| `RecoveryStashes` | 복구 중 만든 stash message/ref 목록. 예: `codex-recovery/{repo}/{timestamp}` | 종료 전 `git stash list`에서 해당 이름이 남지 않거나, 남은 ref와 owner/blocker를 표기 |
+| stash lifecycle | `git stash push`, `git stash apply/pop`, `git stash drop` 각 단계 결과 | apply 성공 + conflict 0-hit + drop 성공 또는 preserved stash owner 기록 |
+| `index.lock` | lock path, 생성/삭제 시각, 동시 `git maintenance`/`gc` 관측 여부 | stale lock 제거 근거와 이후 git 명령 성공 |
+| service recovery | `Get-Service 'MonitorPage*'`, `Get-Process 'monitorpage-*'` read-back | rebase를 위해 멈춘 NSSM/API/worker가 Running 또는 blocked(UAC/권한/사용자 취소)로 보고됨 |
+| remote state | `git status --short --branch`, `git rev-list --left-right --count HEAD...origin/main` | clean/ff-only 수신 가능 또는 `NON_FF_SYNC_BLOCKED` 같은 blocker 기록 |
+
+- `$RecoveryStashes` 배열을 세션 내에서 유지하고, 직접 만든 stash 이름은 모두 여기에 추가한다.
+- PowerShell `stash@{n}` literal은 따옴표로 감싼다. 기본형 `git stash pop`만 실행하고 ref/drop evidence를 잊는 흐름은 금지한다.
+- `git stash list`에 agent가 만든 `codex-*` 또는 `merge-test/*` 임시 stash가 남으면 `stash lifecycle closeout`을 완료로 보고하지 않는다. 반영하지 않은 stash는 owner와 다음 명령을 남긴다.
+- UAC 취소, 서비스 재시작 권한 없음, 서비스 `Paused/Stopped` 잔존은 완료가 아니라 `service recovery blocked`다.
+- recovery closeout 표 없이 `완료`, `다 했다`, `추가 작업 없음`으로 종료하지 않는다.
 
 ### 1.5단계: Redis 잔존 상태 정리 (monitor-page 전용)
 
@@ -116,7 +164,7 @@ git diff ${BEFORE_HASH} --name-only
    ```
 
 3. DONE.md에 기록:
-   - `{project}/docs/DONE.md` 상단에 추가
+   - `.worktrees/plans/docs/DONE.md` 상단에 추가
    - DONE.md 없으면 생성
    ```markdown
    ## 2026-02-05: {plan 제목}
@@ -125,8 +173,8 @@ git diff ${BEFORE_HASH} --name-only
 
 #### 3-C: 미완료 plan 처리
 
-**TODO.md 반영:**
-1. `{project}/TODO.md`의 Pending 섹션 확인
+**plans/TODO.md 반영:**
+1. `.worktrees/plans/TODO.md`의 Pending 섹션 확인
 2. 해당 plan 항목 검색:
    - **이미 있으면** → 진행률만 갱신
      ```markdown
@@ -137,15 +185,9 @@ git diff ${BEFORE_HASH} --name-only
      - [ ] **{제목}** — [plan]({경로}) (0/27, 0%)
      ```
 
-### 4단계: wtools/TODO.md 글로벌 동기화
+### 4단계: root legacy ledger 미갱신 확인
 
-**동기화 로직 (기존 `/check-repos` 6단계와 동일):**
-
-1. wtools/TODO.md 열기
-2. 각 프로젝트 섹션 찾기
-3. 변경된 프로젝트의 항목/진행률 갱신
-4. 모든 TODO 완료된 프로젝트 → "완료 ✅" 섹션으로 이동
-5. "마지막 업데이트" 날짜를 오늘로 갱신
+`.worktrees/plans/TODO.md`와 `.worktrees/plans/docs/DONE.md`만 canonical ledger로 갱신한다. repo root `TODO.md`, `docs/DONE.md`, `wtools/TODO.md`는 이 단계에서 쓰지 않는다.
 
 ### 5단계: 결과 리포트
 
@@ -168,7 +210,7 @@ git diff ${BEFORE_HASH} --name-only
 | activity-hub | layout-fix.md | 완료 (18/18) | → archive + DONE.md |
 | line-minder | auth-layout.md | 미완료 (5/27) | → TODO.md 갱신 |
 
-### wtools/TODO.md
+### plans/TODO.md
 - ✅ 동기화 완료 (마지막 업데이트: 2026-02-05)
 
 ### Redis 정리 (monitor-page)
@@ -189,7 +231,9 @@ git diff ${BEFORE_HASH} --name-only
 실행 후 확인:
 - [ ] Git Pull 결과 테이블 확인
 - [ ] Plan 변경 감지 테이블 확인
-- [ ] wtools/TODO.md 동기화됨
+- [ ] `.worktrees/plans/TODO.md` 동기화됨
+- [ ] `.worktrees/plans/docs/DONE.md` 동기화됨
+- [ ] root legacy ledger 미변경 확인됨
 - [ ] 스킵된 프로젝트 확인 및 정리
 
 ## 환경

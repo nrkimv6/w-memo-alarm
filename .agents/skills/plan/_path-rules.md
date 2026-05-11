@@ -8,6 +8,8 @@
 - 단, 경로를 실제로 결정할 때는 아래 helper 우선순위를 따른다.
 - **plans-aware != plans-only**: plans 워크트리를 지원한다는 뜻이지, 모든 프로젝트가 항상 `.worktrees/plans`를 써야 한다는 뜻이 아니다.
 - wtools 공통 문서는 `.worktrees/plans/docs/*`를 canonical로 사용한다.
+- wtools task ledger는 `.worktrees/plans/TODO.md`와 `.worktrees/plans/docs/DONE.md`가 canonical이다. repo root `TODO.md`/`docs/DONE.md`는 legacy/stub로만 취급한다.
+- plan root 해석 규칙은 plan 문서의 저장/조회 위치에만 적용한다. `/plan` 스킬이 읽는 `_template.md`는 plan 출력 폴더가 아니라 `SKILL.md`가 있는 스킬 디렉터리의 파일이다.
 
 ## 경로 해석 우선순위
 
@@ -51,14 +53,15 @@ function Resolve-DocsCommitRoot {
 }
 
 function Resolve-DocsCommitCandidates {
-    param($RepoRoot, $EditedPaths)
+    param($RepoRoot, $EditedPaths, [switch]$IncludeFixtures)
 
     $commitRoot = (Resolve-DocsCommitRoot $RepoRoot).Replace('\','/').TrimEnd('/')
     if (-not (Test-Path $commitRoot)) { return @() }
 
     $dirPrefixes = @(
         "docs/plan/",
-        "docs/archive/"
+        "docs/archive/",
+        "docs/history/"
     )
     $fileExact = @("TODO.md", "docs/DONE.md")
 
@@ -87,6 +90,12 @@ function Resolve-DocsCommitCandidates {
                 }
             }
         }
+        if (-not $matched -and $IncludeFixtures) {
+            if ($rel.StartsWith("tests/", [StringComparison]::OrdinalIgnoreCase) -and
+                ($rel -like "tests/*/fixtures/*" -or $rel.StartsWith("tests/fixtures/", [StringComparison]::OrdinalIgnoreCase))) {
+                $rel
+            }
+        }
     }
 
     return @($candidates | Sort-Object -Unique)
@@ -98,6 +107,16 @@ function Test-PlansDirty {
     if (-not (Test-Path "$RepoRoot\.worktrees\plans")) { return $false }
     $dirty = git -C "$RepoRoot\.worktrees\plans" status --porcelain
     return [bool]$dirty
+}
+
+function Test-WorktreeDirty {
+    param($RepoRoot, [bool]$IncludeMain = $true)
+
+    if ($IncludeMain) {
+        $mainDirty = git -C "$RepoRoot" status --porcelain
+        if ($mainDirty) { return $true }
+    }
+    return (Test-PlansDirty $RepoRoot)
 }
 ```
 
@@ -112,10 +131,12 @@ function Test-PlansDirty {
 - 표는 **후보 경로를 읽는 기준**이고, 실제 선택은 위 helper 우선순위가 먼저다.
 - `.worktrees/plans/docs/plan/`이 있으면 그 경로를 canonical로 사용한다.
 - `.worktrees/plans/docs/plan/`이 없으면 기본값 `docs/plan/` (orphan 프로젝트 기본값)으로 내려간다.
-- `common/docs/plan/`은 2026-04-21 cutover로 폐지. 새 문서 작성·참조에서 사용하지 않는다.
+- `common/docs/plan/`은 2026-04-21 cutover로 폐지. 새 문서 작성·참조 후보로 사용하지 않는다.
+- 같은 literal string이 남아도 되는 경우는 cutover 이전 history 설명 또는 legacy drift detection 규칙뿐이다.
 
 ## plans 워크트리 커밋 범위
 
 - `Resolve-DocsCommitRoot` 반환 경로에서만 커밋한다.
 - `Resolve-DocsCommitCandidates` 반환 파일만 `git add`한다.
+- plans commit root 기준 exact file은 `TODO.md`, `docs/DONE.md`이고, directory lineage는 `docs/plan/`, `docs/archive/`, `docs/history/`다.
 - `git add -A` / `git add .` / `git add docs/`는 plans 워크트리에서도 금지한다.
