@@ -3,10 +3,10 @@
 > 작성일시: 2026-05-13 21:44
 > 기준커밋: 1ad39da
 > 대상 프로젝트: memo-alarm
-> 상태: 초안
-> branch:
-> worktree:
-> worktree-owner:
+> 상태: 구현중
+> branch: impl/notification-schedule-reset-modal
+> worktree: .worktrees/notification-schedule-reset-modal
+> worktree-owner: .worktrees/notification-schedule-reset-modal
 > <!-- worktree-owner: 단일 경로 또는 쉼표 구분 경로 목록 허용. 첫 항목=primary(생성 소유), 나머지=attached(편승). attach 모드: /implement --attach-worktree <primary-path> -->
 > 진행률: 0/56 (0%)
 > 요약: 기존 사용자의 각 기기에 남아 있는 과거 예약 알림을 다음 접속 시 1회만 정리한다. 신규 가입자는 대상에서 제외하고, 메모 데이터는 삭제하지 않으며 OS/SW/서버 알림 스케줄만 비운 뒤 현재 메모 기준으로 재동기화한다.
