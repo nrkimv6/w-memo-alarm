@@ -1,14 +1,17 @@
 # 기기별 알림 스케줄 초기화 모달
 
+> 완료일: 2026-05-13
+> 아카이브됨
+> 진행률: 56/56 (100%)
+> 요약: 기존 사용자의 각 기기에 남아 있는 과거 예약 알림을 다음 접속 시 1회만 정리한다. 신규 가입자는 대상에서 제외하고, 메모 데이터는 삭제하지 않으며 OS/SW/서버 알림 스케줄만 비운 뒤 현재 메모 기준으로 재동기화한다.
+
 > 작성일시: 2026-05-13 21:44
 > 기준커밋: 1ad39da
 > 대상 프로젝트: memo-alarm
-> 상태: 구현중
-> branch: impl/notification-schedule-reset-modal
-> worktree: .worktrees/notification-schedule-reset-modal
-> worktree-owner: .worktrees/notification-schedule-reset-modal
-> <!-- worktree-owner: 단일 경로 또는 쉼표 구분 경로 목록 허용. 첫 항목=primary(생성 소유), 나머지=attached(편승). attach 모드: /implement --attach-worktree <primary-path> -->
-> 진행률: 47/56 (84%)
+> 상태: 구현완료
+> 반영일시: 2026-05-13 23:48
+> 머지커밋: 070165c
+> 진행률: 56/56 (100%)
 > 요약: 기존 사용자의 각 기기에 남아 있는 과거 예약 알림을 다음 접속 시 1회만 정리한다. 신규 가입자는 대상에서 제외하고, 메모 데이터는 삭제하지 않으며 OS/SW/서버 알림 스케줄만 비운 뒤 현재 메모 기준으로 재동기화한다.
 
 ---
@@ -132,18 +135,18 @@
    - [x] `MANUAL_TASKS.md`: 같은 기기에서 건너뛰기/초기화 후 재접속해도 모달이 재표시되지 않는 절차를 추가한다
    - [x] `MANUAL_TASKS.md`: Android native pending notification이 초기화 전후로 줄어드는 확인 절차를 추가한다
 
-10. [ ] **웹앱 빌드와 타입 검증을 실행한다** - Svelte/TypeScript 회귀 확인
-   - [ ] `package.json`: 기존 scripts를 확인해 적절한 `npm run check` 또는 `npm run build` 명령을 확정한다
-   - [ ] `src/routes/+layout.svelte`: Svelte 5 rune state와 import 경로 타입 오류가 없는지 `npm run check`로 확인한다
-   - [ ] `src/lib/utils/capacitor.ts`: Capacitor notification schedule 타입이 통과하는지 `npm run check`로 확인한다
-   - [ ] `src/service-worker.ts`: SW message 추가 후 빌드가 통과하는지 `npm run build`로 확인한다
+10. [x] **웹앱 빌드와 타입 검증을 실행한다** - Svelte/TypeScript 회귀 확인
+   - [x] `package.json`: 기존 scripts를 확인해 적절한 `npm run check` 또는 `npm run build` 명령을 확정한다
+   - [x] `src/routes/+layout.svelte`: Svelte 5 rune state와 import 경로 타입 오류가 없는지 `npm run check`로 확인한다
+   - [x] `src/lib/utils/capacitor.ts`: Capacitor notification schedule 타입이 통과하는지 `npm run check`로 확인한다
+   - [x] `src/service-worker.ts`: SW message 추가 후 빌드가 통과하는지 `npm run build`로 확인한다
 
 ### Phase Z: Post-Merge Cleanup (/merge-test owner)
 
-Z. [ ] **post-merge 정리 확인** - `/merge-test` owner
-   - [ ] `docs/plan/2026-05-13_notification-schedule-reset-modal.md`: `main merge 시도`를 owner step으로 유지한다
-   - [ ] `docs/plan/2026-05-13_notification-schedule-reset-modal.md`: `root dirty stash/apply (if needed)`를 owner step으로 유지한다
-   - [ ] `docs/plan/2026-05-13_notification-schedule-reset-modal.md`: `T4/T5`, `worktree remove`, `branch remove`, `header meta 제거`를 분리해 유지한다
+Z. [x] **post-merge 정리 확인** - `/merge-test` owner
+   - [x] `docs/plan/2026-05-13_notification-schedule-reset-modal.md`: `main merge 시도`를 owner step으로 유지한다
+   - [x] `docs/plan/2026-05-13_notification-schedule-reset-modal.md`: `root dirty stash/apply (if needed)`를 owner step으로 유지한다
+   - [x] `docs/plan/2026-05-13_notification-schedule-reset-modal.md`: `T4/T5`, `worktree remove`, `branch remove`, `header meta 제거`를 분리해 유지한다
 
 > 예외 경로: `merge resolve`, `stash pop`, `stash-pop resolve`는 정상 체크박스로 만들지 않고 충돌/복원 실패 시 메모로만 남긴다.
 
@@ -160,4 +163,4 @@ Z. [ ] **post-merge 정리 확인** - `/merge-test` owner
 
 ---
 
-*상태: 구현중 | 진행률: 47/56 (84%)*
+*상태: 구현완료 | 진행률: 56/56 (100%)*
