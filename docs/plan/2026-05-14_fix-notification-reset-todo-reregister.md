@@ -34,42 +34,61 @@ plan `2026-05-13_notification-schedule-reset-modal.md` 검증 기준:
 ### Phase 1: 할일 전체 재스케줄 helper 추가
 
 1. - [ ] **`src/lib/utils/todoNotifications.ts`에 `rescheduleAllTodoNotifications(memos: Memo[]): Promise<void>` export 추가**
-   - [ ] `memos` 배열에서 todo type 메모만 필터링한다 (`memo.type === 'todo'` 또는 todo 판별 조건 확인)
-   - [ ] 각 todo에 대해 `scheduleTodoNotifications(todo)`를 순차 호출한다
-   - [ ] native가 아닌 환경에서는 SW-only 경로로 fallback한다
+   - [ ] `src/lib/utils/todoNotifications.ts` 파일 끝(line 474 이후, `rescheduleAllTodosForGlobalAutoAlert` 함수 닫기 `}` 뒤)에 새 export 함수 삽입
+   - [ ] 함수 시그니처: `export async function rescheduleAllTodoNotifications(memos: Memo[]): Promise<void>`
+   - [ ] 본문: `memos.filter(m => m.memoType === 'todo' && m.todoStatus === 'pending')`로 대상 목록 추출
+   - [ ] `for (const todo of pendingTodos) { await scheduleTodoNotifications(todo); }` 순차 호출 (`scheduleTodoNotifications` 내부에서 조건 재검증하므로 중복 등록 없음)
+   - [ ] native가 아닌 환경(웹 PWA)에서는 `scheduleTodoNotifications` 내부의 SW 등록 경로로 자동 fallback됨 (별도 처리 불필요)
 
 ### Phase 2: 초기화 orchestration에 할일 재등록 추가
 
-2. - [ ] **`src/routes/+layout.svelte` `handleNotificationScheduleReset` — 할일 재등록 step 추가**
-   - [ ] step 4(SW 재동기화) 이후에 `rescheduleAllTodoNotifications(memosStore.memos)`를 호출하는 step 5를 추가한다
-   - [ ] 실패 시 `results.push('todo-notify')`로 partial failure 목록에 포함한다
+2. - [ ] **`src/routes/+layout.svelte`에 `rescheduleAllTodoNotifications` import 추가**
+   - [ ] line 17의 기존 `capacitor` import 줄 아래에 새 import 행 삽입: `import { rescheduleAllTodoNotifications } from '$lib/utils/todoNotifications';`
+
+3. - [ ] **`src/routes/+layout.svelte` `handleNotificationScheduleReset` — step 5 삽입**
+   - [ ] `handleNotificationScheduleReset` 함수(line 163~201)에서 step 4 try/catch 블록(`results.push('sw-resync')`) 닫기 `}` 직후, `if (results.length > 0)` 블록 이전에 step 5 삽입:
+     ```typescript
+     // 5. 할일 native/SW 알림 재등록
+     try {
+         await rescheduleAllTodoNotifications(memosStore.memos);
+     } catch {
+         results.push('todo-notify');
+     }
+     ```
+   - [ ] step 5는 await이므로 `handleNotificationScheduleReset` 반환 전에 완료됨 (toast 표시 전 await 계약 충족)
 
 ### Phase R: 재발 경로 분석
 
-3. - [ ] **`rescheduleAllNotifications` 내 `cancelAllNotifications()` 호출이 todo 알림도 지우는 모든 경로 열거**
-   - [ ] Grep으로 `cancelAllNotifications` 호출처 전체 확인
-   - [ ] 각 호출 경로에서 todo 알림 복구가 필요한지 판정 (방어됨/미방어 표 작성)
-   - [ ] 미방어 경로가 있으면 해당 경로에도 todo 재등록 코드 추가
+4. - [ ] **`cancelAllNotifications` 호출처 전체 열거 — Grep으로 `src/` 전체 검색**
+   - [ ] 호출처 1: `src/lib/utils/capacitor.ts:rescheduleAllNotifications` (line 203~214) — `handleNotificationScheduleReset` → `rescheduleAllNotifications` 경로. Phase 2 수정으로 todo 재등록 step 5가 뒤에 실행되므로 **방어됨**
+   - [ ] 호출처 2: `src/lib/components/settings/dev/DevCapacitorBackgroundNotificationSection.svelte:clearAllScheduledNotifications` — 개발자 설정 패널의 "모든 예약 알림 취소" 버튼. 명시적 디버그 전체 삭제 용도이므로 재등록 의도가 없음. **해당 없음(방어 불필요)**
+
+5. - [ ] **방어됨/미방어 표 작성**
+
+   | 경로 | 방어여부 | 근거 |
+   |------|---------|------|
+   | `handleNotificationScheduleReset` → `rescheduleAllNotifications` → `cancelAllNotifications` | 방어됨 | Phase 2 step 5 추가로 todo 재등록 실행 |
+   | `DevCapacitorBackgroundNotificationSection.clearAllScheduledNotifications` → `cancelAllNotifications` | 해당 없음 | 개발자 디버그 패널 전체 취소 버튼 — 재등록 의도 없음 |
 
 ### Phase T1: TC 작성
 
-4. - [ ] `test_rescheduleAllTodoNotifications_filters_todo_memos()` — R: todo type만 필터링하는지
-5. - [ ] `test_rescheduleAllTodoNotifications_empty_memos()` — B: 빈 배열 입력 시 에러 없이 반환
+> T1/T2 해당 없음: memo-alarm은 테스트 인프라가 없음 (tests/ 디렉터리 및 .test.ts 파일 없음 — Glob 확인 완료)
 
 ### Phase T2: TC 검증
 
-6. - [ ] 위 TC 실행 및 passed 확인 (테스트 인프라가 없으면 `> T1/T2 해당 없음: 테스트 인프라 미구비` 처리)
+> T1/T2 해당 없음: memo-alarm은 테스트 인프라가 없음
 
 ### Phase T3: 재현/통합 TC
 
-7. - [ ] `rescheduleAllNotifications` 호출 후 todo 알림이 실제로 재등록되는지 통합 경로 확인
+> T3 해당 없음: memo-alarm은 테스트 인프라가 없음. 수동 검증 경로 — native 앱에서 할일 알림 설정 후 초기화 모달 confirm → 할일 알림이 재등록되는지 설정 패널 pending 목록으로 확인
 
 ---
 
 ## 기술적 고려사항
 
-- `todo` 판별 조건을 `memo.type === 'todo'`로 쓸 수 있는지, 별도 필드가 있는지 실제 `Memo` 타입을 Read로 확인한다.
+- `Memo` 타입의 todo 판별 필드는 `memoType: 'todo'`이고 상태는 `todoStatus: 'pending'`이다 (`src/lib/types/memo.ts` 확인 완료).
 - `scheduleTodoNotifications`는 todo별 기존 알림을 먼저 취소(`REMOVE_TODO_NOTIFICATIONS`)한 뒤 재등록하므로, 중복 등록 위험은 없다.
 - todo가 많으면 순차 호출 시 지연이 생길 수 있다. 완료 후 toast 표시 전에 `await` 처리가 필요하다.
+- `rescheduleAllTodosForGlobalRemind`/`rescheduleAllTodosForGlobalAutoAlert`는 각각 `useGlobalRemind`/`useGlobalAutoAlert` flag가 있는 todo만 필터링하므로 reset 시 전체 재등록 용도로 부적합하다. 새 `rescheduleAllTodoNotifications`는 flag 무관하게 모든 pending todo를 대상으로 한다.
 
 *상태: 검토대기 | 진행률: 0/0 (0%)*
