@@ -8,7 +8,7 @@
 > worktree: .worktrees/notification-schedule-reset-modal
 > worktree-owner: .worktrees/notification-schedule-reset-modal
 > <!-- worktree-owner: 단일 경로 또는 쉼표 구분 경로 목록 허용. 첫 항목=primary(생성 소유), 나머지=attached(편승). attach 모드: /implement --attach-worktree <primary-path> -->
-> 진행률: 0/56 (0%)
+> 진행률: 47/56 (84%)
 > 요약: 기존 사용자의 각 기기에 남아 있는 과거 예약 알림을 다음 접속 시 1회만 정리한다. 신규 가입자는 대상에서 제외하고, 메모 데이터는 삭제하지 않으며 OS/SW/서버 알림 스케줄만 비운 뒤 현재 메모 기준으로 재동기화한다.
 
 ---
@@ -67,70 +67,70 @@
 
 ### Phase 0: Worktree 준비
 
-0. [ ] **worktree 준비 상태를 문서에 고정** - `/implement` 진입 게이트
-   - [ ] `docs/plan/2026-05-13_notification-schedule-reset-modal.md`: `> branch:`, `> worktree:`, `> worktree-owner:` 슬롯을 유지한다
-   - [ ] `docs/plan/2026-05-13_notification-schedule-reset-modal.md`: blank `> branch:`, `> worktree:`, `> worktree-owner:`는 신규 초기 상태이며 다른 `impl/*` 잔여와 무관하다고 적는다
-   - [ ] `docs/plan/2026-05-13_notification-schedule-reset-modal.md`: `worktree 생성 또는 재개`가 `/implement` 또는 `plan-runner` owner flow임을 적는다
-   - [ ] `docs/plan/2026-05-13_notification-schedule-reset-modal.md`: `worktree cwd 고정` 확인을 별도 하위 작업으로 적는다
+0. [x] **worktree 준비 상태를 문서에 고정** - `/implement` 진입 게이트
+   - [x] `docs/plan/2026-05-13_notification-schedule-reset-modal.md`: `> branch:`, `> worktree:`, `> worktree-owner:` 슬롯을 유지한다
+   - [x] `docs/plan/2026-05-13_notification-schedule-reset-modal.md`: blank `> branch:`, `> worktree:`, `> worktree-owner:`는 신규 초기 상태이며 다른 `impl/*` 잔여와 무관하다고 적는다
+   - [x] `docs/plan/2026-05-13_notification-schedule-reset-modal.md`: `worktree 생성 또는 재개`가 `/implement` 또는 `plan-runner` owner flow임을 적는다
+   - [x] `docs/plan/2026-05-13_notification-schedule-reset-modal.md`: `worktree cwd 고정` 확인을 별도 하위 작업으로 적는다
 
 ### Phase 1: 초기화 실행 API 정리
 
-1. [ ] **Service Worker 스케줄 전체 초기화 메시지를 추가한다** - 메모/할일 SW 스케줄을 한 번에 비우는 계약
-   - [ ] `src/lib/constants/swMessages.ts`: `CLEAR_ALL_NOTIFICATION_SCHEDULES` 메시지 상수를 추가한다
-   - [ ] `src/service-worker.ts`: 새 메시지를 수신하면 `scheduledReminders = []`, `todoNotifications = []`로 초기화한다
-   - [ ] `src/service-worker.ts`: 초기화 후 `GET_SCHEDULED_REMINDERS`에서 빈 배열과 interval 상태를 확인할 수 있게 로그를 남긴다
+1. [x] **Service Worker 스케줄 전체 초기화 메시지를 추가한다** - 메모/할일 SW 스케줄을 한 번에 비우는 계약
+   - [x] `src/lib/constants/swMessages.ts`: `CLEAR_ALL_NOTIFICATION_SCHEDULES` 메시지 상수를 추가한다
+   - [x] `src/service-worker.ts`: 새 메시지를 수신하면 `scheduledReminders = []`, `todoNotifications = []`로 초기화한다
+   - [x] `src/service-worker.ts`: 초기화 후 `GET_SCHEDULED_REMINDERS`에서 빈 배열과 interval 상태를 확인할 수 있게 로그를 남긴다
 
-2. [ ] **notificationStore에 초기화/재동기화 helper를 추가한다** - layout과 모달이 직접 SW 세부 구현을 알지 않게 한다
-   - [ ] `src/lib/stores/notifications.svelte.ts`: `clearAllSchedulesInServiceWorker()`를 추가해 새 SW 메시지를 전송한다
-   - [ ] `src/lib/stores/notifications.svelte.ts`: 초기화 시 `lastNotifiedMap`과 `snoozedReminders`를 비우는 내부 helper를 분리한다
-   - [ ] `src/lib/stores/notifications.svelte.ts`: 초기화 후 `registerRemindersToServiceWorker()`를 다시 호출할 수 있는 public flow를 노출한다
+2. [x] **notificationStore에 초기화/재동기화 helper를 추가한다** - layout과 모달이 직접 SW 세부 구현을 알지 않게 한다
+   - [x] `src/lib/stores/notifications.svelte.ts`: `clearAllSchedulesInServiceWorker()`를 추가해 새 SW 메시지를 전송한다
+   - [x] `src/lib/stores/notifications.svelte.ts`: 초기화 시 `lastNotifiedMap`과 `snoozedReminders`를 비우는 내부 helper를 분리한다
+   - [x] `src/lib/stores/notifications.svelte.ts`: 초기화 후 `registerRemindersToServiceWorker()`를 다시 호출할 수 있는 public flow를 노출한다
 
-3. [ ] **서버 alarm_schedules 전체 정리 함수를 추가한다** - 로그인 계정의 memo-alarm 스케줄만 삭제
-   - [ ] `src/lib/services/alarmSchedules.ts`: `deleteAllMemoAlarmsForUser(userId)` 함수를 추가한다
-   - [ ] `src/lib/services/alarmSchedules.ts`: 삭제 조건은 `user_id`, `app_name = 'memo-alarm'`, `alarm_type = 'memo_reminder'`로 제한한다
-   - [ ] `src/lib/services/alarmSchedules.ts`: Supabase 미설정 또는 삭제 실패 시 호출자에게 error를 전달한다
+3. [x] **서버 alarm_schedules 전체 정리 함수를 추가한다** - 로그인 계정의 memo-alarm 스케줄만 삭제
+   - [x] `src/lib/services/alarmSchedules.ts`: `deleteAllMemoAlarmsForUser(userId)` 함수를 추가한다
+   - [x] `src/lib/services/alarmSchedules.ts`: 삭제 조건은 `user_id`, `app_name = 'memo-alarm'`, `alarm_type = 'memo_reminder'`로 제한한다
+   - [x] `src/lib/services/alarmSchedules.ts`: Supabase 미설정 또는 삭제 실패 시 호출자에게 error를 전달한다
 
 ### Phase 2: Capacitor 로컬 알림 재정렬
 
-4. [ ] **메모 로컬 알림 스케줄이 reminders 배열을 지원하게 한다** - 초기화 후 재등록 정확도 확보
-   - [ ] `src/lib/utils/capacitor.ts`: 메모에서 `reminders` 배열을 우선 읽고 구형 `reminder`는 fallback으로 처리하는 helper를 추가한다
-   - [ ] `src/lib/utils/capacitor.ts`: `scheduleNotification(memo)`가 활성 reminder 전체를 순회해 예약하도록 수정한다
-   - [ ] `src/lib/utils/capacitor.ts`: notification id 생성 입력을 `memoId + reminderId + day/date`로 확장해 같은 메모의 다중 알림 충돌을 막는다
-   - [ ] `src/lib/utils/capacitor.ts`: 일회성 reminder(`type === 'once'`)도 native schedule 대상에 포함하되 과거 시각은 예약하지 않는다
+4. [x] **메모 로컬 알림 스케줄이 reminders 배열을 지원하게 한다** - 초기화 후 재등록 정확도 확보
+   - [x] `src/lib/utils/capacitor.ts`: 메모에서 `reminders` 배열을 우선 읽고 구형 `reminder`는 fallback으로 처리하는 helper를 추가한다
+   - [x] `src/lib/utils/capacitor.ts`: `scheduleNotification(memo)`가 활성 reminder 전체를 순회해 예약하도록 수정한다
+   - [x] `src/lib/utils/capacitor.ts`: notification id 생성 입력을 `memoId + reminderId + day/date`로 확장해 같은 메모의 다중 알림 충돌을 막는다
+   - [x] `src/lib/utils/capacitor.ts`: 일회성 reminder(`type === 'once'`)도 native schedule 대상에 포함하되 과거 시각은 예약하지 않는다
 
-5. [ ] **현재 메모 기준 전체 native 재스케줄 helper를 만든다** - 초기화 모달이 OS 큐를 비운 뒤 재등록 가능하게 한다
-   - [ ] `src/lib/utils/capacitor.ts`: `rescheduleAllNotifications(memos)`를 추가해 `cancelAllNotifications()` 후 활성 알림을 가진 메모를 재예약한다
-   - [ ] `src/lib/utils/todoNotifications.ts`: todo native 알림 재스케줄 경로가 `scheduleTodoNotifications(todo)`로 재사용 가능한지 확인하고 필요 시 helper를 export한다
-   - [ ] `src/lib/utils/capacitor.ts`: native가 아닌 환경에서는 no-op으로 안전하게 반환한다
+5. [x] **현재 메모 기준 전체 native 재스케줄 helper를 만든다** - 초기화 모달이 OS 큐를 비운 뒤 재등록 가능하게 한다
+   - [x] `src/lib/utils/capacitor.ts`: `rescheduleAllNotifications(memos)`를 추가해 `cancelAllNotifications()` 후 활성 알림을 가진 메모를 재예약한다
+   - [x] `src/lib/utils/todoNotifications.ts`: todo native 알림 재스케줄 경로가 `scheduleTodoNotifications(todo)`로 재사용 가능한지 확인하고 필요 시 helper를 export한다
+   - [x] `src/lib/utils/capacitor.ts`: native가 아닌 환경에서는 no-op으로 안전하게 반환한다
 
 ### Phase 3: 1회성 초기화 모달 구현
 
-6. [ ] **초기화 대상 판별 로직을 layout에 추가한다** - 기존 사용자만, 기기별 1회
-   - [ ] `src/routes/+layout.svelte`: localStorage key를 `memo-alarm:notification-schedule-reset:v1:{userId 또는 local}` 형태로 정의한다
-   - [ ] `src/routes/+layout.svelte`: `authStore.user.created_at`이 rollout cutoff 이후면 신규 사용자로 판단하고 모달을 표시하지 않는다
-   - [ ] `src/routes/+layout.svelte`: 기존 사용자이며 해당 key가 없으면 현재 메모 수와 무관하게 모달을 표시한다
-   - [ ] `src/routes/+layout.svelte`: auth/memos 초기화 완료 후 한 번만 판별되도록 guard state를 둔다
+6. [x] **초기화 대상 판별 로직을 layout에 추가한다** - 기존 사용자만, 기기별 1회
+   - [x] `src/routes/+layout.svelte`: localStorage key를 `memo-alarm:notification-schedule-reset:v1:{userId 또는 local}` 형태로 정의한다
+   - [x] `src/routes/+layout.svelte`: `authStore.user.created_at`이 rollout cutoff 이후면 신규 사용자로 판단하고 모달을 표시하지 않는다
+   - [x] `src/routes/+layout.svelte`: 기존 사용자이며 해당 key가 없으면 현재 메모 수와 무관하게 모달을 표시한다
+   - [x] `src/routes/+layout.svelte`: auth/memos 초기화 완료 후 한 번만 판별되도록 guard state를 둔다
 
-7. [ ] **사용자용 모달 컴포넌트를 추가한다** - 알림 스케줄만 정리한다는 범위를 명확히 표시
-   - [ ] `src/lib/components/notifications/NotificationScheduleResetModal.svelte`: `Modal`과 `Button`을 사용해 초기화 안내 UI를 만든다
-   - [ ] `src/lib/components/notifications/NotificationScheduleResetModal.svelte`: "초기화하기"와 "건너뛰기" 액션을 제공하고 둘 다 1회 플래그를 기록하게 한다
-   - [ ] `src/lib/components/notifications/NotificationScheduleResetModal.svelte`: 실행 중에는 버튼을 disable하고 진행 상태를 표시한다
-   - [ ] `src/lib/components/notifications/NotificationScheduleResetModal.svelte`: 메모 데이터는 삭제되지 않는다는 문구를 본문에 포함한다
+7. [x] **사용자용 모달 컴포넌트를 추가한다** - 알림 스케줄만 정리한다는 범위를 명확히 표시
+   - [x] `src/lib/components/notifications/NotificationScheduleResetModal.svelte`: `Modal`과 `Button`을 사용해 초기화 안내 UI를 만든다
+   - [x] `src/lib/components/notifications/NotificationScheduleResetModal.svelte`: "초기화하기"와 "건너뛰기" 액션을 제공하고 둘 다 1회 플래그를 기록하게 한다
+   - [x] `src/lib/components/notifications/NotificationScheduleResetModal.svelte`: 실행 중에는 버튼을 disable하고 진행 상태를 표시한다
+   - [x] `src/lib/components/notifications/NotificationScheduleResetModal.svelte`: 메모 데이터는 삭제되지 않는다는 문구를 본문에 포함한다
 
-8. [ ] **초기화 실행 orchestration을 layout에 연결한다** - OS/SW/서버를 순서대로 정리 후 재동기화
-   - [ ] `src/routes/+layout.svelte`: 모달 confirm 시 `cancelAllNotifications()`를 호출한다
-   - [ ] `src/routes/+layout.svelte`: `notificationStore.clearAllSchedulesInServiceWorker()`로 SW 메모/할일 스케줄을 비운다
-   - [ ] `src/routes/+layout.svelte`: 로그인 상태면 `deleteAllMemoAlarmsForUser(authStore.user.id)`를 호출한다
-   - [ ] `src/routes/+layout.svelte`: 정리 후 현재 메모 기준으로 SW, native, 서버 스케줄을 재등록한다
-   - [ ] `src/routes/+layout.svelte`: 성공/부분 실패 결과를 toast 또는 모달 상태로 표시한다
+8. [x] **초기화 실행 orchestration을 layout에 연결한다** - OS/SW/서버를 순서대로 정리 후 재동기화
+   - [x] `src/routes/+layout.svelte`: 모달 confirm 시 `cancelAllNotifications()`를 호출한다
+   - [x] `src/routes/+layout.svelte`: `notificationStore.clearAllSchedulesInServiceWorker()`로 SW 메모/할일 스케줄을 비운다
+   - [x] `src/routes/+layout.svelte`: 로그인 상태면 `deleteAllMemoAlarmsForUser(authStore.user.id)`를 호출한다
+   - [x] `src/routes/+layout.svelte`: 정리 후 현재 메모 기준으로 SW, native, 서버 스케줄을 재등록한다
+   - [x] `src/routes/+layout.svelte`: 성공/부분 실패 결과를 toast 또는 모달 상태로 표시한다
 
 ### Phase 4: 회귀 방지 및 검증
 
-9. [ ] **초기화 대상/비대상 시나리오를 수동 검증 가능하게 정리한다** - 실기기 재현 경로 확보
-   - [ ] `MANUAL_TASKS.md`: 기존 사용자 + key 없음 + 알림 있음일 때 모달 표시 절차를 추가한다
-   - [ ] `MANUAL_TASKS.md`: 신규 가입자 또는 cutoff 이후 user는 모달 미표시 절차를 추가한다
-   - [ ] `MANUAL_TASKS.md`: 같은 기기에서 건너뛰기/초기화 후 재접속해도 모달이 재표시되지 않는 절차를 추가한다
-   - [ ] `MANUAL_TASKS.md`: Android native pending notification이 초기화 전후로 줄어드는 확인 절차를 추가한다
+9. [x] **초기화 대상/비대상 시나리오를 수동 검증 가능하게 정리한다** - 실기기 재현 경로 확보
+   - [x] `MANUAL_TASKS.md`: 기존 사용자 + key 없음 + 알림 있음일 때 모달 표시 절차를 추가한다
+   - [x] `MANUAL_TASKS.md`: 신규 가입자 또는 cutoff 이후 user는 모달 미표시 절차를 추가한다
+   - [x] `MANUAL_TASKS.md`: 같은 기기에서 건너뛰기/초기화 후 재접속해도 모달이 재표시되지 않는 절차를 추가한다
+   - [x] `MANUAL_TASKS.md`: Android native pending notification이 초기화 전후로 줄어드는 확인 절차를 추가한다
 
 10. [ ] **웹앱 빌드와 타입 검증을 실행한다** - Svelte/TypeScript 회귀 확인
    - [ ] `package.json`: 기존 scripts를 확인해 적절한 `npm run check` 또는 `npm run build` 명령을 확정한다
@@ -160,4 +160,4 @@ Z. [ ] **post-merge 정리 확인** - `/merge-test` owner
 
 ---
 
-*상태: 초안 | 진행률: 0/56 (0%)*
+*상태: 구현중 | 진행률: 47/56 (84%)*

@@ -126,6 +126,27 @@ export async function deleteMemoAlarms(memoId: string): Promise<void> {
 }
 
 /**
+ * 사용자 계정의 memo-alarm 서버 스케줄 전체 삭제 (기기별 1회 초기화 모달용)
+ */
+export async function deleteAllMemoAlarmsForUser(userId: string): Promise<void> {
+	if (!supabase) {
+		throw new Error('Supabase not configured');
+	}
+
+	const { error } = await supabase
+		.from('alarm_schedules')
+		.delete()
+		.eq('user_id', userId)
+		.eq('app_name', 'memo-alarm')
+		.eq('alarm_type', 'memo_reminder');
+
+	if (error) {
+		console.error('Failed to delete all memo alarms for user:', error);
+		throw error;
+	}
+}
+
+/**
  * 사용자의 모든 알림 시간 일괄 업데이트
  */
 export async function updateUserAlarmTime(userId: string, newAlarmTime: string): Promise<void> {

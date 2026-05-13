@@ -628,6 +628,26 @@ function createNotificationStore() {
 		registerRemindersToServiceWorker();
 	}
 
+	// 기기별 1회 초기화: SW 메모/할일 스케줄 전체 비우기
+	async function clearAllSchedulesInServiceWorker(): Promise<void> {
+		const sw = await awaitActivatedServiceWorker();
+		if (!sw) {
+			log.warn('clearAllSchedulesInServiceWorker: SW not available, skipping');
+			return;
+		}
+		sw.postMessage({ type: SW_MSG.CLEAR_ALL_NOTIFICATION_SCHEDULES });
+		log.info('🧹 SW CLEAR_ALL_NOTIFICATION_SCHEDULES sent');
+	}
+
+	// 기기별 1회 초기화: 인메모리 lastNotifiedMap과 snoozedReminders 초기화
+	function clearLocalNotificationState(): void {
+		lastNotifiedMap = {};
+		saveLastNotified();
+		snoozedReminders = [];
+		saveSnoozed();
+		log.info('🧹 Local notification state cleared (lastNotifiedMap, snoozedReminders)');
+	}
+
 	// Service Worker에 단일 알림 업데이트 (reminders 배열 지원)
 	async function updateReminderInServiceWorker(memo: Memo) {
 		const sw = await awaitActivatedServiceWorker();
@@ -773,6 +793,9 @@ function createNotificationStore() {
 		updateReminderInServiceWorker,
 		removeReminderFromServiceWorker,
 		getServiceWorkerScheduleStatus,
+		// 기기별 1회 초기화
+		clearAllSchedulesInServiceWorker,
+		clearLocalNotificationState,
 		get activeReminderSyncKey() {
 			return activeReminderSyncKey;
 		}

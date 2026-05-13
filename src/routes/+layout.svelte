@@ -14,9 +14,11 @@
 	import { foldersStore } from "$lib/stores/folders.svelte";
 	import { tagMetaStore } from "$lib/stores/tagMeta.svelte";
 	import { registerFCMToken, setupForegroundMessageListener, hasDeactivatedToken, resetFCMToken, detectProjectMarkerMismatch } from "$lib/fcm";
-	import { setupShareIntentListener, setupNotificationListeners, shareIntentToQueryParams, type ShareIntentData } from "$lib/utils/capacitor";
+	import { setupShareIntentListener, setupNotificationListeners, shareIntentToQueryParams, rescheduleAllNotifications, type ShareIntentData } from "$lib/utils/capacitor";
 	import { isSafeOpenUrl } from "$lib/utils/url";
+	import { deleteAllMemoAlarmsForUser } from "$lib/services/alarmSchedules";
 	import { Toast } from "$lib/components/ui";
+	import NotificationScheduleResetModal from "$lib/components/notifications/NotificationScheduleResetModal.svelte";
 	import UnifiedHeader from "$lib/components/layout/UnifiedHeader.svelte";
 	import BottomNav from "$lib/components/BottomNav.svelte";
 	import SyncStatusBanner from "$lib/components/SyncStatusBanner.svelte";
@@ -37,6 +39,11 @@
 
 	// 알림 재설정 필요 여부
 	let showNotificationResetAlert = $state(false);
+
+	// 기기별 1회 알림 스케줄 초기화 모달
+	const SCHEDULE_RESET_ROLLOUT_CUTOFF = '2026-05-13'; // 이 날짜 이후 가입자는 신규 사용자로 제외
+	let notificationScheduleResetOpen = $state(false);
+	let notificationScheduleResetGuard = $state(false); // 1회만 평가
 
 	// SW reminder sync 상태
 	let lastReminderSyncKey = $state('');
@@ -124,6 +131,79 @@
 		showNotificationResetAlert = false;
 	}
 
+	// 기기별 1회 알림 스케줄 초기화 모달 판별
+	function checkNotificationScheduleReset() {
+		if (notificationScheduleResetGuard) return;
+		notificationScheduleResetGuard = true;
+
+		const userId = authStore.user?.id ?? 'local';
+		const localKey = `memo-alarm:notification-schedule-reset:v1:${userId}`;
+
+		// 이미 처리된 기기
+		if (localStorage.getItem(localKey)) return;
+
+		// 신규 가입자 제외: created_at이 rollout cutoff 이후이면 플래그만 기록
+		if (authStore.user?.created_at) {
+			const createdDate = authStore.user.created_at.slice(0, 10);
+			if (createdDate >= SCHEDULE_RESET_ROLLOUT_CUTOFF) {
+				localStorage.setItem(localKey, 'skipped-new-user');
+				return;
+			}
+		}
+
+		notificationScheduleResetOpen = true;
+	}
+
+	function markNotificationScheduleResetDone(reason: string) {
+		const userId = authStore.user?.id ?? 'local';
+		const localKey = `memo-alarm:notification-schedule-reset:v1:${userId}`;
+		localStorage.setItem(localKey, reason);
+	}
+
+	async function handleNotificationScheduleReset(): Promise<void> {
+		markNotificationScheduleResetDone('done');
+		const results: string[] = [];
+
+		// 1. OS 로컬 알림 전체 취소 후 재예약
+		try {
+			await rescheduleAllNotifications(memosStore.memos);
+		} catch {
+			results.push('capacitor');
+		}
+
+		// 2. SW 메모/할일 스케줄 초기화
+		try {
+			notificationStore.clearLocalNotificationState();
+			await notificationStore.clearAllSchedulesInServiceWorker();
+		} catch {
+			results.push('service-worker');
+		}
+
+		// 3. 서버 alarm_schedules 초기화 (로그인 시)
+		if (authStore.user?.id) {
+			try {
+				await deleteAllMemoAlarmsForUser(authStore.user.id);
+			} catch {
+				results.push('server');
+			}
+		}
+
+		// 4. 현재 메모 기준 SW 재등록
+		try {
+			await notificationStore.registerRemindersToServiceWorker();
+		} catch {
+			results.push('sw-resync');
+		}
+
+		if (results.length > 0) {
+			console.warn('[Layout] notification reset partial failure:', results);
+		}
+	}
+
+	function handleNotificationScheduleResetSkip(): void {
+		markNotificationScheduleResetDone('skipped');
+	}
+
 	// Share Intent 수신 핸들러 (Android Native)
 	function handleShareIntent(data: ShareIntentData) {
 		// /share 페이지로 리다이렉트 (쿼리 파라미터로 데이터 전달)
@@ -165,6 +245,9 @@
 				pendingControllerResync = false;
 				await syncRemindersToSw('controllerchange-deferred');
 			}
+
+			// 기기별 1회 알림 스케줄 초기화 모달 판별 (auth+memos 초기화 완료 후)
+			checkNotificationScheduleReset();
 		}
 
 		// FCM 등록
@@ -226,5 +309,11 @@
 		</div>
 	</div>
 {/if}
+
+<NotificationScheduleResetModal
+	bind:open={notificationScheduleResetOpen}
+	onConfirm={handleNotificationScheduleReset}
+	onSkip={handleNotificationScheduleResetSkip}
+/>
 
 <Toast />

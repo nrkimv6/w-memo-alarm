@@ -1,6 +1,17 @@
-import type { Memo } from '$lib/types/memo';
+import type { Memo, Reminder } from '$lib/types/memo';
 import { notificationHistoryStore } from '$lib/stores/notificationHistory.svelte';
 import { extractUrlFromText } from './shareReceiver';
+
+// reminders 배열 우선, 구형 reminder fallback
+function getActiveReminders(memo: Memo): Reminder[] {
+	if (memo.reminders && memo.reminders.length > 0) {
+		return memo.reminders.filter(r => r.enabled);
+	}
+	if (memo.reminder?.enabled) {
+		return [memo.reminder];
+	}
+	return [];
+}
 
 // 동적 import를 사용하여 Capacitor 모듈을 안전하게 로드
 async function getCapacitor() {
@@ -63,71 +74,86 @@ export async function checkNotificationPermission(): Promise<boolean> {
 }
 
 export async function scheduleNotification(memo: Memo): Promise<void> {
-	if (!(await isNative()) || !memo.reminder?.enabled) return;
+	if (!(await isNative())) return;
+
+	const activeReminders = getActiveReminders(memo);
+	if (activeReminders.length === 0) return;
 
 	const LocalNotifications = await getLocalNotifications();
 	if (!LocalNotifications) return;
 
-	const { time, days } = memo.reminder;
-	const [hours, minutes] = time.split(':').map(Number);
-
-	// Cancel existing notifications for this memo
+	// Cancel existing notifications for this memo before re-scheduling
 	await cancelNotification(memo.id);
 
-	// Schedule notifications for each day
+	const now = new Date();
 	const notifications: Array<{
 		id: number;
 		title: string;
 		body: string;
-		schedule: { at: Date; repeats: boolean; every: 'week' };
+		schedule: { at: Date; repeats?: boolean; every?: 'week' };
 		extra: { memoId: string; url?: string; autoOpen?: boolean };
 	}> = [];
 
-	for (const day of days) {
-		const now = new Date();
-		const scheduleDate = new Date();
+	for (const reminder of activeReminders) {
+		const { time, days, type, date, id: reminderId, autoOpen } = reminder;
+		const [hours, minutes] = time.split(':').map(Number);
 
-		// Find the next occurrence of this day
-		const daysUntil = (day - now.getDay() + 7) % 7;
-		scheduleDate.setDate(now.getDate() + (daysUntil === 0 && (hours < now.getHours() || (hours === now.getHours() && minutes <= now.getMinutes())) ? 7 : daysUntil));
-		scheduleDate.setHours(hours, minutes, 0, 0);
+		if (type === 'once') {
+			if (!date) continue;
+			const scheduleDate = new Date(`${date}T${time}:00`);
+			// 과거 시각은 예약하지 않음
+			if (scheduleDate <= now) continue;
 
-		notifications.push({
-			id: generateNotificationId(memo.id, day),
-			title: memo.title,
-			body: memo.content || '알림이 도착했습니다',
-			schedule: {
-				at: scheduleDate,
-				repeats: true,
-				every: 'week' as const
-			},
-			extra: {
-				memoId: memo.id,
-				url: memo.url,
-				autoOpen: memo.reminder.autoOpen
+			notifications.push({
+				id: generateNotificationId(memo.id, reminderId, date),
+				title: memo.title,
+				body: memo.content || '알림이 도착했습니다',
+				schedule: { at: scheduleDate },
+				extra: { memoId: memo.id, url: memo.url, autoOpen }
+			});
+		} else {
+			// 반복 알림: 요일별 예약
+			for (const day of (days ?? [])) {
+				const scheduleDate = new Date();
+				const daysUntil = (day - now.getDay() + 7) % 7;
+				scheduleDate.setDate(
+					now.getDate() + (daysUntil === 0 && (hours < now.getHours() || (hours === now.getHours() && minutes <= now.getMinutes())) ? 7 : daysUntil)
+				);
+				scheduleDate.setHours(hours, minutes, 0, 0);
+
+				notifications.push({
+					id: generateNotificationId(memo.id, reminderId, String(day)),
+					title: memo.title,
+					body: memo.content || '알림이 도착했습니다',
+					schedule: { at: scheduleDate, repeats: true, every: 'week' as const },
+					extra: { memoId: memo.id, url: memo.url, autoOpen }
+				});
 			}
-		});
+		}
 	}
 
 	if (notifications.length > 0) {
 		try {
 			await LocalNotifications.schedule({ notifications });
+			// 첫 번째 reminder 기준으로 기록 (대표)
+			const firstReminder = activeReminders[0];
 			notificationHistoryStore.addRecord({
 				memoId: memo.id,
 				memoTitle: memo.title,
-				reminderId: memo.reminder?.id || '',
-				reminderType: memo.reminder?.isDefault ? 'default' : 'additional',
+				reminderId: firstReminder.id || '',
+				reminderType: firstReminder.isDefault ? 'default' : 'additional',
 				channel: 'capacitor-local',
 				status: 'success',
 				sentAt: new Date().toISOString()
 			});
 		} catch (e) {
 			const errorMsg = e instanceof Error ? e.message : String(e);
+			const firstReminder = activeReminders[0];
 			notificationHistoryStore.addRecord({
 				memoId: memo.id,
 				memoTitle: memo.title,
-				reminderId: memo.reminder?.id || '',
-				reminderType: memo.reminder?.isDefault ? 'default' : 'additional',
+				reminderId: firstReminder.id || '',
+				reminderType: firstReminder.isDefault ? 'default' : 'additional',
 				channel: 'capacitor-local',
 				status: 'failed',
 				errorMessage: errorMsg,
@@ -173,6 +199,20 @@ export async function cancelAllNotifications(): Promise<void> {
 	}
 }
 
+// 기기별 1회 초기화 모달: OS 알림 큐 전체 비운 뒤 현재 메모 기준으로 재예약
+export async function rescheduleAllNotifications(memos: Memo[]): Promise<void> {
+	if (!(await isNative())) return;
+
+	await cancelAllNotifications();
+
+	for (const memo of memos) {
+		const active = getActiveReminders(memo);
+		if (active.length > 0) {
+			await scheduleNotification(memo);
+		}
+	}
+}
+
 export async function setupNotificationListeners(onNotificationClick: (memoId: string, url?: string) => void): Promise<void> {
 	if (!(await isNative())) return;
 
@@ -187,14 +227,14 @@ export async function setupNotificationListeners(onNotificationClick: (memoId: s
 	});
 }
 
-function generateNotificationId(memoId: string, day: number): number {
-	// Generate a consistent numeric ID from memoId and day
+function generateNotificationId(memoId: string, reminderId: string, dayOrDate: string): number {
+	// Consistent numeric ID from memoId + reminderId + day/date to prevent multi-reminder collision
 	let hash = 0;
-	const str = `${memoId}-${day}`;
+	const str = `${memoId}-${reminderId}-${dayOrDate}`;
 	for (let i = 0; i < str.length; i++) {
 		const char = str.charCodeAt(i);
 		hash = ((hash << 5) - hash) + char;
-		hash = hash & hash; // Convert to 32bit integer
+		hash = hash & hash;
 	}
 	return Math.abs(hash);
 }

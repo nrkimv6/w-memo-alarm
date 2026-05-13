@@ -602,6 +602,15 @@ sw.addEventListener('message', (event) => {
 		swLog('info', `🗑️ REMOVE_TODO_NOTIFICATIONS: ${event.data.todoId}`);
 		todoNotifications = todoNotifications.filter((n) => n.memoId !== event.data.todoId);
 	}
+
+	// matches SW_MSG.CLEAR_ALL_NOTIFICATION_SCHEDULES (raw string retained: SW bundle cannot import $lib)
+	// 기기별 1회 초기화 모달 — 메모/할일 SW 스케줄 전체 비우기
+	if (event.data.type === 'CLEAR_ALL_NOTIFICATION_SCHEDULES') {
+		swLog('info', '🧹 CLEAR_ALL_NOTIFICATION_SCHEDULES received');
+		scheduledReminders = [];
+		todoNotifications = [];
+		swLog('info', `Cleared all schedules. reminders=0, todoNotifications=0, intervalRunning=${!!reminderCheckInterval}`);
+	}
 });
 
 // 알림 클릭
