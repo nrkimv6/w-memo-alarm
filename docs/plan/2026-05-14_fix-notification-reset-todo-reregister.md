@@ -205,5 +205,7 @@ plan `2026-05-13_notification-schedule-reset-modal.md` 검증 기준:
 - 현재 Edge Function의 timezone 처리는 일반 IANA timezone 전체 지원이 아니라 `Asia/Seoul` 특례와 UTC fallback 구조다. memo-alarm 서버 schedule은 KST 알림으로 저장하거나, 별도 Edge Function 개선 계획 없이 브라우저 timezone을 넣지 않는다.
 - 운영 DB 정리는 destructive 작업이므로, dry-run SELECT와 backup/export 없는 DELETE/UPDATE를 금지한다.
 - deprecated 제거의 대상은 `send-notifications` canonical path가 아니라 중복 cron, legacy function/job, stale `alarm_schedules` row, delete-only 생성/정리 방식이다.
+- `syncAllMemoAlarmsForUser`는 `deleteAllMemoAlarmsForUser` 직후 `createMemoAlarm` 순차 호출 구조이므로 그 사이 짧은 window(메모 수에 비례)에 매분 `send-fcm-notifications-every-minute` cron이 돌면 정상 알람 1회 발송 누락 가능성이 있다. 가능하면 동일 트랜잭션/배치 upsert로 묶거나, reset 실행 시각을 cron 발송 직후로 권고하는 절차를 둔다.
+- Phase T4 운영 검증은 운영 Supabase DB read 권한과 개발자 FCM 상태 화면 접근이 필요한 수동 절차다. `/merge-test`나 자동 CI로 cover되지 않으므로 PR 머지와 분리해 실행하고, 결과는 별도 로그/주석으로 남긴다.
 
 *상태: 검토대기 | 진행률: 0/76 (0%)*
