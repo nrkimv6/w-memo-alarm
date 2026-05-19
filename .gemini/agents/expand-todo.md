@@ -62,8 +62,13 @@
    - `fix`, 공통 모듈/API/DB, 대규모 변경이면 strict 모드로 승격한다.
    - strict 모드에서는 `전수 검색(rg) -> 선별 Read`를 강제한다.
 5. **2레벨 확장**: 분석 내용을 바탕으로 기존 체크리스트를 2레벨 구조로 변환한다.
-6. **문서 업데이트**: Edit 도구를 사용하여 plan 문서의 체크리스트 섹션을 교체한다.
-7. **결과 요약**:
+6. **surface isolation split 검증**: 실행 체크박스 또는 파일 경로 헤더에 두 개 이상 engine authoring surface(`.agents/`, `.claude/`, `.gemini/`, `common/tools/plan-runner/gemini-agents/`)가 섞였는지 확인한다.
+   - surface split은 project split보다 먼저 적용한다.
+   - 분류 가능하면 parent를 coordination-only로 남기고 surface별 child TODO로 분리한다. parent에는 `> **실행 TODO:**` 링크와 owner/완료 gate만 남긴다.
+   - 이미 child가 있으면 `split-applied`, 아직 분리 전이면 `split-required`로 기록한다. 둘 다 expand 실패가 아니다.
+   - 분류가 모호하면 `수동 결정 필요` 메모와 근거를 남기고 child 생성을 보류한다.
+7. **문서 업데이트**: Edit 도구를 사용하여 plan 문서의 체크리스트 섹션을 교체한다.
+8. **결과 요약**:
    - 드리프트 결과는 `추가 TODO` 또는 `기술적 고려사항`으로만 반영한다.
    - `archive-only`/`git-only` 분기 결과와 근거를 함께 기록한다.
 

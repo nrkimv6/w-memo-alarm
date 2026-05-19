@@ -104,6 +104,13 @@ task ledger 판단도 `_path-rules.md` helper의 docs commit root를 따른다. 
 
 **🔴 프로젝트 기반 분리 (강제)**: `> 대상 프로젝트:`가 2개+ (쉼표 구분) → **프로젝트별 `_todo-N.md` 강제 분리** (작업 수와 무관). child(의존성 없는 쪽)에 낮은 N, parent(child를 import하는 쪽)에 높은 N 부여. parent의 `> 선행조건:`에 child `_todo-N.md` 상대경로 자동 기재.
 
+**🔴 surface isolation 분리 (강제 분류, non-fatal)**: 실행 체크박스 또는 파일 경로 헤더에 두 개 이상 engine authoring surface(`.agents/`, `.claude/`, `.gemini/`, `common/tools/plan-runner/gemini-agents/`)가 섞이면 프로젝트 분리보다 먼저 surface별 `_todo-N.md`로 분리한다.
+- 분류 토큰은 파일 경로 prefix를 우선하고, 경로만으로 모호하면 `> surface 분류:` 메타와 본문 근거를 보조 evidence로 사용한다.
+- 분류가 가능하면 parent는 coordination-only로 남기고 실행 체크박스는 child로 이동한다. parent에는 `> **실행 TODO:**` child 링크, owner/완료 gate, child별 진행률 인덱스만 남긴다.
+- `split-required` 또는 `split-applied`는 plan 작성 실패가 아니다. 사용자 명시 승인 문장 없이도 실행 범위가 보존되면 자율 분리할 수 있다.
+- 분류가 모호하면 child를 만들지 않고 parent에 `> 수동 결정 대기: <YYYY-MM-DD>` 메모와 모호한 체크박스 근거를 남긴다. 이 상태는 구현 진입을 막지 않지만 `/done` complete/archive 근거가 될 수 없다.
+- 모델별 authoring surface 변경은 해당 모델 surface의 문체와 실행 메커니즘에 맞춰 작성한다. `.agents`/`.claude`/Gemini surface에 동일 문구를 강제 복사하지 않는다.
+
 **Phase 기반 분리**: 작업 수가 31개 이상이고, 상호 의존 없는 Phase 그룹이 2개 이상 존재할 때 분리. Phase 간 순차 의존(A의 출력이 B의 입력)이면 같은 파일에 유지.
 
 **실행:** 이 `SKILL.md`가 있는 스킬 디렉터리의 `_template.md`를 **Read 도구로 읽고** 지시에 따른다.
@@ -113,6 +120,7 @@ task ledger 판단도 `_path-rules.md` helper의 docs commit root를 따른다. 
 `/implement`로 실제 실행할 계획서라면, 파일 유형(md/py/ts 등)과 무관하게 아래 규칙을 기본으로 포함한다.
 
 - 메타 헤더에 빈 슬롯이라도 먼저 만든다:
+  - `> surface 분류: 공통 정책 | 모델별 메커니즘 | 분류 모호` — wtools authoring surface(`.agents`, `.claude`, `.gemini`, generated Gemini runtime)를 수정하는 plan이면 필수. 모호하면 본문에 판단 근거를 별도 섹션으로 남긴다.
   - `> branch:`
   - `> worktree:`
   - `> worktree-owner:` — 단일 경로 또는 쉼표 구분 경로 목록 허용. 첫 항목=primary(생성 소유), 나머지=attached(편승). attach 모드: `/implement --attach-worktree <primary-path>`

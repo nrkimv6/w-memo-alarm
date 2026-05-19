@@ -40,6 +40,16 @@
 | **모드 A** | Phase 1-2개, 작업 5개 이하 | `.worktrees\plans\docs\plan\YYYY-MM-DD_{주제}.md` 생성 (TODO 포함) |
 | **모드 B** | Phase 3개 이상, 작업 6개 이상 | `.worktrees\plans\docs\plan\YYYY-MM-DD_{주제}.md` 생성 (TODO는 별도 분리) |
 
+### 2.5단계: surface 분류 preflight
+
+wtools authoring surface 변경 plan에서 실행 체크박스 또는 파일 경로 헤더가 두 개 이상 engine authoring surface(`.agents/`, `.claude/`, `.gemini/`, `common/tools/plan-runner/gemini-agents/`)를 함께 다루면, project split보다 먼저 surface 기준으로 분류한다.
+
+- 단일 surface면 기존 모드 A/B와 규모 기반 분리를 적용한다.
+- 여러 surface가 섞였고 실행 범위가 보존 가능하면 coordination-only parent와 surface별 `_todo-N.md` child로 분리한다. parent에는 실행 체크박스를 남기지 않고 `> **실행 TODO:**` child 링크, 선행관계, downstream/read-back coordination만 남긴다.
+- 분류 토큰은 파일 경로 prefix를 우선한다. 경로만으로 모호하면 `> surface 분류:` 메타와 본문 근거를 보조 evidence로 사용한다.
+- 그래도 모호하면 `수동 결정 필요` 메모를 남기고 child 생성을 보류한다. 이 상태는 구현 진입을 막지 않지만 `/done` complete/archive 근거가 될 수 없다.
+- 결과 라벨은 `단일 surface`, `split-required`, `split-applied`, `수동 결정 필요` 중 하나로 기록한다.
+
 ### 3단계: wtools/TODO.md 동기화 (wtools 내부인 경우만)
 
 1. `common\TODO.md`를 Read로 연다.
@@ -62,6 +72,7 @@
 
 > 대상 프로젝트: {프로젝트명}
 > 상태: 진행중
+> surface 분류: {공통 정책 | 모델별 메커니즘 | 분류 모호}
 > 우선순위: {P0|P1|P2}
 > 난이도: {높음|중간|낮음}
 > 진행률: 0/N (0%)

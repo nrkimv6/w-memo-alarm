@@ -170,13 +170,24 @@ advisory evidence가 있으면 아래 3단계를 검증한다:
 - T4/T5 결과표에는 `T4/T5 계약` 열 또는 비고 marker로 `live`, `mock_only`, `http_live`, `testclient_only`, `absent` 중 하나를 남긴다. `mock_only`/`testclient_only`면 expand-todo 전 deterministic 보정 또는 차단 여부를 명시한다.
 - T4/T5가 `해당 없음`인데 feature area live smoke가 없으면 "live smoke 없음" 경고를 남긴다. 기존 mock-only/TestClient-only 테스트는 삭제 대상으로 만들지 않고 T3 재분류 + live follow-up만 생성한다.
 
-**J. fix: plan 금지 패턴 inventory:**
+**J. scope split / surface isolation / surface 분류 검증:**
+- scope split은 기본 차단이 아니라 먼저 분류한다. `후속`/`stub`/`별도 plan`/`child detach` 키워드는 advisory evidence이며, 키워드만으로 `CODEX_SCOPE_SPLIT_UNAPPROVED`를 내지 않는다.
+- 아래 중 하나가 확인될 때만 `CODEX_SCOPE_SPLIT_UNAPPROVED`로 재검토 실패 처리한다:
+  - 원래 요청 또는 plan TODO의 실행 범위가 child/follow-up으로 빠지면서 parent 또는 child에 보존되지 않는다.
+  - 실행 체크박스가 제거됐지만 child plan 링크, `> **실행 TODO:**` 목록, owner/완료 gate 같은 추적 근거가 없다.
+  - parent가 complete/archive될 수 있는데 active child를 막는 gate 또는 명시 detach approval evidence가 없다.
+- 실행 범위가 보존되고 child plan 링크, 책임 surface, owner/완료 gate가 확인되면 사용자 명시 승인 문장 없이도 자율 분리로 허용한다. 이미 child가 생성되어 있으면 `split-applied`, 아직 분리 전이면 `split-required`로 기록하고 expand-todo 호출은 계속 진행한다.
+- 실행 체크박스 또는 파일 경로 헤더에서 두 개 이상 engine authoring surface(`.agents/`, `.claude/`, `.gemini/`, `common/tools/plan-runner/gemini-agents/`)가 섞이면 `surface isolation = split-required`로 기록하고 expand-todo 호출을 멈추지 않는다. 이미 surface별 child로 분리되어 있으면 `surface isolation = split-applied`로 기록한다.
+- 자동 분리 기준이 모호하면 `수동 결정 필요`로 기록하고, 모호한 체크박스/경로 근거를 결과표 또는 후속 메모에 남긴다. 이 상태는 fatal 실패가 아니지만 `/done`에서 parent complete/archive 처리되면 안 된다.
+- wtools authoring surface 변경 plan에 헤더 `> surface 분류:` 필드도 없고 본문 `## surface 분류` 섹션도 없으면 `SURFACE_CLASSIFICATION_MISSING`으로 재검토 실패 처리한다.
+
+**K. fix: plan 금지 패턴 inventory:**
 - fix: plan(파일명 `_fix-` 또는 `# fix:` 헤더)이면 plan의 `## 검증 기준`에서 "제거", "금지", "0건", "없음", "차단" 같은 금지/제거 표현을 추출한다.
 - 추출한 표현과 관련 심볼을 수정 대상 파일 scope에서 `rg`로 잔존 inventory 조사하고, 각 잔존 항목을 TODO sub-item과 1:1로 매핑한다.
 - 매핑 0건이면 결과표 `scope-coverage` 컬럼에 `{N}건 미커버`로 표시하고 `### 검토 근거 및 상세 내역`에 잔존 목록과 `file:line` 근거를 인용한다.
 - 이 단계는 advisory only다. 자동 plan mutation은 하지 않고, 필요 시 보정 권고로만 기록한다.
 
-**K. 모호어 advisory:**
+**L. 모호어 advisory:**
 - TODO sub-item 본문에서만 모호어 seed(`"기록한다"`, `"결정하고 적용한다"`, `"필요 여부를 확인"`, `"검토한다"`, `"고려한다"`, `"여부를 판단"`)를 Grep한다.
 - 발견 시 결과표 `모호어` 컬럼에 `{N}건 (예: ...)` 형식으로 표시하고 검토 근거에 위치(라인 번호 포함)를 남긴다.
 - 이 단계는 차단이나 자동 수정이 아니며, review-plan의 약점/권고 surface에만 반영한다.
@@ -312,13 +323,16 @@ expand-todo의 5.6단계가 expand 결과를 자체 커밋한다. review-plan의
 ```markdown
 ## 계획서 재검토 결과
 
-| # | 계획서 | 재검토 | 로컬변경 | 연관 active plan | archive 참조 | 환경오염 | scope-coverage | 모호어 | expand | 실패메타데이터 | 비고 |
-|---|--------|--------|----------|------------------|-------------|---------|----------------|--------|--------|----------------|------|
-| 1 | {파일명} | 통과 | {영향 없음/참조만/보정 반영} | {0-hit/중복 회피/선행관계} | {0-hit/참조 반영} | {해당 없음/경고: {패턴}/차단: {사유}} | {완전 매칭/{N}건 미커버/해당 없음} | {0건/{N}건 (예: ...)} | {N}개 작업 | {카테고리/종료코드/처리결과} | — |
-| 2 | {파일명} | 실패 | {재검토 실패/보정 반영} | {충돌/0-hit} | {참조만/0-hit} | {해당 없음/경고: {패턴}/차단: {사유}} | {완전 매칭/{N}건 미커버/해당 없음} | {0건/{N}건 (예: ...)} | — | {있음/없음} | {사유} |
+| # | 계획서 | 재검토 | 로컬변경 | 연관 active plan | archive 참조 | 환경오염 | scope split | surface isolation | surface 분류 | scope-coverage | 모호어 | expand | 실패메타데이터 | 비고 |
+|---|--------|--------|----------|------------------|-------------|---------|-------------|-------------------|-------------|----------------|--------|--------|----------------|------|
+| 1 | {파일명} | 통과 | {영향 없음/참조만/보정 반영} | {0-hit/중복 회피/선행관계} | {0-hit/참조 반영} | {해당 없음/경고: {패턴}/차단: {사유}} | {해당 없음/승인 있음/split-required/split-applied/수동 결정 필요/차단: CODEX_SCOPE_SPLIT_UNAPPROVED} | {해당 없음/단일 surface/split-required/split-applied/수동 결정 필요} | {공통 정책/모델별 메커니즘/분류 모호/누락: SURFACE_CLASSIFICATION_MISSING} | {완전 매칭/{N}건 미커버/해당 없음} | {0건/{N}건 (예: ...)} | {N}개 작업 | {카테고리/종료코드/처리결과} | — |
+| 2 | {파일명} | 실패 | {재검토 실패/보정 반영} | {충돌/0-hit} | {참조만/0-hit} | {해당 없음/경고: {패턴}/차단: {사유}} | {해당 없음/수동 결정 필요/차단: CODEX_SCOPE_SPLIT_UNAPPROVED} | {해당 없음/수동 결정 필요} | {누락: SURFACE_CLASSIFICATION_MISSING} | {완전 매칭/{N}건 미커버/해당 없음} | {0건/{N}건 (예: ...)} | — | {있음/없음} | {사유} |
 
 컬럼 값 가이드:
 - `scope-coverage`: `완전 매칭` / `{N}건 미커버` / `해당 없음`
+- `scope split`: `해당 없음` / `승인 있음` / `split-required` / `split-applied` / `수동 결정 필요` / `차단: CODEX_SCOPE_SPLIT_UNAPPROVED`
+- `surface isolation`: `해당 없음` / `단일 surface` / `split-required` / `split-applied` / `수동 결정 필요`
+- `surface 분류`: `공통 정책` / `모델별 메커니즘` / `분류 모호` / `누락: SURFACE_CLASSIFICATION_MISSING`
 - `모호어`: `0건` / `{N}건 (예: {seed} @ {file}:{line})`
 
 ### 검토 근거 및 상세 내역
