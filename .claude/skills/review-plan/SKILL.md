@@ -60,6 +60,14 @@ Regex and keyword detections are advisory evidence unless a helper contract expl
 - 성공 종료 직전 `End`를 호출한다. touched whitelist dirty를 commit할 수 없거나 `End`가 새 unowned dirty/staged diff를 보고하면 hard-fail한다.
 - unrelated active plan dirty는 baseline으로만 취급하고 읽기/수정/stage 대상에서 제외한다. 이번 입력 plan 변경만 guard-owned dirty로 commit한다.
 
+### PowerShell helper 인자 예시
+
+- `commit.ps1 -Files`는 `-Files file1 file2` 또는 `-Files file1,file2` 형식을 사용한다.
+- `commit.ps1 -Files`에 PowerShell 배열 리터럴이나 쉼표 토큰을 pathspec 하나처럼 넘기지 않는다.
+- `docs-dirty-guard.ps1` 직접 호출의 typed array 인자는 `-TouchedFiles 'docs/plan/a.md','TODO.md'` 형식을 사용한다.
+- `powershell.exe -File`이나 argument array로 `docs-dirty-guard.ps1`를 호출할 때는 `-TouchedFiles 'docs/plan/a.md,TODO.md'`처럼 하나의 comma-delimited token을 넘긴다.
+- 금지: `-TouchedFiles 'docs/plan/a.md' 'TODO.md'` 형태. 두 번째 값이 unbound positional argument가 되므로 guard가 실패해야 한다.
+
 ### 0단계: necessity revalidation
 
 대상 계획서가 여전히 필요한지 재판정한다.
@@ -86,7 +94,7 @@ Regex and keyword detections are advisory evidence unless a helper contract expl
 
 ### 1단계: 계획서 재검토
 
-대상 계획서 각각에 대해 아래 9가지를 검증한다.
+대상 계획서 각각에 대해 아래 11가지를 검증한다.
 
 **A. side effect 체크:**
 - 계획서에 명시된 수정 대상이 다른 모듈/기능에 영향 없는지
@@ -161,6 +169,17 @@ advisory evidence가 있으면 아래 3단계를 검증한다:
 - T5 파일이 `from fastapi.testclient import TestClient` 단독 증거이면 `testclient_only`로 분류하고, T3 재분류 요구 + live T5 follow-up TODO를 review 결과표에 기록한다.
 - T4/T5 결과표에는 `T4/T5 계약` 열 또는 비고 marker로 `live`, `mock_only`, `http_live`, `testclient_only`, `absent` 중 하나를 남긴다. `mock_only`/`testclient_only`면 expand-todo 전 deterministic 보정 또는 차단 여부를 명시한다.
 - T4/T5가 `해당 없음`인데 feature area live smoke가 없으면 "live smoke 없음" 경고를 남긴다. 기존 mock-only/TestClient-only 테스트는 삭제 대상으로 만들지 않고 T3 재분류 + live follow-up만 생성한다.
+
+**J. fix: plan 금지 패턴 inventory:**
+- fix: plan(파일명 `_fix-` 또는 `# fix:` 헤더)이면 plan의 `## 검증 기준`에서 "제거", "금지", "0건", "없음", "차단" 같은 금지/제거 표현을 추출한다.
+- 추출한 표현과 관련 심볼을 수정 대상 파일 scope에서 `rg`로 잔존 inventory 조사하고, 각 잔존 항목을 TODO sub-item과 1:1로 매핑한다.
+- 매핑 0건이면 결과표 `scope-coverage` 컬럼에 `{N}건 미커버`로 표시하고 `### 검토 근거 및 상세 내역`에 잔존 목록과 `file:line` 근거를 인용한다.
+- 이 단계는 advisory only다. 자동 plan mutation은 하지 않고, 필요 시 보정 권고로만 기록한다.
+
+**K. 모호어 advisory:**
+- TODO sub-item 본문에서만 모호어 seed(`"기록한다"`, `"결정하고 적용한다"`, `"필요 여부를 확인"`, `"검토한다"`, `"고려한다"`, `"여부를 판단"`)를 Grep한다.
+- 발견 시 결과표 `모호어` 컬럼에 `{N}건 (예: ...)` 형식으로 표시하고 검토 근거에 위치(라인 번호 포함)를 남긴다.
+- 이 단계는 차단이나 자동 수정이 아니며, review-plan의 약점/권고 surface에만 반영한다.
 
 **재검토 실패 시:**
 - 해당 계획서 파일은 유지한다. 자동 삭제/재생성하지 않는다.
@@ -270,7 +289,7 @@ expand-todo SKILL.md를 읽어 인라인으로 수행하지 않는다 — Skill 
 | 이미 확장됨 | `✅ 변경 없음 (이미 확장됨)` |
 | 진행 중단/실패 | `❌ {사유}` |
 
-Phase R 자동 삽입, V1~V6 정합성 검증, 5-Phase 테스트 구조 등 모든 expand 규칙은 expand-todo SSOT가 적용한다. review-plan은 이 규칙들을 중복 기재하지 않는다.
+Phase R 자동 삽입, V1~V8 정합성 검증, 5-Phase 테스트 구조 등 모든 expand 규칙은 expand-todo SSOT가 적용한다. review-plan은 이 규칙들을 중복 기재하지 않는다. V1~V7 출력 표는 expand-todo Skill 호출이 적용하며, review-plan은 그 결과를 결과표/검토 근거에 인용한다.
 
 ### 3단계: 커밋
 
@@ -293,10 +312,14 @@ expand-todo의 5.6단계가 expand 결과를 자체 커밋한다. review-plan의
 ```markdown
 ## 계획서 재검토 결과
 
-| # | 계획서 | 재검토 | 로컬변경 | 연관 active plan | archive 참조 | 환경오염 | expand | 실패메타데이터 | 비고 |
-|---|--------|--------|----------|------------------|-------------|---------|--------|----------------|------|
-| 1 | {파일명} | ✅ 통과 | {영향 없음/참조만/보정 반영} | {0-hit/중복 회피/선행관계} | {0-hit/참조 반영} | {해당 없음/⚠️ 경고: {패턴}/🚫 차단: {사유}} | ✅ {N}개 작업 | {카테고리/종료코드/처리결과} | — |
-| 2 | {파일명} | ❌ 실패 | {재검토 실패/보정 반영} | {충돌/0-hit} | {참조만/0-hit} | {해당 없음/⚠️ 경고: {패턴}/🚫 차단: {사유}} | — | {있음/없음} | {사유} |
+| # | 계획서 | 재검토 | 로컬변경 | 연관 active plan | archive 참조 | 환경오염 | scope-coverage | 모호어 | expand | 실패메타데이터 | 비고 |
+|---|--------|--------|----------|------------------|-------------|---------|----------------|--------|--------|----------------|------|
+| 1 | {파일명} | 통과 | {영향 없음/참조만/보정 반영} | {0-hit/중복 회피/선행관계} | {0-hit/참조 반영} | {해당 없음/경고: {패턴}/차단: {사유}} | {완전 매칭/{N}건 미커버/해당 없음} | {0건/{N}건 (예: ...)} | {N}개 작업 | {카테고리/종료코드/처리결과} | — |
+| 2 | {파일명} | 실패 | {재검토 실패/보정 반영} | {충돌/0-hit} | {참조만/0-hit} | {해당 없음/경고: {패턴}/차단: {사유}} | {완전 매칭/{N}건 미커버/해당 없음} | {0건/{N}건 (예: ...)} | — | {있음/없음} | {사유} |
+
+컬럼 값 가이드:
+- `scope-coverage`: `완전 매칭` / `{N}건 미커버` / `해당 없음`
+- `모호어`: `0건` / `{N}건 (예: {seed} @ {file}:{line})`
 
 ### 검토 근거 및 상세 내역
 
@@ -304,7 +327,19 @@ expand-todo의 5.6단계가 expand 결과를 자체 커밋한다. review-plan의
   - **내용 정합성**: 목표와 예상 결과의 논리적 일관성 설명
   - **로컬/연관 검토**: 발견된 로컬 drift, 연관 plan 중복/충돌 여부에 대한 구체적인 설명
   - **안전성**: 환경 오염, 임시 해법, 사이드 이펙트 등 우려 사항 (없으면 없다고 명시)
+  - **scope/evidence**: V1~V7 evidence(expand-todo가 출력한 검증 표)를 인용하거나 요약
+  - **약점 분석**: 대형 plan이면 아래 약점 분석 표를 인용하거나 요약
   - **결론**: 최종 통과/수정/반려 이유 요약
+
+### 약점 분석
+
+대형 plan(본문 200줄 이상 OR TODO Phase 5개 이상)은 critical gap이 0건이어도 advisory 약점 후보를 최소 2건, 최대 3건 surface한다. 짧은 hotfix(plan 본문 < 200줄 AND TODO Phase < 5)는 면제할 수 있으며, 면제 시 line count와 Phase count를 근거로 적는다.
+
+`no changes needed`, `수정할 곳 없음`, `수정할 내용 없음`, `문제 없음` 단독 결론은 금지한다. 사용자 pushback 패턴인 "진짜 수정할데가 없다고?", "하나두없나?"가 나오기 전에 첫 pass에서 최약점 후보를 드러낸다.
+
+| 약점 영역 | 근거 grep/file:line | 권고 |
+|-----------|---------------------|------|
+| {scope/test/evidence/owner 중 하나} | `{명령 또는 file:line}` | {보정 권고. 자동 TODO 추가 금지} |
 
 구현을 시작하려면 "다음" 또는 "구현해"라고 말씀해주세요.
 ```
@@ -313,7 +348,7 @@ expand-todo의 5.6단계가 expand 결과를 자체 커밋한다. review-plan의
 
 - **코드 직접 수정 금지** — 계획서 검증과 확장만 수행
 - **다른 active plan/archive 무단 수정 금지** — 다른 문서는 수정하지 않는다. 현재 입력 계획서 보정만 허용한다.
-- **expand-todo는 Skill 호출 SSOT** — Phase R 자동 삽입, 테스트 Phase, V1~V6 정합성 검증 등 expand 규칙은 Skill 호출이 자동 적용한다. review-plan 본문에 이 규칙들을 중복 기재하지 않는다.
+- **expand-todo는 Skill 호출 SSOT** — Phase R 자동 삽입, 테스트 Phase, V1~V8 정합성 검증 등 expand 규칙은 Skill 호출이 자동 적용한다. review-plan 본문에 이 규칙들을 중복 기재하지 않는다.
 - `.agents`와 `.claude`는 엔진별 canonical surface다. review-plan/reflect 변경 시 동일 문구를 강제하지 말고, Codex(`.agents`)와 Claude(`.claude`) 각각에서 advisory 계약 invariant가 동등하게 유지되는지 확인한다.
 - **환경 아티팩트 예시** — H 체크에서 "개발/워크트리 환경에서만 발생"으로 판정되는 대표 사례:
   - 워크트리 `.svelte-kit/ambient.d.ts` 비어있음 (`node_modules` 없어서 svelte-kit sync 미실행)

@@ -88,7 +88,8 @@ task ledger 판단도 `_path-rules.md` helper의 docs commit root를 따른다. 
 **🔴 child/follow-up/stub scope split 금지:**
 - child/follow-up/stub 계획 생성 자체가 scope 변경이다. 사용자 명시 승인 evidence 없이 parent 작업을 요구사항·실행 TODO·후속 plan·linked child plan으로 분리하지 않는다.
 - 승인 evidence 없는 분리 의도는 `검토 옵션/제안 (미승인)` 섹션에만 기록하고 parent scope를 축소하지 않는다.
-- 모델별 authoring surface 변경(`.agents` vs `.claude`)은 해당 모델 surface만 승인 범위로 잡고, 동일 문구를 다른 모델 surface에 강제하지 않는다.
+- 예외: 실행 범위가 보존되고 parent에 `> **실행 TODO:**` child 링크와 owner/완료 gate가 남는 surface isolation 분리는 사용자 명시 승인 없이도 허용한다. 이 경우 parent는 coordination-only로 남기고 실행 체크박스는 surface별 child로 옮긴다.
+- 모델별 authoring surface 변경(`.agents` vs `.claude`)은 해당 모델 surface만 승인 범위로 잡고, 동일 문구를 다른 모델 surface에 강제하지 않는다. 두 개 이상 engine surface가 한 실행 TODO에 섞이면 아래 `surface isolation preflight`로 먼저 분류한다.
 
 ### 2단계: 코드베이스 분석
 
@@ -96,6 +97,16 @@ task ledger 판단도 `_path-rules.md` helper의 docs commit root를 따른다. 
 - 수정 대상 파일의 현재 코드 확인
 - 기존 패턴, 컨벤션 파악
 - 의존성 및 영향 범위 확인
+
+### 2.5단계: surface isolation preflight
+
+wtools authoring surface 변경 plan에서 실행 체크박스 또는 파일 경로 헤더가 두 개 이상 engine surface(`.agents/`, `.claude/`, `.gemini/`, `common/tools/plan-runner/gemini-agents/`)를 함께 다루면, 계획 문서 작성 전에 surface 기준을 먼저 분류한다.
+
+- 단일 surface면 그대로 단일/규모 기반 분리 규칙을 적용한다.
+- 여러 surface가 섞였고 실행 범위가 보존 가능하면 coordination-only parent + surface별 `_todo-N.md` child를 만든다. parent에는 실행 체크박스를 남기지 않고 `> **실행 TODO:**` 링크, 선행관계, downstream/read-back coordination만 남긴다.
+- 공통 정책 cross-surface 검토 결과는 메타 표 또는 `## 기술적 고려사항`에 기록하고, 실행 체크박스에 다른 engine surface 파일 경로를 섞지 않는다.
+- 분류 토큰은 파일 경로 prefix를 우선하고, 경로만으로 모호하면 `> surface 분류:` 메타와 본문 근거를 본다. 그래도 모호하면 `수동 결정 필요` 메모를 남기고 child 생성은 보류한다.
+- surface split은 project split보다 먼저 판단한다. 중첩 `_todo-1a.md`는 만들지 않고 `_todo-1.md`, `_todo-2.md`처럼 평면 번호를 이어 붙인다.
 
 ### 3단계: 계획 문서 작성
 
@@ -132,6 +143,10 @@ task ledger 판단도 `_path-rules.md` helper의 docs commit root를 따른다. 
   - 실제 worktree 생성과 메타 기록은 `/implement` 또는 `plan-runner` owner flow가 수행한다.
   - 기본 owner step은 `worktree 생성 또는 재개`, `> branch:`/`> worktree:`/`> worktree-owner:` 기록 확인, `worktree cwd 고정`처럼 항상 평가되는 단계로 작성한다.
   - plan 체크박스를 근거로 루트(main)에서 임의 `git checkout`, `git switch`, 수동 worktree 재생성을 지시하지 않는다.
+- TODO에 T4/T5 또는 live/browser 검증이 필요하면 `### Phase M: Merge Handoff (/merge-test owner)`를 **T3와 T4/T5 사이**에 넣는다.
+  - Phase M은 `/implement` 완료 후 main merge를 `/merge-test` owner에게 넘기는 gate다.
+  - 기본 owner step은 `머지대기 전환`, `main merge 전 T4/T5/live 검증 금지`, `post-merge + root-worktree + main 조건 확인`을 포함한다.
+  - Phase M보다 앞선 T1/T2/T3에는 Browser MCP, `localhost`, `127.0.0.1`, `6101`, `8001`, `restart-*`, `Invoke-WebRequest`, Vite dev server, live API 호출을 넣지 않는다.
 - TODO 마지막에 `### Phase Z: Post-Merge Cleanup (/merge-test owner)`를 넣는다.
   - 이 phase의 체크박스는 `/implement` 완료 판정에 포함하지 않는다.
   - 기본 owner step은 `main merge 시도`, `root dirty stash/apply (if needed)`, `T4/T5`, `worktree remove`, `branch remove`, `header meta 제거`까지를 포함한다.
@@ -285,7 +300,7 @@ todo-2: docs/plan/YYYY-MM-DD_{주제}_todo-2.md (Phase 4~6, M tasks)
 |-------|------|----------|----------|
 | **T1: TC 작성** | RIGHT-BICEP + CORRECT 기반, 함수별 개별 체크박스 | `/implement` | Python 수정 시 항상 |
 | **T2: TC 검증 및 수정** | 실행 → passed 확인 → 실패 수정 → 회귀 확인 | `/implement` | Python 수정 시 항상 |
-| **T3: 재현/통합 TC** | mock 최소화, 실제 의존성(git, 파일시스템, 환경변수 등) 사용. 근본 원인 재현 + 수정 검증 | `/implement` (워크트리 OK) | **fix: 필수**, feat: 권장 |
+| **T3: 재현/통합 TC** | pre-merge local integration only. mock 최소화, 실제 의존성(git, 파일시스템, 환경변수 등) 사용. 서버/browser/live HTTP 없이 근본 원인 재현 + 수정 검증 | `/implement` (워크트리 OK, live 금지) | **fix: 필수**, feat: 권장 |
 | **T4: E2E 테스트** | mock 기반 end-to-end 흐름 검증 | `/merge-test` | E2E 존재 시 |
 | **T5: HTTP 통합** | `METHOD endpoint` 정상/에러 응답 검증. **다른 프로젝트의 API를 통해 간접 실행되는 모듈**(예: plan-runner → monitor-page admin API)은 해당 API 레벨 E2E 필수 | `/merge-test` | API 변경 시, 또는 **API를 통해 간접 실행되는 모듈의 내부 로직 변경 시** |
 
@@ -293,11 +308,14 @@ todo-2: docs/plan/YYYY-MM-DD_{주제}_todo-2.md (Phase 4~6, M tasks)
 - **fix: plan이면 필수** — 근본 원인을 실제 환경에서 재현하는 TC 1개 이상 + 수정 후 통과 검증
 - mock은 **외부 API만** 허용. git, 파일시스템, 환경변수 등 로컬 의존성은 **실물 사용**
 - `/implement`에서 T2 직후 실행 (서버 불필요, 워크트리에서 실행 가능)
+- **live-test phase fence**: T3는 pre-merge local integration only다. Browser MCP, Playwright 실제 브라우저, `localhost`, `127.0.0.1`, `6101`, `8001`, `restart-*`, `Invoke-WebRequest`, Vite dev server, live API/http_live 검증은 T3에 배치 금지다.
+- 위 live/browser/localhost 검증이 필요하면 T3 스킵이 아니라 `Phase M: Merge Handoff (/merge-test owner)` 이후 `Phase T4` 또는 `Phase T5`로 배치한다.
 - **스킵 허용 사유** (매우 제한적): 순수 문서/주석/타입 힌트/설정값 변경만
 - **스킵 금지 사유:**
   - "단위 테스트로 커버됨" — mock과 실물은 다르다
   - "내부 함수만 수정" — 내부 함수가 외부 의존성을 쓰면 의미 없음
   - "API 변경 없음" — T3는 API가 아니라 통합 동작 검증
+  - "server/browser 필요" — T3 사유가 아니라 Phase M 이후 T4/T5 이관 사유다
 
 **T4/T5 해당 없음 규칙:**
 - **Phase 헤더는 유지**하되, 해당 없는 경우 **블록쿼트로 사유만 기재. 체크박스 생성 금지**:

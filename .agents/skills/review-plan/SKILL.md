@@ -60,6 +60,14 @@ Regex and keyword detections are advisory evidence unless a helper contract expl
 - 성공 종료 직전 `End`를 호출한다. touched whitelist dirty를 commit할 수 없거나 `End`가 새 unowned dirty/staged diff를 보고하면 hard-fail한다.
 - unrelated active plan dirty는 baseline으로만 취급하고 읽기/수정/stage 대상에서 제외한다. 이번 입력 plan 변경만 guard-owned dirty로 commit한다.
 
+### PowerShell helper 인자 예시
+
+- `commit.ps1 -Files`는 `-Files file1 file2` 또는 `-Files file1,file2` 형식을 사용한다.
+- `commit.ps1 -Files`에 PowerShell 배열 리터럴이나 쉼표 토큰을 pathspec 하나처럼 넘기지 않는다.
+- `docs-dirty-guard.ps1` 직접 호출의 typed array 인자는 `-TouchedFiles 'docs/plan/a.md','TODO.md'` 형식을 사용한다.
+- `powershell.exe -File`이나 argument array로 `docs-dirty-guard.ps1`를 호출할 때는 `-TouchedFiles 'docs/plan/a.md,TODO.md'`처럼 하나의 comma-delimited token을 넘긴다.
+- 금지: `-TouchedFiles 'docs/plan/a.md' 'TODO.md'` 형태. 두 번째 값이 unbound positional argument가 되므로 guard가 실패해야 한다.
+
 ### 0단계: necessity revalidation
 
 대상 계획서가 여전히 필요한지 재판정한다.
@@ -153,6 +161,10 @@ advisory evidence가 있으면 아래 3단계를 검증한다:
   - 차단 메시지에 반드시 포함할 3요소: **감지된 패턴** / **왜 위험한지** (프로덕션에서의 새 실패 경로) / **요구 수정 방향** (환경 설정 변경 또는 검증 위치 이동)
 
 **I. T4/T5 실서버 계약 검사:**
+- **I-0. live-test phase fence audit**: expand-todo 호출 전에 T1/T2/T3 Phase와 테스트명령에서 Browser MCP, Playwright 실제 브라우저, `localhost`, `127.0.0.1`, `6101`, `8001`, `restart-*`, `Invoke-WebRequest`, Vite dev server, live API, `http_live` 토큰을 검사한다.
+- T1/T2/T3의 live/browser/localhost 토큰은 `live-test phase fence` 위반이다. deterministic하게 가능하면 `Phase M: Merge Handoff (/merge-test owner)` 이후 `Phase T4` 또는 `Phase T5`로 보정하고 결과표 `live phase fence` 칸에 `보정 반영`을 기록한다.
+- T3 live 위반이 남아 있거나 T4/T5 이관 위치가 모호하면 결과표 `live phase fence` 칸에 `차단: LIVE_TEST_PHASE_FENCE_BLOCKED`를 기록하고 expand-todo 호출 전에 중단한다. 기존 체크 상태, 완료 표시, mock_only/testclient_only 판정은 이 차단을 덮지 못한다.
+- 위반이 없으면 결과표 `live phase fence` 칸에 `해당 없음`을 기록한다.
 - 계획서에 T4 Phase, E2E 테스트명령, 또는 `tests/**/*e2e*`/`tests/**/*integration*` 파일 언급이 있으면 해당 테스트 파일을 Read한다.
 - T4 evidence는 `pytest.mark.e2e`와 `pytest.mark.http_live`가 함께 있고, frontend readiness 또는 `/merge-test` readiness 전제가 있으며, `page.route("**/*", ...)` 전체 route mock만으로 화면을 구성하지 않아야 `live`로 분류한다.
 - T4 파일에 `page.route("**/*")` 전체 mock이 있고 `pytest.mark.http_live`가 없으면 `mock_only`로 분류하고, T3 재분류 요구 + live T4 follow-up TODO를 review 결과표에 기록한다. 일부 요청만 mock하는 `page.route()`도 T4 확정이 아니라 검토 필요로 남긴다.
@@ -162,10 +174,18 @@ advisory evidence가 있으면 아래 3단계를 검증한다:
 - T4/T5 결과표에는 `T4/T5 계약` 열 또는 비고 marker로 `live`, `mock_only`, `http_live`, `testclient_only`, `absent` 중 하나를 남긴다. `mock_only`/`testclient_only`면 expand-todo 전 deterministic 보정 또는 차단 여부를 명시한다.
 - T4/T5가 `해당 없음`인데 feature area live smoke가 없으면 "live smoke 없음" 경고를 남긴다. 기존 mock-only/TestClient-only 테스트는 삭제 대상으로 만들지 않고 T3 재분류 + live follow-up만 생성한다.
 
-**J. scope split / surface 분류 검증:**
-- generated plan 본문에 `후속`/`stub`/`별도 plan`/`child detach` 키워드가 있고 사용자 명시 승인 evidence(approval evidence 문장)가 없으면 `CODEX_SCOPE_SPLIT_UNAPPROVED`로 재검토 실패 처리한다.
+**J. scope split / surface isolation / surface 분류 검증:**
+- scope split은 기본 차단이 아니라 먼저 분류한다. `후속`/`stub`/`별도 plan`/`child detach` 키워드는 advisory evidence이며, 키워드만으로 `CODEX_SCOPE_SPLIT_UNAPPROVED`를 내지 않는다.
+- 아래 중 하나가 확인될 때만 `CODEX_SCOPE_SPLIT_UNAPPROVED`로 재검토 실패 처리한다:
+  - 원래 요청 또는 plan TODO의 실행 범위가 child/follow-up으로 빠지면서 parent 또는 child에 보존되지 않는다.
+  - 실행 체크박스가 제거됐지만 child plan 링크, `> **실행 TODO:**` 목록, owner/완료 gate 같은 추적 근거가 없다.
+  - parent가 complete/archive될 수 있는데 active child를 막는 gate 또는 명시 detach approval evidence가 없다.
+- 실행 범위가 보존되고 child plan 링크, 책임 surface, owner/완료 gate가 확인되면 사용자 명시 승인 문장 없이도 자율 분리로 허용한다. 이미 child가 생성되어 있으면 `split-applied`, 아직 분리 전이면 `split-required`로 기록하고 expand-todo 호출은 계속 진행한다.
+- 자동 분리 기준이 모호하면 `수동 결정 필요`로 기록하고, 모호한 체크박스/경로 근거를 결과표 또는 후속 메모에 남긴다. 이 상태는 review-plan fatal 실패가 아니지만 `/done`에서 parent complete 처리되면 안 된다.
+- 실행 체크박스 또는 파일 경로 헤더에서 두 개 이상 engine authoring surface(`.agents/`, `.claude/`, `.gemini/`, `common/tools/plan-runner/gemini-agents/`)가 섞이면 `surface isolation = split-required`로 기록하고 expand-todo 호출을 멈추지 않는다. 이미 surface별 child로 분리되어 있으면 `surface isolation = split-applied`로 기록한다.
 - wtools authoring surface 변경 plan에 헤더 `> surface 분류:` 필드도 없고 본문 `## surface 분류` 섹션도 없으면 `SURFACE_CLASSIFICATION_MISSING`으로 재검토 실패 처리한다.
-- scope split 판정값 (`해당 없음` / `승인 있음` / `🚫 차단: CODEX_SCOPE_SPLIT_UNAPPROVED`)을 결과표 `scope split` 칸에 기록한다.
+- scope split 판정값 (`해당 없음` / `승인 있음` / `split-required` / `split-applied` / `수동 결정 필요` / `🚫 차단: CODEX_SCOPE_SPLIT_UNAPPROVED`)을 결과표 `scope split` 칸에 기록한다.
+- surface isolation 판정값 (`해당 없음` / `단일 surface` / `split-required` / `split-applied` / `수동 결정 필요`)을 결과표 `surface isolation` 칸에 기록한다.
 - surface 분류 판정값 (`공통 정책` / `모델별 메커니즘` / `분류 모호` / `🚫 누락: SURFACE_CLASSIFICATION_MISSING`)을 결과표 `surface 분류` 칸에 기록한다.
 
 **재검토 실패 시:**
@@ -300,10 +320,10 @@ expand-todo의 5.6단계가 expand 결과를 자체 커밋한다. review-plan의
 ```markdown
 ## 계획서 재검토 결과
 
-| # | 계획서 | 재검토 | 로컬변경 | 연관 active plan | archive 참조 | 환경오염 | scope split | surface 분류 | expand | 실패메타데이터 | 비고 |
-|---|--------|--------|----------|------------------|-------------|---------|-------------|-------------|--------|----------------|------|
-| 1 | {파일명} | ✅ 통과 | {영향 없음/참조만/보정 반영} | {0-hit/중복 회피/선행관계} | {0-hit/참조 반영} | {해당 없음/⚠️ 경고: {패턴}/🚫 차단: {사유}} | {해당 없음/승인 있음/🚫 CODEX_SCOPE_SPLIT_UNAPPROVED} | {공통 정책/모델별 메커니즘/분류 모호/🚫 누락} | ✅ {N}개 작업 | {카테고리/종료코드/처리결과} | — |
-| 2 | {파일명} | ❌ 실패 | {재검토 실패/보정 반영} | {충돌/0-hit} | {참조만/0-hit} | {해당 없음/⚠️ 경고: {패턴}/🚫 차단: {사유}} | {해당 없음/🚫 CODEX_SCOPE_SPLIT_UNAPPROVED} | {🚫 SURFACE_CLASSIFICATION_MISSING} | — | {있음/없음} | {사유} |
+| # | 계획서 | 재검토 | 로컬변경 | 연관 active plan | archive 참조 | 환경오염 | live phase fence | scope split | surface isolation | surface 분류 | expand | 실패메타데이터 | 비고 |
+|---|--------|--------|----------|------------------|-------------|---------|------------------|-------------|-------------------|-------------|--------|----------------|------|
+| 1 | {파일명} | ✅ 통과 | {영향 없음/참조만/보정 반영} | {0-hit/중복 회피/선행관계} | {0-hit/참조 반영} | {해당 없음/⚠️ 경고: {패턴}/🚫 차단: {사유}} | {해당 없음/보정 반영/차단: LIVE_TEST_PHASE_FENCE_BLOCKED} | {해당 없음/승인 있음/split-required/split-applied/수동 결정 필요/🚫 CODEX_SCOPE_SPLIT_UNAPPROVED} | {해당 없음/단일 surface/split-required/split-applied/수동 결정 필요} | {공통 정책/모델별 메커니즘/분류 모호/🚫 누락} | ✅ {N}개 작업 | {카테고리/종료코드/처리결과} | — |
+| 2 | {파일명} | ❌ 실패 | {재검토 실패/보정 반영} | {충돌/0-hit} | {참조만/0-hit} | {해당 없음/⚠️ 경고: {패턴}/🚫 차단: {사유}} | {해당 없음/보정 반영/차단: LIVE_TEST_PHASE_FENCE_BLOCKED} | {해당 없음/수동 결정 필요/🚫 CODEX_SCOPE_SPLIT_UNAPPROVED} | {해당 없음/수동 결정 필요} | {🚫 SURFACE_CLASSIFICATION_MISSING} | — | {있음/없음} | {사유} |
 
 ### 검토 근거 및 상세 내역
 
