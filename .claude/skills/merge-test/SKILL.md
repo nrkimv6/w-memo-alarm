@@ -33,6 +33,8 @@ Preflight and cleanup evidence must come from helper CLI contracts before any me
 ## Blocker Classification Contract
 
 - `merge-test-preflight.ps1 -Json`의 `blocker_type`, `local_merge_possible`, `remote_diverged`, `push_blocked`, `direct_root_commit_blocked`, `failed_command`, `failed_exit_code`, `failed_stderr_excerpt`를 읽기 전에는 `머지 막힘`, `merge blocked`, `blocked`로 local merge 실패를 선언하지 않는다.
+- Phase Z cleanup blocker는 `merge-test-cleanup.ps1 -Json` evidence를 먼저 읽은 뒤 판단한다. helper가 `cleanup_ready=true`, `mutation_ready=true`, `hard_blockers=[]`를 반환하면 `ignored_dirty` warning만으로 final/blocked/보류를 선택하지 않는다.
+- helper JSON에 없는 임의 cleanup blocker label을 새로 만들어 hard stop으로 쓰지 않는다. existing root dirty는 helper의 `warnings=["ignored_dirty"]`와 `ignored_dirty_paths`로 표시하고, `hard_blockers`에 포함된 code만 cleanup blocker로 취급한다.
 - `remote_diverged=true`는 remote sync/push 위험이다. 이 값만으로 `local_merge_blocked`로 승격하지 않고, `push_blocked` 또는 `remote_sync_blocked`와 함께 보고한다.
 - root 직접 커밋 guard 실패는 `direct_root_commit_blocked`로 보고한다. `local_merge_possible=true`이면 merge worktree fallback 또는 remote fast-forward receiver flow를 next owner로 남긴다.
 - final summary에는 `phase | blocker_type | local_merge_possible | remote_diverged | command | exit_code | next_owner` 컬럼을 포함한다.
@@ -587,11 +589,13 @@ git reset --merge HEAD~1
 
 배치 대상 전체가 성공한 뒤, worktree/branch를 **한 번에 정리**한다:
 
-**제거 전 필수: dirty 체크 게이트**
+**제거 전 필수: cleanup helper-first 게이트**
 
-각 target 제거 전에 main/worktree 모두 자동 흡수 없이 확인한다:
+각 target 제거 전에 helper evidence와 worktree 상태를 자동 흡수 없이 확인한다:
 
-- `git status --porcelain`(main) → dirty → `ROOT_DIRTY_BEFORE_REMOVE` exit 1. 자동 add/commit 금지.
+- `merge-test-cleanup.ps1 -PlanFile {plan} -RepoRoot {main} -Json`을 먼저 실행한다. `hard_blockers`가 비어 있고 `cleanup_ready=true`, `mutation_ready=true`이면 main dirty는 `ignored_dirty` evidence로만 기록하고 cleanup을 계속한다.
+- helper가 `UNTRACKED_ORIGIN_BLOB_RESIDUE_BLOCKED` 같은 `hard_blockers`를 반환한 경우에만 cleanup을 멈춘다. 이때 blocker code, `residue_blocker_code`, affected paths, next owner를 final/ledger에 남긴다.
+- helper를 사용할 수 없는 경우에만 direct read-back fallback으로 main status를 확인한다. fallback에서도 root untracked unrelated 파일은 `ignored_dirty` evidence이며, 자동 add/commit은 금지한다.
 - `git -C {worktree} status --porcelain` → dirty → `WORKTREE_DIRTY_BEFORE_REMOVE` exit 1. 자동 커밋 금지.
 - clean 확인 후: `git worktree unlock {worktree}` (실패 무시) → `git worktree remove {worktree} --force` → `git branch -D {branch}`
 

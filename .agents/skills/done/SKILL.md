@@ -41,6 +41,7 @@ The deterministic completion flow is owned by `common\tools\auto-done.ps1`. Use 
 - 사용자가 "파일 닫어", "파일 닫기", "닫어", "닫기", "마무리"처럼 closeout을 지시하면 대상 plan의 `> branch:`/`> worktree:` 헤더를 먼저 읽는다.
 - `branch/worktree present -> /merge-test; absent -> /done` 판정은 같은 턴에서 수행하며, 사용자에게 같은 지시를 다시 입력하라고 떠넘기지 않는다.
 - `/merge-test` owner가 필요하면 같은 턴에서 local/project `/merge-test` `SKILL.md`를 읽고 이어간다.
+- 이미 `/merge-test`에서 archive/read-back까지 완료된 plan을 `/done`이 no-op으로 확인하는 경우에도 직전 cleanup evidence를 한 줄로 남긴다. 예: `cleanup: cleanup_ready=true hard_blockers=[] warnings=[ignored_dirty] archive_read_back=ok`. `warnings=[ignored_dirty]`만으로 완료를 보류하지 않는다.
 
 → 상단 STOP/CONTINUE Decision Table 우선. 이 섹션은 세부 근거 참조용.
 
