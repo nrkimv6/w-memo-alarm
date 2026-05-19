@@ -1,0 +1,70 @@
+description = "워크트리 브랜치를 main에 머지하고 T4/T5 통합테스트를 실행 + 완료처리까지 일괄 실행. Use when: merge-test, 머지테스트, 머지 테스트"
+
+prompt = """
+# Merge Test
+
+워크트리 브랜치를 main에 머지하고 계획서의 T4/T5 검증, post-merge cleanup, 완료처리 handoff까지 진행합니다.
+
+## Invocation Contract
+
+- 이 명령은 Gemini interactive slash command입니다. Headless plan-runner runtime은 `.gemini/commands/merge-test.toml`을 읽지 않습니다.
+- Gemini headless runtime이 필요한 경우 `.gemini/agents`를 직접 편집하지 말고 `common/tools/plan-runner/gemini-agents/*.md`와 `common/tools/plan-runner/core/gemini_surface_registry.py`를 통해 별도 plan으로 추가합니다.
+- `.agents/skills/merge-test/`와 `.claude/skills/merge-test/`는 이 명령의 source가 아니며, 이 파일을 고치면서 자동 동기화된다고 가정하지 않습니다.
+
+## Required Inputs
+
+- 대상 plan 경로 또는 현재 worktree에서 추론 가능한 plan.
+- plan 헤더의 `branch`, `worktree`, `worktree-owner`.
+- main worktree는 `main`에 고정되어 있어야 하며, 구현 파일 수정은 linked worktree에서 이미 끝난 상태여야 합니다.
+
+## Workflow
+
+### 1. Preflight
+
+1. `pwd`, `git status --short --branch`, `git worktree list`로 현재 cwd와 branch/worktree를 확인합니다.
+2. `run_shell_command`로 PowerShell에서 `common/tools/merge-test-preflight.ps1 -PlanFile <plan> -RepoRoot <repo> -Json`을 실행해 branch/worktree/pending merge evidence를 수집합니다.
+3. preflight hard blocker가 있으면 `<CODE>_BLOCKED` 형식으로 중단하고 plan에 evidence를 남깁니다.
+
+### 2. Main Merge
+
+1. main worktree에서 `git fetch origin` 후 `git status --short --branch`로 상태를 확인합니다.
+2. 구현 worktree의 branch를 main에 병합합니다.
+3. 충돌이 나면 충돌 파일과 blocker를 기록하고 중단합니다.
+4. 병합 커밋 또는 fast-forward 결과 commit hash를 plan에 기록합니다.
+
+### 3. Verification
+
+1. plan의 T4/T5에 명시된 검증만 실행합니다.
+2. T4/T5가 plan에 있으면 실행 없이 체크하지 않습니다.
+3. 실패는 `product_regression`, `contract_regression`, `test_fixture_stale`, `environment_failure` 중 하나로 분류하고, `blocks_archive`, `blocks_other_targets`, `next_owner`를 기록합니다.
+
+### 4. Cleanup Helper First
+
+1. cleanup blocker 분류 전 반드시 `run_shell_command`로 `common/tools/merge-test-cleanup.ps1 -PlanFile <plan> -RepoRoot <repo> -Json`을 실행합니다.
+2. helper JSON의 `cleanup_ready=true`, `hard_blockers=[]`, `warnings=[]`이면 cleanup을 진행합니다.
+3. helper가 `ignored_dirty` warning을 반환하면 staged/unstaged/untracked/deleted, `.merge_test_stash_ref`, `dirty_count`, `untracked_count` evidence를 blocker로 승격하지 말고 warning/evidence로만 기록합니다.
+4. `hard_blockers`에 값이 있으면 helper가 반환한 코드에 `_BLOCKED` suffix를 붙여 중단합니다.
+5. `UNTRACKED_ORIGIN_BLOB_RESIDUE_BLOCKED`는 helper residue evidence가 있을 때만 사용합니다.
+6. `ROOT_DIRTY_BEFORE_REMOVE` 같은 직접 root dirty blocker를 helper JSON 없이 만들지 않습니다.
+
+### 5. Worktree Removal
+
+1. cleanup helper가 허용한 뒤에만 구현 worktree를 제거합니다.
+2. branch 삭제 전 main에 merge commit이 존재하는지 확인합니다.
+3. `git worktree remove`와 `git branch -d`는 병렬 실행하지 않습니다.
+4. 제거 후 `git worktree list`, `git branch --list <branch>`로 read-back evidence를 기록합니다.
+
+### 6. Done Handoff
+
+1. plan의 남은 leaf, downstream sync evidence, child plan, owner step을 다시 계산합니다.
+2. archive/read-back이 남아 있으면 `/done` 또는 해당 owner step으로 넘기고 완료라고 말하지 않습니다.
+3. 완료처리는 docs commit root가 `.worktrees/plans`인지 확인한 뒤 진행합니다.
+
+{{args}}
+"""
+
+# script-contract-invariant
+# Deterministic checks should prefer helper CLI JSON contracts over inline
+# reimplementation. In particular, cleanup blocker classification must read
+# merge-test-cleanup.ps1 -Json before deciding whether dirty evidence is a
+# blocker or ignored_dirty warning.
