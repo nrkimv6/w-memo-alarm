@@ -37,6 +37,8 @@ prompt = """
 1. plan의 T4/T5에 명시된 검증만 실행합니다.
 2. T4/T5가 plan에 있으면 실행 없이 체크하지 않습니다.
 3. 실패는 `product_regression`, `contract_regression`, `test_fixture_stale`, `environment_failure` 중 하나로 분류하고, `blocks_archive`, `blocks_other_targets`, `next_owner`를 기록합니다.
+4. `sync_gemini_surfaces.py --check`, pytest, Pester 같은 non-live 검증 게이트가 실패했다가 같은 턴에서 복구된 경우 `Recovered validation ledger`에 `stage`, `failed_command`, `exit_code`, `failure_class`, `recovery_action`, `recovered_command`, `recovered_result`를 기록합니다. 최종 통과 summary가 첫 실패 row를 생략하면 `non_live_recovery_evidence_missing`입니다.
+5. `git pull --ff-only`가 remote config 부재로 실패하면 `git rev-list --left-right --count HEAD...origin/main` tuple을 확인합니다. `0 N`(behind-only)이면 explicit `git pull --ff-only origin main`으로 재시도하고, 성공 시 `failure_class=environment_failure, result=failed -> recovered`로 기록합니다. `L N`(diverged)이면 `DOWNSTREAM_DIVERGED_PUSH_BLOCKED`로 중단합니다.
 
 ### 4. Cleanup Helper First
 
