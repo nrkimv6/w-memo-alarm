@@ -88,9 +88,10 @@ The deterministic completion flow is owned by `common\tools\auto-done.ps1`. Use 
   - `failure_class=test_fixture_stale` 또는 `environment_failure`는 전체 보류/전체 중지 근거로 승격하지 않고 target-local warning/blocker로만 남긴다.
   - T4/T5 evidence table의 `result=failed -> recovered` row는 `Recovered validation ledger` read-back이 있고 `failure_class=test_fixture_stale|environment_failure`, `blocks_archive=false`, `blocks_other_targets=false`이면 warning-success로 처리한다. 원래 실패 명령, corrected rerun 명령, recovery evidence 중 하나라도 없으면 `t4_t5_evidence_missing`으로 archive를 보류한다.
   - `already_archived` target은 성공-equivalent로 집계하되 archive metadata/TODO/DONE을 재삽입하거나 재이동하지 않는다.
-  - `ignored`는 session target 밖 backlog 또는 명시 제외 항목만 허용하며, session target 누락을 ignored로 숨기지 않는다.
-- 완료 집계 표는 `already_archived`와 이번 턴에 실제 처리한 `processed_this_turn`을 분리해 출력한다.
+  - `ignored`는 session target 밖 backlog 또는 사용자가 명시 제외한 missing target만 허용하며, session target 누락을 ignored로 숨기지 않는다.
+- 완료 집계 표는 `declared`, `processed_this_turn`, `already_archived`, `ignored`, `blocked`, `remaining_executable` 6컬럼을 포함하고, `already_archived`와 이번 턴에 실제 처리한 `processed_this_turn`을 분리해 출력한다.
   이미 archive된 target은 session read-back에는 포함하지만, 이번 턴 완료 수를 부풀리는 근거로 쓰지 않는다.
+- `ignored > 0`이면 "전체 완료" 대신 `processed_this_turn/already_archived/ignored/blocked/remaining_executable`을 분리해 말한다.
 - `blocked` 또는 `excluded_unconfirmed` row가 하나라도 있으면 `전체 완료`, `모두 완료`, `마무리 완료` 표현을 금지한다.
 - 사용자가 "남은 거"를 물으면 global backlog가 아니라 현재 session targets의 `remaining`/`blocked`/`excluded_unconfirmed`만 기준으로 답한다.
 - 사용자가 `계속`, `멈추지마`, `끝날 때까지` 등으로 재지시한 경우:
@@ -327,6 +328,8 @@ C. 매칭된 항목을 추출하여 리스트로 수집
 2. `## 미완료` 섹션 하단에 항목 추가: `- [ ] {내용} — from: {plan파일명.md}#{번호} ({날짜})`
 3. 중복 방지: 이미 같은 `from:` 참조가 있으면 스킵
 4. plan 문서: 수동 항목은 `[x]` + `(→ MANUAL_TASKS)` 태그 추가
+5. `MANUAL_TASKS.md`를 생성/수정했다면 archive/TODO/DONE 후속 이동 전에 해당 exact path를 `D:\work\project\tools\common\commit.ps1 -Files`로 즉시 커밋하고 commit hash를 closeout evidence에 남긴다.
+6. 즉시 커밋이 실패하거나 staged ownership을 검증할 수 없으면 `MANUAL_TASKS_COMMIT_PENDING`으로 중단한다. 이 상태에서는 archive 이동, TODO→DONE 이동, DONE.md 갱신을 계속하지 않는다.
 
 **완료 상태는 MANUAL_TASKS 제외 후 판단합니다.**
 
