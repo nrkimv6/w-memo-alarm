@@ -18,6 +18,15 @@ Regex and keyword detections are advisory evidence unless a helper contract expl
 - "계획서 검토", "review-plan", "계획 검토"
 - `/reflect` 완료 후 자동 호출 ("조사만" 모드 제외)
 
+## PLAN_SPLIT_GATE: split 판단 전 Read 의무
+
+`/review-plan`에서 scope split, surface isolation, child plan 생성 여부를 판단할 때는 split 판단 전에 `.claude/skills/plan/SKILL.md`를 먼저 Read하고 그 분할 게이트를 적용한다.
+
+- 사용자 발화 또는 slash command 흐름에서 plan을 나누는 경우, 주제 분할보다 surface 분류를 먼저 수행한다.
+- surface 분류 표시 없이 분할 진행 금지: wtools authoring surface 변경 plan은 parent 또는 child에 `> surface 분류:`가 있어야 한다.
+- child 파일명은 기존 대표 plan 파일명 뒤 `_todo-N.md` suffix만 허용한다. child별 임의 주제 slug를 만들지 않는다.
+- 분류가 모호하면 child를 만들지 말고 `수동 결정 필요`와 근거를 결과표 또는 후속 메모에 남긴다.
+
 ## 입력
 
 - **필수**: 계획서 경로 1개 이상 (예: `{plan경로}/2026-03-31_fix-xxx.md`)
@@ -171,6 +180,7 @@ advisory evidence가 있으면 아래 3단계를 검증한다:
 - T4/T5가 `해당 없음`인데 feature area live smoke가 없으면 "live smoke 없음" 경고를 남긴다. 기존 mock-only/TestClient-only 테스트는 삭제 대상으로 만들지 않고 T3 재분류 + live follow-up만 생성한다.
 
 **J. scope split / surface isolation / surface 분류 검증:**
+- 이 단계에 들어가기 전에 `PLAN_SPLIT_GATE`를 적용한다. `.claude/skills/plan/SKILL.md`를 Read하지 않았거나 surface 분류 표시가 없는 상태에서는 child plan 생성 또는 분할 확정으로 진행하지 않는다.
 - scope split은 기본 차단이 아니라 먼저 분류한다. `후속`/`stub`/`별도 plan`/`child detach` 키워드는 advisory evidence이며, 키워드만으로 `CODEX_SCOPE_SPLIT_UNAPPROVED`를 내지 않는다.
 - 아래 중 하나가 확인될 때만 `CODEX_SCOPE_SPLIT_UNAPPROVED`로 재검토 실패 처리한다:
   - 원래 요청 또는 plan TODO의 실행 범위가 child/follow-up으로 빠지면서 parent 또는 child에 보존되지 않는다.

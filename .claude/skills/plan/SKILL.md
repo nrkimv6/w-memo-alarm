@@ -11,6 +11,18 @@ description: "계획 문서 작성. Use when: 계획해, plan, 아이디어, 기
 
 direct invocation 시 같은 이름의 global/duplicate skill(`C:\Users\Narang\.codex\skills\plan\SKILL.md` 등)을 대체 사용하지 않는다. 별도 공통 skill 정의가 필요한 경우가 아니면 wtools 로컬 `.claude/skills/plan` 원본을 우선한다.
 
+## 대화형 plan 분할 진입 게이트 (PLAN_SPLIT_GATE)
+
+사용자 발화 또는 slash command 흐름에서 기존 plan을 분할하려는 순간에는 파일을 만들기 전에 이 게이트를 먼저 적용한다.
+
+- 트리거: 사용자가 대화 중 "분할해", "나눠", "child로 빼", "todo로 쪼개"처럼 명령형 분할을 지시한 경우, `/reflect` 중 후속 plan 분할이 필요한 경우, `/review-plan` 중 split 판단이 필요한 경우.
+- 첫 판단: 분할 사유를 주제별로 정하지 말고 먼저 surface를 분류한다. `.agents`, `.claude`, `.gemini`, generated Gemini runtime처럼 서로 다른 authoring surface가 섞였는지 확인하고, 섞였으면 surface 분할을 우선한다.
+- 표기 의무: wtools authoring surface 변경 plan은 parent 또는 child 헤더에 `> surface 분류:`를 남긴 뒤 분할한다. surface 분류 표시 없이 child plan 생성을 진행하지 않는다.
+- 파일명 계약: child 파일은 기존 대표 plan 파일명 뒤에 `_todo-N.md` suffix만 붙인다. 예: `YYYY-MM-DD_slug_todo-1.md`, `YYYY-MM-DD_slug_todo-2.md`.
+- 금지: 분할하면서 child마다 새 주제 slug를 만들지 않는다. `ARBITRARY_SLUG_FORBIDDEN`.
+- 반례: 2026-05-20 Claude Code 대화 중 사용자의 "분할해" 명령을 주제 분할로 해석해 임의 주제 slug child를 만든 사고가 있었다. 같은 경로에서는 반드시 surface 분류를 먼저 수행하고, 허용 suffix는 `_todo-N.md`뿐이다.
+- 모호하면 child를 만들지 말고 parent에 `분류 모호`와 판단 근거를 남긴 뒤 사용자 확인을 요청한다.
+
 ## Docs Dirty Guard Contract
 
 - direct invocation에서 plan/TODO/DONE 같은 docs lineage를 수정할 가능성이 있으면, 수정 전 docs commit root에서 `common/tools/docs-dirty-guard.ps1 -Mode Begin -RepoRoot <docs-commit-root>`를 호출한다. PowerShell을 사용할 수 없는 shell surface는 `common/tools/docs-dirty-guard.sh --mode begin --repo-root <docs-commit-root>`를 사용한다.

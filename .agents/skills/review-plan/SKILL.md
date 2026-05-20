@@ -175,6 +175,9 @@ advisory evidence가 있으면 아래 3단계를 검증한다:
 - T4/T5가 `해당 없음`인데 feature area live smoke가 없으면 "live smoke 없음" 경고를 남긴다. 기존 mock-only/TestClient-only 테스트는 삭제 대상으로 만들지 않고 T3 재분류 + live follow-up만 생성한다.
 
 **J. scope split / surface isolation / surface 분류 검증:**
+- `PLAN_SPLIT_GATE`: split-required/split-applied 여부를 판단하기 전에 `D:\work\project\service\wtools\.agents\skills\plan\SKILL.md`를 먼저 읽고 상단 `분할 진입 게이트`와 `surface isolation preflight`를 적용한다.
+- 주제 분할 금지, surface 분할 우선. surface split은 project/Phase split보다 먼저 판단하며, child 파일명은 원본 stem + `_todo-N.md` suffix만 허용한다.
+- wtools authoring surface 변경 plan에서 surface 분류 표시(`> surface 분류:` 헤더 또는 `## surface 분류` 섹션)가 없으면 split-required라도 분할 진행 금지다. `SURFACE_CLASSIFICATION_MISSING`으로 재검토 실패 처리하고 expand-todo 호출 전에 멈춘다.
 - scope split은 기본 차단이 아니라 먼저 분류한다. `후속`/`stub`/`별도 plan`/`child detach` 키워드는 advisory evidence이며, 키워드만으로 `CODEX_SCOPE_SPLIT_UNAPPROVED`를 내지 않는다.
 - 아래 중 하나가 확인될 때만 `CODEX_SCOPE_SPLIT_UNAPPROVED`로 재검토 실패 처리한다:
   - 원래 요청 또는 plan TODO의 실행 범위가 child/follow-up으로 빠지면서 parent 또는 child에 보존되지 않는다.

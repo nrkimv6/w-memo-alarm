@@ -11,6 +11,18 @@ description: "계획 문서 작성. Use when: 계획해, plan, 아이디어, 기
 
 direct invocation 시 같은 이름의 global/duplicate skill(`C:\Users\Narang\.codex\skills\plan\SKILL.md` 등)을 대체 사용하지 않는다. 별도 공통 skill 정의가 필요한 경우가 아니면 wtools 로컬 `.agents/skills/plan` 원본을 우선한다.
 
+## 분할 진입 게이트
+
+계획서 생성/수정 중 child plan 또는 `_todo-N.md` 분할 가능성이 보이면, 규모/Phase/project 분리 판단 전에 이 게이트를 먼저 통과한다.
+
+- surface split이 project split 및 Phase split보다 우선한다. wtools authoring surface 변경에서 실행 체크박스나 파일 경로가 두 개 이상 engine surface(`.agents/`, `.claude/`, `.gemini/`, `common/tools/plan-runner/gemini-agents/`)를 함께 다루면 먼저 surface 기준으로 분류한다.
+- parent는 coordination-only다. parent에는 실행 체크박스를 남기지 않고 `> **실행 TODO:**` child 링크, 선행관계, owner/완료 gate, downstream/read-back coordination만 남긴다.
+- child는 단일 surface만 소유한다. 한 child TODO에 다른 engine surface의 실행 파일 경로를 섞지 않는다.
+- child 파일명은 원본 계획서 파일명 stem + `_todo-N.md` suffix만 허용한다. 예: `YYYY-MM-DD_original.md` -> `YYYY-MM-DD_original_todo-1.md`, `YYYY-MM-DD_original_todo-2.md`.
+- `ARBITRARY_SLUG_FORBIDDEN`: child/follow-up/stub 분리 시 주제별 임의 slug, 요약 slug, Phase명 slug를 새로 만들지 않는다. `*_agents.md`, `*_claude.md`, `*_skill-mirror.md`, `*_phase-2.md`처럼 원본 stem을 바꾸는 자동 생성은 금지다.
+- 2026-05-20 사고 반례: surface isolation이 필요한 계획을 "주제 분할 슬러그 자동 생성"으로 나누면 검색/owner/read-back lineage가 끊긴다. 주제 분할 슬러그 자동 생성 금지. surface 분할은 원본 stem + `_todo-N.md` 평면 번호로만 표현한다.
+- wtools 내부에서 `.claude/`는 `.agents/`의 mirror가 아니다. `.agents`, `.claude`, `.gemini`는 각 엔진의 primary authoring/runtime surface이므로 mirror 전제 없이 surface별 owner와 downstream evidence를 따로 남긴다.
+
 ## Docs Dirty Guard Contract
 
 - direct invocation에서 plan/TODO/DONE 같은 docs lineage를 수정할 가능성이 있으면, 수정 전 docs commit root에서 `common/tools/docs-dirty-guard.ps1 -Mode Begin -RepoRoot <docs-commit-root>`를 호출한다. PowerShell을 사용할 수 없는 shell surface는 `common/tools/docs-dirty-guard.sh --mode begin --repo-root <docs-commit-root>`를 사용한다.
@@ -100,10 +112,13 @@ task ledger 판단도 `_path-rules.md` helper의 docs commit root를 따른다. 
 
 ### 2.5단계: surface isolation preflight
 
+상단 `분할 진입 게이트`가 이 단계의 우선 계약이다. 여기서는 세부 판단 근거만 보강한다.
+
 wtools authoring surface 변경 plan에서 실행 체크박스 또는 파일 경로 헤더가 두 개 이상 engine surface(`.agents/`, `.claude/`, `.gemini/`, `common/tools/plan-runner/gemini-agents/`)를 함께 다루면, 계획 문서 작성 전에 surface 기준을 먼저 분류한다.
 
 - 단일 surface면 그대로 단일/규모 기반 분리 규칙을 적용한다.
 - 여러 surface가 섞였고 실행 범위가 보존 가능하면 coordination-only parent + surface별 `_todo-N.md` child를 만든다. parent에는 실행 체크박스를 남기지 않고 `> **실행 TODO:**` 링크, 선행관계, downstream/read-back coordination만 남긴다.
+- child 파일명은 원본 계획서 stem + `_todo-N.md` suffix만 허용한다. `ARBITRARY_SLUG_FORBIDDEN`: surface명/주제명/Phase명을 붙인 임의 slug 자동 생성은 금지한다.
 - 공통 정책 cross-surface 검토 결과는 메타 표 또는 `## 기술적 고려사항`에 기록하고, 실행 체크박스에 다른 engine surface 파일 경로를 섞지 않는다.
 - 분류 토큰은 파일 경로 prefix를 우선하고, 경로만으로 모호하면 `> surface 분류:` 메타와 본문 근거를 본다. 그래도 모호하면 `수동 결정 필요` 메모를 남기고 child 생성은 보류한다.
 - surface split은 project split보다 먼저 판단한다. 중첩 `_todo-1a.md`는 만들지 않고 `_todo-1.md`, `_todo-2.md`처럼 평면 번호를 이어 붙인다.
