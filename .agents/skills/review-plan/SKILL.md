@@ -325,6 +325,18 @@ expand-todo의 5.6단계가 expand 결과를 자체 커밋한다. review-plan의
 6. 커밋 스크립트 사용 (git commit 직접 사용 금지)
    - race 방지가 필요하면 `commit.ps1 -Files` 또는 `commit.sh --files`로 add+commit을 한 호출에 묶는다.
 
+### 3.5단계: closeout 계약 (상태·커밋 evidence 보장)
+
+**상태 전이 규칙:**
+- 검토가 완료된 입력 plan의 상태가 `초안`이면 `검토완료`로 전이하거나 보류 사유를 closeout evidence에 남긴다.
+- `수정 없음`/`no changes needed` 결론은 상태 전이 또는 commit evidence 생략의 근거가 아니다.
+- 사용자가 `커밋해`, `검토완료 상태`, `초안 아닌가요`처럼 closeout 재지시를 한 경우, Q5/Q6 escalation evidence로 결과표 `비고` 열에 기록하고 **같은 턴에서 상태 전이와 커밋을 계속 진행**한다.
+
+**Closeout evidence 컬럼:**
+- 각 입력 plan에 대해 `plan`, `status_before`, `status_after`, `commit_hash`, `remaining_owner`를 closeout evidence 표에 기록한다.
+- `.worktrees/plans` 대상 plan이면 그 cwd에서 `commit.ps1`을 호출한다. 커밋 실패 또는 staged ownership mismatch가 발생하면 성공으로 표시하지 않는다.
+- `status_after`가 `검토완료` 또는 보류 사유 없이 비어 있으면 closeout 완료로 보고하지 않는다.
+
 ## 출력 형식
 
 ```markdown
@@ -342,6 +354,12 @@ expand-todo의 5.6단계가 expand 결과를 자체 커밋한다. review-plan의
   - **로컬/연관 검토**: 발견된 로컬 drift, 연관 plan 중복/충돌 여부에 대한 구체적인 설명
   - **안전성**: 환경 오염, 임시 해법, 사이드 이펙트 등 우려 사항 (없으면 없다고 명시)
   - **결론**: 최종 통과/수정/반려 이유 요약
+
+### Closeout Evidence
+
+| plan | status_before | status_after | commit_hash | remaining_owner |
+|------|---------------|--------------|-------------|-----------------|
+| {파일명} | {이전 상태} | {`검토완료` 또는 `보류: {사유}`} | {hash 또는 `실패: {사유}`} | {다음 owner 또는 없음} |
 
 구현을 시작하려면 "다음" 또는 "구현해"라고 말씀해주세요.
 ```

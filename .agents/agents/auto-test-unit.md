@@ -51,6 +51,15 @@ For deterministic status, grep, candidate, preflight, or cleanup steps, call the
 
 3. `redis_cleanup` fixture는 `autouse=True` — 별도 선언 불필요.
 
+### Production-mirror synthetic user state 금지
+
+TC fixture 작성 시 production-mirror 사용자 화면에 보이는 상태를 합성하는 규칙은 dev_runner 전용이 아니라 모든 user-visible state 저장소에 적용한다. `dev_runner_state`, runner/plan 상태, 알림/이력/로그성 테이블처럼 실제 사용자가 읽는 상태 저장소는 동일하게 취급한다.
+
+- synthetic fixture가 `trigger='user'`, `trigger='user:all'`, pytest temp path, 존재하지 않는 fixture basename, 또는 실제 사용자처럼 보이는 trigger 값을 쓰면 안 된다.
+- production DB connection string이나 운영 mirror DB 세션을 그대로 사용하는 fixture는 금지한다. 격리 DB 세션, 테스트 전용 marker, 실제 존재하는 plan/fixture 파일 basename을 사용한다.
+- 허용되는 synthetic trigger는 `trigger='tc:*'` 또는 `trigger='test:*'`처럼 테스트 출처가 드러나는 값으로 제한한다.
+- `RunRequest(test_source=...)`는 runner 추적용 필드일 뿐이며, production-mirror user-visible state write 허용 근거가 아니다.
+
 ## 실행 흐름
 
 1. plan 문서를 읽는다

@@ -44,6 +44,15 @@ python -m pytest wtools/common/tools/plan-runner/tests/ -v -m "not http"
 - `python -m pytest` (unit test만) 허용
 - `pytest -m "not http"` 허용
 
+## Production-mirror synthetic fixture 정책
+
+테스트 fixture가 사용자의 production-visible 상태를 흉내 내는 경우, 실제 사용자 입력이나 운영 레지스트리처럼 보이는 합성 상태를 만들지 않는다. 이 규칙은 `dev_runner` 전용이 아니라 모든 unit/integration fixture 작성에 적용한다.
+
+- 금지: `trigger='user'` 또는 `trigger='user:all'` DB row 생성, Redis registry write, `dev_runner_state` 같은 production-mirror registry/state에 합성 실행 항목 주입.
+- 금지: pytest temp path, missing fixture basename, 임의 placeholder path를 plan path, source path, report path처럼 사용자가 볼 수 있는 필드에 기록.
+- 허용: `trigger='tc:*'` 또는 `trigger='test:*'` namespace, 격리된 DB 세션/임시 저장소, 실제 존재하는 plan/report fixture 파일을 사용한 read-only production shape 재현.
+- 판단 기준: 테스트가 실패했을 때 화면, 로그, DONE/plan, Redis registry, DB 상태가 실제 사용자 작업으로 오인될 수 있으면 production-mirror synthetic state로 보고 격리 namespace 또는 실제 fixture 파일로 바꾼다.
+
 ## 🔴 출력 형식 (반드시 이 형식으로 — 생략 절대 금지)
 
 테스트 실행 후, **응답 마지막에 반드시 아래 블록을 출력**한다.
