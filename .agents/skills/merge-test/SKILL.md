@@ -54,6 +54,7 @@ Preflight and cleanup evidence must come from helper CLI contracts before any me
 - `merge-test-preflight.ps1 -Json`의 `blocker_type`, `local_merge_possible`, `remote_diverged`, `push_blocked`, `direct_root_commit_blocked`, `failed_command`, `failed_exit_code`, `failed_stderr_excerpt`를 읽기 전에는 `머지 막힘`, `merge blocked`, `blocked`로 local merge 실패를 선언하지 않는다.
 - Phase Z cleanup blocker는 `merge-test-cleanup.ps1 -Json` evidence를 먼저 읽은 뒤 판단한다. helper가 `cleanup_ready=true`, `mutation_ready=true`, `hard_blockers=[]`를 반환하면 `ignored_dirty` warning만으로 final/blocked/보류를 선택하지 않는다.
 - helper JSON에 없는 임의 cleanup blocker label을 새로 만들어 hard stop으로 쓰지 않는다. existing root dirty는 helper의 `warnings=["ignored_dirty"]`와 `ignored_dirty_paths`로 표시하고, `hard_blockers`에 포함된 code만 cleanup blocker로 취급한다.
+- 재발 경로: `merge-test-cleanup.ps1 -Json` helper JSON을 읽지 않고 root dirty만으로 `ROOT_DIRTY_BEFORE_REMOVE` 같은 라벨을 만들거나, helper `warnings=["ignored_dirty"]`와 `hard_blockers=[]`를 혼동해 cleanup 보류/final을 선택하는 것을 금지한다.
 - `remote_diverged=true`는 remote sync/push 위험이다. 이 값만으로 `local_merge_blocked`로 승격하지 않고, `push_blocked` 또는 `remote_sync_blocked`와 함께 보고한다.
 - root 직접 커밋 guard 실패는 `direct_root_commit_blocked`로 보고한다. `local_merge_possible=true`이면 merge worktree fallback 또는 remote fast-forward receiver flow를 next owner로 남긴다.
 - final summary에는 `phase | blocker_type | local_merge_possible | remote_diverged | command | exit_code | next_owner` 컬럼을 포함한다.

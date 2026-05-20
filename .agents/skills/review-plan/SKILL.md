@@ -83,6 +83,13 @@ Regex and keyword detections are advisory evidence unless a helper contract expl
 
 **obsolete 세분화**: `resolved-later`(다른 구현에 흡수) / `over-generated`(불필요한 추상 finding)
 
+**time-window anchor gate**:
+- 계획서에 `감시창`, `실행창`, `duration`, `N시간`, `until`, `deadline`, `구현 시작`, `실행 시작` 같은 seed가 있으면 `obsolete` 확정 전에 시간 기준 재해석을 수행한다.
+- 작성 시점의 절대 시간이 지났다는 사실만으로 `obsolete`를 확정하지 못한다.
+- 요구사항이 duration 중심이면 작성일/작성시각이 아니라 구현 또는 실행 시작 시점 기준으로 재해석하고 `keep` 또는 `narrow` 보정 후보로 남긴다.
+- 절대 이벤트 시각 자체가 목표인 경우에는 구현/실행 시작 기준으로 보정하지 않고 사용자 확인 또는 명시적인 `obsolete` 사유를 남긴다.
+- 결과표 `time anchor` 칸에 `implementation_start`, `execution_start`, `absolute_event_time`, `unclear` 중 하나를 기록한다. `unclear`이면 `obsolete`로 닫지 않고 사용자 확인 또는 plan 보류 사유를 남긴다.
+
 **`/reflect` 출처 plan 엄격 모드** (파일명에 `_auto` 포함 또는 `> 출처: /reflect에서 자동 생성` 헤더):
 아래 4요건 모두 확인 후에만 `keep`:
 1. 미해결 증거 (코드 또는 로그)
@@ -90,7 +97,7 @@ Regex and keyword detections are advisory evidence unless a helper contract expl
 3. 기존 active plan에 귀속 불가
 4. 잔여 리스크 (사용자 보고만으로 닫을 수 없음)
 
-**결과 기록**: 결과표 `재검토` 열에 판정값 기록.
+**결과 기록**: 결과표 `재검토` 열에 판정값을 기록하고, 시간 제한 plan이면 `time anchor` 열에 재해석 기준을 기록한다.
 
 ### 1단계: 계획서 재검토
 
@@ -323,10 +330,10 @@ expand-todo의 5.6단계가 expand 결과를 자체 커밋한다. review-plan의
 ```markdown
 ## 계획서 재검토 결과
 
-| # | 계획서 | 재검토 | 로컬변경 | 연관 active plan | archive 참조 | 환경오염 | live phase fence | scope split | surface isolation | surface 분류 | expand | 실패메타데이터 | 비고 |
-|---|--------|--------|----------|------------------|-------------|---------|------------------|-------------|-------------------|-------------|--------|----------------|------|
-| 1 | {파일명} | ✅ 통과 | {영향 없음/참조만/보정 반영} | {0-hit/중복 회피/선행관계} | {0-hit/참조 반영} | {해당 없음/⚠️ 경고: {패턴}/🚫 차단: {사유}} | {해당 없음/보정 반영/차단: LIVE_TEST_PHASE_FENCE_BLOCKED} | {해당 없음/승인 있음/split-required/split-applied/수동 결정 필요/🚫 CODEX_SCOPE_SPLIT_UNAPPROVED} | {해당 없음/단일 surface/split-required/split-applied/수동 결정 필요} | {공통 정책/모델별 메커니즘/분류 모호/🚫 누락} | ✅ {N}개 작업 | {카테고리/종료코드/처리결과} | — |
-| 2 | {파일명} | ❌ 실패 | {재검토 실패/보정 반영} | {충돌/0-hit} | {참조만/0-hit} | {해당 없음/⚠️ 경고: {패턴}/🚫 차단: {사유}} | {해당 없음/보정 반영/차단: LIVE_TEST_PHASE_FENCE_BLOCKED} | {해당 없음/수동 결정 필요/🚫 CODEX_SCOPE_SPLIT_UNAPPROVED} | {해당 없음/수동 결정 필요} | {🚫 SURFACE_CLASSIFICATION_MISSING} | — | {있음/없음} | {사유} |
+| # | 계획서 | 재검토 | time anchor | 로컬변경 | 연관 active plan | archive 참조 | 환경오염 | live phase fence | scope split | surface isolation | surface 분류 | expand | 실패메타데이터 | 비고 |
+|---|--------|--------|-------------|----------|------------------|-------------|---------|------------------|-------------|-------------------|-------------|--------|----------------|------|
+| 1 | {파일명} | ✅ 통과 | {implementation_start/execution_start/absolute_event_time/unclear/해당 없음} | {영향 없음/참조만/보정 반영} | {0-hit/중복 회피/선행관계} | {0-hit/참조 반영} | {해당 없음/⚠️ 경고: {패턴}/🚫 차단: {사유}} | {해당 없음/보정 반영/차단: LIVE_TEST_PHASE_FENCE_BLOCKED} | {해당 없음/승인 있음/split-required/split-applied/수동 결정 필요/🚫 CODEX_SCOPE_SPLIT_UNAPPROVED} | {해당 없음/단일 surface/split-required/split-applied/수동 결정 필요} | {공통 정책/모델별 메커니즘/분류 모호/🚫 누락} | ✅ {N}개 작업 | {카테고리/종료코드/처리결과} | — |
+| 2 | {파일명} | ❌ 실패 | {implementation_start/execution_start/absolute_event_time/unclear/해당 없음} | {재검토 실패/보정 반영} | {충돌/0-hit} | {참조만/0-hit} | {해당 없음/⚠️ 경고: {패턴}/🚫 차단: {사유}} | {해당 없음/보정 반영/차단: LIVE_TEST_PHASE_FENCE_BLOCKED} | {해당 없음/수동 결정 필요/🚫 CODEX_SCOPE_SPLIT_UNAPPROVED} | {해당 없음/수동 결정 필요} | {🚫 SURFACE_CLASSIFICATION_MISSING} | — | {있음/없음} | {사유} |
 
 ### 검토 근거 및 상세 내역
 
