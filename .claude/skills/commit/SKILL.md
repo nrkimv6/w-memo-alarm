@@ -52,7 +52,7 @@ PowerShell 발급 예시:
 $grantCommit = Join-Path (Get-Location) ".claude\hooks\grant-commit.ps1"
 $grantReason = "user-prompt:사용자가 요청한 변경 파일을 확인하고 명시 커밋으로 저장"
 if (Test-Path $grantCommit) {
-  & $grantCommit --reason $grantReason
+  & $grantCommit -Reason $grantReason
   if ($LASTEXITCODE -ne 0) { throw "commit sentinel grant failed: $grantReason" }
 } else {
   Write-Host "no-sentinel-hook: $grantCommit"
@@ -65,7 +65,7 @@ git add <files>
 $grantCommit = Join-Path (Get-Location) ".claude\hooks\grant-commit.ps1"
 $grantReason = "user-prompt:사용자가 요청한 변경 파일을 확인하고 명시 커밋으로 저장"
 if (Test-Path $grantCommit) {
-  & $grantCommit --reason $grantReason
+  & $grantCommit -Reason $grantReason
   if ($LASTEXITCODE -ne 0) { throw "commit sentinel grant failed: $grantReason" }
 } else {
   Write-Host "no-sentinel-hook: $grantCommit"
@@ -76,19 +76,19 @@ if (Test-Path $grantCommit) {
 Bash에서 powershell.exe 경유:
 ```bash
 git add <files>
-powershell.exe -Command "Set-Location 'D:\work\project\service\wtools'; $grantCommit = Join-Path (Get-Location) '.claude\hooks\grant-commit.ps1'; $grantReason = 'user-prompt:사용자가 요청한 변경 파일을 확인하고 명시 커밋으로 저장'; if (Test-Path $grantCommit) { & $grantCommit --reason $grantReason; if ($LASTEXITCODE -ne 0) { throw \"commit sentinel grant failed: $grantReason\" } } else { Write-Host \"no-sentinel-hook: $grantCommit\" }; & 'D:\work\project\tools\common\commit.ps1' '커밋 메시지'"
+powershell.exe -Command "Set-Location 'D:\work\project\service\wtools'; $grantCommit = Join-Path (Get-Location) '.claude\hooks\grant-commit.ps1'; $grantReason = 'user-prompt:사용자가 요청한 변경 파일을 확인하고 명시 커밋으로 저장'; if (Test-Path $grantCommit) { & $grantCommit -Reason $grantReason; if ($LASTEXITCODE -ne 0) { throw \"commit sentinel grant failed: $grantReason\" } } else { Write-Host \"no-sentinel-hook: $grantCommit\" }; & 'D:\work\project\tools\common\commit.ps1' '커밋 메시지'"
 ```
 
 ### 2순위: commit.sh (공용, fallback)
 ```bash
 # ⚠️ 반드시 cd로 레포 디렉토리 이동 후 실행!
-cd "/d/work/project/service/wtools" && git add <files> && powershell.exe -Command "$grantCommit = Join-Path (Get-Location) '.claude\hooks\grant-commit.ps1'; $grantReason = 'user-prompt:사용자가 요청한 변경 파일을 확인하고 명시 커밋으로 저장'; if (Test-Path $grantCommit) { & $grantCommit --reason $grantReason; if ($LASTEXITCODE -ne 0) { throw \"commit sentinel grant failed: $grantReason\" } } else { Write-Host \"no-sentinel-hook: $grantCommit\" }" && bash "/d/work/project/tools/common/commit.sh" "커밋 메시지"
+cd "/d/work/project/service/wtools" && git add <files> && powershell.exe -Command "$grantCommit = Join-Path (Get-Location) '.claude\hooks\grant-commit.ps1'; $grantReason = 'user-prompt:사용자가 요청한 변경 파일을 확인하고 명시 커밋으로 저장'; if (Test-Path $grantCommit) { & $grantCommit -Reason $grantReason; if ($LASTEXITCODE -ne 0) { throw \"commit sentinel grant failed: $grantReason\" } } else { Write-Host \"no-sentinel-hook: $grantCommit\" }" && bash "/d/work/project/tools/common/commit.sh" "커밋 메시지"
 ```
 
 ### 3순위: commit.sh (로컬, 최후 fallback)
 ```bash
 # 공용 스크립트가 모두 없을 때 스킬 폴더 내 commit.sh 사용
-cd "/d/work/project/service/wtools" && git add <files> && powershell.exe -Command "$grantCommit = Join-Path (Get-Location) '.claude\hooks\grant-commit.ps1'; $grantReason = 'user-prompt:사용자가 요청한 변경 파일을 확인하고 명시 커밋으로 저장'; if (Test-Path $grantCommit) { & $grantCommit --reason $grantReason; if ($LASTEXITCODE -ne 0) { throw \"commit sentinel grant failed: $grantReason\" } } else { Write-Host \"no-sentinel-hook: $grantCommit\" }" && bash "/d/work/project/service/wtools/.claude/skills/commit/commit.sh" "커밋 메시지"
+cd "/d/work/project/service/wtools" && git add <files> && powershell.exe -Command "$grantCommit = Join-Path (Get-Location) '.claude\hooks\grant-commit.ps1'; $grantReason = 'user-prompt:사용자가 요청한 변경 파일을 확인하고 명시 커밋으로 저장'; if (Test-Path $grantCommit) { & $grantCommit -Reason $grantReason; if ($LASTEXITCODE -ne 0) { throw \"commit sentinel grant failed: $grantReason\" } } else { Write-Host \"no-sentinel-hook: $grantCommit\" }" && bash "/d/work/project/service/wtools/.claude/skills/commit/commit.sh" "커밋 메시지"
 ```
 
 **참고**: 모든 commit.sh는 commit.ps1과 동일한 기능을 수행합니다.
@@ -149,7 +149,7 @@ cd "D:\work\project\service\wtools"
 git add app/routes/monitor.py
 $grantCommit = Join-Path (Get-Location) ".claude\hooks\grant-commit.ps1"
 $grantReason = "user-prompt:사용자가 요청한 모니터링 API 변경 파일을 확인하고 저장"
-if (Test-Path $grantCommit) { & $grantCommit --reason $grantReason } else { Write-Host "no-sentinel-hook: $grantCommit" }
+if (Test-Path $grantCommit) { & $grantCommit -Reason $grantReason } else { Write-Host "no-sentinel-hook: $grantCommit" }
 & "D:\work\project\tools\common\commit.ps1" "feat: 모니터링 API 추가"
 ```
 
@@ -161,12 +161,12 @@ powershell.exe -Command "Set-Location 'D:\work\project\service\wtools'; & 'D:\wo
 # 2순위: 공용 commit.sh (반드시 cd 먼저)
 cd "/d/work/project/service/wtools"
 git add app/routes/monitor.py
-powershell.exe -Command "$grantCommit = Join-Path (Get-Location) '.claude\hooks\grant-commit.ps1'; $grantReason = 'user-prompt:사용자가 요청한 모니터링 API 변경 파일을 확인하고 저장'; if (Test-Path $grantCommit) { & $grantCommit --reason $grantReason; if ($LASTEXITCODE -ne 0) { throw \"commit sentinel grant failed: $grantReason\" } } else { Write-Host \"no-sentinel-hook: $grantCommit\" }"
+powershell.exe -Command "$grantCommit = Join-Path (Get-Location) '.claude\hooks\grant-commit.ps1'; $grantReason = 'user-prompt:사용자가 요청한 모니터링 API 변경 파일을 확인하고 저장'; if (Test-Path $grantCommit) { & $grantCommit -Reason $grantReason; if ($LASTEXITCODE -ne 0) { throw \"commit sentinel grant failed: $grantReason\" } } else { Write-Host \"no-sentinel-hook: $grantCommit\" }"
 bash "/d/work/project/tools/common/commit.sh" "feat: 모니터링 API 추가"
 
 # 3순위: 로컬 commit.sh (공용 스크립트 없을 때)
 cd "/d/work/project/service/wtools"
 git add app/routes/monitor.py
-powershell.exe -Command "$grantCommit = Join-Path (Get-Location) '.claude\hooks\grant-commit.ps1'; $grantReason = 'user-prompt:사용자가 요청한 모니터링 API 변경 파일을 확인하고 저장'; if (Test-Path $grantCommit) { & $grantCommit --reason $grantReason; if ($LASTEXITCODE -ne 0) { throw \"commit sentinel grant failed: $grantReason\" } } else { Write-Host \"no-sentinel-hook: $grantCommit\" }"
+powershell.exe -Command "$grantCommit = Join-Path (Get-Location) '.claude\hooks\grant-commit.ps1'; $grantReason = 'user-prompt:사용자가 요청한 모니터링 API 변경 파일을 확인하고 저장'; if (Test-Path $grantCommit) { & $grantCommit -Reason $grantReason; if ($LASTEXITCODE -ne 0) { throw \"commit sentinel grant failed: $grantReason\" } } else { Write-Host \"no-sentinel-hook: $grantCommit\" }"
 bash "/d/work/project/service/wtools/.claude/skills/commit/commit.sh" "feat: 모니터링 API 추가"
 ```

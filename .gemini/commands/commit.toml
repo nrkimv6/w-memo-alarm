@@ -35,7 +35,7 @@ prompt = """
 ## 주의사항
 
 - **git commit 직접 사용 금지**: 반드시 커밋 스크립트 사용
-- **sentinel 발급 필수**: `commit.ps1`/`commit.sh` 호출 직전에 `grant-commit.ps1 --reason "user-prompt:<요약 30자 이상>"`을 실행한다. helper가 없으면 `no-sentinel-hook`을 남긴다.
+- **sentinel 발급 필수**: `commit.ps1`/`commit.sh` 호출 직전에 `grant-commit.ps1 -Reason "user-prompt:<요약 30자 이상>"`을 실행한다. helper가 없으면 `no-sentinel-hook`을 남긴다.
 - **커밋 단위**: 작게, phase별 여러 개 가능
 - **스테이징 필수**: 스크립트 실행 전 `git add` 필요
 

@@ -478,7 +478,7 @@ PowerShell 발급 예시:
 $grantCommit = Join-Path (Get-Location) ".claude\hooks\grant-commit.ps1"
 $grantReason = "done-archive:<plan-slug> archive TODO DONE 문서 이동과 완료 기록 커밋"
 if (Test-Path $grantCommit) {
-  & $grantCommit --reason $grantReason
+  & $grantCommit -Reason $grantReason
   if ($LASTEXITCODE -ne 0) { throw "commit sentinel grant failed: $grantReason" }
 } else {
   Write-Host "no-sentinel-hook: $grantCommit"

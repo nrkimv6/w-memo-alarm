@@ -235,6 +235,21 @@ advisory evidence가 있으면 아래 3단계를 검증한다:
 - 결과표 `surface isolation` 칸에는 판정값만 쓰지 말고 `surface_count={N}; child_count={M}; parent_residue={0|N}` evidence를 함께 남긴다. 예: `split-applied (surface_count=3; child_count=3; parent_residue=0)`.
 - surface 분류 판정값 (`공통 정책` / `모델별 메커니즘` / `분류 모호` / `🚫 누락: SURFACE_CLASSIFICATION_MISSING`)을 결과표 `surface 분류` 칸에 기록한다.
 
+**PLAN_SPLIT_GATE 보정 가능 실패 처리:**
+
+| gate code | deterministic 보정 가능 | 사용자 결정 필요 |
+|---|---|---|
+| `SURFACE_CLASSIFICATION_MISSING` | wtools authoring surface 변경 사실이 명확하고 plan 본문 근거로 `공통 정책`, `모델별 메커니즘`, `분류 모호` 중 하나를 추가할 수 있음 | surface 책임 범위가 모호하거나 사용자가 의도한 cross-model sync 범위를 선택해야 함 |
+| `SURFACE_SPLIT_COUNT_MISMATCH` | 실행 범위 보존, child 링크 생성 가능, owner/read-back gate 유지 가능 조건이 모두 충족되어 surface별 `_todo-N.md` 링크 또는 sibling child를 같은 턴에서 보정할 수 있음 | 어떤 surface를 현재 plan에서 제외할지, detach할지, 별도 plan으로 보낼지 사용자 결정이 필요함 |
+| `PARENT_EXECUTION_CHECKBOX_RESIDUE` | parent의 실행 체크박스를 child로 옮기거나 coordination-only 문구로 바꿔도 실행 범위와 owner/read-back gate가 보존됨 | parent가 직접 소유해야 하는 실행 항목인지 child로 이관해야 하는지 판정 근거가 부족함 |
+
+- `SURFACE_CLASSIFICATION_MISSING`, `SURFACE_SPLIT_COUNT_MISMATCH`, `PARENT_EXECUTION_CHECKBOX_RESIDUE`가 deterministic 보정 가능이면 실패표만 반환하지 않는다. 같은 턴에서 입력 plan/TODO 계약 문구를 보정하고 `corrected_and_rechecked`로 재검토를 계속한다.
+- 실행 범위 보존, child 링크 생성 가능, owner/read-back gate 유지 가능이면 보정 가능한 failure gate다. 이 상태를 최종 실패표만 반환하고 종료하면 `REVIEW_PLAN_FAILURE_ONLY_CLOSEOUT_BLOCKED`로 간주한다.
+- deterministic 보정 직후 같은 `PLAN_SPLIT_GATE` 검사를 재실행한다. 재검사 통과 전에는 `/expand-todo` 호출과 commit closeout을 금지한다.
+- expand 전 재평가 결과는 결과표 비고 또는 `surface isolation` 칸에 `surface_count={N}; child_count={M}; parent_residue={0|N}`로 남긴다.
+- failure 보정 경로에서 수정한 입력 plan/TODO exact path는 touched set에 추가한다. `Closeout Evidence`에는 보정 commit hash 또는 commit 실패 사유를 반드시 기록한다.
+- foreign dirty는 baseline으로 보존하고, 보정 대상 exact path만 stage/commit한다. scoped commit evidence가 없으면 failure-only closeout 방지 gate를 통과한 것으로 보지 않는다.
+
 **재검토 실패 시:**
 - 해당 계획서 파일은 유지한다. 자동 삭제/재생성하지 않는다.
 - 로컬 drift 충돌, related-plan 충돌, 입력 누락 같은 실패 사유를 결과표와 종료 메시지에 그대로 남긴다.

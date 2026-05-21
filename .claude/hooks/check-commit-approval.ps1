@@ -120,6 +120,6 @@ foreach ($token in $tokens) {
 
 Write-Host ""
 Write-Host "[BLOCKED] commit requires explicit approval sentinel." -ForegroundColor Red
-Write-Host "Run .claude\hooks\grant-commit.ps1 --reason ""user-prompt:<요약 30자 이상>"" immediately before commit.ps1/commit.sh." -ForegroundColor Yellow
+Write-Host "Run .claude\hooks\grant-commit.ps1 -Reason ""user-prompt:<요약 30자 이상>"" immediately before commit.ps1/commit.sh." -ForegroundColor Yellow
 Write-Host "Matched command: $commandText" -ForegroundColor DarkYellow
 exit 1

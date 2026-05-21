@@ -66,6 +66,18 @@ Preflight and cleanup evidence must come from helper CLI contracts before any me
 | docs lineage/cleanup commit | `merge-test:docs:<branch> docs cleanup <요약>` |
 | post-merge repair commit | `merge-test:repair:<branch> post merge repair <요약>` |
 
+PowerShell 발급 예시:
+```powershell
+$grantCommit = Join-Path (Get-Location) ".claude\hooks\grant-commit.ps1"
+$grantReason = "merge-test:<branch> merge completion staged ownership 검증 후 머지 커밋"
+if (Test-Path $grantCommit) {
+  & $grantCommit -Reason $grantReason
+  if ($LASTEXITCODE -ne 0) { throw "commit sentinel grant failed: $grantReason" }
+} else {
+  Write-Host "no-sentinel-hook: $grantCommit"
+}
+```
+
 → 상단 STOP/CONTINUE Decision Table 우선. 이 섹션은 세부 근거 참조용.
 
 ## Blocker Classification Contract

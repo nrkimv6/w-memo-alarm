@@ -49,6 +49,18 @@ Preflight and cleanup evidence must come from helper CLI contracts before any me
 | docs lineage/cleanup commit | `merge-test:docs:<branch> docs cleanup <요약>` |
 | post-merge repair commit | `merge-test:repair:<branch> post merge repair <요약>` |
 
+PowerShell 발급 예시:
+```powershell
+$grantCommit = Join-Path (Get-Location) ".claude\hooks\grant-commit.ps1"
+$grantReason = "merge-test:<branch> merge completion staged ownership 검증 후 머지 커밋"
+if (Test-Path $grantCommit) {
+  & $grantCommit -Reason $grantReason
+  if ($LASTEXITCODE -ne 0) { throw "commit sentinel grant failed: $grantReason" }
+} else {
+  Write-Host "no-sentinel-hook: $grantCommit"
+}
+```
+
 ## Blocker Classification Contract
 
 - `merge-test-preflight.ps1 -Json`의 `blocker_type`, `local_merge_possible`, `remote_diverged`, `push_blocked`, `direct_root_commit_blocked`, `failed_command`, `failed_exit_code`, `failed_stderr_excerpt`를 읽기 전에는 `머지 막힘`, `merge blocked`, `blocked`로 local merge 실패를 선언하지 않는다.

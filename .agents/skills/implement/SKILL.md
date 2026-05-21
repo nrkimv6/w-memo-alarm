@@ -245,7 +245,26 @@ Gate: branch/worktree present -> /merge-test; absent -> /done
 
 **Same-turn owner chain contract:** 위 조건에서 수동 `/implement`는 설명-only 종료가 아니라 `implement -> merge-test -> done` 실행 chain을 계속 탄다. `/merge-test`가 archive/TODO/DONE 후처리까지 끝내거나 hard blocker를 반환하기 전까지 `leaf 완료`, `T1/T2/T3 통과`, `머지대기 전이` 같은 중간 성공은 closeout으로 말하지 않는다. 종료 직전 read-back은 `remaining executable leaf`, `remaining targets`, `next owner step`, `remote evidence`를 출력하되, 실행 가능한 `/merge-test` 또는 `/done` next owner가 있으면 계속 실행한다.
 
-**Final response preflight gate:** final response 직전에는 `remaining executable leaf`, `remaining targets`, `branch/worktree`, `next owner step`, `remote evidence`를 다시 계산한다. `next owner step=/merge-test`이면 final response 대신 exact local `merge-test` skill을 읽고 실행한다. `merge-test executed`, `hard blocker`, `user explicit stop` 중 하나가 evidence로 남기 전에는 final을 금지한다.
+**Final response preflight gate:** final response 직전에는 아래 값을 새로 계산하고 closeout evidence에 남긴다. 이 표는 final summary용 장식이 아니라 hard gate다.
+
+| field | required evidence | final rule |
+|---|---|---|
+| `remaining executable leaf` | current target leaf 재파싱 결과 | `> 0`이면 final 금지, 다음 leaf 계속 실행 |
+| `remaining targets` | session target ledger 재계산 결과 | `> 0`이면 final 금지, 다음 target 계속 실행 |
+| `worktree branches` | `branch/worktree` header 및 현재 linked worktree read-back | branch/worktree가 있으면 `next_owner` 후보는 `/merge-test` |
+| `next_owner` | `/merge-test`, `/done`, user approval owner, 또는 `none` | `next_owner != none`이면 final summary가 아니라 continuation dispatch 입력 |
+| `hard_blocker` | blocker code와 failed command/evidence | `true`일 때만 owner-chain 미실행 final 허용 |
+| `user_stop` | 사용자 explicit stop 또는 pause 발화 read-back | `true`일 때만 owner-chain 미실행 final 허용 |
+| `owner_executed` | `/merge-test executed`, `/done executed`, 또는 승인 owner 처리 evidence | `false`이고 `next_owner != none`이면 final 금지 |
+| `skill_path_used` | 이번 턴에 실제 Read한 `/implement` skill 절대경로 | closeout evidence 필수 |
+| `expected_project_skill_path` | project-local `.agents/skills/implement/SKILL.md` 또는 사용자가 명시한 exact skill path | closeout evidence 필수 |
+| `skill_precedence_ok` | `skill_path_used == expected_project_skill_path` 또는 project-local 없음 사유 | `false`이면 `skill_precedence_violation`으로 final 금지 |
+
+`next_owner != none && owner_executed=false`이면 final response를 금지하고 해당 owner skill을 즉시 실행한다. `next_owner step=/merge-test`이면 final response 대신 exact local `merge-test` skill을 읽고 실행한다. "다음 owner step", "다음 owner는 /merge-test" 같은 문장은 final summary가 아니라 continuation dispatch evidence다. 실제 owner 실행 없이 이 문장만 남기면 `incident_class=owner_chain_not_executed`로 실패한다.
+
+Project-local skill path precedence도 final-preflight의 일부다. project-local skill path가 존재하면 같은 이름의 global duplicate skill(`C:\Users\Narang\.codex\skills\implement\SKILL.md` 등)을 사용하지 않는다. 사용자가 exact skill path를 명시한 경우와 task-trigger로 `/implement`가 자동 선택된 경우 모두 `skill_path_used`, `expected_project_skill_path`, `skill_precedence_ok`를 남긴다. `skill_precedence_ok=false`이면 `skill_precedence_violation`으로 final 응답을 금지하고 expected local skill을 다시 읽은 뒤 `remaining executable leaf`, `remaining targets`, `worktree branches`, `next_owner`, `hard_blocker`, `user_stop`, `owner_executed`를 재계산한다.
+
+Final 허용 override는 `hard_blocker=true`, `user_explicit_stop=true`, `owner_executed=true` 세 가지뿐이다. `targeted tests passed`, `worktree clean`, `plan progress committed`, `머지대기`, `구현 커밋 완료`는 override가 아니다. 여러 브랜치가 남아 있어 merge order 계산이 필요해도 hard blocker가 아니라 `/merge-test` owner 입력이다.
 
 **Subagent owner-chain reread marker:** subagent 결과 수집, 코드 커밋, plan progress commit, targeted tests passed, worktree clean 같은 중간 성공 이후에도 owner-chain read-back을 다시 수행한다. 추가 dirty/post-merge 보강이 발견되면 final 전에 owner worktree 또는 `/merge-test` 단계로 라우팅한다.
 
