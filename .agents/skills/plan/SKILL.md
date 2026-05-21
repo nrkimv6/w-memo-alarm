@@ -11,6 +11,13 @@ description: "계획 문서 작성. Use when: 계획해, plan, 아이디어, 기
 
 direct invocation 시 같은 이름의 global/duplicate skill(`C:\Users\Narang\.codex\skills\plan\SKILL.md` 등)을 대체 사용하지 않는다. 별도 공통 skill 정의가 필요한 경우가 아니면 wtools 로컬 `.agents/skills/plan` 원본을 우선한다.
 
+## Draft-first Authoring Guidance
+
+- 새 plan은 먼저 `초안` 또는 `검토대기` 상태의 draft-first authoring 산출물로 작성한다. 사용자가 명시적으로 승인하기 전까지 draft 내용은 구현 승인, mutation approval, git mutation approval로 해석하지 않는다.
+- 상담성/탐색성 요구는 `검토 옵션/제안 (미승인)`에 둔다. 승인된 요구사항과 미승인 제안은 같은 TODO나 완료 조건으로 합치지 않는다.
+- draft-first 상태에서도 실행 가능한 계약 문장은 구체적으로 쓰되, `적용해`, `구현해`, `요구사항으로 넣어`, `기능 롤백 승인` 같은 후속 명시 승인 evidence가 없으면 code/git/DB mutation 지시로 승격하지 않는다.
+- review-plan이 draft를 검토할 수 있도록 `승인된 요구사항`, `검토 옵션/제안 (미승인)`, `수행하지 않을 작업`, `approval evidence`를 분리한다.
+
 ## 분할 진입 게이트
 
 계획서 생성/수정 중 child plan 또는 `_todo-N.md` 분할 가능성이 보이면, 규모/Phase/project 분리 판단 전에 이 게이트를 먼저 통과한다.
@@ -32,6 +39,7 @@ direct invocation 시 같은 이름의 global/duplicate skill(`C:\Users\Narang\.
 - 기존 staged/dirty docs가 있어도 closeout 보류 사유가 아니다. `Begin` baseline은 보존하고, 이번 direct invocation이 실제로 수정한 `TouchedFiles`만 선택 커밋한다. baseline dirty는 stage, commit, clean, reset하지 않는다.
 - `Commit` 성공 또는 no-op summary와 `docs-dirty-guard: mode=End status=ok` evidence가 모두 확보되기 전에는 `6단계: 안내`와 성공 응답을 금지한다. `End`가 baseline 외 dirty 또는 staged diff를 보고하면 성공 응답을 금지하고 blocker로 보고한다.
 - 최종 응답에는 생성/수정된 plan/TODO/DONE 경로, commit hash 또는 `Commit status=no-op`, 그리고 `docs-dirty-guard: mode=End status=ok` evidence를 필수 closeout evidence로 포함한다.
+- shared docs guard mode references는 `Begin`, `Commit`, `End`만 canonical이다. plan 결과표와 closeout에서는 `docs-dirty-guard: mode=Begin`, `docs-dirty-guard: mode=Commit`, `docs-dirty-guard: mode=End` spelling을 유지한다.
 
 ## 트리거
 

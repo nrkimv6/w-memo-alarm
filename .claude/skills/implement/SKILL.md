@@ -221,6 +221,9 @@ Claude가 구현 요청 받으면:
 - `TrackingItem id=5 삭제` 같은 특정 DB item 조치는 기능 코드 변경과 별도 approval unit으로 분리한다.
 - 기능 제거, scheduler 경로 삭제, commit revert, migration 제거는 `기능 롤백 승인` 또는 동등한 명시 문장이 있어야 실행한다. `재발 방지`, `정리`, `cleanup` 같은 일반 표현만으로 `feature_rollback`을 승인한 것으로 보지 않는다.
 - 같은 발화에 데이터 정리와 기능 rollback이 함께 있으면 두 approval unit으로 분리하고, 승인 근거가 없는 unit은 실행하지 않는다.
+- investigation approval is not mutation approval: `조사`, `검토`, `현황 확인`, `가능 여부 확인`은 read-only 승인이다. code/git/DB mutation을 하려면 별도의 mutation approval evidence가 필요하다.
+- main-branch mutation gate: 원본 main worktree에서는 code mutation, `git add`, `git stash`, `git worktree add/remove`, `commit.ps1`를 실행하지 않는다. main worktree git/code mutation은 `MAIN_WORKTREE_MUTATION_BLOCKED`로 중단하고, linked worktree 또는 docs commit root로 라우팅한다.
+- docs-only mutation도 docs commit root가 `.worktrees/plans`이면 그 cwd에서만 수행한다. main worktree에서 plans docs를 대신 stage/commit하지 않는다.
 
 **0. 사용자가 구현할 항목을 명시했는가?**
 
@@ -274,6 +277,7 @@ Claude가 구현 요청 받으면:
    > 루트에서 `git switch impl/*`, `git checkout impl/*`, `git switch -c impl/*`, `git checkout -b impl/*` 실행을 금지한다.
    > impl/plan 브랜치 작업은 `.worktrees/...` 경로에서만 허용한다.
    > 루트가 `main`이 아니면 자동 전환하지 말고 즉시 중단 후 사용자에게 보고한다.
+   > main-branch mutation gate: 원본 main worktree에서 code/git mutation 요청을 받으면 `MAIN_WORKTREE_MUTATION_BLOCKED`를 보고하고 worktree 확보 전에는 진행하지 않는다.
 
    **A. plan-runner 환경 감지:**
    - 환경변수 `PLAN_RUNNER_WORKTREE_PATH`가 설정되어 있고 **AND** 해당 경로가 현재 프로젝트의 `.worktrees/` 하위인 경우에만 → 이 단계 전체 **스킵** (이미 격리됨)

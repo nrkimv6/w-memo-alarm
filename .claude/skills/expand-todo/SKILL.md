@@ -32,6 +32,7 @@ Phase insertion triggers must be treated as advisory evidence first. Use `common
 - 변경 발생 시 guard `Commit` summary의 commit hash를 출력에 포함한다. PowerShell canonical은 `D:\work\project\tools\common\commit.ps1 -Files`를 경유한다.
 - 변경이 없으면 guard `Commit status=no-op` 또는 `End status=ok` 결과를 포함한다.
 - 최종 응답 직전 `End`를 호출한다. commit hash, `no-op`, 또는 `End status=ok` 결과를 출력하지 못하면 성공 종료하지 않는다.
+- shared docs guard mode references는 `Begin`, `Commit`, `End`만 canonical이다. 출력과 evidence에서는 `docs-dirty-guard: mode=Begin`, `docs-dirty-guard: mode=Commit`, `docs-dirty-guard: mode=End` spelling을 유지한다.
 
 ### PowerShell helper 인자 예시
 

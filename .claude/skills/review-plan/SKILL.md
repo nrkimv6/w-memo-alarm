@@ -39,6 +39,15 @@ Regex and keyword detections are advisory evidence unless a helper contract expl
 `/reflect`에서 호출 시, reflect가 생성한 계획서 경로 목록이 자동 전달된다.
 독립 호출 시: `review-plan {경로}` 형식으로 경로를 직접 지정한다.
 
+### 입력 coverage gate (공통 정책)
+
+- 호출 시 받은 모든 명시 입력 경로를 `declared_input_paths`로 고정하고, fallback/대표 plan child enumeration으로 발견한 경로는 `expanded_input_paths`로 별도 기록한다.
+- 각 입력 plan은 canonical absolute path로 normalize하고 `exists/readable`, `parent_plan`, `child_plans`, `coverage_status`를 결과표 또는 closeout evidence에 남긴다.
+- parent plan에 `> **실행 TODO:**` 링크가 있거나 sibling `_todo-N.md`가 존재하면 parent/child coverage ledger를 만든다. ledger 컬럼은 최소 `declared`, `expanded`, `processed`, `skipped`, `blocked`, `remaining`을 포함한다.
+- 입력으로 들어온 path가 하나라도 `processed` 또는 명시적 `blocked`로 분류되지 않으면 `REVIEW_PLAN_INPUT_PATH_SKIPPED` hard-fail이다. `skipped` path를 남긴 채 성공 closeout, `검토완료`, `전체 통과`로 말하지 않는다.
+- parent만 처리하고 active child를 누락하거나, child만 처리하고 parent coverage를 기록하지 않으면 `REVIEW_PLAN_PARENT_CHILD_COVERAGE_MISSING`으로 실패 처리한다.
+- fallback으로 경로를 대체한 경우에도 original input과 resolved path를 함께 기록한다. resolved path가 없으면 해당 original input은 `blocked: missing_input_path`로 남기고 전체 성공 closeout을 금지한다.
+
 ### 입력 경로 fallback (키워드 기반)
 
 사용자가 계획서 경로를 직접 지정했는데 1차 탐색 결과가 0건이면, 파일명 기반 wtools 자산 fallback을 적용한다.
@@ -72,6 +81,7 @@ Regex and keyword detections are advisory evidence unless a helper contract expl
 - 각 `/expand-todo` 호출 직후 touched exact path set만 `Commit`에 전달한다. PowerShell canonical은 `D:\work\project\tools\common\commit.ps1 -Files`를 경유한다.
 - 성공 종료 직전 `End`를 호출한다. touched whitelist dirty를 commit할 수 없거나 `End`가 새 unowned dirty/staged diff를 보고하면 hard-fail한다.
 - unrelated active plan dirty는 baseline으로만 취급하고 읽기/수정/stage 대상에서 제외한다. 이번 입력 plan 변경만 guard-owned dirty로 commit한다.
+- `Begin`, `Commit`, `End` mode 이름은 shared docs guard mode references의 canonical spelling이다. skill 문서와 결과표에서는 `docs-dirty-guard: mode=Begin`, `docs-dirty-guard: mode=Commit`, `docs-dirty-guard: mode=End` evidence를 같은 이름으로 인용한다.
 
 ### PowerShell helper 인자 예시
 
@@ -241,6 +251,9 @@ advisory evidence가 있으면 아래 3단계를 검증한다:
 - 로컬 drift 충돌, related-plan 충돌, 입력 누락 같은 실패 사유를 결과표와 종료 메시지에 그대로 남긴다.
 - 현재 입력 계획서에 deterministic한 보정이 이미 반영된 경우, 이후 단계는 그 보정된 파일을 기준으로 판단한다.
 - 실패 사유 자체를 계획서 본문에 `재검토 기록` 형태로 남기지 않는다. 계획서에는 실행 계약으로 번역 가능한 변경만 남긴다.
+- deterministic correction allowed 상태에서는 실패-only closeout을 금지한다. `보정 가능`, `deterministic correction allowed`, `보정 반영` 중 하나로 판정한 항목은 같은 턴에서 plan 계약 문구를 보정하고 재검토를 계속하거나, 왜 보정이 불가능한지 `blocked` 사유를 남긴다.
+- `failure-only closeout prevention`: deterministic하게 고칠 수 있는 누락을 결과표 실패로만 보고하고 `Closeout Evidence`를 닫는 것은 금지다. 보정 가능한 입력 누락, parent/child coverage 누락, live phase fence 위치 오류, surface 분류 누락은 `corrected_and_rechecked` 또는 `blocked:{code}` 중 하나로 닫는다.
+- `REVIEW_PLAN_FAILURE_ONLY_CLOSEOUT_BLOCKED`: `expand` 미실행, `status_after` 비어 있음, `commit_hash` 없음, 또는 `remaining_owner` 누락만 있는 실패표는 closeout evidence가 아니다.
 
 ### 1.5단계: 헤더 형식 검증 (owner set 허용)
 
@@ -371,9 +384,10 @@ expand-todo의 5.6단계가 expand 결과를 자체 커밋한다. review-plan의
 - 사용자가 `커밋해`, `검토완료 상태`, `초안 아닌가요`처럼 closeout 재지시를 한 경우, Q5/Q6 escalation evidence로 결과표 `비고` 열에 기록하고 **같은 턴에서 상태 전이와 커밋을 계속 진행**한다.
 
 **Closeout evidence 컬럼:**
-- 각 입력 plan에 대해 `plan`, `status_before`, `status_after`, `commit_hash`, `remaining_owner`를 closeout evidence 표에 기록한다.
+- 각 입력 plan에 대해 `plan`, `status_before`, `status_after`, `commit_hash`, `remaining_owner`, `input_coverage`를 closeout evidence 표에 기록한다.
 - `.worktrees/plans` 대상 plan이면 그 cwd에서 `commit.ps1`을 호출한다. 커밋 실패 또는 staged ownership mismatch가 발생하면 성공으로 표시하지 않는다.
 - `status_after`가 `검토완료` 또는 보류 사유 없이 비어 있으면 closeout 완료로 보고하지 않는다.
+- `input_coverage`가 `declared={N}; expanded={M}; processed={K}; skipped=0; remaining=0` 형태가 아니거나, `skipped>0`이면 closeout 완료로 보고하지 않는다.
 
 ## 출력 형식
 
@@ -416,9 +430,9 @@ expand-todo의 5.6단계가 expand 결과를 자체 커밋한다. review-plan의
 
 ### Closeout Evidence
 
-| plan | status_before | status_after | commit_hash | remaining_owner |
-|------|---------------|--------------|-------------|-----------------|
-| {파일명} | {이전 상태} | {`검토완료` 또는 `보류: {사유}`} | {hash 또는 `실패: {사유}`} | {다음 owner 또는 없음} |
+| plan | status_before | status_after | commit_hash | remaining_owner | input_coverage |
+|------|---------------|--------------|-------------|-----------------|----------------|
+| {파일명} | {이전 상태} | {`검토완료` 또는 `보류: {사유}`} | {hash 또는 `실패: {사유}`} | {다음 owner 또는 없음} | declared={N}; expanded={M}; processed={K}; skipped=0; remaining=0 |
 ```
 
 ## 주의사항

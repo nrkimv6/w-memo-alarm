@@ -9,5 +9,19 @@
   "toolPermissions": {
     "alwaysAllow": ["ReadFileTool", "ShellTool(ls)", "ShellTool(cat)", "ShellTool(git *)"],
     "alwaysDeny": ["ShellTool(rm -rf *)"]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"common\\tools\\hooks\\plan-write-postcommit.ps1\" -Surface gemini",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
   }
 }

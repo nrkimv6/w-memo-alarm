@@ -11,6 +11,13 @@ description: "계획 문서 작성. Use when: 계획해, plan, 아이디어, 기
 
 direct invocation 시 같은 이름의 global/duplicate skill(`C:\Users\Narang\.codex\skills\plan\SKILL.md` 등)을 대체 사용하지 않는다. 별도 공통 skill 정의가 필요한 경우가 아니면 wtools 로컬 `.claude/skills/plan` 원본을 우선한다.
 
+## Draft-first Authoring Guidance
+
+- 새 plan은 먼저 `초안` 또는 `검토대기` 상태의 draft-first authoring 산출물로 작성한다. 사용자가 명시적으로 승인하기 전까지 draft 내용은 구현 승인, mutation approval, git mutation approval로 해석하지 않는다.
+- 상담성/탐색성 요구는 `검토 옵션/제안 (미승인)`에 둔다. 승인된 요구사항과 미승인 제안은 같은 TODO나 완료 조건으로 합치지 않는다.
+- draft-first 상태에서도 실행 가능한 계약 문장은 구체적으로 쓰되, `적용해`, `구현해`, `요구사항으로 넣어`, `기능 롤백 승인` 같은 후속 명시 승인 evidence가 없으면 code/git/DB mutation 지시로 승격하지 않는다.
+- review-plan이 draft를 검토할 수 있도록 `승인된 요구사항`, `검토 옵션/제안 (미승인)`, `수행하지 않을 작업`, `approval evidence`를 분리한다.
+
 ## 대화형 plan 분할 진입 게이트 (PLAN_SPLIT_GATE)
 
 사용자 발화 또는 slash command 흐름에서 기존 plan을 분할하려는 순간에는 파일을 만들기 전에 이 게이트를 먼저 적용한다.
@@ -29,6 +36,7 @@ direct invocation 시 같은 이름의 global/duplicate skill(`C:\Users\Narang\.
 - docs commit root는 실제 커밋 루트여야 한다. wtools 공통 문서가 `.worktrees/plans` 아래 있으면 `RepoRoot`는 main worktree가 아니라 `.worktrees/plans`다.
 - plan/TODO/DONE 수정 직후 touched exact path만 `-TouchedFiles`/`--touched-files`로 전달해 `Commit`을 호출한다. PowerShell 경로는 `D:\work\project\tools\common\commit.ps1 -Files`를 경유한다.
 - 최종 응답 직전에는 `End`를 호출한다. `End`가 baseline 외 dirty 또는 staged diff를 보고하면 성공 응답을 금지하고 blocker로 보고한다. 변경이 없으면 guard의 `no-op` 또는 `End status=ok` summary를 결과에 포함한다.
+- shared docs guard mode references는 `Begin`, `Commit`, `End`만 canonical이다. plan 결과표와 closeout에서는 `docs-dirty-guard: mode=Begin`, `docs-dirty-guard: mode=Commit`, `docs-dirty-guard: mode=End` spelling을 유지한다.
 
 ## 트리거
 

@@ -18,6 +18,15 @@ allowed-tools: Bash,Read
 | 2순위 | `commit.sh` (공용) | Bash | `D:\work\project\tools\common\commit.sh` |
 | 3순위 | `commit.sh` (로컬) | Bash | 스킬 폴더 내 `commit.sh` (이 파일과 같은 디렉토리) |
 
+## Mutation Approval And Main Branch Gate
+
+- investigation approval is not mutation approval: `조사`, `검토`, `현황 확인`, `가능 여부 확인`은 commit approval이 아니며 code/git/DB mutation 승인도 아니다. 사용자가 `커밋해`, `저장해`, `commit`, `적용해`처럼 mutation approval을 명시해야 한다.
+- main-branch mutation gate: commit skill도 `/implement`와 같은 main worktree 차단 계약을 따른다.
+- 원본 main worktree에서 code/git mutation을 커밋하려고 하면 `MAIN_WORKTREE_MUTATION_BLOCKED`로 중단한다. 구현 변경은 linked worktree에서만 stage/commit한다.
+- docs commit root가 `.worktrees/plans`이면 commit cwd도 `.worktrees/plans`다. main worktree cwd에서 `.worktrees/plans` 문서를 대신 `git add`/`commit.ps1` 하지 않는다.
+- wtools에서는 `git commit` 직접 호출 금지다. PowerShell canonical은 항상 `D:\work\project\tools\common\commit.ps1`이며, git guard/session 상태가 필요한 repo에서는 commit 전 guard evidence를 확인한다.
+- commit 전 `git diff --cached --name-status`와 current owner expected staged set을 read-back한다. 승인 범위 밖 path가 있으면 staged mismatch hard stop으로 중단한다.
+
 ## commit sentinel grant contract
 
 `commit.ps1` 또는 `commit.sh` 호출 직전에는 대상 repo의 `.claude\hooks\grant-commit.ps1` 존재 여부를 확인한다.
