@@ -19,10 +19,14 @@
      `[MANUAL]`, `(MANUAL)`, `*수동*`, `수동 테스트`
    - 해당 항목을 분리해 대상 프로젝트의 `MANUAL_TASKS.md` 파일에 추가한다.
 
-3. **아카이브 이동** (Shell) — 반드시 `git mv` 사용 (Move-Item/Remove-Item 금지 — git 히스토리 유실)
+3. **아카이브 이동** (Shell) — 반드시 `archive-plan.ps1` helper 사용
    - `.worktrees/plans/docs/archive` 또는 `{프로젝트}/docs/archive` 내의 경로를 확인(Read)한다.
-   - `powershell.exe -Command "git mv -f '{원본_plan_경로}' '{아카이브_대상_경로}'"` 를 실행하여 파일을 이동한다.
-   - `powershell.exe -Command "git add '{아카이브_대상_경로}'"` 를 실행하여 이동된 파일을 스테이징한다.
+   - `auto-done.ps1`을 사용할 수 없어도 `common\tools\archive-plan.ps1`은 단독 호출 가능하므로 먼저 helper 존재 여부를 확인한다.
+   - helper가 있으면 `powershell.exe -ExecutionPolicy Bypass -File "common\tools\archive-plan.ps1" -PlanFile "{원본_plan_경로}" -ArchiveFile "{아카이브_대상_경로}" -RepoRoot "{repo_root}" -Json` 를 실행한다.
+   - helper JSON에서 `status == "success"`, `archive_pair_ok == true`, `half_archived_state == false`를 모두 확인한다. 허용 reason은 `git_mv_pair`, `already_archived_resume`, `archive_move_no_op`이다.
+   - `archive_pair_ok=false`, `half_archived_state=true`, JSON parse 실패, helper exit code 실패는 `STATUS: FAILED`로 처리하고 `error_code`/`reason`/`message`를 출력한다.
+   - helper가 없으면 archive 이동을 진행하지 말고 read-only 진단(`Test-Path common\tools\archive-plan.ps1`, `git status --short`, 원본/대상 경로 존재 여부)만 수행한 뒤 `ARCHIVE_HELPER_UNAVAILABLE`로 실패한다.
+   - `archive-plan.ps1`은 내부에서만 `git mv -f --`를 수행하고 staged source deletion + archive destination pair를 검증한다. Gemini fallback은 직접 `git mv`, `Move-Item`, `Remove-Item`으로 archive 이동을 수행하지 않는다.
 
 4. **TODO 갱신** (Edit)
    - `{프로젝트}/TODO.md` 및 `wtools/TODO.md`에서 해당 plan 제목의 행을 제거하거나 상태를 완료로 변경한다.
@@ -35,7 +39,6 @@
 6. **커밋** (Shell)
    - 변경 사항을 `powershell.exe -Command "git add -A"` 후 커밋한다.
    - 커밋 스크립트 경로: `$env:WTOOLS_TOOLS_DIR\commit.ps1` (환경 변수 우선) 또는 `D:\work\project\tools\common\commit.ps1` (fallback)
-   - commit wrapper 호출 직전 대상 repo의 `.claude\hooks\grant-commit.ps1`을 확인한다. helper가 있으면 `done-archive:<plan-slug> <요약 30자 이상>` reason으로 새 sentinel을 발급하고, 없으면 `no-sentinel-hook: <path>` evidence를 남긴다.
    - 명령 예: `powershell.exe -ExecutionPolicy Bypass -File "$commitScriptPath" \"docs: archive completed plan — {제목}\"`
 
 ## 출력 형식
@@ -74,6 +77,8 @@ fallback 경로에서도 아래 4종 게이트는 우회되지 않는다:
 
 **fallback이 끄는 단계 vs 끄지 않는 단계:**
 - 끄는 것: `auto-done.ps1` 자동 실행 (수동 단계별 처리로 대체), version-bump (fallback에서 스킵)
-- 끄지 않는 것: archive 이동, TODO→DONE, plans/TODO.md 동기화, 커밋 (모두 수동으로 직접 실행)
+- 끄지 않는 것: `archive-plan.ps1` helper를 통한 archive 이동, TODO→DONE, plans/TODO.md 동기화, 커밋
+
+`auto-done.ps1` 불가 ≠ `archive-plan.ps1` 불가다. fallback은 wrapper 전체를 우회하더라도 archive 이동 단계에서는 helper 단독 호출을 정상 경로로 사용한다.
 
 > 상세 contract는 done skill mirror(`.claude/skills/done/SKILL.md`)를 따른다.

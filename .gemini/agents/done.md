@@ -8,6 +8,7 @@
 
 - plan 파일의 상태 변경, 아카이브 이동, TODO/DONE 갱신을 원자적으로 수행해야 한다.
 - 가급적 PowerShell 스크립트(`auto-done.ps1`)에 위임하여 처리한다.
+- `auto-done.ps1`은 archive 이동 시 내부에서 `common\tools\archive-plan.ps1` helper를 호출하며, Gemini는 archive를 직접 `git mv`로 처리하지 않는다.
 - **실행 환경: Windows + PowerShell**. bash 전용 명령(`xargs`, `find`, `grep -r`) 사용 금지. `run_shell_command`로 PowerShell 명령만 사용
 
 ## 실행 흐름

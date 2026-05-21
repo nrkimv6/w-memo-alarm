@@ -30,6 +30,22 @@ Deterministic setup, status, and advisory scanning must prefer helper CLI eviden
 
 > 중간 성공(T1/T2 통과, leaf 일부, 머지대기)은 판정 입력이 아니라 진행 업데이트다.
 
+## No-User-Reprompt Owner Result Table
+
+Deterministic next owner step이 있으면 같은 action을 사용자에게 다시 입력받지 않는다. 사용자가 이미 같은 세션에서 `진행해`, `해`, `계속`, `멈추지마`, `끝날 때까지` 같은 실행 의사를 남겼고 `hard blocker=false`이면, closeout은 설명으로 멈추지 않고 owner chain을 계속 실행한다.
+
+| phase | next_owner | mutation_ready | reprompt_required | blocker_code |
+|---|---|---|---|---|
+| implementation leafs complete | `/merge-test` when `branch/worktree` present | helper/read-back 기준 | `false` | `{none|hard blocker code}` |
+| implementation leafs complete | `/done` when `branch/worktree` absent | helper/read-back 기준 | `false` | `{none|hard blocker code}` |
+| deterministic receiver/archive read-back remains | receiver read-back or `/done` | helper/read-back 기준 | `false` | `{none|hard blocker code}` |
+| destructive action, diverged push-first, feature rollback, 데이터 삭제, ambiguous owner | user approval owner | `false` until approved | `true` | `{approval_required|DOWNSTREAM_DIVERGED_PUSH_BLOCKED|ambiguous_owner}` |
+
+- `remaining executable leaf=0`은 final 조건이 아니라 `next_owner` 재계산 입력이다.
+- `머지대기`, `targeted tests passed`, `worktree clean`, `plan progress committed`, `구현 커밋 완료`는 `/merge-test` 직전 중간 evidence이며 final 사유가 아니다.
+- `/merge-test`를 별도 승인 필요 단계로 해석하려면 `hard blocker=true` 또는 `user explicit stop=true` evidence가 있어야 한다. 그 외에는 exact local `/merge-test` skill을 같은 턴에서 읽고 실행한다.
+- helper `mutation_ready=true`, direct read-back success, receiver `ahead-only(left>0,right=0)` recovery는 같은 action 재입력 없이 진행 가능한 no-reprompt path다.
+
 ## Skill Path Precedence
 - 사용자가 `[$implement](...SKILL.md)` 또는 파일시스템 경로로 local/project skill 파일을 명시한 경우, 반드시 그 exact file을 Read 기준으로 삼는다.
 - 같은 name의 global/duplicate skill(`C:\Users\Narang\.codex\skills\implement\SKILL.md` 등)은 대체 사용하지 않는다.

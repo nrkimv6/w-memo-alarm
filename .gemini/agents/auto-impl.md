@@ -44,7 +44,7 @@
 
 6. **plan 100% 완료 시 아카이브**
    - plan 100% 완료 처리 및 아카이브 등은 함께 주입된 `done` policy에 명시된 지침(또는 `done-fallback.md`)에 따라 위임하여 처리한다.
-   - # 아카이브 이동은 반드시 git mv 사용 (Move-Item/Remove-Item 금지 — git history 유실)
+   - # 아카이브 이동은 `done` policy 또는 `done-fallback.md`가 `archive-plan.ps1` helper를 호출해 수행한다. auto-impl은 직접 `git mv`, `Move-Item`, `Remove-Item`으로 archive를 이동하지 않는다.
 
 ## 출력 형식 (반드시 이 형식으로 — 생략 금지)
 

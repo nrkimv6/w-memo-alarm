@@ -1,0 +1,16 @@
+description = "새 계획서 재검토 + expand-todo 선행 품질 게이트. Use when: 계획서 검토, review-plan, 계획 검토"
+
+prompt = """
+# Gemini review-plan
+
+`.gemini/agents/review-plan.md` 절차를 사용해 지정된 계획서를 재검토합니다.
+
+## Workflow
+
+1. 대상 plan 파일을 읽습니다.
+2. review-plan agent의 0-pre, 0, 1(A~L), 1.5, 1.7, 1.8 단계를 수행합니다.
+3. 결과가 `STATUS: SUCCESS`이면 같은 plan에 대해 expand-todo를 이어서 수행합니다.
+4. 결과가 `STATUS: BLOCKED` 또는 `STATUS: FAILED`이면 expand-todo를 수행하지 않고 차단 근거를 출력합니다.
+
+{{args}}
+"""

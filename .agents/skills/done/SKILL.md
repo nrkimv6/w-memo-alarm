@@ -48,7 +48,7 @@ The deterministic completion flow is owned by `common\tools\auto-done.ps1`. Use 
 ### 세션 dirty 계약 (정의)
 
 - **baseline dirty paths**: 스킬 시작 시점 `git status --short` 결과에서 추출한 dirty path 목록. 세션 시작 시 1회 고정.
-- **touched paths**: 이 스킬 실행 중 agent가 직접 Edit/생성/git mv한 파일의 path 집합. 세션 내에서 점진적으로 추가된다.
+- **touched paths**: 이 스킬 실행 중 agent가 직접 Edit/생성/archive helper 호출로 변경한 파일의 path 집합. 세션 내에서 점진적으로 추가된다.
 - **self residual dirty**: 세션 종료 전 `current dirty ∩ $TouchedPaths`. agent가 만들었지만 아직 커밋하지 않은 dirty.
 - **touched preexisting dirty**: baseline에 이미 있었으나 `$TouchedPaths`에도 포함된 path. agent가 같은 컨텍스트에서 수정했으면 whitelist 안에서는 커밋 책임이 agent에게 있다.
 - **touched whitelist dirty**: docs commit root 기준 `TODO.md`, `docs/DONE.md`, `docs/plan/*.md`, `docs/archive/*.md`, `docs/history/*.md` 안에서 `$TouchedPaths`와 현재 dirty가 만나는 path. wtools에서는 `TODO.md`/`docs/DONE.md`가 `.worktrees/plans/TODO.md`/`.worktrees/plans/docs/DONE.md`를 뜻한다. repo root ledger는 touched whitelist가 아니다. 성공 종료 전 exact path set으로 커밋해야 하며, 커밋할 수 없으면 hard-fail한다.
@@ -110,6 +110,9 @@ The deterministic completion flow is owned by `common\tools\auto-done.ps1`. Use 
 - 사용자가 `[$done] [$reflect]`처럼 여러 skill을 같은 턴에 명시하면 각 skill을 독립 target으로 취급하고 아래 결과표를 출력한다.
 - 이미 완료된 plan에 대한 `/done`은 no-op 분기로 처리하되, archive/DONE/commit evidence를 read-back하고 `already_archived`로 보고한다. archive/TODO/DONE을 재삽입하거나 재이동하지 않는다.
 - 일부 skill을 실행하지 못했으면 `남은 조치`에 같은 턴에서 이어갈 owner 또는 blocker를 적는다.
+- `/done`이 archive/read-back을 끝낸 뒤 명시된 `/reflect`가 남아 있으면 final이 아니라 reflect owner로 같은 턴에서 계속한다.
+- multi-skill 결과표는 `next owner 또는 없음`을 실제 수행 결과와 분리해 표시한다. `archive/read-back=ok`는 `/reflect executed` 또는 `reflect blocked` evidence가 남기 전 final 사유가 아니다.
+- 사용자 escalation evidence가 같은 세션에 있으면 `/done` 결과표의 `남은 조치`는 `/reflect` 또는 blocker code를 포함해야 하며, 같은 지시를 사용자에게 다시 입력받지 않는다.
 
 | skill | 실행 여부 | evidence | 남은 조치 |
 |-------|-----------|----------|-----------|
@@ -243,7 +246,7 @@ AGENTS.md 문서 위치 규칙의 plan 경로/*.md
 
 ### 3단계: plan 문서 아카이브 (모든 항목 완료 시)
 
-- archive `git mv` 시 원본 plan path와 archive destination path를 `$TouchedPaths`에 추가한다.
+- archive helper 호출 시 원본 plan path와 archive destination path를 `$TouchedPaths`에 추가한다.
 
 plan 문서의 모든 체크박스가 `[x]`이면:
 
@@ -275,14 +278,16 @@ root guard가 staged `.agents/.claude/.gemini` sync merge를 차단하면 `ROOT_
 
 1. **plan**: AGENTS.md 문서 위치 규칙의 plan 경로 → AGENTS.md 문서 위치 규칙의 archive 경로
 **아카이브 이동 규칙:**
-1. 반드시 `git mv` 사용 (`Move-Item`/`Remove-Item` 금지 — git 히스토리 유실)
-2. orphan 도입 프로젝트: plans 워크트리 내에서 `git mv` 후 commit/push
-3. plans 워크트리에서는 `Resolve-DocsCommitCandidates` 반환 파일만 add (`git add -A` 금지)
-4. 미도입 프로젝트: 일반 `git mv`
+1. 정상 경로는 `common\tools\archive-plan.ps1 -PlanFile <active> -ArchiveFile <archive> -RepoRoot <docsCommitRoot> -Json` helper 호출이다. Codex는 PowerShell `shell_command`/`run_shell_command` 형태로 helper를 실행하고 stdout의 `tool=archive-plan` JSON payload를 판정 근거로 사용한다.
+2. success 판정은 JSON `status="success"` 및 `archive_pair_ok=true`다. 실제 이동에서는 `expected_paths`와 `staged_paths`에 source deletion + archive destination pair가 보존돼야 하며, `reason="already_archived_resume"`은 active source가 없고 archive destination이 있는 resume no-op 성공으로만 인정한다.
+3. `half_archived_state=true`, `error_code="HALF_ARCHIVED_STATE"`, `ARCHIVE_PAIR_MISSING`, `ARCHIVE_GIT_MV_FAILED`, `ARCHIVE_PATH_OUT_OF_REPO`, `ARCHIVE_SOURCE_MISSING`는 archive mutation을 계속하지 말고 read-only 진단으로 전환한다.
+4. helper 실패 시 Codex는 `git status --short`, `git diff --cached --name-status`, active/archive path 존재 여부만 읽어 보고한다. 이 진단 단계에서 `git mv`, `Move-Item`, `Remove-Item`, `git add`, 커밋을 직접 실행하지 않는다.
+5. helper가 없는 downstream 환경에서만 마지막 fallback으로 `_recipes.md`의 직접 `git mv` 절차를 사용할 수 있다. wtools/common-tools 환경에서는 fallback을 사용하지 않고 helper 계약 위반으로 보고한다.
+6. plans 워크트리에서는 helper JSON의 `expected_paths` exact set만 이후 staged ownership 검증과 `Resolve-DocsCommitCandidates` 판단에 연결한다. `git add -A`는 사용하지 않는다.
 
-PowerShell 풀 코드 → [_recipes.md](./_recipes.md)의 "archive 이동" 섹션 참조.
+PowerShell 호출/JSON 판정 예시 → [_recipes.md](./_recipes.md)의 "archive 이동" 섹션 참조.
 
-5. 아카이브 헤더 추가 (`git mv` 이동 후 Edit 도구 또는 Set-Content로 파일 상단에 삽입):
+5. 아카이브 헤더 추가 (helper success read-back 후 Edit 도구 또는 Set-Content로 파일 상단에 삽입):
 
 ```markdown
 # {제목}
@@ -395,13 +400,13 @@ PowerShell 예시 → [_recipes.md](./_recipes.md)의 "plans/TODO.md 동기화" 
 
 ### 대안: auto-done.ps1 스크립트 (plan-runner 전용)
 
-**plan-runner 워크플로우**에서는 `common/tools/auto-done.ps1 -PlanFile <경로>`로 1~8단계를 자동 처리합니다.
+**plan-runner 워크플로우**에서는 `common/tools/auto-done.ps1 -PlanFile <경로>`로 1~8단계를 자동 처리합니다. archive mutation은 내부적으로 `common\tools\archive-plan.ps1` helper 계약(`tool=archive-plan`, `archive_pair_ok`, `expected_paths`, `half_archived_state`)을 따라야 합니다.
 
 - **사용 시점**: plan-runner가 plan 완료를 감지했을 때 (Phase 3.5)
 - **처리 범위**: plan 상태 갱신, 아카이브 이동, `.worktrees/plans/TODO.md`→`.worktrees/plans/docs/DONE.md`, 커밋
 - **수동 실행**: `powershell -File "common\tools\auto-done.ps1" -PlanFile "path/to/plan.md"`
 
-done 스킬은 **수동 작업 시** 또는 **auto-done.ps1 실패 시** fallback으로 사용합니다.
+done 스킬은 **수동 작업 시** 또는 **auto-done.ps1/helper 실패 시** fallback으로 사용합니다. fallback은 직접 archive mutation 재시도가 아니라 helper JSON과 read-only git/path evidence를 해석해 owner intervention 여부를 결정하는 흐름입니다.
 
 ### 7.5단계: version-bump 판단
 

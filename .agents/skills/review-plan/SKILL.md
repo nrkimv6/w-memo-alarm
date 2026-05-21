@@ -206,6 +206,10 @@ advisory evidence가 있으면 아래 3단계를 검증한다:
 **J. scope split / surface isolation / surface 분류 검증:**
 - `PLAN_SPLIT_GATE`: split-required/split-applied 여부를 판단하기 전에 `D:\work\project\service\wtools\.agents\skills\plan\SKILL.md`를 먼저 읽고 상단 `분할 진입 게이트`와 `surface isolation preflight`를 적용한다.
 - 주제 분할 금지, surface 분할 우선. surface split은 project/Phase split보다 먼저 판단하며, child 파일명은 원본 stem + `_todo-N.md` suffix만 허용한다.
+- PLAN_SPLIT_GATE deterministic 검증은 `/expand-todo` 호출 전에 반드시 먼저 실행한다. parent plan과 linked/sibling `_todo-N.md` child를 함께 읽고, 실행 체크박스와 파일 경로 헤더에서 engine authoring surface set(`.agents/`, `.claude/`, `.gemini/`, `common/tools/plan-runner/gemini-agents/`)을 센다. PowerShell 예시: `rg -n "^\s*-\s*\[[ x]\].*(\.agents/|\.claude/|\.gemini/|common/tools/plan-runner/gemini-agents/)|^#+.*(\.agents/|\.claude/|\.gemini/|common/tools/plan-runner/gemini-agents/)" <parent-and-child-files>`.
+- `surface_count`는 발견된 distinct engine surface 수, `child_count`는 parent `> **실행 TODO:**` 링크 또는 원본 stem sibling `_todo-N.md` 중 active child 수다. `surface_count >= 2`이고 `child_count != surface_count`이면 `SURFACE_SPLIT_COUNT_MISMATCH`로 재검토 실패 처리하고 expand-todo 호출 전에 멈춘다.
+- 사용자 명시 단일 child 승인 evidence가 있는 경우에만 `SURFACE_SPLIT_COUNT_MISMATCH`를 우회할 수 있다. 그 외에는 "우선 한 child만 확장" 같은 임의 부분 진행으로 count mismatch를 우회하지 않는다.
+- split-applied parent는 coordination-only여야 한다. parent plan에 Phase 0, Phase M, Phase Z 외 실행 체크박스가 남아 있거나, 해당 phase 밖 체크박스가 engine surface 파일 경로를 직접 소유하면 `PARENT_EXECUTION_CHECKBOX_RESIDUE`로 재검토 실패 처리하고 expand-todo 호출 전에 멈춘다.
 - wtools authoring surface 변경 plan에서 surface 분류 표시(`> surface 분류:` 헤더 또는 `## surface 분류` 섹션)가 없으면 split-required라도 분할 진행 금지다. `SURFACE_CLASSIFICATION_MISSING`으로 재검토 실패 처리하고 expand-todo 호출 전에 멈춘다.
 - scope split은 기본 차단이 아니라 먼저 분류한다. `후속`/`stub`/`별도 plan`/`child detach` 키워드는 advisory evidence이며, 키워드만으로 `CODEX_SCOPE_SPLIT_UNAPPROVED`를 내지 않는다.
 - 아래 중 하나가 확인될 때만 `CODEX_SCOPE_SPLIT_UNAPPROVED`로 재검토 실패 처리한다:
@@ -217,7 +221,8 @@ advisory evidence가 있으면 아래 3단계를 검증한다:
 - 실행 체크박스 또는 파일 경로 헤더에서 두 개 이상 engine authoring surface(`.agents/`, `.claude/`, `.gemini/`, `common/tools/plan-runner/gemini-agents/`)가 섞이면 `surface isolation = split-required`로 기록하고 expand-todo 호출을 멈추지 않는다. 이미 surface별 child로 분리되어 있으면 `surface isolation = split-applied`로 기록한다.
 - wtools authoring surface 변경 plan에 헤더 `> surface 분류:` 필드도 없고 본문 `## surface 분류` 섹션도 없으면 `SURFACE_CLASSIFICATION_MISSING`으로 재검토 실패 처리한다.
 - scope split 판정값 (`해당 없음` / `승인 있음` / `split-required` / `split-applied` / `수동 결정 필요` / `🚫 차단: CODEX_SCOPE_SPLIT_UNAPPROVED`)을 결과표 `scope split` 칸에 기록한다.
-- surface isolation 판정값 (`해당 없음` / `단일 surface` / `split-required` / `split-applied` / `수동 결정 필요`)을 결과표 `surface isolation` 칸에 기록한다.
+- surface isolation 판정값 (`해당 없음` / `단일 surface` / `split-required` / `split-applied` / `수동 결정 필요` / `🚫 SURFACE_SPLIT_COUNT_MISMATCH` / `🚫 PARENT_EXECUTION_CHECKBOX_RESIDUE`)을 결과표 `surface isolation` 칸에 기록한다.
+- 결과표 `surface isolation` 칸에는 판정값만 쓰지 말고 `surface_count={N}; child_count={M}; parent_residue={0|N}` evidence를 함께 남긴다. 예: `split-applied (surface_count=3; child_count=3; parent_residue=0)`.
 - surface 분류 판정값 (`공통 정책` / `모델별 메커니즘` / `분류 모호` / `🚫 누락: SURFACE_CLASSIFICATION_MISSING`)을 결과표 `surface 분류` 칸에 기록한다.
 
 **재검토 실패 시:**
@@ -367,8 +372,8 @@ expand-todo의 5.6단계가 expand 결과를 자체 커밋한다. review-plan의
 
 | # | 계획서 | 재검토 | time anchor | 로컬변경 | 연관 active plan | archive 참조 | 환경오염 | live phase fence | scope split | surface isolation | surface 분류 | expand | 실패메타데이터 | 비고 |
 |---|--------|--------|-------------|----------|------------------|-------------|---------|------------------|-------------|-------------------|-------------|--------|----------------|------|
-| 1 | {파일명} | ✅ 통과 | {implementation_start/execution_start/absolute_event_time/unclear/해당 없음} | {영향 없음/참조만/보정 반영} | {0-hit/중복 회피/선행관계} | {0-hit/참조 반영} | {해당 없음/⚠️ 경고: {패턴}/🚫 차단: {사유}} | {해당 없음/보정 반영/차단: LIVE_TEST_PHASE_FENCE_BLOCKED} | {해당 없음/승인 있음/split-required/split-applied/수동 결정 필요/🚫 CODEX_SCOPE_SPLIT_UNAPPROVED} | {해당 없음/단일 surface/split-required/split-applied/수동 결정 필요} | {공통 정책/모델별 메커니즘/분류 모호/🚫 누락} | ✅ {N}개 작업 | {카테고리/종료코드/처리결과} | — |
-| 2 | {파일명} | ❌ 실패 | {implementation_start/execution_start/absolute_event_time/unclear/해당 없음} | {재검토 실패/보정 반영} | {충돌/0-hit} | {참조만/0-hit} | {해당 없음/⚠️ 경고: {패턴}/🚫 차단: {사유}} | {해당 없음/보정 반영/차단: LIVE_TEST_PHASE_FENCE_BLOCKED} | {해당 없음/수동 결정 필요/🚫 CODEX_SCOPE_SPLIT_UNAPPROVED} | {해당 없음/수동 결정 필요} | {🚫 SURFACE_CLASSIFICATION_MISSING} | — | {있음/없음} | {사유} |
+| 1 | {파일명} | ✅ 통과 | {implementation_start/execution_start/absolute_event_time/unclear/해당 없음} | {영향 없음/참조만/보정 반영} | {0-hit/중복 회피/선행관계} | {0-hit/참조 반영} | {해당 없음/⚠️ 경고: {패턴}/🚫 차단: {사유}} | {해당 없음/보정 반영/차단: LIVE_TEST_PHASE_FENCE_BLOCKED} | {해당 없음/승인 있음/split-required/split-applied/수동 결정 필요/🚫 CODEX_SCOPE_SPLIT_UNAPPROVED} | {해당 없음/단일 surface/split-required/split-applied/수동 결정 필요 + `surface_count={N}; child_count={M}; parent_residue={0|N}`} | {공통 정책/모델별 메커니즘/분류 모호/🚫 누락} | ✅ {N}개 작업 | {카테고리/종료코드/처리결과} | — |
+| 2 | {파일명} | ❌ 실패 | {implementation_start/execution_start/absolute_event_time/unclear/해당 없음} | {재검토 실패/보정 반영} | {충돌/0-hit} | {참조만/0-hit} | {해당 없음/⚠️ 경고: {패턴}/🚫 차단: {사유}} | {해당 없음/보정 반영/차단: LIVE_TEST_PHASE_FENCE_BLOCKED} | {해당 없음/수동 결정 필요/🚫 CODEX_SCOPE_SPLIT_UNAPPROVED} | {해당 없음/수동 결정 필요/🚫 SURFACE_SPLIT_COUNT_MISMATCH/🚫 PARENT_EXECUTION_CHECKBOX_RESIDUE + `surface_count={N}; child_count={M}; parent_residue={0|N}`} | {🚫 SURFACE_CLASSIFICATION_MISSING} | — | {있음/없음} | {사유} |
 
 ### 검토 근거 및 상세 내역
 

@@ -8,7 +8,7 @@ description: "구현 완료 후처리 (plan 체크, archive, TODO→DONE, commit
 <!-- script-contract-invariant -->
 ## Script Contract Invariant
 
-The deterministic completion flow is owned by `common\tools\auto-done.ps1`. Use `-DryRun -Json` for preflight evidence and `-Json` for structured result reporting when possible. In `-Json` mode, blocked results are machine-readable contract payloads; consume the `tool=auto-done` JSON object from stdout and do not depend on trailing human `Write-Error` text. AI remains responsible for routing (`/merge-test` vs `/done`), conflict classification, and deciding whether helper failure requires owner intervention.
+The deterministic completion flow is owned by `common\tools\auto-done.ps1`. Use `-DryRun -Json` for preflight evidence and `-Json` for structured result reporting when possible. In `-Json` mode, blocked results are machine-readable contract payloads; consume the `tool=auto-done` JSON object from stdout and do not depend on trailing human `Write-Error` text. Archive movement is owned by `common\tools\archive-plan.ps1`: call it with `-PlanFile <active> -ArchiveFile <archive> -RepoRoot <docs-root-or-repo> -Json`, parse the `tool=archive-plan` JSON payload, and treat `archive_pair_ok=true` with `half_archived_state=false` as the success/read-back contract. AI remains responsible for routing (`/merge-test` vs `/done`), conflict classification, and deciding whether helper failure requires owner intervention.
 > Routing gate: branch/worktree present -> /merge-test; absent -> /done
 # 구현 완료 후처리
 
@@ -218,7 +218,7 @@ CLAUDE.md 문서 위치 규칙의 plan 경로/*.md
 
 ### 3단계: plan 문서 아카이브 (모든 항목 완료 시)
 
-- archive `git mv` 시 원본 plan path와 archive destination path를 `$TouchedPaths`에 추가한다.
+- archive helper 성공 시 원본 plan path와 archive destination path를 `$TouchedPaths`에 추가한다. helper 미설치 fallback의 `git mv`도 같은 touched path pair로 기록한다.
 
 plan 문서의 모든 체크박스가 `[x]`이면:
 
@@ -250,14 +250,15 @@ root guard가 staged `.agents/.claude/.gemini` sync merge를 차단하면 `ROOT_
 
 1. **plan**: CLAUDE.md 문서 위치 규칙의 plan 경로 → CLAUDE.md 문서 위치 규칙의 archive 경로
 **아카이브 이동 규칙:**
-1. 반드시 `git mv` 사용 (`Move-Item`/`Remove-Item` 금지 — git 히스토리 유실)
-2. orphan 도입 프로젝트: plans 워크트리 내에서 `git mv` 후 commit/push
-3. plans 워크트리에서는 `Resolve-DocsCommitCandidates` 반환 파일만 add (`git add -A` 금지)
-4. 미도입 프로젝트: 일반 `git mv`
+1. 정상 경로는 `common\tools\archive-plan.ps1 -PlanFile <active plan> -ArchiveFile <archive path> -RepoRoot <docs commit root> -Json` 호출이다. orphan 도입 프로젝트는 `RepoRoot=.worktrees\plans`, 미도입 프로젝트는 해당 repo root를 사용한다.
+2. helper JSON에서 `tool=archive-plan`, `status=success`, `archive_pair_ok=true`, `half_archived_state=false`를 확인한다. 실제 이동이면 `expected_paths`와 `staged_paths`에 active source deletion + archive destination add/rename pair가 있어야 한다.
+3. helper JSON의 `reason=already_archived_resume`은 idempotent no-op 성공으로 처리한다. 이 경우 archive 이동을 반복하지 않고 TODO/DONE/read-back/commit 잔여 단계만 계속한다.
+4. `half_archived_state=true`, `ARCHIVE_GIT_MV_FAILED`, `ARCHIVE_PAIR_MISSING`, `ARCHIVE_SOURCE_MISSING`, `ARCHIVE_PATH_OUT_OF_REPO`는 helper 실패다. 이때 Claude는 `git status --short`, `git diff --name-status --find-renames --cached`, `git diff --name-status --find-renames` 같은 read-only 진단만 수집해 보고하고, 임의 `git mv`/`Move-Item`/`Remove-Item` 재시도를 하지 않는다.
+5. helper가 없는 downstream 환경에서만 `_recipes.md`의 마지막 fallback `git mv` 절차를 사용할 수 있다. 이 fallback도 `Move-Item`/`Remove-Item` 금지와 exact staged pair 검증을 유지한다.
 
-PowerShell 풀 코드 → [_recipes.md](./_recipes.md)의 "archive 이동" 섹션 참조.
+PowerShell 호출 예시와 fallback 진단 절차 → [_recipes.md](./_recipes.md)의 "archive 이동" 섹션 참조.
 
-5. 아카이브 헤더 추가 (`git mv` 이동 후 Edit 도구 또는 Set-Content로 파일 상단에 삽입):
+5. 아카이브 헤더 추가 (archive helper 성공 후 Edit 도구 또는 Set-Content로 파일 상단에 삽입):
 
 ```markdown
 # {제목}
@@ -374,9 +375,9 @@ PowerShell 예시 → [_recipes.md](./_recipes.md)의 "plans/TODO.md 동기화" 
 
 - **사용 시점**: plan-runner가 plan 완료를 감지했을 때 (Phase 3.5)
 - **처리 범위**: plan 상태 갱신, 아카이브 이동, `.worktrees/plans/TODO.md`→`.worktrees/plans/docs/DONE.md`, 커밋
-- **수동 실행**: `powershell -File "common\tools\auto-done.ps1" -PlanFile "path/to/plan.md"`
+- **수동 실행**: `powershell -File "common\tools\auto-done.ps1" -PlanFile "path/to/plan.md" -Json`
 
-done 스킬은 **수동 작업 시** 또는 **auto-done.ps1 실패 시** fallback으로 사용합니다.
+done 스킬은 **수동 작업 시** 또는 **auto-done.ps1 실패 시** fallback으로 사용합니다. fallback에서 archive 이동이 필요하면 직접 `git mv`를 시작하지 말고 먼저 `common\tools\archive-plan.ps1 -PlanFile <active> -ArchiveFile <archive> -RepoRoot <root> -Json`을 호출한다. helper 실패 시에는 JSON의 `error_code`, `expected_paths`, `staged_paths`, `archive_pair_ok`, `half_archived_state`와 read-only git 진단을 보고하고 owner intervention으로 전환한다.
 
 ### 7.5단계: version-bump 판단
 

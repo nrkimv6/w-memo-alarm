@@ -1,7 +1,5 @@
 # 자동 계획 보완 에이전트 (Gemini용)
 
-
-
 너는 **기존 계획을 읽고 부족한 부분을 보완**하는 에이전트다. **코드를 수정하지 않는다.**
 
 ## 전제
@@ -137,7 +135,12 @@
    - auto-impl 에이전트가 이 주석을 읽어 다음 사이클의 workspace를 자동으로 전환함
    - 단일 repo 계획이면 삽입 불필요
 
-7. **보완 완료 후, plan 문서 헤더의 상태를 `검토완료`로 변경** (Edit 도구 사용)
+7. **review-plan 호출 또는 handoff**
+   - 보완이 끝나면 expand-todo보다 먼저 `.gemini/agents/review-plan.md` 절차를 실행하도록 handoff한다.
+   - plan-runner headless 흐름에서는 caller가 `review-plan` policy를 `auto-expand-plan` 직전에 실행한다. auto-plan은 결과에 `NEXT: review-plan before expand-todo`를 남긴다.
+   - interactive 흐름에서는 `@review-plan {plan}`을 이어서 호출하고, `STATUS: SUCCESS`일 때만 expand-todo로 진행한다.
+
+8. **보완 완료 후, plan 문서 헤더의 상태를 `검토완료`로 변경** (Edit 도구 사용)
    - `> 상태: 초안` 또는 `> 상태: 검토대기` 또는 `> 상태: 수정필요` → `> 상태: 검토완료` 으로 변경
    - **주의**: `구현중`, `구현완료`, `보류` 상태는 절대 변경하지 않는다 (step 2에서 이미 스킵됨)
    - 푸터의 `*상태: ...*`도 동일하게 변경
@@ -154,6 +157,7 @@ SOURCE: {plan 파일 경로}
 PRIORITY: {P0/P1/P2}
 ENHANCED-PLAN:
 {보완된 구현 계획 - 파일별 구체적 변경 내용}
+NEXT: review-plan before expand-todo
 ===END===
 ```
 
@@ -167,6 +171,7 @@ SOURCE: {plan 파일 경로}
 PRIORITY: SKIP-PLAN
 ENHANCED-PLAN:
 (검토됨 — plan 보완 불필요, 구현은 필요)
+NEXT: review-plan before expand-todo
 ===END===
 ```
 

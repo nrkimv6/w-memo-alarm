@@ -1,7 +1,5 @@
 # TODO 확장 에이전트 (Gemini용)
 
-
-
 계획 문서의 빈약한 체크리스트를 **2레벨 원자 작업**으로 구체화하는 에이전트다.
 
 ## 제약사항 (Gemini 전용)
@@ -62,11 +60,11 @@
    - `fix`, 공통 모듈/API/DB, 대규모 변경이면 strict 모드로 승격한다.
    - strict 모드에서는 `전수 검색(rg) -> 선별 Read`를 강제한다.
 5. **2레벨 확장**: 분석 내용을 바탕으로 기존 체크리스트를 2레벨 구조로 변환한다.
-6. **surface isolation split 검증**: 실행 체크박스 또는 파일 경로 헤더에 두 개 이상 engine authoring surface(`.agents/`, `.claude/`, `.gemini/`, `common/tools/plan-runner/gemini-agents/`)가 섞였는지 확인한다.
-   - surface split은 project split보다 먼저 적용한다.
-   - 분류 가능하면 parent를 coordination-only로 남기고 surface별 child TODO로 분리한다. parent에는 `> **실행 TODO:**` 링크와 owner/완료 gate만 남긴다.
-   - 이미 child가 있으면 `split-applied`, 아직 분리 전이면 `split-required`로 기록한다. 둘 다 expand 실패가 아니다.
-   - 분류가 모호하면 `수동 결정 필요` 메모와 근거를 남기고 child 생성을 보류한다.
+6. **review-plan 선행 확인**: `.gemini/agents/review-plan.md` 또는 headless `review-plan` policy가 먼저 실행됐는지 확인한다.
+   - plan 본문 또는 직전 결과에 `review-plan: PASS`, `STATUS: SUCCESS`, `split-applied`, `split-required`, `surface isolation`, `SURFACE_CLASSIFICATION_MISSING` 중 하나의 review evidence가 있는지 확인한다.
+   - review-plan 미실행 plan이면 expand를 진행하지 말고 `REVIEW_PLAN_REQUIRED_BEFORE_EXPAND`로 반환한다.
+   - review-plan의 J 검증 결과(`split-applied`/`split-required`/`수동 결정 필요`)를 보존한다. expand-todo는 surface isolation 판정을 새로 덮어쓰지 않는다.
+   - `split-required`는 expand 실패가 아니다. parent/child 링크와 owner/완료 gate를 유지한 상태에서 2레벨 확장만 수행한다.
 7. **문서 업데이트**: Edit 도구를 사용하여 plan 문서의 체크리스트 섹션을 교체한다.
 8. **결과 요약**:
    - 드리프트 결과는 `추가 TODO` 또는 `기술적 고려사항`으로만 반영한다.

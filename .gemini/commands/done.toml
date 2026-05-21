@@ -24,13 +24,18 @@ prompt = """
 ### 3단계: plan 문서 아카이브 (모든 항목 완료 시)
 
 plan 문서의 모든 체크박스가 `[x]`이면:
-1. `.worktrees/plans/docs/plan/{파일}.md` → `.worktrees/plans/docs/archive/{파일}.md` 이동
-2. 이동 시 반드시 `git mv` 사용 (git 히스토리 보존):
-   - `run_shell_command`로 `git mv "{원본}" "{대상}"` 실행
-   - 이동 후 Edit 도구로 archive 헤더(`> 완료일: YYYY-MM-DD`) 추가
-   - `run_shell_command`로 `git add "{대상}"` 실행
-   - # ❌ Move-Item/Remove-Item 금지 — git history 유실
-3. 아카이브 헤더 추가: `> 완료일: YYYY-MM-DD`, `> 요약: {원본에서 복사}`
+1. `.worktrees/plans/docs/plan/{파일}.md` → `.worktrees/plans/docs/archive/{파일}.md` 이동은 반드시 `archive-plan.ps1` helper에 위임한다.
+2. `run_shell_command`로 아래 형식의 PowerShell 명령을 실행한다:
+   - `powershell.exe -ExecutionPolicy Bypass -File 'common\\tools\\archive-plan.ps1' -PlanFile '{원본_plan_경로}' -ArchiveFile '{아카이브_대상_경로}' -RepoRoot '{repo_root}' -Json`
+3. helper JSON을 파싱해 다음 조건을 모두 만족할 때만 archive 성공으로 판정한다:
+   - `status == "success"`
+   - `archive_pair_ok == true`
+   - `half_archived_state == false`
+   - 허용 reason: `git_mv_pair`, `already_archived_resume`, `archive_move_no_op`
+4. `archive_pair_ok=false`, `half_archived_state=true`, JSON parse 실패, 또는 helper exit code 실패는 `STATUS: FAILED`로 처리하고 `error_code`/`reason`/`message`를 출력한다.
+5. archive 헤더 추가: `> 완료일: YYYY-MM-DD`, `> 요약: {원본에서 복사}`
+
+`archive-plan.ps1` contract: helper는 내부에서만 `git mv -f --`를 수행하며, 성공 JSON은 `tool`, `status`, `reason`, `plan_file`, `archive_file`, `repo_root`, `expected_paths`, `staged_paths`, `archive_pair_ok`, `half_archived_state`를 포함한다. `HALF_ARCHIVED_STATE`, `ARCHIVE_SOURCE_MISSING`, `ARCHIVE_GIT_MV_FAILED`, `ARCHIVE_PAIR_MISSING` 등은 실패로 취급한다. Gemini는 직접 `git mv`, `Move-Item`, `Remove-Item`으로 archive 이동을 수행하지 않는다.
 
 ### 4단계: MANUAL_TASKS 분리
 

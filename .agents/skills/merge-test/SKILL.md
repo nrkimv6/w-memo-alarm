@@ -90,6 +90,7 @@ Preflight and cleanup evidence must come from helper CLI contracts before any me
 | `DOWNSTREAM_MIRROR_READBACK_WAIT` | downstream sync/read-back missing | continuation blocker | archive 완료 금지 | sync workflow, receiver `origin/main:<path>` read-back |
 | `NON_FF_SYNC_BLOCKED` | receiver ff-only/push rejected or unavailable | hard blocker | downstream sync 완료 금지 | source-owner flow, sync worker, or owner-approved recovery |
 | `DOWNSTREAM_DIVERGED_PUSH_BLOCKED` | `git rev-list --left-right --count HEAD...origin/main` shows diverged | hard blocker | push-first 금지 | owner-approved merge/rebase/source regeneration/abort |
+| `DOWNSTREAM_SYNC_TRIGGER_FAILED` | `git push origin main` or `sync-skills.yml` dispatch failed after eligible receiver tuple | hard blocker | downstream sync 완료 금지 | source-owner flow, sync worker, credential repair, or owner-approved recovery |
 | `ROOT_GUARD_BLOCKED_PENDING_SYNC_MERGE` | root commit guard with staged implementation/mirror files during pending sync merge | hard blocker | root-side merge closeout 금지 | preserve/abort then ff-only receiver or upstream sync regeneration |
 | `GIT_GUARD_NOT_ACTIVE` | helper discovered but `enable-git-guard.ps1 -Action status` fails wrapper check | hard blocker | git mutation 금지 | enable guard/session PATH repair, then rerun preflight |
 
@@ -98,6 +99,21 @@ Rules:
 - `_BLOCKED` suffix is reserved for helper or receiver policy hard blockers. Do not invent unsuffixed residue variants in final/ledger output.
 - Dirty-ignore mode changes display/continuation handling only; it does not override explicit hard blockers in this table.
 - `git pull --ff-only`가 remote config 부재(tracking branch 미설정 등)로 실패하면 즉시 `NON_FF_SYNC_BLOCKED`로 올리지 않는다. `git rev-list --left-right --count HEAD...origin/main` tuple이 `0 N`(left=0, right>0)이면 behind-only receiver이므로 explicit `git pull --ff-only origin main`으로 1회 재시도한다. 재시도 성공은 `failure_class=environment_failure, result=failed -> recovered`로 기록한다. tuple이 `L N`(left>0, right>0)이면 diverged이므로 `DOWNSTREAM_DIVERGED_PUSH_BLOCKED`로 올린다.
+
+## Receiver No-Reprompt Recovery Table
+
+receiver sync/read-back은 `git fetch origin` 후 `git rev-list --left-right --count HEAD...origin/main` tuple을 source of truth로 삼는다. `git status --short --branch`는 display evidence일 뿐 push/pull routing source가 아니다.
+
+| receiver tuple | action | reprompt_required | blocker_code | next owner |
+|---|---|---|---|---|
+| `ahead-only(left>0,right=0)` | `git push origin main` 또는 `sync-skills.yml` dispatch -> `git fetch origin` -> rev-list recheck -> receiver `origin/main:<path>` read-back hash 기록 | `false` | none unless push/dispatch fails | receiver read-back then archive/done |
+| `behind-only(left=0,right>0)` | `git pull --ff-only origin main` -> fetch/recheck -> read-back | `false` | `NON_FF_SYNC_BLOCKED` only after tuple/rerun evidence proves ff-only unavailable | receiver read-back |
+| `diverged(left>0,right>0)` | push-first 금지 | `true` | `DOWNSTREAM_DIVERGED_PUSH_BLOCKED` | owner-approved merge/rebase/source regeneration/abort |
+| `equal(left=0,right=0)` | read-back hash 확인 | `false` | none | archive/done |
+| destructive/ambiguous recovery | mutation 금지 | `true` | `{approval_required|ambiguous_owner}` | explicit owner approval |
+| push/dispatch rejected after eligible tuple | stop with evidence | `true` | `DOWNSTREAM_SYNC_TRIGGER_FAILED` or `NON_FF_SYNC_BLOCKED` | source-owner flow, sync worker, credential repair |
+
+Receiver closeout 결과표에는 최소 `receiver`, `rev-list tuple`, `action`, `reprompt_required`, `blocker_code`, `read-back hash`, `next_owner`를 남긴다. `ahead-only(left>0,right=0)` + `mutation_ready=true` + push/read-back 가능 상태는 사용자 단답 재입력 없이 같은 턴에서 닫는다.
 
 ## 워크플로우 위치
 

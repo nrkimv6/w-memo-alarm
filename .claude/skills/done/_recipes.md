@@ -143,29 +143,72 @@ global backlog를 보여줄 때는 반드시 `참고 backlog` label을 붙이고
 
 ---
 
-## archive 이동 (`git mv` 분기)
+## archive 이동 (helper SSOT)
 
-### orphan 도입 프로젝트 — plans 워크트리 내에서 git mv
+### 1순위: archive-plan.ps1 helper 호출
+
+`common\tools\archive-plan.ps1`이 archive mutation의 SSOT다. Claude는 먼저 helper를 호출하고 JSON을 read-back한다.
+
+```powershell
+$ArchiveResult = & "common\tools\archive-plan.ps1" `
+  -PlanFile "D:\work\project\service\wtools\.worktrees\plans\docs\plan\YYYY-MM-DD_{주제}_todo.md" `
+  -ArchiveFile "D:\work\project\service\wtools\.worktrees\plans\docs\archive\YYYY-MM-DD_{주제}_todo.md" `
+  -RepoRoot "D:\work\project\service\wtools\.worktrees\plans" `
+  -Json | ConvertFrom-Json
+
+if ($ArchiveResult.tool -ne "archive-plan") { throw "archive-plan JSON payload missing" }
+if (-not $ArchiveResult.archive_pair_ok -or $ArchiveResult.half_archived_state) {
+  throw "archive helper failed: $($ArchiveResult.error_code) $($ArchiveResult.reason)"
+}
+
+# 실제 이동 성공이면 expected_paths/staged_paths에 source deletion + archive add/rename pair가 있어야 한다.
+# reason=already_archived_resume이면 archive 이동은 반복하지 않고 잔여 TODO/DONE/read-back/commit 단계만 재개한다.
+$ArchiveResult.expected_paths
+$ArchiveResult.staged_paths
+```
+
+Success 판정:
+- `tool=archive-plan`
+- `status=success`
+- `archive_pair_ok=true`
+- `half_archived_state=false`
+- 실제 이동이면 `expected_paths`와 `staged_paths`가 active source와 archive destination pair를 포함한다
+- `reason=already_archived_resume`이면 idempotent no-op 성공이며 직접 `git mv`를 반복하지 않는다
+
+Failure 처리:
+- `half_archived_state=true`, `ARCHIVE_GIT_MV_FAILED`, `ARCHIVE_PAIR_MISSING`, `ARCHIVE_SOURCE_MISSING`, `ARCHIVE_PATH_OUT_OF_REPO`는 owner intervention 대상이다.
+- 실패 후 Claude가 직접 수정 재시도를 하지 않는다. 아래 read-only 진단만 수집해 보고한다.
+
+```powershell
+git status --short
+git diff --name-status --find-renames --cached
+git diff --name-status --find-renames
+```
+
+### helper 미설치 환경의 마지막 fallback — orphan 도입 프로젝트
+
+`common\tools\archive-plan.ps1`이 없는 downstream 환경에서만 사용한다. wtools에서는 이 fallback을 정상 경로로 사용하지 않는다.
 
 ```powershell
 Set-Location ".worktrees/plans"
 git mv -f "docs/plan/YYYY-MM-DD_{주제}_todo.md" "docs/archive/YYYY-MM-DD_{주제}_todo.md"
 # 원본 plan이 docs/plan/ 에 남아있으면 함께 이동 (이미 archive에 있으면 스킵)
 # git mv -f "docs/plan/YYYY-MM-DD_{주제}.md" "docs/archive/YYYY-MM-DD_{주제}.md"
-git add "docs/archive/YYYY-MM-DD_{주제}_todo.md"
+git diff --name-status --find-renames --cached
 # plans 워크트리에서는 Resolve-DocsCommitCandidates 반환 파일만 add한다.
 # git add -A는 사용하지 않는다.
-git commit -m "chore: archive {주제}"
+& "D:\work\project\tools\common\commit.ps1" -Message "chore: archive {주제}" -Files "docs/plan/YYYY-MM-DD_{주제}_todo.md,docs/archive/YYYY-MM-DD_{주제}_todo.md"
 # push는 literal 'origin plans' 대신 현재 docs commit root가 추적하는 upstream으로만 수행한다.
 git push
 Set-Location -  # 이전 경로로 복귀
 ```
 
-### orphan 미도입 프로젝트 — 기존 방식
+### helper 미설치 환경의 마지막 fallback — orphan 미도입 프로젝트
 
 ```powershell
 git mv -f "{plan루트}/YYYY-MM-DD_{주제}_todo.md" "{archive루트}/YYYY-MM-DD_{주제}_todo.md"
-git add "{archive루트}/YYYY-MM-DD_{주제}_todo.md"
+git diff --name-status --find-renames --cached
+& "D:\work\project\tools\common\commit.ps1" -Message "chore: archive {주제}" -Files "{plan루트}/YYYY-MM-DD_{주제}_todo.md,{archive루트}/YYYY-MM-DD_{주제}_todo.md"
 
 # FORBIDDEN: Move-Item / Remove-Item — 히스토리 유실
 # Move-Item -Path "{plan경로}" -Destination "{archive경로}"
