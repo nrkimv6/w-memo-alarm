@@ -17,8 +17,9 @@ prompt = """
 ## Workflow
 
 1. **변경사항 확인**: `git status`로 수정된 파일 확인
-2. **스테이징**: `git add <files>` 또는 `git add .`
-3. **커밋 실행**: 위 우선순위에 따라 커밋 스크립트 호출
+2. **스테이징**: `git add <files>`만 사용한다. `git add .` / `git add -A` / 디렉토리 통째 add는 사용하지 않는다.
+3. **sentinel 발급**: commit wrapper 호출 직전 대상 repo의 `.claude\hooks\grant-commit.ps1`을 확인한다. helper가 있으면 `user-prompt:<요약 30자 이상>` reason으로 새 sentinel을 발급하고, 없으면 `no-sentinel-hook: <path>` evidence를 남긴다.
+4. **커밋 실행**: 위 우선순위에 따라 커밋 스크립트 호출
 
 ## 커밋 메시지 규칙
 
@@ -34,6 +35,7 @@ prompt = """
 ## 주의사항
 
 - **git commit 직접 사용 금지**: 반드시 커밋 스크립트 사용
+- **sentinel 발급 필수**: `commit.ps1`/`commit.sh` 호출 직전에 `grant-commit.ps1 --reason "user-prompt:<요약 30자 이상>"`을 실행한다. helper가 없으면 `no-sentinel-hook`을 남긴다.
 - **커밋 단위**: 작게, phase별 여러 개 가능
 - **스테이징 필수**: 스크립트 실행 전 `git add` 필요
 

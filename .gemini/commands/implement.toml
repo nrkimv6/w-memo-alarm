@@ -66,6 +66,7 @@ plan 문서에서 구현할 항목 선택:
 ## 커밋 규칙
 
 커밋 스크립트를 반드시 사용합니다 (git commit 직접 사용 금지).
+commit wrapper 호출 직전 대상 repo의 `.claude\hooks\grant-commit.ps1`을 확인하고, helper가 있으면 `user-prompt:<요약 30자 이상>` reason으로 새 sentinel을 발급합니다. helper가 없으면 `no-sentinel-hook: <path>` evidence를 남깁니다.
 
 {{args}}
 """

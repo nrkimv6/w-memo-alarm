@@ -103,6 +103,7 @@ Deterministic setup, status, and advisory scanning must prefer helper CLI eviden
   - **linked child plan open gate**: 완료 보고 직전에 plan의 linked child plan(`_todo-N.md` 링크 또는 `> linked child:` 필드)을 enumerate한다. child가 active/incomplete 상태이면 parent 완료 보고를 금지하고 child를 remaining target으로 유지한다. `/merge-test` owner에게 `parent-child open` 상태를 handoff한다.
   - leaf 본문에 `push`, `origin/main`, `remote`, 외부 repo 목록이 있으면 local commit만으로 체크하지 않고 `git ls-remote origin main`, `git show origin/main:<path>`, 또는 대상 repo의 `origin/main` content read-back evidence를 요구한다.
   - remote evidence가 없으면 해당 leaf를 `[x]`로 올리지 않고 `remote evidence 대기`로 남긴다.
+- planned regression TC, contract aftercare, active data repair/migration/disable/visible error TODO가 미완이면 current target을 final closeout으로 말하지 않는다. pre-merge live 검증이 금지된 경우 representative fixture 또는 `/merge-test` handoff evidence로 남긴다.
 
 → 상단 STOP/CONTINUE Decision Table 우선. 이 섹션은 세부 근거 참조용.
 

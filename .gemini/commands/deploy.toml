@@ -8,7 +8,7 @@ Cloudflare Workers/Pages 수동 배포 및 자동 배포 체계 가이드
 ## 배포 방법
 
 - **자동 배포**: GitHub의 `main` 브랜치에 코드가 push되면 Cloudflare Pages 통합에 의해 자동으로 빌드 및 배포가 실행된다.
-- **배포 절차**: `commit.ps1` 스크립트를 통해 변경사항을 커밋한 뒤, `git push origin main` 명령어를 실행하여 배포한다.
+- **배포 절차**: commit wrapper 호출 직전 대상 repo의 `.claude\hooks\grant-commit.ps1`을 확인하고 `user-prompt:<요약 30자 이상>` reason으로 새 sentinel을 발급한 뒤 `commit.ps1` 스크립트로 변경사항을 커밋한다. helper가 없으면 `no-sentinel-hook: <path>` evidence를 남긴 뒤, `git push origin main` 명령어를 실행하여 배포한다.
 
 ## 프로젝트별 빌드
 

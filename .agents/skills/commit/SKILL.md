@@ -18,28 +18,68 @@ allowed-tools: Bash,Read
 | 2순위 | `commit.sh` (공용) | Bash | `D:\work\project\tools\common\commit.sh` |
 | 3순위 | `commit.sh` (로컬) | Bash | 스킬 폴더 내 `commit.sh` (이 파일과 같은 디렉토리) |
 
+## commit sentinel grant contract
+
+`commit.ps1` 또는 `commit.sh` 호출 직전에는 대상 repo의 `.claude\hooks\grant-commit.ps1` 존재 여부를 확인한다.
+
+- helper가 있으면 commit wrapper 호출 직전에 매번 새 sentinel을 발급한다.
+- helper가 없으면 commit을 막지 않고 transcript에 `no-sentinel-hook`을 남긴다.
+- helper 실패, prefix 누락, 30자 미만 reason 거부는 hard stop이며 commit wrapper를 호출하지 않는다.
+- 발급 reason과 commit 결과는 분리해서 보고한다. 예: `commit-grant: user-prompt:...`, `commit: <hash>`.
+- 연속 commit은 1회용 토큰 재사용 금지다. commit마다 새로 발급한다.
+
+Reason prefix는 아래 4종만 사용한다.
+
+| prefix | 용도 |
+|--------|------|
+| `user-prompt:<요약 30자 이상>` | 사용자가 직접 commit/저장 의도를 발화한 경우 |
+| `done-archive:<plan-slug> <요약 30자 이상>` | `/done` archive/TODO/DONE 커밋 |
+| `merge-test:<branch> <요약 30자 이상>` | `/merge-test` merge/docs/resolve 커밋 |
+| `manual-tasks:<plan-slug> <요약 30자 이상>` | `/done` MANUAL_TASKS 분리 커밋 |
+
+PowerShell 발급 예시:
+
+```powershell
+$grantCommit = Join-Path (Get-Location) ".claude\hooks\grant-commit.ps1"
+$grantReason = "user-prompt:사용자가 요청한 변경 파일을 확인하고 명시 커밋으로 저장"
+if (Test-Path $grantCommit) {
+  & $grantCommit --reason $grantReason
+  if ($LASTEXITCODE -ne 0) { throw "commit sentinel grant failed: $grantReason" }
+} else {
+  Write-Host "no-sentinel-hook: $grantCommit"
+}
+```
+
 ### 1순위: commit.ps1 (PowerShell)
 ```powershell
 git add <files>
+$grantCommit = Join-Path (Get-Location) ".claude\hooks\grant-commit.ps1"
+$grantReason = "user-prompt:사용자가 요청한 변경 파일을 확인하고 명시 커밋으로 저장"
+if (Test-Path $grantCommit) {
+  & $grantCommit --reason $grantReason
+  if ($LASTEXITCODE -ne 0) { throw "commit sentinel grant failed: $grantReason" }
+} else {
+  Write-Host "no-sentinel-hook: $grantCommit"
+}
 & "D:\work\project\tools\common\commit.ps1" "커밋 메시지"
 ```
 
 Bash에서 powershell.exe 경유:
 ```bash
 git add <files>
-powershell.exe -Command "Set-Location 'D:\work\project\service\wtools'; & 'D:\work\project\tools\common\commit.ps1' '커밋 메시지'"
+powershell.exe -Command "Set-Location 'D:\work\project\service\wtools'; $grantCommit = Join-Path (Get-Location) '.claude\hooks\grant-commit.ps1'; $grantReason = 'user-prompt:사용자가 요청한 변경 파일을 확인하고 명시 커밋으로 저장'; if (Test-Path $grantCommit) { & $grantCommit --reason $grantReason; if ($LASTEXITCODE -ne 0) { throw \"commit sentinel grant failed: $grantReason\" } } else { Write-Host \"no-sentinel-hook: $grantCommit\" }; & 'D:\work\project\tools\common\commit.ps1' '커밋 메시지'"
 ```
 
 ### 2순위: commit.sh (공용, fallback)
 ```bash
 # ⚠️ 반드시 cd로 레포 디렉토리 이동 후 실행!
-cd "/d/work/project/service/wtools" && git add <files> && bash "/d/work/project/tools/common/commit.sh" "커밋 메시지"
+cd "/d/work/project/service/wtools" && git add <files> && powershell.exe -Command "$grantCommit = Join-Path (Get-Location) '.claude\hooks\grant-commit.ps1'; $grantReason = 'user-prompt:사용자가 요청한 변경 파일을 확인하고 명시 커밋으로 저장'; if (Test-Path $grantCommit) { & $grantCommit --reason $grantReason; if ($LASTEXITCODE -ne 0) { throw \"commit sentinel grant failed: $grantReason\" } } else { Write-Host \"no-sentinel-hook: $grantCommit\" }" && bash "/d/work/project/tools/common/commit.sh" "커밋 메시지"
 ```
 
 ### 3순위: commit.sh (로컬, 최후 fallback)
 ```bash
 # 공용 스크립트가 모두 없을 때 스킬 폴더 내 commit.sh 사용
-cd "/d/work/project/service/wtools" && git add <files> && bash "/d/work/project/service/wtools/.agents/skills/commit/commit.sh" "커밋 메시지"
+cd "/d/work/project/service/wtools" && git add <files> && powershell.exe -Command "$grantCommit = Join-Path (Get-Location) '.claude\hooks\grant-commit.ps1'; $grantReason = 'user-prompt:사용자가 요청한 변경 파일을 확인하고 명시 커밋으로 저장'; if (Test-Path $grantCommit) { & $grantCommit --reason $grantReason; if ($LASTEXITCODE -ne 0) { throw \"commit sentinel grant failed: $grantReason\" } } else { Write-Host \"no-sentinel-hook: $grantCommit\" }" && bash "/d/work/project/service/wtools/.agents/skills/commit/commit.sh" "커밋 메시지"
 ```
 
 **참고**: 모든 commit.sh는 commit.ps1과 동일한 기능을 수행합니다.
@@ -47,7 +87,8 @@ cd "/d/work/project/service/wtools" && git add <files> && bash "/d/work/project/
 ## Workflow
 
 1. **변경사항 확인**: `git status`로 수정된 파일 확인
-2. **스테이징**: `git add <files>` 또는 `git add .`
+2. **스테이징**: `git add <files>`만 사용한다. `git add .` / `git add -A` / 디렉토리 통째 add는 사용하지 않는다.
+   - plans 워크트리가 있으면 `Resolve-DocsCommitRoot` 기준 cwd로 이동한 뒤 `Resolve-DocsCommitCandidates` 반환 파일만 add한다.
 2.5. **커밋 prefix 판단**: 커밋 메시지의 prefix 확인
    - `feat:` → minor bump 필요
    - `fix:` → patch bump 필요
@@ -70,8 +111,9 @@ cd "/d/work/project/service/wtools" && git add <files> && bash "/d/work/project/
    ```
    CHANGELOG.md가 없으면 파일 자동 생성 후 추가.
 2.8. **변경 파일 추가 스테이징**: `git add CHANGELOG.md`
-3. **커밋 실행**: 커밋 스크립트 호출
-4. **태그 생성** (bump 발생 시): `git tag v{새버전}`
+3. **sentinel 발급**: 위 contract에 따라 `user-prompt:<요약 30자 이상>` reason으로 `grant-commit.ps1`을 호출한다. helper가 없으면 `no-sentinel-hook`을 남긴다.
+4. **커밋 실행**: 커밋 스크립트 호출
+5. **태그 생성** (bump 발생 시): `git tag v{새버전}`
 
 ## 커밋 메시지 규칙
 
@@ -96,6 +138,9 @@ cd "/d/work/project/service/wtools" && git add <files> && bash "/d/work/project/
 # 1순위: commit.ps1
 cd "D:\work\project\service\wtools"
 git add app/routes/monitor.py
+$grantCommit = Join-Path (Get-Location) ".claude\hooks\grant-commit.ps1"
+$grantReason = "user-prompt:사용자가 요청한 모니터링 API 변경 파일을 확인하고 저장"
+if (Test-Path $grantCommit) { & $grantCommit --reason $grantReason } else { Write-Host "no-sentinel-hook: $grantCommit" }
 & "D:\work\project\tools\common\commit.ps1" "feat: 모니터링 API 추가"
 ```
 
@@ -107,10 +152,12 @@ powershell.exe -Command "Set-Location 'D:\work\project\service\wtools'; & 'D:\wo
 # 2순위: 공용 commit.sh (반드시 cd 먼저)
 cd "/d/work/project/service/wtools"
 git add app/routes/monitor.py
+powershell.exe -Command "$grantCommit = Join-Path (Get-Location) '.claude\hooks\grant-commit.ps1'; $grantReason = 'user-prompt:사용자가 요청한 모니터링 API 변경 파일을 확인하고 저장'; if (Test-Path $grantCommit) { & $grantCommit --reason $grantReason; if ($LASTEXITCODE -ne 0) { throw \"commit sentinel grant failed: $grantReason\" } } else { Write-Host \"no-sentinel-hook: $grantCommit\" }"
 bash "/d/work/project/tools/common/commit.sh" "feat: 모니터링 API 추가"
 
 # 3순위: 로컬 commit.sh (공용 스크립트 없을 때)
 cd "/d/work/project/service/wtools"
 git add app/routes/monitor.py
+powershell.exe -Command "$grantCommit = Join-Path (Get-Location) '.claude\hooks\grant-commit.ps1'; $grantReason = 'user-prompt:사용자가 요청한 모니터링 API 변경 파일을 확인하고 저장'; if (Test-Path $grantCommit) { & $grantCommit --reason $grantReason; if ($LASTEXITCODE -ne 0) { throw \"commit sentinel grant failed: $grantReason\" } } else { Write-Host \"no-sentinel-hook: $grantCommit\" }"
 bash "/d/work/project/service/wtools/.agents/skills/commit/commit.sh" "feat: 모니터링 API 추가"
 ```

@@ -86,6 +86,7 @@ Deterministic setup, status, and advisory scanning must prefer helper CLI eviden
   - 대표 plan와 split `_todo-N` plan은 parent/child 완료 판정을 분리해 read-back한다.
   - leaf 본문에 `push`, `origin/main`, `remote`, 외부 repo 목록이 있으면 local commit만으로 체크하지 않고 `git ls-remote origin main`, `git show origin/main:<path>`, 또는 대상 repo의 `origin/main` content read-back evidence를 요구한다.
   - remote evidence가 없으면 해당 leaf를 `[x]`로 올리지 않고 `remote evidence 대기`로 남긴다.
+- planned regression TC, contract aftercare, active data repair/migration/disable/visible error TODO가 미완이면 current target을 final closeout으로 말하지 않는다. pre-merge live 검증이 금지된 경우 representative fixture 또는 `/merge-test` handoff evidence로 남긴다.
 
 plan → TODO → DONE 흐름으로 작업을 관리합니다.
 

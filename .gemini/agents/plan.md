@@ -61,6 +61,7 @@ wtools authoring surface 변경 plan에서 실행 체크박스 또는 파일 경
 ### 4단계: 커밋
 
 - 계획 문서 작성이 완료되면 다음 명령으로 커밋한다:
+  commit wrapper 호출 직전 대상 repo의 `.claude\hooks\grant-commit.ps1`을 확인하고, helper가 있으면 `user-prompt:<요약 30자 이상>` reason으로 새 sentinel을 발급한다. helper가 없으면 `no-sentinel-hook: <path>` evidence를 남긴다.
   `powershell.exe -ExecutionPolicy Bypass -File "D:\work\project	ools\common\commit.ps1" "docs: create plan for {주제}"`
 
 ## 계획 문서 표준 헤더 (필수)

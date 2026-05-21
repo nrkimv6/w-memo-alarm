@@ -72,6 +72,13 @@ The deterministic completion flow is owned by `common\tools\auto-done.ps1`. Use 
 - `TrackingItem id=5 삭제` 같은 특정 DB item 조치는 `data_cleanup`으로 분리하고, scheduler 경로 삭제, 기능 제거, commit revert, migration 제거 같은 `feature_rollback`은 별도 명시 승인 없이는 수행하지 않는다.
 - done closeout summary는 실행한 mutation class와 실행하지 않은 mutation class를 분리해 남긴다.
 
+## Contract Change Completion Gate
+
+- plan이 scheduler, worker claim, persisted JSON shape, API response, DB migration 의미를 바꾸면 `/done`은 기존 active/enabled 데이터 영향 분류를 read-back한다.
+- invalidated 데이터가 있는데 repair, migration, disable, visible error 중 하나의 evidence가 없으면 `contract_change_aftercare_missing`으로 archive를 보류한다.
+- representative fixture 또는 post-merge live/API/DB read-back 없이 active entity 후보 0개/no-op을 정상 완료로 보고하지 않는다.
+- post-merge stale regression은 원 실패 명령, corrected rerun, recovered ledger, 회복 commit/merge evidence가 모두 있어야 warning-success로 닫는다.
+
 ## 세션 targets / continue 계약 (필수)
 
 - 사용자가 같은 세션에 plan 경로를 2개 이상 명시하면, 그 목록은 **session targets**로 고정한다.
@@ -328,7 +335,7 @@ C. 매칭된 항목을 추출하여 리스트로 수집
 2. `## 미완료` 섹션 하단에 항목 추가: `- [ ] {내용} — from: {plan파일명.md}#{번호} ({날짜})`
 3. 중복 방지: 이미 같은 `from:` 참조가 있으면 스킵
 4. plan 문서: 수동 항목은 `[x]` + `(→ MANUAL_TASKS)` 태그 추가
-5. `MANUAL_TASKS.md`를 생성/수정했다면 archive/TODO/DONE 후속 이동 전에 해당 exact path를 `D:\work\project\tools\common\commit.ps1 -Files`로 즉시 커밋하고 commit hash를 closeout evidence에 남긴다.
+5. `MANUAL_TASKS.md`를 생성/수정했다면 archive/TODO/DONE 후속 이동 전에 `manual-tasks:<plan-slug> <요약 30자 이상>` reason으로 commit sentinel을 새로 발급한 뒤 해당 exact path를 `D:\work\project\tools\common\commit.ps1 -Files`로 즉시 커밋하고 commit hash를 closeout evidence에 남긴다.
 6. 즉시 커밋이 실패하거나 staged ownership을 검증할 수 없으면 `MANUAL_TASKS_COMMIT_PENDING`으로 중단한다. 이 상태에서는 archive 이동, TODO→DONE 이동, DONE.md 갱신을 계속하지 않는다.
 
 **완료 상태는 MANUAL_TASKS 제외 후 판단합니다.**
@@ -442,6 +449,37 @@ bump 필요 시 실행 명령 + CHANGELOG 형식 → [_recipes.md](./_recipes.md
 
 ---
 
+### 7.7단계: commit sentinel grant
+
+`commit.ps1` 또는 `commit.sh`를 호출하는 모든 `/done` 경로는 commit wrapper 직전에 대상 repo의 `.claude\hooks\grant-commit.ps1`을 확인한다.
+
+- helper가 있으면 매 commit마다 새 sentinel을 발급한다. 연속 commit에서 기존 토큰을 재사용하지 않는다.
+- helper가 없으면 commit을 막지 않고 transcript에 `no-sentinel-hook: <path>`를 남긴다.
+- helper 실패, reason prefix 누락, 30자 미만 reason 거부는 hard stop이다. 이 경우 commit wrapper를 호출하지 않는다.
+- staged ownership 검증을 통과한 뒤, commit wrapper 호출 직전에 발급한다.
+- 발급 reason과 commit 결과를 closeout evidence에서 분리한다.
+
+`/done`에서 허용되는 reason prefix:
+
+| 경로 | reason |
+|------|--------|
+| archive/TODO/DONE 커밋 | `done-archive:<plan-slug> <요약 30자 이상>` |
+| self residual 또는 post-merge-owned docs 커밋 | `done-archive:<plan-slug> <요약 30자 이상>` |
+| `MANUAL_TASKS.md` 즉시 커밋 | `manual-tasks:<plan-slug> <요약 30자 이상>` |
+
+PowerShell 발급 예시:
+
+```powershell
+$grantCommit = Join-Path (Get-Location) ".claude\hooks\grant-commit.ps1"
+$grantReason = "done-archive:<plan-slug> archive TODO DONE 문서 이동과 완료 기록 커밋"
+if (Test-Path $grantCommit) {
+  & $grantCommit --reason $grantReason
+  if ($LASTEXITCODE -ne 0) { throw "commit sentinel grant failed: $grantReason" }
+} else {
+  Write-Host "no-sentinel-hook: $grantCommit"
+}
+```
+
 ### 8단계: 커밋
 
 **🔴 이 단계를 건너뛰면 문서 변경이 uncommitted 상태로 남습니다. 반드시 실행하세요.**
@@ -450,6 +488,8 @@ bump 필요 시 실행 명령 + CHANGELOG 형식 → [_recipes.md](./_recipes.md
 - `git add`, `git reset`, `git stash`, `commit.ps1` 같은 mutation은 **한 번에 하나씩**만 실행한다. (병렬 실행 금지 — `.git/index.lock` 재발 방지)
 
 **🚨 CRITICAL: 반드시 PowerShell commit 함수 사용**
+
+`commit.ps1` 호출 직전에는 7.7단계의 sentinel grant를 실행한다. archive/TODO/DONE 커밋은 `done-archive:<plan-slug> <요약 30자 이상>`, MANUAL_TASKS 커밋은 `manual-tasks:<plan-slug> <요약 30자 이상>` reason을 사용한다.
 
 **💡 코드 변경과 문서 변경이 모두 unstaged 상태이면 한번에 커밋하세요.**
 

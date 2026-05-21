@@ -35,6 +35,7 @@
 6. **커밋** (Shell)
    - 변경 사항을 `powershell.exe -Command "git add -A"` 후 커밋한다.
    - 커밋 스크립트 경로: `$env:WTOOLS_TOOLS_DIR\commit.ps1` (환경 변수 우선) 또는 `D:\work\project\tools\common\commit.ps1` (fallback)
+   - commit wrapper 호출 직전 대상 repo의 `.claude\hooks\grant-commit.ps1`을 확인한다. helper가 있으면 `done-archive:<plan-slug> <요약 30자 이상>` reason으로 새 sentinel을 발급하고, 없으면 `no-sentinel-hook: <path>` evidence를 남긴다.
    - 명령 예: `powershell.exe -ExecutionPolicy Bypass -File "$commitScriptPath" \"docs: archive completed plan — {제목}\"`
 
 ## 출력 형식

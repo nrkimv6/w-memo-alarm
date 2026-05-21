@@ -46,6 +46,7 @@
 
 5. **완료 및 커밋**
    - 모든 항목이 완료되면 커밋 스크립트를 호출한다:
+     commit wrapper 호출 직전 대상 repo의 `.claude\hooks\grant-commit.ps1`을 확인하고, helper가 있으면 `user-prompt:<요약 30자 이상>` reason으로 새 sentinel을 발급한다. helper가 없으면 `no-sentinel-hook: <path>` evidence를 남긴다.
      `powershell.exe -ExecutionPolicy Bypass -File "D:\work\project	ools\common\commit.ps1" "feat: {기능명}"`
    - 이후 `done` 스킬을 호출하여 아카이브 및 TODO 동기화를 위임한다.
 
