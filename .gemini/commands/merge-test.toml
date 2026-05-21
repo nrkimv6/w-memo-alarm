@@ -25,6 +25,12 @@ prompt = """
 2. `run_shell_command`로 PowerShell에서 `common/tools/merge-test-preflight.ps1 -PlanFile <plan> -RepoRoot <repo> -Json`을 실행해 branch/worktree/pending merge evidence를 수집합니다.
 3. preflight hard blocker가 있으면 `<CODE>_BLOCKED` 형식으로 중단하고 plan에 evidence를 남깁니다.
 
+### Artifact Hygiene (Required)
+
+- merge-test 중 Browser/Playwright/CDP fallback, screenshot, DOM JSON, trace 같은 evidence 산출물이 생기면 기본 disposable 위치는 repo 밖 `$env:TEMP\codex\<repo>\<plan-slug>\<timestamp>\`입니다.
+- repo 안에 증거를 남겨야 할 때만 ignored evidence root `.tmp/codex/<plan-slug>/<timestamp>/`를 사용합니다. root `tmp/`, root `temp/`, root 직하위 evidence 파일/디렉터리 생성은 금지입니다.
+- final 직전 `git status --short --untracked-files=all`로 root untracked를 재확인합니다. repo-local artifact guard가 있으면(예: `scripts\diagnostics\check-root-artifacts.ps1`) 함께 실행합니다.
+
 ### 2. Main Merge
 
 1. main worktree에서 `git fetch origin` 후 `git status --short --branch`로 상태를 확인합니다.
