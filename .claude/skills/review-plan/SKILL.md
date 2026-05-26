@@ -235,6 +235,7 @@ advisory evidence가 있으면 아래 3단계를 검증한다:
   - parent가 complete/archive될 수 있는데 active child를 막는 gate 또는 명시 detach approval evidence가 없다.
 - 실행 범위가 보존되고 child plan 링크, 책임 surface, owner/완료 gate가 확인되면 사용자 명시 승인 문장 없이도 자율 분리로 허용한다. 이미 child가 생성되어 있으면 `split-applied`, 아직 분리 전이면 `split-required`로 기록하고 expand-todo 호출은 계속 진행한다.
 - 실행 체크박스 또는 파일 경로 헤더에서 두 개 이상 engine authoring surface(`.agents/`, `.claude/`, `.gemini/`, `common/tools/plan-runner/gemini-agents/`)가 섞이면 `surface isolation = split-required`로 기록하고 expand-todo 호출을 멈추지 않는다. 이미 surface별 child로 분리되어 있으면 `surface isolation = split-applied`로 기록한다.
+- surface child plan 초기 파일을 생성할 때는 phase 헤더(`### Phase N: {이름}`)와 상위 작업명(`N. - [ ] **{작업}**`)까지만 작성한다. 구체 sub-item(`- [ ] {파일경로}: {변경}`) 작성은 대상 surface 파일을 Read하는 `/expand-todo` 단계에 위임한다.
 - surface isolation 판정은 `PLAN_SPLIT_GATE`의 deterministic 검증 결과를 포함한다. `surface_count`, `_todo-N.md` `child_count`, `surface_child_count`, `support_child_count`, parent executable checkbox residue count를 먼저 계산하고, `surface_count != surface_child_count`이면 `차단: SURFACE_SPLIT_COUNT_MISMATCH`, residue가 있으면 `차단: PARENT_EXECUTION_CHECKBOX_RESIDUE`로 기록한다.
 - 자동 분리 기준이 모호하면 `수동 결정 필요`로 기록하고, 모호한 체크박스/경로 근거를 결과표 또는 후속 메모에 남긴다. 이 상태는 fatal 실패가 아니지만 `/done`에서 parent complete/archive 처리되면 안 된다.
 - wtools authoring surface 변경 plan에 헤더 `> surface 분류:` 필드도 없고 본문 `## surface 분류` 섹션도 없으면 `SURFACE_CLASSIFICATION_MISSING`으로 재검토 실패 처리한다.

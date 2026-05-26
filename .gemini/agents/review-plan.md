@@ -126,6 +126,7 @@
 - child 파일명은 원본 stem + `_todo-N.md` suffix만 허용한다.
 - 실행 체크박스 또는 파일 경로 헤더에 두 개 이상 engine authoring surface(`.agents/`, `.claude/`, `.gemini/`, `common/tools/plan-runner/gemini-agents/`)가 섞이면 `surface isolation = split-required`로 기록한다.
 - 이미 surface별 child가 있으면 `split-applied`다.
+- surface child plan 초기 파일을 생성할 때는 phase 헤더와 상위 작업명까지만 작성한다. 구체 sub-item 작성은 대상 surface 파일을 Read하는 expand-todo에 위임한다.
 - expand-todo 호출 전 deterministic surface split gate를 반드시 먼저 실행한다.
   1. parent plan과 linked child plan의 실행 체크박스/파일 경로 헤더에서 surface token을 센다. `run_shell_command`를 쓰는 경우 PowerShell 예시는 `Select-String -Path '<plan>' -Pattern '\.agents/|\.claude/|\.gemini/|common/tools/plan-runner/gemini-agents/'` 형태로 read-only grep만 허용한다.
   2. `> **실행 TODO:**` 링크와 sibling `{parent_stem}_todo-*.md`를 enumerate해서 active `_todo-N.md` child 전체 수(`child count`)를 센다.

@@ -71,6 +71,11 @@ For deterministic status, grep, candidate, preflight, or cleanup steps, call the
      (f) parent의 T4/T5에 `> 테스트명령:` 필드로 프로젝트별 pytest 마커 명시
    - **프로젝트 1개** → 3.5 규모 기반 분리로 진행
 
+3.45. **surface context 인식** (wtools authoring surface):
+   - plan 헤더 `> surface 분류:`가 단일 engine authoring surface(`.agents/`, `.claude/`, `.gemini/`, `common/tools/plan-runner/gemini-agents/`)를 가리키면, 해당 surface의 수정 대상 파일을 최우선으로 Read한다.
+   - 대상 파일의 기존 섹션 구조(절차형 step, 표, TOML wrapper 등), 삽입 위치, 포맷을 확인한 뒤 하위 체크박스를 작성한다.
+   - 헤더가 없으면 실행 체크박스와 파일 경로 헤더의 prefix를 검색해 surface를 추론한다. 그래도 모호하면 `수동 결정 필요`로 남기고 child sub-item을 쓰지 않는다.
+
 3.5. **규모 기반 분리 판단** (프로젝트 분리 후 각 _todo-N 내부, 또는 단일 프로젝트):
    - 체크박스 총 수를 카운트
    - **31개+ AND 독립 Phase 묶음(상호 의존 없는 Phase 그룹) 2개+** → `_todo-N.md` 분리:
@@ -135,6 +140,14 @@ For deterministic status, grep, candidate, preflight, or cleanup steps, call the
    4. 기존 plan의 스킵 사유가 금지 사유(step 4 T4/T5 금지 사유 목록)에 해당하는지 확인
    🔴 **이 단계를 건너뛰면 규칙 위반.** 기존 plan의 `[x] 스킵` 체크박스는 재검증 대상이지 확정된 결과가 아니다.
 5. 상태를 `검증중`으로 Edit (auto-verify 에이전트가 검증 후 `검토완료`로 전이)
+5.3. **surface isolation split 검증** (wtools authoring surface):
+   - 실행 체크박스 또는 파일 경로 헤더에 두 개 이상 engine authoring surface(`.agents/`, `.claude/`, `.gemini/`, `common/tools/plan-runner/gemini-agents/`)가 섞였는지 확인한다.
+   - 두 개 이상 surface가 한 실행 체크박스 아래 섞이면 parent를 coordination-only로 남기고 surface별 child TODO로 분리한다. parent에는 `> **실행 TODO:**` 링크, owner/완료 gate, child 진행률 인덱스만 남긴다.
+   - 이미 child가 생성되어 있으면 `split-applied`, 아직 분리 전이면 `split-required`로 기록한다. 둘 다 expand 실패가 아니다.
+   - 각 child의 `> 대상 프로젝트:`, `> surface 분류:`, `> 선행조건:`은 단일 surface 기준으로 작성하고, 다른 engine surface 파일 경로를 하위 체크박스에 넣지 않는다.
+   - surface split으로 child plan을 생성할 때 초기 파일은 phase 헤더와 상위 작업명까지만 작성하고, sub-item 작성은 대상 surface 파일을 Read하는 expand 단계에 위임한다.
+   - 문구 복제를 강제하지 않는다. 각 surface child는 자기 결과 구조와 실행 메커니즘에 맞게 의미를 표현한다.
+   - child plan 실행 체크박스의 sub-item 작성 전 대상 surface의 수정 대상 파일을 Read해 기존 섹션 구조와 삽입 위치를 확인한다. 삽입 위치와 포맷이 실제 파일 구조와 일치해야 한다.
 5.5. **계획서 커밋** (Bash 도구) — 반드시 아래 순서로 실행
    - a. `git status --porcelain` — 변경 파일 목록 확인
    - b. 화이트리스트 파일만 **개별** git add (파일 경로 하나씩):

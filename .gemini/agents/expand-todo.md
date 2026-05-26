@@ -60,13 +60,21 @@
    - `fix`, 공통 모듈/API/DB, 대규모 변경이면 strict 모드로 승격한다.
    - strict 모드에서는 `전수 검색(rg) -> 선별 Read`를 강제한다.
 5. **2레벨 확장**: 분석 내용을 바탕으로 기존 체크리스트를 2레벨 구조로 변환한다.
+   - plan 헤더 `> surface 분류:`가 단일 engine authoring surface(`.agents/`, `.claude/`, `.gemini/`, `common/tools/plan-runner/gemini-agents/`)를 가리키면, 해당 surface의 수정 대상 파일을 최우선으로 Read한다.
+   - 대상 파일의 기존 섹션 구조, 삽입 위치, 포맷을 확인한 뒤 하위 작업을 작성한다. 파일 경로가 모호하면 plan 본문 파일 경로 헤더와 surface prefix를 먼저 검색한다.
 6. **review-plan 선행 확인**: `.gemini/agents/review-plan.md` 또는 headless `review-plan` policy가 먼저 실행됐는지 확인한다.
    - plan 본문 또는 직전 결과에 `review-plan: PASS`, `STATUS: SUCCESS`, `split-applied`, `split-required`, `surface isolation`, `SURFACE_CLASSIFICATION_MISSING` 중 하나의 review evidence가 있는지 확인한다.
    - review-plan 미실행 plan이면 expand를 진행하지 말고 `REVIEW_PLAN_REQUIRED_BEFORE_EXPAND`로 반환한다.
    - review-plan의 J 검증 결과(`split-applied`/`split-required`/`수동 결정 필요`)를 보존한다. expand-todo는 surface isolation 판정을 새로 덮어쓰지 않는다.
    - `split-required`는 expand 실패가 아니다. parent/child 링크와 owner/완료 gate를 유지한 상태에서 2레벨 확장만 수행한다.
-7. **문서 업데이트**: Edit 도구를 사용하여 plan 문서의 체크리스트 섹션을 교체한다.
-8. **결과 요약**:
+7. **surface isolation split 검증**:
+   - 실행 체크박스 또는 파일 경로 헤더에 두 개 이상 engine authoring surface(`.agents/`, `.claude/`, `.gemini/`, `common/tools/plan-runner/gemini-agents/`)가 섞였는지 확인한다.
+   - 이미 child가 생성되어 있으면 `split-applied`, 아직 분리 전이면 `split-required`로 기록한다. 둘 다 expand 실패가 아니다.
+   - surface별 child는 단일 surface 기준으로 작성하고, 다른 engine surface 파일 경로를 하위 체크박스에 넣지 않는다.
+   - child plan 실행 체크박스의 sub-item 작성 전 대상 surface의 수정 대상 파일을 Read해 기존 섹션 구조와 삽입 위치를 확인한다. 삽입 위치와 포맷이 실제 파일 구조와 일치해야 한다.
+   - 문구 복제를 강제하지 않는다. 각 surface child는 자기 결과 구조와 실행 메커니즘에 맞게 의미를 표현한다.
+8. **문서 업데이트**: Edit 도구를 사용하여 plan 문서의 체크리스트 섹션을 교체한다.
+9. **결과 요약**:
    - 드리프트 결과는 `추가 TODO` 또는 `기술적 고려사항`으로만 반영한다.
    - `archive-only`/`git-only` 분기 결과와 근거를 함께 기록한다.
 

@@ -54,6 +54,7 @@ Phase insertion triggers must be treated as advisory evidence first. Use `common
 
 **각 체크리스트 항목에 대해:**
 
+0. plan 헤더 `> surface 분류:`가 단일 engine authoring surface(`.agents/`, `.claude/`, `.gemini/`, `common/tools/plan-runner/gemini-agents/`)를 가리키면, 해당 surface의 수정 대상 파일을 최우선으로 Read한다. surface 수정 대상 파일의 기존 섹션 구조(절차형 step, 표, TOML wrapper 등), 삽입 위치, 포맷을 먼저 확인한 뒤 하위 작업을 작성한다.
 1. 대상 파일의 **실제 코드**를 Read로 읽는다
 2. 수정 대상 함수/클래스의 현재 구현을 확인한다
 3. 기존 패턴, 임포트, 의존성을 파악한다
@@ -397,6 +398,7 @@ Python/백엔드를 수정하는 plan 확장 시, 구현 Phase 뒤에 반드시 
 4. 분류가 모호하면 child를 만들지 않고 parent에 `> 수동 결정 대기: <YYYY-MM-DD>`와 모호한 체크박스 근거를 남긴다.
 5. 각 child의 `> 대상 프로젝트:`, `> surface 분류:`, `> 선행조건:`은 단일 surface 기준으로 작성하고, 다른 engine surface 파일 경로를 하위 체크박스에 넣지 않는다.
 6. 동일 문구를 `.agents`, `.claude`, Gemini surface에 강제 복사하지 않는다. 각 surface child는 자기 결과 구조와 실행 메커니즘에 맞게 의미를 표현한다.
+7. child plan 실행 체크박스의 sub-item 작성 전 대상 surface의 수정 대상 파일을 Read해 기존 섹션 구조와 삽입 위치를 확인한다. 삽입 위치와 포맷이 실제 파일 구조와 일치해야 하며, 파일 경로가 아직 불명확하면 plan 본문 파일 경로 헤더와 surface prefix를 먼저 검색해 대상 파일을 확정한다.
 
 `수동 결정 필요` 상태는 구현 진입을 막지 않지만 `/done`이 parent를 complete/archive 처리하면 안 된다.
 
