@@ -206,9 +206,12 @@ advisory evidence가 있으면 아래 3단계를 검증한다:
 - 위반이 없으면 결과표 `live phase fence` 칸에 `해당 없음`을 기록한다.
 - 계획서에 T4 Phase, E2E 테스트명령, 또는 `tests/**/*e2e*`/`tests/**/*integration*` 파일 언급이 있으면 해당 테스트 파일을 Read한다.
 - T4 evidence는 `pytest.mark.e2e`와 `pytest.mark.http_live`가 함께 있고, frontend readiness 또는 `/merge-test` readiness 전제가 있으며, `page.route("**/*", ...)` 전체 route mock만으로 화면을 구성하지 않아야 `live`로 분류한다.
+- canonical T4/T5 contract(`common/tools/merge-test-contract.md`) 기준으로 source-contract, schema-contract, mock, TestClient, DOM 존재 검증은 보조 증거일 뿐이며 T4/T5 완료 근거를 대체하면 hard-fail로 기록한다.
+- UI T4 계획은 `selector_count > 0` 또는 동등 selector read-back, 사용자 action, post-action assertion을 모두 가져야 한다. DOM-only, source-contract-only, zero-selector collect-only는 T4 부족으로 분류한다.
 - T4 파일에 `page.route("**/*")` 전체 mock이 있고 `pytest.mark.http_live`가 없으면 `mock_only`로 분류하고, T3 재분류 요구 + live T4 follow-up TODO를 review 결과표에 기록한다. 일부 요청만 mock하는 `page.route()`도 T4 확정이 아니라 검토 필요로 남긴다.
 - 계획서에 T5 Phase, HTTP 통합 테스트명령, 또는 `tests/**/*http*`/`tests/**/*api*` 파일 언급이 있으면 해당 테스트 파일을 Read한다.
 - T5 evidence는 `pytest.mark.http_live`와 `requests.get("http://localhost:8001/...")`, `httpx.get("http://localhost:8001/...")`, 또는 project live readiness helper 같은 localhost live 호출이 있어야 `http_live`로 분류한다.
+- worker/scheduler 변경 계획은 T5에 `runtime_fingerprint` 또는 `process_fingerprint`, worker registration log, readiness/API read-back을 요구한다. 이 셋 중 하나라도 없으면 `T5_WORKER_RUNTIME_EVIDENCE_MISSING` 후보로 기록한다.
 - T5 파일이 `from fastapi.testclient import TestClient` 단독 증거이면 `testclient_only`로 분류하고, T3 재분류 요구 + live T5 follow-up TODO를 review 결과표에 기록한다.
 - T4/T5 결과표에는 `T4/T5 계약` 열 또는 비고 marker로 `live`, `mock_only`, `http_live`, `testclient_only`, `absent` 중 하나를 남긴다. `mock_only`/`testclient_only`면 expand-todo 전 deterministic 보정 또는 차단 여부를 명시한다.
 - T4/T5가 `해당 없음`인데 feature area live smoke가 없으면 "live smoke 없음" 경고를 남긴다. 기존 mock-only/TestClient-only 테스트는 삭제 대상으로 만들지 않고 T3 재분류 + live follow-up만 생성한다.

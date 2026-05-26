@@ -41,6 +41,20 @@ git stash apply {hash}
 
 ## 0단계 루트 브랜치 자동 전환 의사코드
 
+## T4/T5 live evidence row examples
+
+UI T4 evidence must preserve a selector/action/assertion chain:
+
+```powershell
+| T4 | python -m pytest tests/ui/test_history_e2e.py -m "e2e and http_live" -v | D:\work\project\tools\monitor-page | 완료 | 0 | selector_count=3; performed_action=click refresh; post_action_assertion=history row visible; runtime_target=http://localhost:5173/history | - |
+```
+
+Worker/scheduler T5 evidence must preserve runtime read-back:
+
+```powershell
+| T5-http_live | python -m pytest tests/dev_runner/test_worker_http_live.py -m http_live -v | D:\work\project\tools\monitor-page | 완료 | 0 | runtime_fingerprint=pid:1234; worker_registration=listener registered; readiness=200; API read-back=history row persisted | - |
+```
+
 
 원본 프로젝트 루트에서 `git rev-parse --abbrev-ref HEAD`를 실행한다.
 

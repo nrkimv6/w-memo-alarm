@@ -8,7 +8,7 @@ description: "구현 워크플로우 (plan→TODO→DONE). Use when: 구현해, 
 <!-- script-contract-invariant -->
 ## Script Contract Invariant
 
-Deterministic setup, status, and advisory scanning must prefer helper CLI evidence over re-implementing long inline procedures when `common\tools` exists. Use `common\tools\plan-advisory-detect.ps1 -PlanFile <plan> -Json` for advisory-only plan triggers and `common\tools\merge-test-preflight.ps1 -PlanFile <plan> -RepoRoot <repo> -Json` when branch/worktree or pending-merge evidence is needed. If a downstream repo has no `common\tools` helper surface, record `helper_unavailable` and use the merge-test direct read-back checklist rather than treating helper absence as `GIT_GUARD_NOT_ACTIVE`. AI keeps ownership of interpretation and scope decisions; helper output is evidence, not automatic approval to mutate.
+Deterministic setup, status, advisory scanning, and final preflight must prefer helper CLI evidence over re-implementing long inline procedures when `common\tools` exists. Use `common\tools\plan-advisory-detect.ps1 -PlanFile <plan> -Json` for advisory-only plan triggers, `common\tools\merge-test-preflight.ps1 -PlanFile <plan> -RepoRoot <repo> -Json` when branch/worktree or pending-merge evidence is needed, and `common\tools\session-target-router.ps1 -Json` for session target closeout routing. If a downstream repo has no `common\tools` helper surface, record `helper_unavailable` and use the merge-test direct read-back checklist rather than treating helper absence as `GIT_GUARD_NOT_ACTIVE`. AI keeps ownership of interpretation and scope decisions; helper output is evidence, not automatic approval to mutate.
 > Routing gate: branch/worktree present -> /merge-test; absent -> /done
 # 구현 워크플로우
 
@@ -29,6 +29,10 @@ Deterministic setup, status, and advisory scanning must prefer helper CLI eviden
 | 6 | 위 조건 모두 해당 없음 | **final** | 완료 보고 허용 |
 
 > 중간 성공(T1/T2 통과, leaf 일부, 머지대기)은 판정 입력이 아니라 진행 업데이트다.
+
+## Session Target Router Final Guard
+
+Final response preflight uses `common\tools\session-target-router.ps1 -Json` as the source of truth for session target routing. The router JSON must include `decision=continue|blocked|final`, `declared`, `processed_this_turn`, `already_archived`, `blocked`, `remaining_executable`, `next_owner`, and when blocked, `blocker_code`. `decision=continue` is normal continuation, not failure, and not blocked; dispatch the next leaf, target, or owner from `next_owner`. `decision=blocked` is target-local blocker evidence with `blocker_code` and `next_owner`. Only `decision=final` permits a final response.
 
 ## No-User-Reprompt Owner Result Table
 
@@ -246,6 +250,8 @@ Gate: branch/worktree present -> /merge-test; absent -> /done
 **Same-turn owner chain contract:** 위 조건에서 수동 `/implement`는 설명-only 종료가 아니라 `implement -> merge-test -> done` 실행 chain을 계속 탄다. `/merge-test`가 archive/TODO/DONE 후처리까지 끝내거나 hard blocker를 반환하기 전까지 `leaf 완료`, `T1/T2/T3 통과`, `머지대기 전이` 같은 중간 성공은 closeout으로 말하지 않는다. 종료 직전 read-back은 `remaining executable leaf`, `remaining targets`, `next owner step`, `remote evidence`를 출력하되, 실행 가능한 `/merge-test` 또는 `/done` next owner가 있으면 계속 실행한다.
 
 **Final response preflight gate:** final response 직전에는 아래 값을 새로 계산하고 closeout evidence에 남긴다. 이 표는 final summary용 장식이 아니라 hard gate다.
+
+먼저 `common\tools\session-target-router.ps1 -Json`을 실행해 router JSON을 read-back한다. `decision=continue`이면 final 응답을 금지하고 실패로 보고하지 말고 정상 continuation dispatch로 다음 leaf/target/owner를 같은 턴에서 계속 실행한다. `decision=blocked`이면 `blocker_code`와 `next_owner`를 target-local blocker로 남긴다. `decision=final`일 때만 아래 세부 evidence가 final closeout을 보강한다.
 
 | field | required evidence | final rule |
 |---|---|---|

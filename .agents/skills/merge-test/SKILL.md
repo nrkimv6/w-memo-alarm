@@ -9,13 +9,17 @@ triggers: ["머지 테스트", "merge-test", "머지후테스트", "통합테스
 
 Canonical policy lives in [`common/tools/merge-test-contract.md`](../../../common/tools/merge-test-contract.md). This surface is an orchestrator: it discovers helper CLIs, consumes their JSON, records evidence, and routes the next owner. Do not paste blocker tables, T4/T5 classifiers, or archive gates back into this file.
 
-Preflight and cleanup evidence must come from helper CLI contracts before any merge mutation. Discover helpers in order: repo-local `common\tools`, then wtools canonical helper surface `D:\work\project\service\wtools\common\tools`. Use `merge-test-preflight.ps1 -PlanFile <plan> -RepoRoot <repo> -Json` for pending merge, branch/worktree, dirty, service-lock, and live runtime readiness evidence. Use `merge-test-cleanup.ps1 -PlanFile <plan> -RepoRoot <repo> -Json` for post-merge cleanup evidence. A downstream repo-local `common\tools` absence is not `helper_unavailable` while the wtools canonical helper is discoverable. Only after canonical helper discovery fails, record `helper_unavailable` and use the direct read-back checklist.
+Preflight, cleanup, and final session routing evidence must come from helper CLI contracts before any merge mutation or final wording. Discover helpers in order: repo-local `common\tools`, then wtools canonical helper surface `D:\work\project\service\wtools\common\tools`. Use `merge-test-preflight.ps1 -PlanFile <plan> -RepoRoot <repo> -Json` for pending merge, branch/worktree, dirty, service-lock, and live runtime readiness evidence. Use `merge-test-cleanup.ps1 -PlanFile <plan> -RepoRoot <repo> -Json` for post-merge cleanup evidence. Use `session-target-router.ps1 -Json` for batch finalization ledger routing. A downstream repo-local `common\tools` absence is not `helper_unavailable` while the wtools canonical helper is discoverable. Only after canonical helper discovery fails, record `helper_unavailable` and use the direct read-back checklist.
 
 > Routing gate: branch/worktree present -> /merge-test; absent -> /done
 
 # 머지 후 통합테스트 게이트
 
 `/implement`로 worktree에서 구현 완료 후 main에 머지하고, plan의 T4/T5 검증과 `/done` 완료처리까지 이어간다. `merge success`, `T4/T5 passed`, 또는 `cleanup ready` 단독은 final 사유가 아니다. common contract의 STOP/CONTINUE Decision Table에서 remaining executable leaf, remaining targets, `/done`, archive/read-back이 모두 닫힌 뒤에만 완료를 말한다.
+
+## Session Target Router Final Guard
+
+Batch finalization ledger closeout uses `common\tools\session-target-router.ps1 -Json` as the source of truth. The router JSON must include `decision=continue|blocked|final`, `declared`, `processed_this_turn`, `already_archived`, `blocked`, `remaining_executable`, `next_owner`, and when blocked, `blocker_code`. `decision=continue` is normal continuation, not failure, and not blocked; continue with the next target, `/done`, receiver read-back, or owner from `next_owner`. `decision=blocked` is target-local blocker evidence with `blocker_code` and `next_owner`. Only `decision=final` permits final closeout after merge-test and `/done` read-back are both closed.
 
 ## Skill Path Precedence
 
@@ -101,6 +105,8 @@ The machine-readable evidence table must keep these columns: `stage`, `command`,
 Common contract keywords that must remain in the canonical contract and may be referenced in plan evidence: `Recovered validation ledger`, `original_command`, `recovered_command`, `failed_command`, `recovery_action`, `recovered_result`, `failure_class`, `blocks_archive=false`, `blocks_other_targets=false`, `t4_t5_evidence_missing`, `t4_t5_not_run`, `보류(<blocker_code>)`, `T5_CLAIM_HTTP_FIXTURE_MISSING`, `non_live_recovery_evidence_missing`.
 
 T4/T5 live contract classification is owned by `common/tools/merge-test-contract.md`: `live`, `mock_only`, `http_live`, `testclient_only`, `absent`. Blocker names include `T4_MOCK_ONLY_DETECTED`, `T5_TESTCLIENT_ONLY_DETECTED`, `T4_LIVE_SMOKE_MISSING`, and `T5_HTTP_LIVE_MARKER_ABSENT`. Markers and probes include `pytest.mark.e2e`, `pytest.mark.http_live`, `TestClient`, `requests`/`httpx` localhost, `page.route("**/*")`, `no full-route mock`, `raw Chromium CDP`, and `feature area` live smoke coverage.
+
+The common contract also owns hard gates for source-contract-only, DOM-only, zero-selector collect-only, selector/action/assertion, worker registration/readiness, and UI data display read-back. A source-contract success row is auxiliary evidence only; a UI T4 row needs `selector_count > 0`, performed action, post-action assertion, and actual target/deep-link URL marker rendering. Worker/scheduler T5 rows need process fingerprint or `runtime_fingerprint`, worker registration log, and readiness/API read-back.
 
 If a T4/T5 command fails with selector drift, timeout, connection refused, Browser/Playwright profile lock, missing module, or stale runtime and then recovers, keep the original failure row and add Recovered validation ledger evidence. A corrected rerun alone is not sufficient.
 

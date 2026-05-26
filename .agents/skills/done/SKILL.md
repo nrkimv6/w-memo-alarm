@@ -8,7 +8,7 @@ description: "구현 완료 후처리 (plan 체크, archive, TODO→DONE, commit
 <!-- script-contract-invariant -->
 ## Script Contract Invariant
 
-The deterministic completion flow is owned by `common\tools\auto-done.ps1`. Use `-DryRun -Json` for preflight evidence and `-Json` for structured result reporting when possible. In `-Json` mode, blocked results are machine-readable contract payloads; consume the `tool=auto-done` JSON object from stdout and do not depend on trailing human `Write-Error` text. AI remains responsible for routing (`/merge-test` vs `/done`), conflict classification, and deciding whether helper failure requires owner intervention.
+The deterministic completion flow is owned by `common\tools\auto-done.ps1`. Use `-DryRun -Json` for preflight evidence and `-Json` for structured result reporting when possible. In `-Json` mode, blocked results are machine-readable contract payloads; consume the `tool=auto-done` JSON object from stdout and do not depend on trailing human `Write-Error` text. Final preflight must also read `common\tools\session-target-router.ps1 -Json` and use its router JSON as the session closeout source of truth. AI remains responsible for routing (`/merge-test` vs `/done`), conflict classification, and deciding whether helper failure requires owner intervention.
 > Routing gate: branch/worktree present -> /merge-test; absent -> /done
 # 구현 완료 후처리
 
@@ -31,6 +31,10 @@ The deterministic completion flow is owned by `common\tools\auto-done.ps1`. Use 
 | 6 | 위 조건 모두 해당 없음 | **final** | 완료 보고 허용 |
 
 > archive/read-back은 TODO→DONE 이동 + plan 체크 + archive 커밋 + DONE.md 기록 + 4-surface read-back 확인 전부를 포함한다. 하나라도 미완이면 row 4 `continue`.
+
+## Session Target Router Final Guard
+
+Before any final response, run `common\tools\session-target-router.ps1 -Json` against the session target ledger and read back the router JSON. It must include `decision=continue|blocked|final`, `declared`, `processed_this_turn`, `already_archived`, `blocked`, `remaining_executable`, `next_owner`, and when blocked, `blocker_code`. `decision=continue` is normal continuation, not failure, and not blocked; continue to the next archive/read-back, target, or owner from `next_owner`. `decision=blocked` is target-local blocker evidence with `blocker_code` and `next_owner`. Only `decision=final` allows `/done` to produce final closeout wording.
 
 ## Routing Gate Summary
 
@@ -213,12 +217,15 @@ AGENTS.md 문서 위치 규칙의 plan 경로/*.md
 | **2.76 product-surface evidence scope** | plan 헤더에 `> completion-scope: product_surface` 또는 `> completion scope: product_surface` 존재 | evidence에 product surface path/read-back(`app/`, `frontend/`, `backend/`, `src/`, `packages/`, `services/`, `common/tools/` 등) 1개 이상 존재하거나 scratch/private utility evidence만 존재하지 않음 | `non_product_only`로 target-local blocked 처리. 상태 변경/archive/TODO→DONE 금지 | `scripts/scratch/`, `scratch/`, `tmp/`, `private/`, `.private/` 등만으로 product-surface plan 완료 금지 |
 | **2.77 T4/T5 evidence table** | plan/archive 본문에 `Phase T4`, `Phase T5`, 또는 `T4/T5 evidence table` requirement 존재 | target별 `stage`, `command`, `cwd`, `result`, `exit_code`, `log_ref`, `blocker_code` row completeness 확인. 해당 없음은 explicit blockquote read-back과 non-empty `blocker_code` 필요. `failed -> recovered`는 `Recovered validation ledger`와 `blocks_archive=false` 필요 | `t4_t5_evidence_missing`, `t4_t5_not_run`, `t4_t5_blocked` 중 하나로 target-local blocked 처리. 상태 변경/archive/TODO→DONE 금지 | `merge`/`broad pytest`/`collect-only`만으로 archive 금지 |
 | **2.78 T5-http_live negative evidence contradiction** | `T5-http_live` evidence row가 `완료`이지만 log/evidence text에 `no http_live marker`, `http_live marker 없음`, `0 selected`, `TestClient-only`, `mock-only`, `localhost live call missing` 중 하나가 있음 | non-empty `blocker_code`(`T5_HTTP_LIVE_MARKER_ABSENT` 등)와 명시 사유가 함께 있거나 row가 `실패`/`미실행`/`해당 없음`으로 정직하게 분류됨 | `T5_HTTP_LIVE_MARKER_ABSENT` hard blocker. evidence table의 `완료` 값만으로 완료 처리 금지 | absent marker negative evidence는 완료 근거가 아니라 contract violation evidence |
+| **2.78a T4/T5 live evidence hardening** | T4/T5 완료 row가 source-contract-only, DOM-only, zero-selector collect-only, selector/action/assertion 누락, 또는 worker/scheduler runtime evidence 누락을 포함 | `common\tools\auto-done.ps1 -Json` parser가 `T4_SOURCE_CONTRACT_ONLY`, `T5_SOURCE_CONTRACT_ONLY`, `T4_DOM_ONLY_DETECTED`, `T4_SELECTOR_ZERO_MATCH`, `T4_ACTION_ASSERTION_EVIDENCE_MISSING`, `T5_WORKER_RUNTIME_EVIDENCE_MISSING` 중 하나를 blocker로 반환하지 않음 | canonical parser 결과를 hard blocker로 소비하고 상태 변경/archive/TODO→DONE 금지 | worker/scheduler는 process fingerprint 또는 `runtime_fingerprint`, worker registration log, readiness/API read-back 3종 필요 |
 | **2.79 evidence/체크박스 mismatch** | 같은 Phase 안의 완료 체크박스가 `노출`, `확인`, `검증`, `성공` 같은 긍정 gate를 요구하고 인접 evidence row에 `미노출`, `실패`, `차단`, `blocked`, `missing`, `absent` 같은 부정 marker가 있음 | `> mismatch-override: <사유>` 헤더 또는 사용자 confirm evidence가 있고 mismatch 위치가 final summary에 남음 | `EVIDENCE_CHECKBOX_MISMATCH` warning/blocker로 상태 변경/archive/TODO→DONE 보류 | fallback 텍스트(`Codex로 진행`, `다른 경로로 진행`)만으로 mismatch 해소 금지 |
 | **2.8 owner set 역할 판정** | plan 헤더에 `> worktree-owner:` 필드 존재 | 역할 판정 후 분기 처리 완료 | 아래 별도 bullet 참조 | 필드 없으면 일반 단독 plan → 스킵 |
 
 **T4/T5 evidence parser contract:** inline code evidence table 셀은 `common\tools\auto-done.ps1` helper가 보존해야 한다. 사람이 먼저 backtick을 제거하거나 parser-safe rewrite로 표를 고치는 방식은 fallback이 아니며, helper가 `command`, `cwd`, `blocker_code`를 읽지 못하면 helper/parser 결함으로 분류한다.
 
 **T5-http_live absent marker contract:** `T5-http_live` row의 `result=완료` 값만 신뢰하지 않는다. `log_ref` 또는 evidence 문구에 `no http_live marker`, `http_live marker 없음`, `0 selected`, `TestClient-only`, `mock-only`, `localhost live call missing`가 있으면 `T5_HTTP_LIVE_MARKER_ABSENT`로 hard blocker 분류한다.
+
+**T4/T5 live evidence hardening contract:** source-contract, schema-contract, API contract, DOM 존재 검증은 보조 증거다. UI T4는 `selector_count > 0`, performed action, post-action assertion을 모두 요구하고, worker/scheduler T5는 process fingerprint 또는 `runtime_fingerprint`, worker registration log, readiness/API read-back을 모두 요구한다. 누락 시 canonical parser blocker를 그대로 archive 차단으로 소비한다.
 
 **auto-done failure closeout contract:** `auto-done` 실패, evidence gate 실패, archive/read-back incomplete는 `/implement` final closeout 근거가 될 수 없다. `t4_t5_evidence_missing`, `t4_t5_not_run`, `t4_t5_blocked`, `T5_HTTP_LIVE_MARKER_ABSENT`, `EVIDENCE_CHECKBOX_MISMATCH`는 target-local blocker로 보고하되 final response preflight에서는 `hard blocker`로 분류한다.
 

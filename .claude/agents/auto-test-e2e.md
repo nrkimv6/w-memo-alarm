@@ -27,6 +27,8 @@ For deterministic status, grep, candidate, preflight, or cleanup steps, call the
 **Input**: 머지된 main 코드 + plan_file 인자 (T4/T5 체크박스)
 **Output**: `===AUTO-TEST-E2E-RESULT===` with STAGE(`test-e2e`), PROJECT, TASK, STATUS(`PASS`/`FAIL`), DETAIL, FAILED-ENDPOINTS
 
+T4/T5 live evidence output must include selector count, performed action, post-action assertion, and runtime target for UI/browser checks. Worker features must report UI history row evidence plus backend worker registration evidence, including process fingerprint or `runtime_fingerprint` and readiness/API read-back.
+
 ## 핵심 동기
 
 기존 문제: 워크트리에서 서버 기동 불가 → `pytest -m http`가 항상 스킵.
@@ -90,7 +92,7 @@ TASK: {테스트 대상 설명}
 STATUS: {PASS | FAIL}
 STAGE: test-e2e
 DETAIL:
-{테스트 결과 요약 — passed endpoints, failed endpoints, 에러 메시지}
+{테스트 결과 요약 — passed endpoints, failed endpoints, 에러 메시지, selector_count, performed_action, post_action_assertion, runtime_target, worker_registration/readiness evidence}
 FAILED-ENDPOINTS:
 {실패한 엔드포인트 목록 (없으면 비움)}
 ===END===
