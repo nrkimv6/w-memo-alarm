@@ -27,8 +27,9 @@ Regex and keyword detections are advisory evidence unless a helper contract expl
 - child 파일명은 기존 대표 plan 파일명 뒤 `_todo-N.md` suffix만 허용한다. child별 임의 주제 slug를 만들지 않는다.
 - 분류가 모호하면 child를 만들지 말고 `수동 결정 필요`와 근거를 결과표 또는 후속 메모에 남긴다.
 - `/expand-todo` 호출 전 deterministic split 검증을 먼저 실행한다. 검증 대상 surface set은 실행 체크박스와 파일 경로 헤더에서 발견한 `.claude/`, `.agents/`, `.gemini/`, `common/tools/plan-runner/gemini-agents/`다.
-- 두 개 이상 surface가 발견되면 `surface_count`와 기존 또는 생성 예정인 `_todo-N.md` `child_count`를 계산해 결과표 `surface isolation` 칸에 `surface_count={N}, child_count={M}` evidence를 남긴다.
-- 사용자 명시 단일 child 승인 evidence가 없는 한 `surface_count != child_count`이면 `/expand-todo` 전에 `SURFACE_SPLIT_COUNT_MISMATCH`로 중단한다.
+- 두 개 이상 surface가 발견되면 `surface_count`, 전체 `_todo-N.md` `child_count`, engine surface 구현을 직접 소유하는 `surface_child_count`, 공통 테스트/contract marker/downstream read-back/generated sync만 소유하는 `support_child_count`를 계산해 결과표 `surface isolation` 칸에 evidence를 남긴다.
+- 사용자 명시 단일 child 승인 evidence가 없는 한 `surface_count != surface_child_count`이면 `/expand-todo` 전에 `SURFACE_SPLIT_COUNT_MISMATCH`로 중단한다. `surface_child_count == surface_count`이고 support child가 추가로 있는 구조는 `split-applied`로 허용한다.
+- support child는 주 수정 대상이 `common/tools/**/tests/**`, generated sync check, downstream read-back 같은 검증/조정 영역이고 engine surface 파일을 marker/read-back 대상으로만 언급하는 child다. engine surface 파일 자체를 수정하면 surface child로 센다.
 - surface split parent에는 Phase 0, Phase M, Phase Z 같은 coordination-only 체크박스만 남길 수 있다. 그 외 실행 체크박스가 parent에 남으면 `/expand-todo` 전에 `PARENT_EXECUTION_CHECKBOX_RESIDUE`로 중단한다.
 
 ## 입력
@@ -231,7 +232,7 @@ advisory evidence가 있으면 아래 3단계를 검증한다:
   - parent가 complete/archive될 수 있는데 active child를 막는 gate 또는 명시 detach approval evidence가 없다.
 - 실행 범위가 보존되고 child plan 링크, 책임 surface, owner/완료 gate가 확인되면 사용자 명시 승인 문장 없이도 자율 분리로 허용한다. 이미 child가 생성되어 있으면 `split-applied`, 아직 분리 전이면 `split-required`로 기록하고 expand-todo 호출은 계속 진행한다.
 - 실행 체크박스 또는 파일 경로 헤더에서 두 개 이상 engine authoring surface(`.agents/`, `.claude/`, `.gemini/`, `common/tools/plan-runner/gemini-agents/`)가 섞이면 `surface isolation = split-required`로 기록하고 expand-todo 호출을 멈추지 않는다. 이미 surface별 child로 분리되어 있으면 `surface isolation = split-applied`로 기록한다.
-- surface isolation 판정은 `PLAN_SPLIT_GATE`의 deterministic 검증 결과를 포함한다. `surface_count`, `_todo-N.md` `child_count`, parent executable checkbox residue count를 먼저 계산하고, count mismatch면 `차단: SURFACE_SPLIT_COUNT_MISMATCH`, residue가 있으면 `차단: PARENT_EXECUTION_CHECKBOX_RESIDUE`로 기록한다.
+- surface isolation 판정은 `PLAN_SPLIT_GATE`의 deterministic 검증 결과를 포함한다. `surface_count`, `_todo-N.md` `child_count`, `surface_child_count`, `support_child_count`, parent executable checkbox residue count를 먼저 계산하고, `surface_count != surface_child_count`이면 `차단: SURFACE_SPLIT_COUNT_MISMATCH`, residue가 있으면 `차단: PARENT_EXECUTION_CHECKBOX_RESIDUE`로 기록한다.
 - 자동 분리 기준이 모호하면 `수동 결정 필요`로 기록하고, 모호한 체크박스/경로 근거를 결과표 또는 후속 메모에 남긴다. 이 상태는 fatal 실패가 아니지만 `/done`에서 parent complete/archive 처리되면 안 된다.
 - wtools authoring surface 변경 plan에 헤더 `> surface 분류:` 필드도 없고 본문 `## surface 분류` 섹션도 없으면 `SURFACE_CLASSIFICATION_MISSING`으로 재검토 실패 처리한다.
 
@@ -246,7 +247,7 @@ advisory evidence가 있으면 아래 3단계를 검증한다:
 - `SURFACE_CLASSIFICATION_MISSING`, `SURFACE_SPLIT_COUNT_MISMATCH`, `PARENT_EXECUTION_CHECKBOX_RESIDUE`가 deterministic 보정 가능이면 실패표만 반환하지 않는다. 같은 턴에서 입력 plan/TODO 계약 문구를 보정하고 `corrected_and_rechecked`로 재검토를 계속한다.
 - 실행 범위 보존, child 링크 생성 가능, owner/read-back gate 유지 가능이면 보정 가능한 failure gate다. 이 상태를 최종 실패표만 반환하고 종료하면 `REVIEW_PLAN_FAILURE_ONLY_CLOSEOUT_BLOCKED`로 간주한다.
 - deterministic 보정 직후 같은 `PLAN_SPLIT_GATE` 검사를 재실행한다. 재검사 통과 전에는 `/expand-todo` 호출과 commit closeout을 금지한다.
-- expand 전 재평가 결과는 결과표 비고 또는 `surface isolation` 칸에 `surface_count={N}; child_count={M}; parent_residue={0|N}`로 남긴다.
+- expand 전 재평가 결과는 결과표 비고 또는 `surface isolation` 칸에 `surface_count={N}; surface_child_count={S}; support_child_count={T}; child_count={M}; parent_residue={0|N}`로 남긴다.
 - failure 보정 경로에서 수정한 입력 plan/TODO exact path는 touched set에 추가한다. `Closeout Evidence`에는 보정 commit hash 또는 commit 실패 사유를 반드시 기록한다.
 - foreign dirty는 baseline으로 보존하고, 보정 대상 exact path만 stage/commit한다. scoped commit evidence가 없으면 failure-only closeout 방지 gate를 통과한 것으로 보지 않는다.
 
@@ -417,7 +418,7 @@ expand-todo의 5.6단계가 expand 결과를 자체 커밋한다. review-plan의
 컬럼 값 가이드:
 - `scope-coverage`: `완전 매칭` / `{N}건 미커버` / `해당 없음`
 - `scope split`: `해당 없음` / `승인 있음` / `split-required` / `split-applied` / `수동 결정 필요` / `차단: CODEX_SCOPE_SPLIT_UNAPPROVED`
-- `surface isolation`: `해당 없음` / `단일 surface` / `split-required (surface_count={N}, child_count={M})` / `split-applied (surface_count={N}, child_count={M})` / `수동 결정 필요` / `차단: SURFACE_SPLIT_COUNT_MISMATCH` / `차단: PARENT_EXECUTION_CHECKBOX_RESIDUE`
+- `surface isolation`: `해당 없음` / `단일 surface` / `split-required (surface_count={N}, surface_child_count={S}, support_child_count={T}, child_count={M})` / `split-applied (surface_count={N}, surface_child_count={S}, support_child_count={T}, child_count={M})` / `수동 결정 필요` / `차단: SURFACE_SPLIT_COUNT_MISMATCH` / `차단: PARENT_EXECUTION_CHECKBOX_RESIDUE`
 - `surface 분류`: `공통 정책` / `모델별 메커니즘` / `분류 모호` / `누락: SURFACE_CLASSIFICATION_MISSING`
 - `모호어`: `0건` / `{N}건 (예: {seed} @ {file}:{line})`
 

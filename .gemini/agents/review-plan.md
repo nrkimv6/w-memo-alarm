@@ -128,9 +128,10 @@
 - 이미 surface별 child가 있으면 `split-applied`다.
 - expand-todo 호출 전 deterministic surface split gate를 반드시 먼저 실행한다.
   1. parent plan과 linked child plan의 실행 체크박스/파일 경로 헤더에서 surface token을 센다. `run_shell_command`를 쓰는 경우 PowerShell 예시는 `Select-String -Path '<plan>' -Pattern '\.agents/|\.claude/|\.gemini/|common/tools/plan-runner/gemini-agents/'` 형태로 read-only grep만 허용한다.
-  2. `> **실행 TODO:**` 링크와 sibling `{parent_stem}_todo-*.md`를 enumerate해서 active `_todo-N.md` child 수를 센다.
-  3. `surface count > 1`이고 `surface count != active child count`이면 expand-todo 전에 `SURFACE_SPLIT_COUNT_MISMATCH`로 중단한다.
-  4. 사용자가 명시적으로 "단일 child로 진행"을 승인한 경우에만 mismatch를 우회할 수 있다. 이 경우도 결과표 `surface isolation` 칸에 `single-child-approved`, `surface count={N}`, `child count={M}`을 남긴다.
+  2. `> **실행 TODO:**` 링크와 sibling `{parent_stem}_todo-*.md`를 enumerate해서 active `_todo-N.md` child 전체 수(`child count`)를 센다.
+  3. child를 `surface child`와 `support child`로 나눈다. `surface child`는 특정 engine authoring surface 구현을 직접 소유하는 child다. `support child`는 공통 테스트, contract marker, downstream read-back, generated sync처럼 surface별 구현을 검증하거나 조정하지만 engine surface 파일을 직접 수정하지 않는 child다.
+  4. `surface count > 1`이고 `surface count != surface child count`이면 expand-todo 전에 `SURFACE_SPLIT_COUNT_MISMATCH`로 중단한다. `surface child count == surface count`이고 support child가 추가로 있으면 `split-applied`로 허용한다.
+  5. 사용자가 명시적으로 "단일 child로 진행"을 승인한 경우에만 mismatch를 우회할 수 있다. 이 경우도 결과표 `surface isolation` 칸에 `single-child-approved`, `surface count={N}`, `surface child count={S}`, `support child count={T}`, `child count={M}`을 남긴다.
 - parent plan에 Phase 0, Phase M, Phase Z 외 실행 체크박스가 남아 있으면 child 분리 후 parent residue로 본다. parent에는 조정/owner/완료 gate만 남겨야 하며, 잔여 실행 체크박스가 있으면 `PARENT_EXECUTION_CHECKBOX_RESIDUE`로 중단한다.
 - wtools authoring surface 변경 plan에 `> surface 분류:` 헤더 또는 `## surface 분류` 섹션이 없으면 `SURFACE_CLASSIFICATION_MISSING`으로 실패한다.
 - 실행 범위가 child/follow-up으로 빠졌는데 child 링크, `> **실행 TODO:**`, owner/완료 gate가 없으면 `CODEX_SCOPE_SPLIT_UNAPPROVED`로 실패한다.
@@ -188,6 +189,6 @@ STATUS: {SUCCESS|BLOCKED|FAILED|SKIPPED}
 ===END===
 ```
 
-`surface isolation` 칸에는 `surface count={N}; child count={M}; split-required|split-applied|single-child-approved|단일 surface`를 포함한다. `DETAILS`에는 surface token별 근거 파일과 linked child 목록을 남긴다.
+`surface isolation` 칸에는 `surface count={N}; surface child count={S}; support child count={T}; child count={M}; split-required|split-applied|single-child-approved|단일 surface`를 포함한다. `DETAILS`에는 surface token별 근거 파일과 linked child 목록을 남긴다.
 
 `STATUS: SUCCESS`는 review가 통과했고, plan-runner preflight에서는 expand-todo를 caller가 계속 실행해도 된다는 뜻이다.
