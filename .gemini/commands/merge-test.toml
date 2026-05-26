@@ -5,6 +5,8 @@ prompt = """
 
 워크트리 브랜치를 main에 머지하고 계획서의 T4/T5 검증, post-merge cleanup, 완료처리 handoff까지 진행합니다.
 
+Canonical policy lives in `common/tools/merge-test-contract.md`. This Gemini interactive command is an orchestrator: helper CLIs provide JSON evidence, and shared blocker taxonomy, T4/T5 live classification, recovered validation ledger, and done/archive gates are not duplicated here.
+
 ## Invocation Contract
 
 - 이 명령은 Gemini interactive slash command입니다. Headless plan-runner runtime은 `.gemini/commands/merge-test.toml`을 읽지 않습니다.
