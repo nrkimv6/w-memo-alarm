@@ -349,8 +349,11 @@ slug, branch명, worktree 경로를 변수로 저장.
 |--------|------------|-----------|-------------|
 | T3 검증 (1.5) | plan에 T3 체크박스 있음 | `[x]` 완료 | `[ ]` → 중단. fix: plan + 스킵만 체크 → 경고 + y/N |
 | fix: 재발 경로 (1.6) | 파일명 `_fix-` 또는 제목 `fix:` | Phase R 섹션 + 미방어 0건 | Phase R 없음 → 경고 + y/N. 미방어 남음 → 경고 + y/N |
+| remote relation (1.45) | 항상, local impl branch merge mutation 직전 | `git fetch origin` + `git rev-list --left-right --count HEAD...origin/main` 결과가 `equal`/`ahead-only`이거나, `behind-only` ff-only pull 후 fetch/recheck 완료 | `behind-only` → `git pull --ff-only origin main` 1회 수행 후 재확인. `diverged` → local impl merge 전에 `DOWNSTREAM_DIVERGED_PUSH_BLOCKED` 또는 owner-approved recovery로 라우팅 |
 | T4/T5 Glob 재검증 (1.7) | plan에 T4/T5 `해당 없음` 표기 | Glob 0-hit | 1개 이상 → 해당 없음 거부, TC 자동 작성 후 실행 |
 | 금지어 체크 (1.8) | fix: plan 머지 커밋 메시지 | 금지어 미포함 | 금지어 포함 → 경고 후 대체 |
+
+remote relation (1.45)는 downstream sync push/read-back 정책이 아니라 main worktree가 stale한 상태로 local impl branch를 병합하지 않게 하는 pre-pull gate다. `ahead-only`는 이 gate에서 push하지 않고 기존 downstream sync 정책으로 분리한다. `diverged`는 push-first나 root local merge로 닫지 않는다.
 
 fix 금지어: `근본 수정`, `근본 해결`, `완전 해결`, `최종 수정`, `영구 수정` → `N개 경로 방어 완료`로 대체.
 T4/T5 Glob 자동 복구: `> T4 해당 없음:` 블록쿼트 삭제 + TC 작성 + 실행 + 체크 (중단 없음 — dev-runner 파이프라인 호환).
