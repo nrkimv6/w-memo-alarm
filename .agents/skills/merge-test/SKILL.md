@@ -21,6 +21,10 @@ Preflight, cleanup, and final session routing evidence must come from helper CLI
 
 Batch finalization ledger closeout uses `common\tools\session-target-router.ps1 -Json` as the source of truth. The router JSON must include `decision=continue|blocked|final`, `declared`, `processed_this_turn`, `already_archived`, `blocked`, `remaining_executable`, `next_owner`, and when blocked, `blocker_code`. `decision=continue` is normal continuation, not failure, and not blocked; continue with the next target, `/done`, receiver read-back, or owner from `next_owner`. `decision=blocked` is target-local blocker evidence with `blocker_code` and `next_owner`. Only `decision=final` permits final closeout after merge-test and `/done` read-back are both closed.
 
+## compaction resume gate
+
+If the context summary contains a pending task, branch/worktree merge target, cleanup target, receiver read-back, or archive handoff, resume the merge-test owner flow without asking the user again. The first resumed update should start with `컨텍스트 재개` and then continue from helper JSON evidence.
+
 ## Skill Path Precedence
 
 - 사용자가 `[$merge-test](...SKILL.md)` 또는 파일시스템 경로로 local/project skill 파일을 명시한 경우 반드시 그 exact file을 Read 기준으로 삼는다.

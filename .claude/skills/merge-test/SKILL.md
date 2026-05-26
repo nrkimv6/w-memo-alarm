@@ -17,6 +17,10 @@ Preflight and cleanup evidence must come from helper CLI contracts before any me
 
 `/implement`로 worktree에서 구현 완료 후 main에 머지하고, plan의 T4/T5 검증과 `/done` 완료처리까지 이어간다. `merge success`, `T4/T5 passed`, 또는 `cleanup ready` 단독은 final 사유가 아니다. common contract의 STOP/CONTINUE Decision Table에서 remaining executable leaf, remaining targets, `/done`, archive/read-back이 모두 닫힌 뒤에만 완료를 말한다.
 
+## compaction resume gate
+
+If the context summary contains a pending task, branch/worktree merge target, cleanup target, receiver read-back, or archive handoff, resume the merge-test owner flow without asking the user again. The first resumed update should start with `컨텍스트 재개` and then continue from helper JSON evidence.
+
 ## Skill Path Precedence
 
 - 사용자가 `[$merge-test](...SKILL.md)` 또는 파일시스템 경로로 local/project skill 파일을 명시한 경우 반드시 그 exact file을 Read 기준으로 삼는다.
