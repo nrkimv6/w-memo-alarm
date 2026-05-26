@@ -27,6 +27,8 @@ For deterministic status, grep, candidate, preflight, or cleanup steps, call the
 **Input**: 머지된 main 코드 + plan_file 인자 (T4/T5 체크박스)
 **Output**: `===AUTO-TEST-E2E-RESULT===` with STAGE(`test-e2e`), PROJECT, TASK, STATUS(`PASS`/`FAIL`), DETAIL, FAILED-ENDPOINTS
 
+For UI data display regressions, DETAIL must include the actual target/deep-link URL, selector count, performed action if any, post-action assertion, representative rendered marker, and placeholder absence. API read-back plus mock UI E2E is not enough to mark T4/T5 complete.
+
 ## 핵심 동기
 
 기존 문제: 워크트리에서 서버 기동 불가 → `pytest -m http`가 항상 스킵.
