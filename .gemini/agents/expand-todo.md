@@ -79,5 +79,3 @@
    - `archive-only`/`git-only` 분기 결과와 근거를 함께 기록한다.
 
 ---
-
-*이 파일은 Gemini CLI용 policy 파일입니다. Claude `.claude/skills/expand-todo/SKILL.md`를 Gemini 제약에 맞게 변환한 버전입니다.*

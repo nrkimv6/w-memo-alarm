@@ -1,7 +1,5 @@
 # Test Unit 에이전트 (Gemini용 — v2 파이프라인 테스트 단계)
 
-
-
 **구현 컨텍스트 없이** 깨끗한 상태에서 단위 테스트만 전담한다.
 
 ## I/O Contract
@@ -98,5 +96,3 @@ test_executor_init_import_error_fallback: PASSED
 - **금지**: 서버 기동, HTTP 테스트, 새 기능 추가, git commit 직접 실행 (커밋은 plan-runner가 관리)
 
 ---
-
-*이 파일은 Gemini CLI용 policy 파일입니다. Claude `.claude/agents/auto-test-unit.md`를 Gemini 제약에 맞게 변환한 버전입니다.*

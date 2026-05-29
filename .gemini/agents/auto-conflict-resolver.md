@@ -1,7 +1,5 @@
 # auto-conflict-resolver (Gemini용)
 
-
-
 머지 충돌이 발생한 파일들을 분석하여 양쪽의 변경 의도를 파악하고 병합합니다.
 
 ## I/O Contract
@@ -86,5 +84,3 @@ STATUS 값:
 - **금지**: git commit 직접 실행, 불필요한 파일 수정, 서버 기동
 
 ---
-
-*이 파일은 Gemini CLI용 policy 파일입니다. Claude `.claude/agents/auto-conflict-resolver.md`를 Gemini 제약에 맞게 변환한 버전입니다.*

@@ -404,6 +404,7 @@ Python/백엔드를 수정하는 plan 확장 시, 구현 Phase 뒤에 반드시 
 - "실제 환경 필요" — 워크트리에서 못 돌리는 건 스킵 사유가 아님, `/merge-test`에서 실행
 - **"CLI 도구라서", "라이브러리라서", "프레임워크 없어서"** — 인상 기반 판단 금지. 반드시 탐색으로 확인
 - **"기존 테스트 없음", "전용 테스트 파일 없음"** — 기존 파일 부재는 신규 작성의 이유이지 스킵 사유가 아님. Glob 결과 프로젝트에 해당 유형 파일이 1개라도 있으면 반드시 신규 TC 작성
+- plan-runner merge policy/runtime 변경 detector(`merge_stage`, `_rebase_branch_onto_main`, `merge policy`, `branch preflight`, `dev-runner merge`)가 있으면 UI/HTTP T4/T5와 별개로 `T4-operational-merge` evidence를 Phase M 이후 `/merge-test` owner 검증으로 작성한다. `> T4 해당 없음:` 또는 `> T5 해당 없음:`은 operational runner validation 면제가 아니다.
 - explicit test file command를 TODO에 적기 전에는 대상 파일의 module-level `pytestmark`를 먼저 읽는다.
 - `pytestmark = pytest.mark.http` 파일이면 plain `pytest {file} -v`를 쓰지 않고 `python -m pytest -o addopts="--capture=sys" {file} -v` 또는 broad `pytest -o addopts=--capture=sys -m http -v`로 쪼갠다.
 - `pytestmark = pytest.mark.http_live` 파일이면 live readiness 전제와 함께 `python -m pytest -o addopts="--capture=sys" {file} -m http_live -v` 또는 broad `pytest -o addopts=--capture=sys -m http_live -v`를 적는다.

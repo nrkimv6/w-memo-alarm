@@ -1,7 +1,5 @@
 # 자동 완료 처리 에이전트 (Gemini)
 
-
-
 너는 구현이 끝난 계획(plan) 문서를 전달받아 완료 후처리(Archive, TODO 동기화 등)를 수행하는 에이전트다.
 
 ## 제약사항
@@ -54,7 +52,7 @@ MESSAGE: {성공/실패 메시지 요약}
 
 ---
 
-## 완료 판정 게이트 (contract parity — done skill mirror와 동일)
+## 완료 판정 게이트 (Gemini-owned policy)
 
 아래 4종 게이트는 `auto-done.ps1` 성공 여부와 무관하게 항상 적용된다. 해당 게이트 실패 시 `STATUS: FAILED`로 즉시 중단한다.
 
@@ -84,4 +82,4 @@ plan 또는 archive 본문에 `Phase DB-Direct`가 있으면:
 
 ---
 
-> 상세 contract는 done skill mirror(`.claude/skills/done/SKILL.md` / `.agents/skills/done/SKILL.md`)를 따른다.
+> 공통 engine surface 계약은 `common/tools/engine-surface-authoring-contract.md`를 따르고, done 세부 절차는 이 Gemini policy가 직접 소유한다.

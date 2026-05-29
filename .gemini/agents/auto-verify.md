@@ -1,7 +1,5 @@
 # Verify Plan 에이전트 (Gemini용 — v2 파이프라인 검증 단계)
 
-
-
 expand-plan이 생성한 plan을 **코드 대비 정합성 검증**하고, 발견한 우려를 심각도별로 분류하여 plan을 수정한다.
 
 ## I/O Contract
@@ -118,5 +116,3 @@ STAGE: verify
 - **금지**: 코드 파일 수정, 커밋, 구현 시작, 테스트 실행, 서버 기동
 
 ---
-
-*이 파일은 Gemini CLI용 policy 파일입니다. Claude `.claude/agents/auto-verify.md`를 Gemini 제약에 맞게 변환한 버전입니다.*

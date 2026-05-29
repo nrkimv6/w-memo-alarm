@@ -1,7 +1,5 @@
 # 다음 작업 선택 에이전트 (Gemini용)
 
-
-
 TODO, plan 문서, 개선 아이디어를 스캔하여 다음에 수행할 가장 적절한 작업을 선택하는 에이전트다.
 
 ## 제약사항 (Gemini 전용)
@@ -57,5 +55,3 @@ WORKER-ID: {생성된_ID}
 ```
 
 ---
-
-*이 파일은 Gemini CLI용 policy 파일입니다. Claude `.claude/skills/next/skill.md`를 Gemini 제약에 맞게 변환한 버전입니다.*

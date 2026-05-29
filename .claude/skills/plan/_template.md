@@ -109,6 +109,7 @@ Z. ☐ **post-merge 정리 확인** — `/merge-test` owner
 
 Python 수정 포함 시 구현 Phase 뒤에 **T1~T5 테스트 Phase 필수**.
 T4/T5 해당 없는 경우: Phase 헤더 유지 + **블록쿼트로 사유만 기재** (`> T4 해당 없음: {사유}`), 체크박스 금지.
+plan-runner merge policy/runtime 변경(`merge_stage`, `_rebase_branch_onto_main`, `merge policy`, `branch preflight`, `dev-runner merge`)은 UI/HTTP T4/T5와 별개로 `/merge-test` owner의 `T4-operational-merge` evidence row를 요구한다. `T4/T5 해당 없음`은 runner operational validation 면제가 아니다.
 규칙 상세·카테고리 테이블 → SKILL.md "🔴 pytest 강제 Phase 규칙" 참조.
 
 ---
@@ -306,6 +307,7 @@ Z. ☐ **post-merge 정리 확인** — `/merge-test` owner
 
 Python 수정 포함 시 구현 Phase 뒤에 **T1~T5 테스트 Phase 필수**.
 T4/T5 해당 없는 경우: Phase 헤더 유지 + **블록쿼트로 사유만 기재** (`> T4 해당 없음: {사유}`), 체크박스 금지.
+plan-runner merge policy/runtime 변경(`merge_stage`, `_rebase_branch_onto_main`, `merge policy`, `branch preflight`, `dev-runner merge`)은 UI/HTTP T4/T5와 별개로 `/merge-test` owner의 `T4-operational-merge` evidence row를 요구한다. `T4/T5 해당 없음`은 runner operational validation 면제가 아니다.
 규칙 상세·카테고리 테이블 → SKILL.md "🔴 pytest 강제 Phase 규칙" 참조.
 
 ---

@@ -59,6 +59,46 @@ If `remaining_leaf=0`, do not choose `/merge-test` or `/done` here. Hand off to 
 
 Session target expansion, next owner dispatch, no-reprompt owner chaining, explicit stop handling, and compaction resume are centralized in `/continue-plan`. This worker only reports enough state for that owner to decide.
 
+## Same-turn owner chain contract
+
+When `remaining executable leaf = 0` and `next owner step = /merge-test`, final closeout을 금지한다. Use the exact local `/merge-test` skill and continue the implement -> merge-test -> done chain in the same turn unless there is a `hard blocker` or user explicit stop. 중간 성공은 closeout으로 말하지 않는다; archive/TODO/DONE, remaining targets, and remote evidence/read-back must be closed by the next owner.
+
+## compaction resume gate
+
+On context summary resume, read any pending task, branch/worktree target, or previous handoff first. If the context summary identifies a pending task, start the next update with `컨텍스트 재개` and continue from the recorded owner-chain state instead of restarting or asking again.
+
+## Session Target Router Final Guard
+
+Before final response, call `common\tools\session-target-router.ps1 -Json` when available and treat the router JSON as the source of truth. Required fields include `decision=continue|blocked|final`, `declared`, `processed_this_turn`, `already_archived`, `blocked`, `remaining_executable`, `next_owner`, and `blocker_code`. `decision=continue` is normal continuation, not failure, and not blocked; dispatch the next owner. `decision=final` is allowed only after all routing counts are closed.
+
+## Manual Session Target Ledger
+
+Track `declared_target_count`, `expanded_target_count`, `user_declared`, `discovered`, `eligible`, `excluded`, `processed`, `remaining`, and `excluded_unconfirmed`. If `processed_count < expected_count - excluded_count`, do not say `전체 완료`; continue or report the target-local blocker. `excluded_unconfirmed` requires `user_confirmed=true` before it can reduce the expected target count.
+
+## Failure Scope Ledger
+
+For target-local failures, record `failure_class`, `blocks_archive`, `blocks_other_targets`, and `next_owner`. Valid `failure_class` values include `product_regression`, `contract_regression`, `test_fixture_stale`, and `environment_failure`. Do not promote `test_fixture_stale` or `environment_failure` with `blocks_other_targets=false` into a global hold.
+
+## Final response preflight gate
+
+Immediately before final response (`final response 직전`), recalculate `remaining executable leaf`, `remaining targets`, worktree branches, branch/worktree presence, `next_owner`, `hard_blocker`, `user_stop`, and `owner_executed`. If `next_owner != none && owner_executed=false`, final 응답을 금지 and dispatch the next owner with continuation dispatch evidence. `merge-test executed` must be true before closing a branch/worktree target, unless `hard_blocker=true`, `user_explicit_stop=true`, or `owner_executed=true` explains the stop. Use the exact local `merge-test` skill for this evidence.
+
+## Final 허용 override
+
+Final is allowed only for the narrow tuple: `hard_blocker=true`, `user_explicit_stop=true`, `owner_executed=true`, or all of `targeted tests passed`, `worktree clean`, `plan progress committed`, `머지대기`, and no remaining `merge order` owner. A dirty-free `머지대기` handoff is hard blocker가 아니라 `/merge-test` owner 입력.
+
+## Skill precedence closeout evidence
+
+Record `skill_path_used`, `expected_project_skill_path`, and `skill_precedence_ok`. If the project-local skill path exists but a global duplicate skill is used, record `skill_precedence_violation` and stop. A project-local skill path always wins over a global duplicate skill.
+
+## Chain break exceptions only marker
+
+The only same-turn owner chain 중단 예외 are `hard blocker` 또는 `user explicit stop`뿐. If the chain stops for any other reason, record `incident_class=owner_chain_not_executed`.
+
+## Subagent owner-chain reread marker
+
+After subagent 결과 수집, perform owner-chain read-back before final wording. If read-back shows 추가 dirty/post-merge 보강, continue the owner chain instead of closing.
+
 ## 실행 대상 계약 (leaf-only, 필수)
 
 - 실행 대상은 **자식 없는 미완료 체크박스(leaf)** 만 허용한다.

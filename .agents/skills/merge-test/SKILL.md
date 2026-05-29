@@ -25,6 +25,14 @@ Batch finalization ledger closeout uses `common\tools\session-target-router.ps1 
 
 If the context summary contains a pending task, branch/worktree merge target, cleanup target, receiver read-back, or archive handoff, resume the merge-test owner flow without asking the user again. The first resumed update should start with `컨텍스트 재개` and then continue from helper JSON evidence.
 
+## Product Surface Evidence Scope
+
+For plans declaring `completion-scope: product_surface`, scratch/private evidence alone is insufficient. Evidence limited to `scripts/scratch/`, `private/`, `.private/`, or other non-product utility paths is `non_product_only`, target-local, and must not archive the product-surface target until product path/read-back evidence exists.
+
+## Corrective action approval boundary
+
+Before rollback-like mutations, classify the current action class and provide a read-only preview with approval evidence, affected commits/files, and commands. `git revert`, merge commit 되돌리기, feature removal, and scheduler 경로 삭제 require explicit `기능 롤백 승인`; 일반 표현만으로 `feature_rollback`을 승인한 것으로 보지 않는다.
+
 ## Skill Path Precedence
 
 - 사용자가 `[$merge-test](...SKILL.md)` 또는 파일시스템 경로로 local/project skill 파일을 명시한 경우 반드시 그 exact file을 Read 기준으로 삼는다.
@@ -104,11 +112,13 @@ Receiver closeout 결과표 includes `receiver`, `rev-list tuple`, `action`, `re
 
 ## T4/T5 Orchestration
 
-The machine-readable evidence table must keep these columns: `stage`, `command`, `cwd`, `result`, `exit_code`, `log_ref`, `blocker_code`. Valid stages are `T4`, `T5-http`, `T5-http_live`; valid results are `완료`, `미실행`, `해당 없음`, `실패`, and `failed -> recovered`.
+The machine-readable evidence table must keep these columns: `stage`, `command`, `cwd`, `result`, `exit_code`, `log_ref`, `blocker_code`. Valid stages are `T4`, `T4-operational-merge`, `T5-http`, `T5-http_live`; valid results are `완료`, `미실행`, `해당 없음`, `실패`, and `failed -> recovered`.
 
 Common contract keywords that must remain in the canonical contract and may be referenced in plan evidence: `Recovered validation ledger`, `original_command`, `recovered_command`, `failed_command`, `recovery_action`, `recovered_result`, `failure_class`, `blocks_archive=false`, `blocks_other_targets=false`, `t4_t5_evidence_missing`, `t4_t5_not_run`, `보류(<blocker_code>)`, `T5_CLAIM_HTTP_FIXTURE_MISSING`, `non_live_recovery_evidence_missing`.
 
 T4/T5 live contract classification is owned by `common/tools/merge-test-contract.md`: `live`, `mock_only`, `http_live`, `testclient_only`, `absent`. Blocker names include `T4_MOCK_ONLY_DETECTED`, `T5_TESTCLIENT_ONLY_DETECTED`, `T4_LIVE_SMOKE_MISSING`, and `T5_HTTP_LIVE_MARKER_ABSENT`. Markers and probes include `pytest.mark.e2e`, `pytest.mark.http_live`, `TestClient`, `requests`/`httpx` localhost, `page.route("**/*")`, `no full-route mock`, `raw Chromium CDP`, and `feature area` live smoke coverage.
+
+Operational merge validation is also owned by `common/tools/merge-test-contract.md`. Plan-runner merge policy/runtime changes with detector seeds such as `merge_stage`, `_rebase_branch_onto_main`, `merge policy`, `branch preflight`, or `dev-runner merge` require a `T4-operational-merge` row. UI/HTTP `T4/T5 해당 없음` does not waive this runner lifecycle gate; missing evidence is `OPERATIONAL_MERGE_E2E_MISSING`.
 
 The common contract also owns hard gates for source-contract-only, DOM-only, zero-selector collect-only, selector/action/assertion, worker registration/readiness, and UI data display read-back. A source-contract success row is auxiliary evidence only; a UI T4 row needs `selector_count > 0`, performed action, post-action assertion, actual target/deep-link URL marker rendering, representative rendered marker, and placeholder absence. UI data display regression plus API read-back plus mock UI E2E is insufficient; missing target marker evidence is `T4_UI_TARGET_MARKER_MISSING` and should be classified as `contract_regression`. Worker/scheduler T5 rows need process fingerprint or `runtime_fingerprint`, worker registration log, and readiness/API read-back.
 

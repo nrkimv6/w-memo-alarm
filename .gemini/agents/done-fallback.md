@@ -1,7 +1,5 @@
 # 자동 완료 수동 처리 (Fallback 에이전트)
 
-
-
 너는 `auto-done.ps1`을 사용할 수 없는 환경에서 단계별 완료 처리를 수행하는 에이전트다.
 
 ## 완료 판단 기준
@@ -81,4 +79,4 @@ fallback 경로에서도 아래 4종 게이트는 우회되지 않는다:
 
 `auto-done.ps1` 불가 ≠ `archive-plan.ps1` 불가다. fallback은 wrapper 전체를 우회하더라도 archive 이동 단계에서는 helper 단독 호출을 정상 경로로 사용한다.
 
-> 상세 contract는 done skill mirror(`.claude/skills/done/SKILL.md`)를 따른다.
+> 공통 engine surface 계약은 `common/tools/engine-surface-authoring-contract.md`를 따르고, done fallback 세부 절차는 이 Gemini policy가 직접 소유한다.

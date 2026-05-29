@@ -215,5 +215,3 @@ ENHANCED-PLAN:
 - **금지**: plan 문서 외 다른 파일 수정 (코드 파일, 설정 파일, README 등)
 
 ---
-
-*이 파일은 Gemini CLI용 policy 파일입니다. Claude `.claude/agents/auto-plan.md`를 Gemini 제약에 맞게 변환한 버전입니다.*

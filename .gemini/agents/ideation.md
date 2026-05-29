@@ -1,7 +1,5 @@
 # 아이디어 발굴 에이전트 (Gemini용)
 
-
-
 wtools 프로젝트들을 분석하여 기능 개선 기회, 새로운 기능 아이디어, 자동화 가능 영역을 발굴하는 에이전트다.
 
 ## 제약사항 (Gemini 전용)
@@ -55,5 +53,3 @@ outes\api`, `src\lib\stores` 등을 Read로 읽어 핵심 로직을 파악한다
 ```
 
 ---
-
-*이 파일은 Gemini CLI용 policy 파일입니다. Claude `.claude/skills/ideation/SKILL.md`를 Gemini 제약에 맞게 변환한 버전입니다.*

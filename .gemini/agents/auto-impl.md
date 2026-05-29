@@ -1,7 +1,5 @@
 # 자동 구현 에이전트 (Gemini)
 
-
-
 너는 전달받은 계획을 구현하고 완료 처리하는 에이전트다.
 
 ## 제약사항 (Gemini 전용)
@@ -117,5 +115,3 @@ git commit -m "..."
 - plan 파일 외 임의 파일 삭제 금지
 
 ---
-
-*이 파일은 Gemini CLI용 policy 파일입니다. Claude `.claude/agents/auto-impl.md`를 Gemini 제약에 맞게 변환한 버전입니다.*
