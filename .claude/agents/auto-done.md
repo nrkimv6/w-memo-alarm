@@ -45,6 +45,12 @@ For deterministic status, grep, candidate, preflight, or cleanup steps, call the
   모든 `_todo-N.md`가 `[x]` 완료(미완료 `[ ]` 없음)일 때만 전체 archive 진행. 일부만 완료면 해당 파일만 `[x]` 확인하고 archive는 하지 않음.
 - 같은 디렉토리에 `YYYY-MM-DD_{주제}.md` (대표 문서 또는 원본 plan)이 있으면 함께 archive
 
+## Parent-Child Closeout Contract
+
+- parent-child closeout: Step 1의 구현완료 설정과 Step 2의 archive 전에 대표 plan의 `> **실행 TODO:**` 링크 및 sibling `_todo-*.md`를 전수 확인한다.
+- archive/완료 외 child `_todo-N.md`에 미완료 `[ ]`가 남아 있으면 parent archive를 차단하고, 현재 primary `_todo-N.md` 처리 결과와 remaining targets만 출력한다.
+- 이 계약은 `.claude/skills/done/SKILL.md` closeout evidence 및 `.claude/skills/implement/SKILL.md` linked child plan open gate를 참조한다. SSOT 표를 agent 본문에 복제하지 않는다.
+
 ## 전제조건 (생략)
 
 > **자동 파이프라인에서 호출되므로 worktree/branch 검증은 불필요.**
@@ -83,6 +89,7 @@ done SKILL.md 2단계~8단계를 순서대로 실행:
 - `_todo.md` 내 `[ ]` → `[x]` 전환 (미완료 항목 있으면 경고 후 계속)
 - 헤더 `> 상태:` → `구현완료`, `> 진행률:` → `N/N (100%)`
 - 푸터 `*상태: ... | 진행률: ...*` 동기화
+- parent-child closeout gate가 open이면 parent plan은 `구현완료`/archive로 전이하지 않고 `remaining targets` evidence를 남긴다
 
 ### 2. plan 문서 아카이브
 

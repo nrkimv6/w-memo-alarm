@@ -14,6 +14,8 @@ direct invocation 시 같은 이름의 global/duplicate skill(`C:\Users\Narang\.
 ## Draft-first Authoring Guidance
 
 - 새 plan은 먼저 `초안` 또는 `검토대기` 상태의 draft-first authoring 산출물로 작성한다. 사용자가 명시적으로 승인하기 전까지 draft 내용은 구현 승인, mutation approval, git mutation approval로 해석하지 않는다.
+- canonical publish 전 반복 작성이 필요하면 `.worktrees/drafts/plan/<slug>_draft.md` flat draft 파일을 사용한다. `.worktrees/drafts/plan/<session-id>/draft.md` 폴더 세션과 `metadata.json` + `draft.md` 형식은 신규 plan authoring 입력으로 만들지 않는다.
+- `<slug>_draft.md`에는 publish 대상 후보와 승인/미승인 구분 근거를 front matter 또는 본문 metadata로 남기고, canonical publish 전까지 `.worktrees/plans/docs/plan/` dirty를 만들지 않는다.
 - 상담성/탐색성 요구는 `검토 옵션/제안 (미승인)`에 둔다. 승인된 요구사항과 미승인 제안은 같은 TODO나 완료 조건으로 합치지 않는다.
 - draft-first 상태에서도 실행 가능한 계약 문장은 구체적으로 쓰되, `적용해`, `구현해`, `요구사항으로 넣어`, `기능 롤백 승인` 같은 후속 명시 승인 evidence가 없으면 code/git/DB mutation 지시로 승격하지 않는다.
 - review-plan이 draft를 검토할 수 있도록 `승인된 요구사항`, `검토 옵션/제안 (미승인)`, `수행하지 않을 작업`, `approval evidence`를 분리한다.

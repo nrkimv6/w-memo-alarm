@@ -43,12 +43,26 @@ exit_reason="ATTACH_IN_AUTOMATED_CONTEXT_REJECTED"
 이유: attach 모드(owner set ≥ 2)는 수동 /implement 전용입니다. plan-runner/auto-impl에서는 허용되지 않습니다.
 ```
 
+## Compaction Resume Gate
+
+- 자동 파이프라인 재진입 시 SOURCE plan의 `> 상태:`, `PROCESSED-TODO`, `REMAINING-TODOS`, 직전 stage marker를 먼저 읽는다.
+- 같은 plan/stage가 partial 상태이면 from-scratch 재실행하지 않고 `.claude/skills/implement/SKILL.md`의 `compaction resume gate` 및 resume 절차에 합류한다.
+- compaction 후 첫 결과에는 `resume_anchor: {stage}/{step}` evidence를 출력한다.
+- 참조: `.claude/skills/implement/SKILL.md` `compaction resume gate` 섹션.
+
+## Parent-Child Closeout Contract
+
+- parent-child closeout: 대표 plan을 완료/아카이브 대상으로 말하기 전에 `> **실행 TODO:**` 링크와 sibling `_todo-*.md`를 전수 확인한다.
+- archive/완료 외 child `_todo-N.md`에 미완료 `[ ]`가 하나라도 있으면 parent 완료 보고를 금지하고, `PARENT-PLAN-PATH`, `PROCESSED-TODO`, `REMAINING-TODOS`, `parent_plan_status: parent-child open` evidence를 남긴다.
+- parent/child 완료 판정은 `.claude/skills/implement/SKILL.md`의 linked child plan open gate를 참조하며, 큰 표를 agent 본문에 복제하지 않는다.
+
 ## 실행 흐름
 
 1. 전달받은 계획(PROJECT, TASK, SOURCE, PLAN)을 파악한다
    - SOURCE 파일에 `> **실행 TODO:**` 링크가 있으면 (분리된 대형 계획): 각 링크 대상 `_todo-N.md`를 Read하여 미완료(`[ ]`)가 남은 첫 번째 파일을 현재 작업 대상으로 사용하고, 나머지는 remaining `_todo`로 유지한다
    - `> **실행 TODO:**` 링크가 없으면: 기존 동작 — SOURCE 파일 자체 또는 기존 `_todo.md`에서 미완료 항목 읽기 (하위 호환)
    - SOURCE가 대표 plan(`*_todo-N.md` 아님)인데 sibling `_todo-*.md`가 있으면, archive/완료 외 `_todo` 전부를 enumerate하고 현재 작업 대상 + remaining `_todo`를 명시적으로 구분한다
+   - parent-child closeout gate: 현재 `_todo-N.md` 처리 완료와 parent plan 전체 완료를 분리하고, sibling `_todo-N.md` 완료 전에는 parent closeout을 출력하지 않는다
    - planResult가 비어있거나 `PRIORITY: SKIP-PLAN`인 경우, SOURCE에 지정된 plan 파일 원본을 읽어서 미완료 항목(`- [ ]`)을 구현 대상으로 사용한다
    - **[예외] SOURCE 파일이 없거나 존재하지 않는 경우**: 구현 내용을 기반으로 임시 plan 파일을 자동 생성 (Write 도구 활용)
      - 생성 위치: `_path-rules.md` 동적 폴백으로 결정 (`Get-PlanRoot` 참조) → `YYYY-MM-DD_{작업명}_auto.md` (`_auto` 접미사 필수)
@@ -195,6 +209,8 @@ COMMITS: {커밋 메시지들}
 PARENT-PLAN-PATH: {대표 plan 절대경로 또는 공란}
 PROCESSED-TODO: {이번에 처리한 _todo 파일명 또는 공란}
 REMAINING-TODOS: {_todo-3.md, _todo-4.md 또는 NONE}
+resume_anchor: {stage}/{step 또는 공란}
+parent_plan_status: {complete | parent-child open | 공란}
 ===END===
 ```
 

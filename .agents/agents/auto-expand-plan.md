@@ -38,6 +38,12 @@ For deterministic status, grep, candidate, preflight, or cleanup steps, call the
 - simple-plan이 상태를 `검토대기`로 부여한 이후에 실행됨
 - 코드베이스를 분석(Read)하되, 코드를 수정하지 않는다
 
+## Parent-Child Closeout Contract
+
+- parent-child closeout: `_todo-N.md`를 생성하거나 기존 child plan을 재분해한 경우, parent plan archive/완료 전이가 아니라 parent/child 실행 계약만 갱신한다.
+- parent plan에는 `> **실행 TODO:**` 링크와 child 역참조를 유지하고, 모든 child `_todo-N.md` 완료 검증 전 parent archive를 금지한다.
+- split/closeout 세부 판정은 `.agents/skills/expand-todo/SKILL.md`, `.agents/skills/review-plan/SKILL.md`, `.agents/skills/implement/SKILL.md`를 참조하며, SSOT 표를 agent 본문에 복제하지 않는다.
+
 ## 실행 흐름
 
 1. plan 문서를 읽는다
@@ -69,6 +75,7 @@ For deterministic status, grep, candidate, preflight, or cleanup steps, call the
        ```
      (e) T1~T5 테스트 Phase는 해당 프로젝트의 `_todo-N.md`에 포함
      (f) parent의 T4/T5에 `> 테스트명령:` 필드로 프로젝트별 pytest 마커 명시
+     (g) parent-child closeout evidence로 parent plan이 child 완료 전 archive 대상이 아님을 명시
    - **프로젝트 1개** → 3.5 규모 기반 분리로 진행
 
 3.45. **surface context 인식** (wtools authoring surface):
@@ -82,6 +89,7 @@ For deterministic status, grep, candidate, preflight, or cleanup steps, call the
      (a) plan 파일에서 체크박스 섹션을 제거, `> **실행 TODO:**` 링크 목록으로 교체 (Edit)
      (b) 독립 Phase 묶음별 `_todo-N.md` 파일을 Write. 각 파일에 `> 계획서: [plan](./{stem}.md)` 역참조
      (c) 테스트 Phase(T1~T5)는 직전 구현 Phase와 같은 `_todo-N.md`에 유지
+     (d) parent-child closeout evidence로 모든 child `_todo-N.md` 완료 전 parent archive 금지를 명시
    - **30개 이하 또는 독립 묶음 1개** → 인라인 체크박스 유지 (분리 안 함)
    - **⚠️ 프로젝트별 분리와 중첩 분리(`_todo-1a.md`)는 하지 않는다** — 단일 프로젝트당 하나의 `_todo-N.md` 유지
 3.6. **파일 이동/구조변경 영향 분석 — Phase IA 자동 삽입**:

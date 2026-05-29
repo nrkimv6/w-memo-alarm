@@ -1,6 +1,6 @@
 ---
 name: implement
-description: "구현 워크플로우 (plan→TODO→DONE). Use when: 구현해, 진행해, 시작해, implement"
+description: "구현 워크플로우 worker (plan→TODO→DONE). Use when: 구현해, implement, 명시 plan 구현 요청"
 ---
 
 
@@ -9,7 +9,7 @@ description: "구현 워크플로우 (plan→TODO→DONE). Use when: 구현해, 
 ## Script Contract Invariant
 
 Deterministic setup, status, and advisory scanning must prefer helper CLI evidence over re-implementing long inline procedures when `common\tools` exists. Use `common\tools\plan-advisory-detect.ps1 -PlanFile <plan> -Json` for advisory-only plan triggers and `common\tools\merge-test-preflight.ps1 -PlanFile <plan> -RepoRoot <repo> -Json` when branch/worktree or pending-merge evidence is needed. If a downstream repo has no `common\tools` helper surface, record `helper_unavailable` and use the merge-test direct read-back checklist rather than treating helper absence as `GIT_GUARD_NOT_ACTIVE`. AI keeps ownership of interpretation and scope decisions; helper output is evidence, not automatic approval to mutate.
-> Routing gate: branch/worktree present -> /merge-test; absent -> /done
+> Tail handoff: implementation worker completion -> /continue-plan
 # 구현 워크플로우
 
 > **본문 분리 원칙**: 호출 컨텍스트가 다르면 본문도 다르다. 공유 레시피는 [`_recipes.md`](./_recipes.md)로만.
@@ -37,43 +37,20 @@ Deterministic setup, status, and advisory scanning must prefer helper CLI eviden
 - repo에 `common\tools`가 없으면 guard hard stop이 아니라 `helper_unavailable` downstream fallback으로 기록하고, `/merge-test` handoff에서 직접 read-back checklist를 사용한다.
 - `.agents`와 `.claude`는 문구를 맞추는 대상이 아니지만, 이 guard 불변조건은 두 엔진 표면에서 동등해야 한다.
 
-## 세션 targets / continue 계약 (필수)
+## Handoff-Only Continuation Contract
 
-- 사용자가 같은 세션에 plan 경로를 2개 이상 명시하면, 그 목록은 **session targets**로 고정한다.
-- 같은 턴에 사용자가 명시한 plan 경로 수는 `declared_target_count`로 기록한다. 대표 plan에서 `> **실행 TODO:**` 링크나 sibling `_todo-*`로 확장한 수는 `expanded_target_count`로 별도 기록한다.
-- 사용자가 여러 plan/branch의 병렬 진행이나 일괄 상태 보고를 요구하면 **batch target ledger**를 유지한다.
-  - ledger 컬럼은 최소 `target`, `plan`, `branch`, `worktree`, `status`, `next owner`, `user_declared`, `discovered`, `eligible`, `excluded`, `processed`, `remaining`을 포함한다.
-  - 각 target의 상태를 `done`, `pending`, `failed`, `unknown`, `planless`, `excluded`, `discarded`로 분리해 기록한다.
-  - `제외`가 포함된 지시는 제외 대상과 남은 진행 대상을 ledger로 먼저 read-back한 뒤 진행한다.
-  - 제외 대상이 plan title/status 기준인지, 이미 구현 중인 외부 runner 기준인지 불명확하면 해당 row는 `excluded_unconfirmed`로 두고 count mismatch blocker를 남긴다.
-  - 명시 제외 row만 `user_confirmed=true` evidence를 가질 수 있다. `user_confirmed`가 없으면 excluded row를 완료 집계에 포함하지 않는다.
-  - 사용자가 `N건 진행`, `계획서 N건`처럼 기대 수를 언급하면 closeout 직전에 `processed + remaining + excluded = expected_count`를 검증한다.
-  - `processed_count < expected_count - excluded_count`이면 final closeout 대신 다음 eligible target으로 같은 턴에서 계속 진행한다.
-  - `excluded_unconfirmed` row는 전체 완료 집계에 넣지 않는다.
-  - 하나라도 `pending/failed/unknown/planless`이면 `전체 완료`, `모두 완료`, `마무리 완료` 표현을 금지한다.
-- 사용자가 명시한 경로가 대표 plan(`*_todo-N.md` 아님)이고 `> **실행 TODO:**` 링크 또는 sibling `_todo-*.md`가 있으면, 미완료 `_todo` 전부를 **session targets**에 자동 추가한다.
-  - 출력은 `대표 plan`, `discovered _todo`, `session targets 추가`, `남은 target N개` 형식으로 남긴다.
-  - 현재 작업 대상은 첫 번째 실행 가능한 `_todo` 1개뿐이며, 나머지는 **remaining targets**로 유지한다.
-  - `_todo`가 남아 있는 동안 `대표 plan 전체 완료`, `session 종료` 표현을 금지한다.
-- 현재 target의 구현이 끝났더라도 **remaining targets**가 있으면 전체 완료로 말하지 않는다.
-  - 출력은 `현재 target 완료, 남은 target N개` 형태로 남기고, 다음 target으로 **같은 턴에서 계속** 진행한다.
-- post-merge 검증 실패는 `product_regression`, `contract_regression`, `test_fixture_stale`, `environment_failure` 중 하나로 `failure_class`를 분류하고, `blocks_archive`, `blocks_other_targets`, `next_owner`를 남기기 전에는 전체 보류/전체 중지로 말하지 않는다.
-  - `test_fixture_stale` 또는 `environment_failure`이고 `blocks_other_targets=false`이면 현재 target의 warning/blocker로만 남기고 다른 eligible target이나 remaining leaf 진행을 계속한다.
-- explicit continue 재지시가 없어도 **current target에 실행 가능한 leaf가 남아 있으면 같은 턴에서 계속 진행**한다.
-- `leaf 몇 개 완료`, `Phase 일부 완료`, `현재 target 일부 완료`는 종료 사유가 아니다.
-- 사용자가 `계속`, `멈추지마`, `끝날 때까지` 등으로 재지시한 경우:
-  - 중간 성공(leaf 몇 개 완료, T1/T2 통과)은 종료점이 아니라 **진행 업데이트**다.
-  - owner chain의 다음 단계(`/merge-test`, `/done` 등)가 deterministic하게 남아 있으면 설명으로 멈추지 말고 **같은 턴에서 계속 실행**한다.
-  - 실제 중단은 hard blocker(충돌/필수 게이트 실패 등)에서만 허용한다.
+`/implement`는 구현 leaf 실행, 테스트, plan progress update, 구현 커밋까지만 소유한다. session targets, same-turn chaining, compaction resume, `/merge-test`/`/done` 선택은 `.claude/skills/continue-plan/SKILL.md`가 소유한다.
 
-### compaction resume gate (필수)
+Worker completion must leave a tail handoff block:
 
-- 세션 시작 시 context summary에 아래 중 하나가 명시되어 있으면, 사용자 재지시 없이 즉시 재개한다:
-  - `pending task`, `남은 작업`, `pending pytest fix`, `다음 단계` 등 미완료 작업 기술
-  - `pending` 상태인 leaf 체크박스 또는 plan summary 내 `[ ]`
-  - `현재 작업` 또는 `9. Optional Next Step` 섹션의 concrete action
-- compaction resume은 explicit `계속` 발화와 동등하다. 재개 전에 사용자에게 확인을 구하지 않는다.
-- 재개 후 첫 출력은 `컨텍스트 재개 — {pending task 요약}` 한 줄이며, 즉시 작업을 실행한다.
+| field | meaning |
+|---|---|
+| `plan` | current plan path |
+| `branch` | plan header branch or `none` |
+| `worktree` | plan header worktree or `none` |
+| `remaining_leaf` | executable implementation leaf count |
+| `db_direct_remaining` | DB-direct/runtime evidence remaining count |
+| `blocker` | hard blocker code or `none` |
 
 ## 실행 대상 계약 (leaf-only, 필수)
 
@@ -173,24 +150,19 @@ plan 문서에서 구현할 항목 선택 시:
 ```
 > 항목 완료 시마다 헤더와 푸터의 진행률을 함께 업데이트한다.
 
-### 4. 완료 후 owner 선택
+### 4. 완료 후 tail handoff
 
-구현이 끝나면 plan 헤더의 worktree metadata로 다음 owner를 선택합니다.
-- `> branch:` 또는 `> worktree:`가 있으면 `/merge-test`를 호출한다. `/done`은 이 상태를 차단한다.
-- 두 필드가 모두 없으면 `/done`을 직접 호출한다.
+구현 leaf가 끝나면 `/merge-test` 또는 `/done`을 여기서 직접 고르지 않는다. 아래 handoff를 남기고 `/continue-plan`으로 넘긴다.
 
-수동 안내 템플릿:
 ```text
-Detected: branch={branch|none}, worktree={worktree|none}
-Decision: /merge-test | /done
-Gate: branch/worktree present -> /merge-test; absent -> /done
+Tail handoff to /continue-plan:
+plan={plan}
+branch={branch|none}
+worktree={worktree|none}
+remaining_leaf={count}
+db_direct_remaining={count}
+blocker={none|code}
 ```
-
-위 템플릿은 실행 전 read-back 근거다. `Decision: /merge-test`를 출력하는 것만으로 턴을 종료하지 않는다.
-
-**Hard handoff contract:** current target의 `remaining executable leaf = 0`, session `remaining targets = 0`, `next owner step = /merge-test`이고 plan/todo 헤더에 `> branch:` 또는 `> worktree:`가 있으면 `/merge-test`가 current target의 다음 실행 step이다. 이 상태에서는 final closeout을 금지하고, 사용자가 명시한 local/project skill path precedence를 유지한 채 같은 턴에서 exact local `/merge-test` skill을 읽고 실행한다.
-
-**Same-turn owner chain contract:** 위 조건에서 수동 `/implement`는 설명-only 종료가 아니라 `implement -> merge-test -> done` 실행 chain을 계속 탄다. `/merge-test`가 archive/TODO/DONE 후처리까지 끝내거나 hard blocker를 반환하기 전까지 `leaf 완료`, `T1/T2/T3 통과`, `머지대기 전이` 같은 중간 성공은 closeout으로 말하지 않는다. 종료 직전 read-back은 `remaining executable leaf`, `remaining targets`, `next owner step`, `remote evidence`를 출력하되, 실행 가능한 `/merge-test` 또는 `/done` next owner가 있으면 계속 실행한다.
 
 `/done` owner는 docs commit root 기준 TODO→DONE 이동, plan 체크, archive, DONE.md 정리, 완료 검증, 커밋을 처리합니다. wtools에서는 `.worktrees/plans/TODO.md`와 `.worktrees/plans/docs/DONE.md`가 canonical이며 root `TODO.md`/`docs/DONE.md`/`wtools/TODO.md`는 직접 갱신하지 않습니다.
 
@@ -210,7 +182,7 @@ Claude가 구현 요청 받으면:
 응답은 현재 상태 요약, 가능한 선택지, 실행 시 필요한 명시 승인 문장까지로 제한한다.
 
 구현 요청으로 볼 수 있는 입력:
-- "구현해", "진행해", "고쳐", "수정해", "적용해", "지금 붙여"
+- "구현해", "고쳐", "수정해", "적용해", "지금 붙여", "implement"
 - "가능하면 바로 고쳐", "문제 맞으면 수정해", "검토 후 적용해"처럼 같은 발화에 조건부 실행 의도가 포함된 경우
 
 단, 실행 의도가 있어도 이후 worktree/precondition gate는 그대로 통과해야 한다. "조사해줘" 계열은 CLAUDE.md의 조사 read-only gate가 우선한다.

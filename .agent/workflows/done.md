@@ -11,6 +11,10 @@ Workflow deterministic checks should point to the same helper CLI contracts used
 
 구현 완료 후 문서 정리와 커밋을 자동으로 처리합니다.
 
+## Continue-Plan Boundary
+
+branch/worktree, downstream sync evidence, or merge cleanup evidence가 남아 있으면 final로 닫지 않습니다. `.agent/workflows`에는 merge-test workflow가 없으므로, `continue-plan.md`가 명시 blocker 또는 외부 `/merge-test` handoff를 남긴 뒤에만 `done.md`가 archive/TODO/DONE 정리를 진행합니다.
+
 ## 트리거
 
 - "완료", "끝", "done", "마무리"

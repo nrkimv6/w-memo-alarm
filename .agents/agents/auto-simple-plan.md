@@ -33,11 +33,18 @@ For deterministic status, grep, candidate, preflight, or cleanup steps, call the
 - 원자 분해는 하지 않는다 (expand-plan 에이전트 역할)
 - TC 명세는 하지 않는다 (expand-plan 에이전트 역할)
 
+## Parent-Child Closeout Contract
+
+- parent-child closeout: 상태 없는 대표 plan에 child `_todo-N.md` 링크나 sibling `_todo-*.md`가 이미 있으면, 상태 전이 전에 child 전수 완료 여부와 parent/child 관계를 read-back한다.
+- child `_todo-N.md`가 active/incomplete이면 parent plan을 완료/아카이브 대상으로 표현하지 않고 `parent_plan_status: parent-child open` evidence를 남긴다.
+- 세부 판정은 `.agents/skills/plan/SKILL.md`, `.agents/skills/review-plan/SKILL.md`, `.agents/skills/implement/SKILL.md`의 scope-split 및 linked child closeout 계약을 참조한다.
+
 ## 실행 흐름
 
 1. plan 문서를 읽는다
 2. **상태가 이미 있으면** → SKIP-PLAN 즉시 반환
 3. **상태가 없으면**:
+   - parent-child closeout gate: child `_todo-N.md`가 이미 있으면 parent/child 관계를 먼저 확인하고, parent 완료처럼 보이는 상태 전이를 하지 않는다
    - what/why가 불명확하면 보완 (배경, 목적, 핵심 변경)
    - 요약 필드가 없으면 생성 (`> 요약: ...`) — **증상 우선 형식 적용**:
      - `fix:` 유형: `{증상/불편함 1문장} — {핵심 목적}` (증상 필수)

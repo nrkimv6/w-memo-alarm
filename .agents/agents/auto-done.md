@@ -47,6 +47,12 @@ For deterministic status, grep, candidate, preflight, or cleanup steps, call the
 - plans 워크트리를 쓰는 파이프라인이라면 archive 후 commit은 `Resolve-DocsCommitCandidates` 반환 파일만 대상으로 하고, 전체 clean 여부로 gate하지 않는다.
 - unrelated dirty가 남아 있으면 경고만 출력하고 current-run 후보만 커밋한다.
 
+## Parent-Child Closeout Contract
+
+- parent-child closeout: Step 1의 구현완료 설정과 Step 2의 archive 전에 대표 plan의 `> **실행 TODO:**` 링크 및 sibling `_todo-*.md`를 전수 확인한다.
+- archive/완료 외 child `_todo-N.md`에 미완료 `[ ]`가 남아 있으면 parent archive를 차단하고, 현재 primary `_todo-N.md` 처리 결과와 remaining targets만 출력한다.
+- 이 계약은 `.agents/skills/done/SKILL.md` closeout evidence 및 `.agents/skills/implement/SKILL.md` linked child plan open gate를 참조한다. SSOT 표를 agent 본문에 복제하지 않는다.
+
 ## 전제조건 (생략)
 
 > **자동 파이프라인에서 호출되므로 worktree/branch 검증은 불필요.**
@@ -90,6 +96,7 @@ done SKILL.md 2단계~8단계를 순서대로 실행:
 - `_todo.md` 내 `[ ]` → `[x]` 전환 (미완료 항목 있으면 경고 후 계속)
 - 헤더 `> 상태:` → `구현완료`, `> 진행률:` → `N/N (100%)`
 - 푸터 `*상태: ... | 진행률: ...*` 동기화
+- parent-child closeout gate가 open이면 parent plan은 `구현완료`/archive로 전이하지 않고 `remaining targets` evidence를 남긴다
 
 ### 2. plan 문서 아카이브
 

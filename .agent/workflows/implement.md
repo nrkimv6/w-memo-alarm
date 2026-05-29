@@ -1,5 +1,5 @@
 ---
-description: "구현 워크플로우 (plan→TODO→DONE). Use when: 구현해, 진행해, 시작해, implement"
+description: "구현 워크플로우 worker (plan→TODO→DONE). Use when: 구현해, implement, 명시 plan 구현 요청"
 ---
 
 
@@ -10,6 +10,22 @@ Workflow deterministic checks should point to the same helper CLI contracts used
 # 구현 워크플로우
 
 plan → TODO → DONE 흐름으로 작업을 관리합니다.
+
+## Worker Boundary
+
+`implement.md`는 구현 leaf 실행, 테스트, plan progress update, 구현 커밋까지만 소유합니다. `진행해`, `계속해`, `마저 해`, `끝까지 해` 같은 continuation 지시와 다음 workflow 선택은 `continue-plan.md`가 소유합니다.
+
+구현 완료 시 직접 merge/done을 선택하지 말고 아래 tail handoff를 남깁니다.
+
+```text
+Tail handoff to continue-plan:
+plan={plan}
+branch={branch|none}
+worktree={worktree|none}
+remaining_leaf={count}
+next_owner={unknown|suggested}
+blocker={none|code}
+```
 
 ## 파일 위치
 
