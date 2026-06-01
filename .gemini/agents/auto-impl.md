@@ -11,6 +11,13 @@
 
 ## 실행 흐름
 
+### Compaction Resume Gate
+
+- 자동 파이프라인 재진입 시 SOURCE plan의 `> 상태:`, `PROCESSED-TODO`, `REMAINING-TODOS`, 직전 stage marker를 먼저 읽는다.
+- 같은 plan/stage가 partial 상태이면 from-scratch 재실행하지 않고 `.agents/skills/implement/SKILL.md`의 `compaction resume gate` 및 resume 절차에 합류한다.
+- compaction 후 첫 결과에는 `resume_anchor: {stage}/{step}` evidence를 출력한다.
+- 참조: `.agents/skills/implement/SKILL.md` `compaction resume gate` 섹션.
+
 1. 전달받은 계획(PROJECT, TASK, SOURCE, PLAN)을 파악한다
    - planResult가 비어있거나 `PRIORITY: SKIP-PLAN`인 경우, SOURCE에 지정된 plan 파일 원본을 읽어서 미완료 항목(`- [ ]`)을 구현 대상으로 사용한다
 2. 미완료 항목을 순서대로 구현한다
@@ -53,6 +60,7 @@ TASK: {완료된 작업}
 STATUS: {SUCCESS/FAILED/SKIPPED}
 COMMITS: {커밋 메시지들}
 NEXT-WORKSPACE: {다음 사이클 workspace 절대경로 — 해당 없으면 이 줄 생략}
+resume_anchor: {stage}/{step 또는 공란}
 ===END===
 ```
 
