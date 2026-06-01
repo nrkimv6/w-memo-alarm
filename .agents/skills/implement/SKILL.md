@@ -63,6 +63,8 @@ Session target expansion, next owner dispatch, no-reprompt owner chaining, expli
 
 When `remaining executable leaf = 0` and `next owner step = /merge-test`, final closeout을 금지한다. Use the exact local `/merge-test` skill and continue the implement -> merge-test -> done chain in the same turn unless there is a `hard blocker` or user explicit stop. 중간 성공은 closeout으로 말하지 않는다; archive/TODO/DONE, remaining targets, and remote evidence/read-back must be closed by the next owner.
 
+If the user already gave a continuation instruction (`진행해`, `계속`, `끝까지`) and branch/worktree metadata remains, an implementation commit or `머지대기` read-back is only a tail handoff. Dispatch `/continue-plan`, which must route to `/merge-test` without asking the user to repeat the instruction. After merge-test, docs `plans` push/read-back and declared `/reflect` owners are still part of the same owner chain.
+
 ## compaction resume gate
 
 On context summary resume, read any pending task, branch/worktree target, or previous handoff first. If the context summary identifies a pending task, start the next update with `컨텍스트 재개` and continue from the recorded owner-chain state instead of restarting or asking again.
@@ -85,7 +87,7 @@ Immediately before final response (`final response 직전`), recalculate `remain
 
 ## Final 허용 override
 
-Final is allowed only for the narrow tuple: `hard_blocker=true`, `user_explicit_stop=true`, `owner_executed=true`, or all of `targeted tests passed`, `worktree clean`, `plan progress committed`, `머지대기`, and no remaining `merge order` owner. A dirty-free `머지대기` handoff is hard blocker가 아니라 `/merge-test` owner 입력.
+Final is allowed only for the narrow tuple: `hard_blocker=true`, `user_explicit_stop=true`, `owner_executed=true`, or all of `targeted tests passed`, `worktree clean`, `plan progress committed`, `머지대기`, and no remaining `merge order` owner. A dirty-free `머지대기` handoff is hard blocker가 아니라 `/merge-test` owner 입력. `main` remote alignment does not close a wtools docs target when `.worktrees/plans` is ahead-only; route that state to `plans push/read-back`.
 
 ## Skill precedence closeout evidence
 

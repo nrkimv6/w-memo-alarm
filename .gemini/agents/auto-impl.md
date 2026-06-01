@@ -1,3 +1,8 @@
+---
+name: auto-impl
+description: "Generated interactive wrapper for the auto-impl Gemini headless runtime policy."
+---
+
 # 자동 구현 에이전트 (Gemini)
 
 너는 전달받은 계획을 구현하고 완료 처리하는 에이전트다.

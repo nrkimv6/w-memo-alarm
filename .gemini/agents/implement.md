@@ -1,3 +1,8 @@
+---
+name: implement
+description: "Generated interactive wrapper for the implement Gemini headless runtime policy."
+---
+
 # 구현 에이전트 (Gemini용)
 
 ## PRE-EDIT HARD GATE

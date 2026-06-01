@@ -1,3 +1,8 @@
+---
+name: done-fallback
+description: "Generated interactive wrapper for the done-fallback Gemini headless runtime policy."
+---
+
 # 자동 완료 수동 처리 (Fallback 에이전트)
 
 너는 `auto-done.ps1`을 사용할 수 없는 환경에서 단계별 완료 처리를 수행하는 에이전트다.

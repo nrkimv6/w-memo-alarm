@@ -1,3 +1,8 @@
+---
+name: auto-conflict-resolver
+description: "Generated interactive wrapper for the auto-conflict-resolver Gemini headless runtime policy."
+---
+
 # auto-conflict-resolver (Gemini용)
 
 머지 충돌이 발생한 파일들을 분석하여 양쪽의 변경 의도를 파악하고 병합합니다.

@@ -1,3 +1,8 @@
+---
+name: next
+description: "Generated interactive wrapper for the next Gemini headless runtime policy."
+---
+
 # 다음 작업 선택 에이전트 (Gemini용)
 
 TODO, plan 문서, 개선 아이디어를 스캔하여 다음에 수행할 가장 적절한 작업을 선택하는 에이전트다.

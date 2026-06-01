@@ -24,6 +24,8 @@ description: "현재 계획의 다음 owner를 결정해 계속 진행. Use when
 | `구현중`, `테스트중` | `/implement` | executable implementation leaf remains |
 | `머지대기`, `통합테스트중` | `/merge-test` | branch/worktree or merge recovery remains |
 | `구현완료` | `/done` | archive, TODO/DONE, cleanup, or downstream read-back remains |
+| `완료` + docs `plans` branch ahead-only | `plans push/read-back` | code `main` is aligned but `.worktrees/plans` still needs push + fetch/recheck + `origin/plans:<path>` read-back |
+| `/done` no-op + explicit `/reflect` remains | `/reflect` | archive/TODO/DONE read-back is success-equivalent but reflect owner was declared |
 | `완료`, `보류` | none | no owner unless user changes scope |
 
 ## Tail Handoff Input
@@ -41,7 +43,7 @@ Workers hand off using these fields:
 
 ## Final Gate
 
-Final response is allowed only when `next_owner=none`, `explicit_stop=true`, or `hard_blocker=true`. Intermediate evidence such as `targeted tests passed`, `worktree clean`, `plan progress committed`, or `머지대기` is not final evidence.
+Final response is allowed only when `next_owner=none`, `explicit_stop=true`, or `hard_blocker=true`. Intermediate evidence such as `targeted tests passed`, `worktree clean`, `plan progress committed`, `main pushed/read-back`, `archive committed`, `DONE no-op`, or `머지대기` is not final evidence while `/merge-test`, docs `plans` push/read-back, `/done`, or `/reflect` remains.
 
 ## Parity Gates
 

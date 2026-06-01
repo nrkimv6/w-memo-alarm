@@ -1,3 +1,8 @@
+---
+name: auto-verify
+description: "Generated interactive wrapper for the auto-verify Gemini headless runtime policy."
+---
+
 # Verify Plan 에이전트 (Gemini용 — v2 파이프라인 검증 단계)
 
 expand-plan이 생성한 plan을 **코드 대비 정합성 검증**하고, 발견한 우려를 심각도별로 분류하여 plan을 수정한다.

@@ -15,7 +15,7 @@ Preflight, cleanup, and final session routing evidence must come from helper CLI
 
 # 머지 후 통합테스트 게이트
 
-`/implement`로 worktree에서 구현 완료 후 main에 머지하고, plan의 T4/T5 검증과 `/done` 완료처리까지 이어간다. `merge success`, `T4/T5 passed`, 또는 `cleanup ready` 단독은 final 사유가 아니다. common contract의 STOP/CONTINUE Decision Table에서 remaining executable leaf, remaining targets, `/done`, archive/read-back이 모두 닫힌 뒤에만 완료를 말한다.
+`/implement`로 worktree에서 구현 완료 후 main에 머지하고, plan의 T4/T5 검증과 `/done` 완료처리까지 이어간다. `merge success`, `T4/T5 passed`, `main pushed/read-back`, 또는 `cleanup ready` 단독은 final 사유가 아니다. common contract의 STOP/CONTINUE Decision Table에서 remaining executable leaf, remaining targets, `/done`, archive/read-back, docs `plans` push/read-back이 모두 닫힌 뒤에만 완료를 말한다.
 
 ## Session Target Router Final Guard
 
@@ -45,7 +45,7 @@ Before rollback-like mutations, classify the current action class and provide a 
 2. **merge**: root main worktree에서 remote relation gate를 통과한 뒤 구현 branch를 병합한다. 충돌은 final abort가 아니라 conflict continuation이다.
 3. **T4/T5**: post-merge, root-worktree, main 브랜치 3축이 모두 충족될 때만 실행한다. evidence row schema와 live/mock 분류는 common contract의 `T4/T5 live contract classification`을 따른다.
 4. **cleanup**: `merge-test-cleanup.ps1 -Json`을 먼저 읽고 `cleanup_ready=true`, `mutation_ready=true`, `hard_blockers=[]`이면 `ignored_dirty` warning만으로 중단하지 않는다.
-5. **done handoff**: remaining target, child plan, downstream sync/read-back, Phase Z evidence를 재계산한다. archive/read-back이 남아 있으면 `/done` 또는 해당 owner step으로 계속한다.
+5. **done handoff**: remaining target, child plan, downstream sync/read-back, Phase Z evidence, docs `plans` remote relation을 재계산한다. archive/read-back 또는 `.worktrees/plans` push/read-back이 남아 있으면 `/done`, `plans push/read-back`, 또는 해당 owner step으로 계속한다.
 
 ## main flow
 
@@ -109,6 +109,8 @@ Rules:
 | push/dispatch rejected after eligible tuple | stop with evidence | true | `DOWNSTREAM_SYNC_TRIGGER_FAILED` or `NON_FF_SYNC_BLOCKED` | source-owner flow, credential repair |
 
 Receiver closeout 결과표 includes `receiver`, `rev-list tuple`, `action`, `reprompt_required`, `blocker_code`, `read-back hash`, and `next_owner`.
+
+For wtools docs closeout, run the same tuple logic against the docs commit root upstream, normally `.worktrees/plans` tracking `origin/plans`. If code `main` is `0 0` but docs `plans` is ahead-only, `session-target-router.ps1` must receive `plans_ahead_only=true` or equivalent relation evidence and return `decision=continue`, `next_owner=plans push/read-back`; final wording is forbidden until push, fetch/recheck, and `origin/plans:<archive-or-ledger-path>` read-back succeed.
 
 ## T4/T5 Orchestration
 

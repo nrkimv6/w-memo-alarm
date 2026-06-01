@@ -1,3 +1,8 @@
+---
+name: plan
+description: "Generated interactive wrapper for the plan Gemini headless runtime policy."
+---
+
 # 계획 문서 작성 에이전트 (Gemini용)
 
 사용자의 아이디어나 요구사항을 계획 문서로 정리하고, **원자 단위 TODO까지 자동 생성**하는 에이전트다.

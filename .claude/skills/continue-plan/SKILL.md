@@ -24,6 +24,8 @@ This Claude surface adopts the common continuation contract in [`common/tools/co
 | `구현중`, `테스트중` | `/implement` | executable implementation leaf remains |
 | `머지대기`, `통합테스트중` | `/merge-test` | branch/worktree or merge recovery remains |
 | `구현완료` | `/done` | archive, TODO/DONE, cleanup, or downstream read-back remains |
+| `완료` + docs `plans` branch ahead-only | `plans push/read-back` | code `main` is aligned but `.worktrees/plans` still needs push + fetch/recheck + `origin/plans:<path>` read-back |
+| `/done` no-op + explicit `/reflect` remains | `/reflect` | archive/TODO/DONE read-back is success-equivalent but reflect owner was declared |
 | `완료`, `보류` | none | no owner unless user changes scope |
 
 ## Tail Handoff Input
@@ -39,7 +41,7 @@ This Claude surface adopts the common continuation contract in [`common/tools/co
 
 ## Final Gate
 
-Final response is allowed only when `next_owner=none`, `explicit_stop=true`, or `hard_blocker=true`. `continue-plan` owns same-turn chaining, 재진입/compaction resume, and worker tail handoff interpretation.
+Final response is allowed only when `next_owner=none`, `explicit_stop=true`, or `hard_blocker=true`. `continue-plan` owns same-turn chaining, 재진입/compaction resume, and worker tail handoff interpretation. Intermediate evidence such as `main pushed/read-back`, `archive committed`, `DONE no-op`, or `머지대기` is not final evidence while `/merge-test`, docs `plans` push/read-back, `/done`, or `/reflect` remains.
 
 ## Related Owners
 

@@ -27,10 +27,12 @@ The deterministic completion flow is owned by `common\tools\auto-done.ps1`. Use 
 | 2 | `remaining executable leaf` > 0 | **continue** | 같은 턴에서 다음 leaf |
 | 3 | `remaining targets` > 0 | **continue** | 같은 턴에서 다음 target |
 | 4 | `archive/read-back` 미완료 (TODO→DONE 이동, plan 체크, archive, DONE.md, 커밋 포함) | **continue** | read-back 완료까지 진행 |
-| 5 | `next owner step` 있음 | **continue** | 해당 owner 실행 |
-| 6 | 위 조건 모두 해당 없음 | **final** | 완료 보고 허용 |
+| 5 | docs `plans` branch push/read-back 미완료 | **continue** | `.worktrees/plans` push + fetch/recheck + `origin/plans:<path>` read-back |
+| 6 | `next owner step` 있음 | **continue** | 해당 owner 실행 |
+| 7 | 위 조건 모두 해당 없음 | **final** | 완료 보고 허용 |
 
 > archive/read-back은 TODO→DONE 이동 + plan 체크 + archive 커밋 + DONE.md 기록 + 4-surface read-back 확인 전부를 포함한다. 하나라도 미완이면 row 4 `continue`.
+> DONE row가 `.worktrees/plans/docs/DONE.md`에서 `.worktrees/plans/docs/archive/DONE-YYYY-MM.md`로 월간 이동된 경우는 DONE ledger success-equivalent다. 이 경우 DONE.md 재삽입을 하지 말고 monthly archive path/read-back을 evidence로 남긴다.
 
 ## Session Target Router Final Guard
 
@@ -46,6 +48,7 @@ Before any final response, run `common\tools\session-target-router.ps1 -Json` ag
 - `branch/worktree present -> /merge-test; absent -> /done` 판정은 같은 턴에서 수행하며, 사용자에게 같은 지시를 다시 입력하라고 떠넘기지 않는다.
 - `/merge-test` owner가 필요하면 같은 턴에서 local/project `/merge-test` `SKILL.md`를 읽고 이어간다.
 - 이미 `/merge-test`에서 archive/read-back까지 완료된 plan을 `/done`이 no-op으로 확인하는 경우에도 직전 cleanup evidence를 한 줄로 남긴다. 예: `cleanup: cleanup_ready=true hard_blockers=[] warnings=[ignored_dirty] archive_read_back=ok`. `warnings=[ignored_dirty]`만으로 완료를 보류하지 않는다.
+- `/done` no-op 또는 archive success 이후에도 명시된 `/reflect`가 남거나 docs `plans` branch가 ahead-only이면 final하지 않는다. 결과표의 `남은 조치`는 `/reflect` 또는 `plans push/read-back`이어야 한다.
 
 → 상단 STOP/CONTINUE Decision Table 우선. 이 섹션은 세부 근거 참조용.
 
@@ -196,8 +199,8 @@ AGENTS.md 문서 위치 규칙의 plan 경로/*.md
 5. 불일치가 있으면 경고 출력 후 커밋 전 수동 수정 (auto-done.ps1은 hard stop)
 6. plan/archive 본문에 `Phase Z` 또는 `> 머지커밋:`이 있으면, archive read-back에서 `Phase Z` 미완료 0건 + `> 머지커밋:`이 실제 merge commit evidence로 보존되는지 확인한다. `> 후속정리커밋:`이 있으면 현재 main HEAD 또는 현재 main HEAD로 이어지는 post-merge docs cleanup commit evidence로 검증한다.
 7. plan/archive 본문에 T4/T5 phase 또는 `T4/T5 evidence table` requirement가 있으면 archive 전 `stage|command|cwd|result|exit_code|log_ref|blocker_code` schema의 T4/T5 evidence table, 또는 explicit `> T4 E2E 해당 없음:`/`> T5 HTTP 해당 없음:` read-back을 확인한다.
-8. final summary는 `target_read_back.active_exists=false`, `target_read_back.archive_exists=true`, `done_ledger_state=present`, `todo_ledger_state=absent`가 확인된 target만 `완료`로 보고한다. code merge만 끝났거나 archive/DONE/TODO read-back이 모자란 target은 `archive pending` 또는 `blocked`로 분리한다.
-9. `active_exists=false`, `archive_exists=true`, `DONE present`, `TODO absent`, `상태=구현완료`, `진행률=100%` read-back 전에는 "완료", "다 했다", "추가 작업 없음"이라고 말하지 않는다. 하나라도 부족하면 `target_read_back_incomplete`로 남긴다.
+8. final summary는 `target_read_back.active_exists=false`, `target_read_back.archive_exists=true`, `done_ledger_state=present|present_in_monthly_archive`, `todo_ledger_state=absent`가 확인된 target만 `완료`로 보고한다. code merge만 끝났거나 archive/DONE/TODO read-back이 모자란 target은 `archive pending` 또는 `blocked`로 분리한다.
+9. `active_exists=false`, `archive_exists=true`, `DONE present` 또는 `DONE monthly archive present`, `TODO absent`, `상태=구현완료`, `진행률=100%` read-back 전에는 "완료", "다 했다", "추가 작업 없음"이라고 말하지 않는다. 하나라도 부족하면 `target_read_back_incomplete`로 남긴다.
 
 → 상단 STOP/CONTINUE Decision Table 우선. 이 섹션은 세부 근거 참조용.
 
@@ -362,6 +365,8 @@ C. 매칭된 항목을 추출하여 리스트로 수집
 docs commit root 기준 `docs/DONE.md` 항목이 10개를 초과하면:
 1. `.worktrees/plans/`가 있는 프로젝트는 오래된 항목 → `.worktrees/plans/docs/archive/DONE-YYYY-MM.md`로 이동
 2. `.worktrees/plans/`가 없는 프로젝트는 오래된 항목 → `{project}/docs/archive/DONE-YYYY-MM.md`로 이동
+
+월간 archive 이동 후 no-op read-back에서는 해당 DONE row가 `DONE.md`에 없고 `docs/archive/DONE-YYYY-MM.md`에 있으면 success-equivalent로 판정한다. 이 상태는 `done_ledger_state=present_in_monthly_archive`로 session-target-router에 넘기며, DONE.md에 같은 row를 재삽입하지 않는다.
 3. `docs/DONE.md`는 최근 5개만 유지
 
 ### 6단계: root legacy ledger 미갱신 확인 (wtools만 해당)

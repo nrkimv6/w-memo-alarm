@@ -18,6 +18,15 @@ Regex and keyword detections are advisory evidence unless a helper contract expl
 - "계획서 검토", "review-plan", "계획 검토"
 - `/reflect` 완료 후 자동 호출 ("조사만" 모드 제외)
 
+## Skill Path Precedence
+
+- 사용자가 `[$review-plan](...SKILL.md)` 또는 파일시스템 경로로 local/project skill 파일을 명시한 경우, 반드시 그 exact file을 Read 기준으로 삼고 canonical absolute path를 `skill_source` provenance로 고정한다. Marker: `explicit_skill_source=exact_read_source`.
+- 같은 name의 global/duplicate skill(`C:\Users\Narang\.codex\skills\review-plan\SKILL.md` 등)은 explicit local/project path의 대체로 사용하지 않는다. Marker: `global_duplicate_fallback=prohibited`.
+- 입력이 `D:\work\project\tools\monitor-page\.claude\skills\review-plan\SKILL.md` 같은 receiver mirror path이면 해당 file read를 우선하고, wtools 원본 skill은 source provenance 또는 downstream read-back 근거로만 비교한다.
+- explicit path가 없을 때만 fallback 후보를 검토한다. explicit path가 존재하지만 읽기 실패하면 `blocked: missing_skill_source`로 남기고 global/duplicate fallback으로 성공 처리하지 않는다.
+- explicit path와 실제 read path가 다르면 `REVIEW_PLAN_SKILL_SOURCE_MISMATCH`로 closeout 성공을 금지한다. 이 경우 `검토완료` 상태 전이 누락으로 오진하지 말고 source mismatch를 별도 실패 원인으로 결과표/검토 근거에 기록한다. Marker: `closeout_success=blocked_on_source_mismatch`; `status_transition_misdiagnosis=blocked`.
+- 사용자가 같은 턴에서 exact skill link를 다시 제시하면, 이전 fallback 판단을 유지하지 말고 correct source file을 다시 Read한 뒤 review-plan을 재실행한다.
+
 ## PLAN_SPLIT_GATE: split 판단 전 Read 의무
 
 `/review-plan`에서 scope split, surface isolation, child plan 생성 여부를 판단할 때는 split 판단 전에 `.claude/skills/plan/SKILL.md`를 먼저 Read하고 그 분할 게이트를 적용한다.
@@ -404,7 +413,8 @@ expand-todo의 5.6단계가 expand 결과를 자체 커밋한다. review-plan의
 - 사용자가 `커밋해`, `검토완료 상태`, `초안 아닌가요`처럼 closeout 재지시를 한 경우, Q5/Q6 escalation evidence로 결과표 `비고` 열에 기록하고 **같은 턴에서 상태 전이와 커밋을 계속 진행**한다.
 
 **Closeout evidence 컬럼:**
-- 각 입력 plan에 대해 `plan`, `status_before`, `status_after`, `commit_hash`, `remaining_owner`, `input_coverage`를 closeout evidence 표에 기록한다.
+- 각 입력 plan에 대해 `plan`, `skill_source`, `status_before`, `status_after`, `commit_hash`, `remaining_owner`, `input_coverage`를 closeout evidence 표에 기록한다.
+- `skill_source`에는 explicit path, 실제 read path, source provenance를 기록한다. explicit path와 read path가 다르면 `REVIEW_PLAN_SKILL_SOURCE_MISMATCH`로 closeout 완료를 보고하지 않는다. Marker: `skill_source_provenance=required`.
 - `.worktrees/plans` 대상 plan이면 그 cwd에서 `commit.ps1`을 호출한다. 커밋 실패 또는 staged ownership mismatch가 발생하면 성공으로 표시하지 않는다.
 - `status_after`가 `검토완료` 또는 보류 사유 없이 비어 있으면 closeout 완료로 보고하지 않는다.
 - `input_coverage`가 `declared={N}; expanded={M}; processed={K}; skipped=0; remaining=0` 형태가 아니거나, `skipped>0`이면 closeout 완료로 보고하지 않는다.
@@ -450,9 +460,9 @@ expand-todo의 5.6단계가 expand 결과를 자체 커밋한다. review-plan의
 
 ### Closeout Evidence
 
-| plan | status_before | status_after | commit_hash | remaining_owner | input_coverage |
-|------|---------------|--------------|-------------|-----------------|----------------|
-| {파일명} | {이전 상태} | {`검토완료` 또는 `보류: {사유}`} | {hash 또는 `실패: {사유}`} | {다음 owner 또는 없음} | declared={N}; expanded={M}; processed={K}; skipped=0; remaining=0 |
+| plan | skill_source | status_before | status_after | commit_hash | remaining_owner | input_coverage |
+|------|--------------|---------------|--------------|-------------|-----------------|----------------|
+| {파일명} | explicit={경로 또는 없음}; read={실제 Read 경로}; provenance={local/project/global/read-back}; marker=skill_source_provenance_required | {이전 상태} | {`검토완료` 또는 `보류: {사유}`} | {hash 또는 `실패: {사유}`} | {다음 owner 또는 없음} | declared={N}; expanded={M}; processed={K}; skipped=0; remaining=0 |
 ```
 
 ## 주의사항

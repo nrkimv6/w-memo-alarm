@@ -77,6 +77,7 @@ The deterministic completion flow is owned by `common\tools\auto-done.ps1`. Use 
   - `failure_class=test_fixture_stale` 또는 `environment_failure`는 전체 보류/전체 중지 근거로 승격하지 않고 target-local warning/blocker로만 남긴다.
   - T4/T5 evidence table의 `result=failed -> recovered` row는 `Recovered validation ledger` read-back이 있고 `failure_class=test_fixture_stale|environment_failure`, `blocks_archive=false`, `blocks_other_targets=false`이면 warning-success로 처리한다. 원래 실패 명령, corrected rerun 명령, recovery evidence 중 하나라도 없으면 `t4_t5_evidence_missing`으로 archive를 보류한다.
   - `already_archived` target은 성공-equivalent로 집계하되 archive metadata/TODO/DONE을 재삽입하거나 재이동하지 않는다.
+  - DONE row가 `.worktrees/plans/docs/DONE.md`에서 `.worktrees/plans/docs/archive/DONE-YYYY-MM.md`로 월간 이동된 경우도 `present_in_monthly_archive` success-equivalent로 집계하고 DONE.md에 재삽입하지 않는다.
   - `ignored`는 session target 밖 backlog 또는 사용자가 명시 제외한 missing target만 허용하며, session target 누락을 ignored로 숨기지 않는다.
 - 완료 집계 표는 대화형 마크다운 표로 `declared`, `processed_this_turn`, `already_archived`, `ignored`, `blocked`, `remaining_executable` 6컬럼을 포함하고, `already_archived`와 이번 턴에 실제 처리한 `processed_this_turn`을 분리해 출력한다.
   이미 archive된 target은 session read-back에는 포함하지만, 이번 턴 완료 수를 부풀리는 근거로 쓰지 않는다.
@@ -91,6 +92,7 @@ The deterministic completion flow is owned by `common\tools\auto-done.ps1`. Use 
 
 - 사용자가 `[$done] [$reflect]`처럼 여러 skill을 같은 턴에 명시하면 각 skill을 독립 target으로 취급하고 아래 결과표를 출력한다.
 - 이미 완료된 plan에 대한 `/done`은 no-op 분기로 처리하되, archive/DONE/commit evidence를 read-back하고 `already_archived`로 보고한다. archive/TODO/DONE을 재삽입하거나 재이동하지 않는다.
+- `/done` no-op 또는 archive success 이후에도 명시된 `/reflect`가 남거나 docs `plans` branch가 ahead-only이면 final하지 않는다. 결과표의 `남은 조치`는 `/reflect` 또는 `plans push/read-back`이어야 한다.
 - 일부 skill을 실행하지 못했으면 `남은 조치`에 같은 턴에서 이어갈 owner 또는 blocker를 적는다.
 
 | skill | 실행 여부 | evidence | 남은 조치 |
@@ -165,7 +167,7 @@ CLAUDE.md 문서 위치 규칙의 plan 경로/*.md
 5. 불일치가 있으면 경고 출력 후 커밋 전 수동 수정 (auto-done.ps1은 hard stop)
 6. plan/archive 본문에 `Phase Z` 또는 `> 머지커밋:`이 있으면, archive read-back에서 `Phase Z` 미완료 0건 + `> 머지커밋:`이 실제 merge commit evidence로 보존되는지 확인한다. `> 후속정리커밋:`이 있으면 현재 main HEAD 또는 현재 main HEAD로 이어지는 post-merge docs cleanup commit evidence로 검증한다.
 7. plan/archive 본문에 T4/T5 phase 또는 `T4/T5 evidence table` requirement가 있으면 archive 전 `stage|command|cwd|result|exit_code|log_ref|blocker_code` schema의 T4/T5 evidence table, 또는 explicit `> T4 E2E 해당 없음:`/`> T5 HTTP 해당 없음:` read-back을 확인한다.
-8. final summary는 `target_read_back.active_exists=false`, `target_read_back.archive_exists=true`, `done_ledger_state=present`, `todo_ledger_state=absent`가 확인된 target만 `완료`로 보고한다. code merge만 끝났거나 archive/DONE/TODO read-back이 모자란 target은 `archive pending` 또는 `blocked`로 분리한다.
+8. final summary는 `target_read_back.active_exists=false`, `target_read_back.archive_exists=true`, `done_ledger_state=present|present_in_monthly_archive`, `todo_ledger_state=absent`가 확인된 target만 `완료`로 보고한다. code merge만 끝났거나 archive/DONE/TODO read-back이 모자란 target은 `archive pending` 또는 `blocked`로 분리한다.
    - `target_read_back.worktree_closeout_residue` 또는 top-level `worktree_closeout_residue`가 있으면 `classification`, `blocker_code`, `tracking_item_id` 또는 `tracking skipped/failed reason`을 final summary에 남긴다.
 9. `active_exists=false`, `archive_exists=true`, `DONE present`, `TODO absent`, `상태=구현완료`, `진행률=100%` read-back 전에는 "완료", "다 했다", "추가 작업 없음"이라고 말하지 않는다. 하나라도 부족하면 `target_read_back_incomplete`로 남긴다.
 

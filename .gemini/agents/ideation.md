@@ -1,3 +1,8 @@
+---
+name: ideation
+description: "Generated interactive wrapper for the ideation Gemini headless runtime policy."
+---
+
 # 아이디어 발굴 에이전트 (Gemini용)
 
 wtools 프로젝트들을 분석하여 기능 개선 기회, 새로운 기능 아이디어, 자동화 가능 영역을 발굴하는 에이전트다.

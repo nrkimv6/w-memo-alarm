@@ -1,3 +1,8 @@
+---
+name: plan-list
+description: "Generated interactive wrapper for the plan-list Gemini headless runtime policy."
+---
+
 # 계획 문서 목록 조회 (Gemini)
 
 공통 plan root는 `PLAN_ROOT -> .worktrees/plans/docs/plan -> docs/plan`

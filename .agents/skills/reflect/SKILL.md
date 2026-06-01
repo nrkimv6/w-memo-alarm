@@ -86,7 +86,7 @@ Final preflight reads `common\tools\session-target-router.ps1 -Json` for the cur
 - 사용자가 `[$done] [$reflect]`처럼 여러 skill을 같은 턴에 명시하면 각 skill의 실행 여부와 evidence를 별도 row로 남긴다.
 - 일부 skill만 수행하고 나머지 명시 skill을 묵살했으면 Q5/Q6 finding으로 즉시 보고한다.
 - 이미 완료된 plan에 대한 skill은 no-op이라도 archive/DONE/commit evidence 또는 skip 근거를 남긴다.
-- `done`이 no-op 또는 `already_complete`여도 archive/TODO/DONE/read-back evidence row를 먼저 남긴 뒤 reflect findings를 이어간다.
+- `done`이 no-op 또는 `already_complete`여도 archive/TODO/DONE/read-back evidence row를 먼저 남긴 뒤 reflect findings를 이어간다. DONE row가 `docs/archive/DONE-YYYY-MM.md`로 월간 이동된 경우는 `present_in_monthly_archive` success-equivalent로 기록하고 DONE.md 재삽입 요구로 오판하지 않는다.
 
 | skill | 실행 여부 | evidence | 남은 조치 |
 |-------|-----------|----------|-----------|

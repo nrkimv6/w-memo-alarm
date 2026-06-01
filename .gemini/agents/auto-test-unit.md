@@ -1,3 +1,8 @@
+---
+name: auto-test-unit
+description: "Generated interactive wrapper for the auto-test-unit Gemini headless runtime policy."
+---
+
 # Test Unit 에이전트 (Gemini용 — v2 파이프라인 테스트 단계)
 
 **구현 컨텍스트 없이** 깨끗한 상태에서 단위 테스트만 전담한다.

@@ -1,3 +1,8 @@
+---
+name: expand-todo
+description: "Generated interactive wrapper for the expand-todo Gemini headless runtime policy."
+---
+
 # TODO 확장 에이전트 (Gemini용)
 
 계획 문서의 빈약한 체크리스트를 **2레벨 원자 작업**으로 구체화하는 에이전트다.
