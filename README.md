@@ -1,64 +1,100 @@
 # Memo Alarm
 
-Memo Alarm is a SvelteKit and Capacitor app for turning quick notes, bookmarks, and recurring tasks into reminders that survive daily context switching. It combines a lightweight memo dashboard with local notification scheduling, Supabase sync, offline cache recovery, and share-friendly memo tools.
+Memo Alarm is a personal memo, todo, bookmark, and reminder app built around one idea: notes should be able to become actions at the right time.
 
-## What it solves
+The app combines quick memo capture, URL-backed bookmarks, dated todos, recurring reminders, and push/local notification flows in a PWA and Android-capable codebase.
 
-Most reminder apps separate the thing you need to remember from the context that made it important. Memo Alarm keeps both together: a memo can include text, checklist-style todos, tags, a URL, repeat rules, and one or more reminders. When the reminder fires, the user sees the original context instead of a bare alarm label.
+## What It Solves
 
-## Features
+Many personal note apps separate writing, reminders, links, and task follow-up into different workflows. Memo Alarm keeps those pieces in one record so a memo can also carry a due date, a reminder, a URL, tags, and progress state.
 
-- Memo dashboard with pinned, favorite, recent, today, and upcoming reminder sections
-- Memo CRUD with tags, folders, search, URL/bookmark support, markdown rendering, and image export utilities
-- Todo-oriented flows with due dates, recurring schedules, postpone/skip handling, and progress helpers
-- Multiple reminder support with local notifications, service-worker coordination, snooze, and notification history
-- Supabase-backed auth and sync with localStorage cache-first loading and offline fallback
-- Share route and QR/share helpers for moving memo content between devices or contexts
-- Mobile shell support through Capacitor Android and web deployment through Cloudflare Workers
+This makes the project useful for:
+
+- Capturing a note and attaching the URL or context that explains it.
+- Turning a memo into a todo with due dates, priorities, postpone, skip, and progress views.
+- Receiving reminders through web/PWA and mobile notification paths.
+- Opening or sharing saved context from the same place where the reminder appears.
+
+## Core Features
+
+- Memo dashboard with pinned, favorite, recent, and upcoming reminder sections.
+- Quick memo entry, full memo editing, search, tags, folders, and sharing.
+- Todo mode with today/week/all/completed filters, grouped due dates, priority labels, postpone and skip flows, undo, and stats.
+- Reminder scheduling with repeated alarms, notification history, and reset tools.
+- URL/bookmark support for memos and todos, including open/share helpers.
+- PWA assets, service worker support, and Capacitor Android configuration.
+- Supabase-backed auth/sync paths with local/offline-oriented stores and migration history.
 
 ## Architecture
 
-The app is built around Svelte 5 stores and small route-level surfaces:
+The frontend is a SvelteKit 2 and Svelte 5 application. Most user-facing state lives in Svelte stores under `src/lib/stores`, with feature logic split into utility and service modules under `src/lib/utils` and `src/lib/services`.
 
-- `src/routes/+page.svelte` composes the dashboard and memo workflows.
-- `src/lib/stores/memos.svelte.ts` owns memo state, cache-first loading, Supabase sync, realtime subscription, and recurrence recovery.
-- `src/lib/stores/notifications.svelte.ts` coordinates browser/service-worker notification delivery, snooze state, and notification history.
-- `src/lib/services/supabase.ts`, `memoMapper.ts`, and `syncQueue.ts` isolate backend mapping and sync behavior.
-- `src/service-worker.ts` handles scheduled reminder messages outside the foreground page.
-- `capacitor.config.ts` configures the Android wrapper and local notification icon behavior.
-- `wrangler.toml` targets Cloudflare Workers for the web build.
+Key areas:
 
-## Tech stack
+- `src/routes/+page.svelte`: main memo dashboard and quick actions.
+- `src/routes/todos/+page.svelte`: todo board, filters, postpone/skip flows, and stats.
+- `src/routes/settings/notifications/+page.svelte`: notification settings.
+- `src/lib/components/memo`: memo forms, cards, detail modal, search, share, and reminder UI.
+- `src/lib/components/todo`: todo cards, forms, alert modal, postpone sheet, and stats.
+- `src/lib/services/supabase.ts`: Supabase integration.
+- `src/lib/fcm.ts` and `static/firebase-messaging-sw.js`: push notification path.
+- `capacitor.config.ts`: Android package and native notification settings.
+- `wrangler.toml`: Cloudflare Workers/Pages deployment configuration.
+
+Data changes are tracked in SQL migration files under `data/migrations` and `migrations`.
+
+## Tech Stack
 
 - SvelteKit 2, Svelte 5, TypeScript, Vite
-- Tailwind CSS 4 and lucide-svelte
-- Supabase Auth, database sync, and realtime updates
-- Firebase/FCM and browser/service-worker notification paths
-- Capacitor Android and Local Notifications
-- Cloudflare Workers deployment through `@sveltejs/adapter-cloudflare`
+- Tailwind CSS 4
+- Supabase JavaScript client
+- Firebase Cloud Messaging
+- Capacitor Android and local notifications
+- Cloudflare adapter and Wrangler
+- date-fns, QR code utilities, markdown rendering, html2canvas
 
-## Local development
+## Getting Started
+
+Install dependencies:
 
 ```powershell
 npm install
+```
+
+Run the development server:
+
+```powershell
 npm run dev
 ```
 
-The app expects Supabase and notification-related public configuration through local environment files or deployment variables. Do not commit real credentials. `wrangler.toml` intentionally avoids `[vars]` placeholders so dashboard-managed production values are not overwritten by deploys.
-
-## Checks
+Run type and Svelte checks:
 
 ```powershell
 npm run check
+```
+
+Build for deployment:
+
+```powershell
 npm run build
 ```
 
-## Security notes
+## Environment
 
-- Real runtime secrets belong in ignored local files or deployment dashboards.
-- Public Supabase anon keys are treated as client configuration, but examples should use placeholders unless a real demo backend is intentionally exposed.
-- Notification and sync code is written to preserve local cache behavior when network or auth state changes.
+The app expects public Supabase and notification configuration to be supplied by the local or deployment environment. Do not commit real secrets or production values.
 
-## Status
+Typical local setup uses a gitignored `.dev.vars` or equivalent environment file for:
 
-This repository is a portfolio/publication candidate. The README is intended to make the product goal, app architecture, and implementation depth understandable from the first page.
+- `PUBLIC_SUPABASE_URL`
+- `PUBLIC_SUPABASE_ANON_KEY`
+- Firebase/FCM public configuration used by the web push path
+
+Cloudflare production variables should be configured in the Cloudflare dashboard. `wrangler.toml` intentionally avoids checked-in placeholder `[vars]` values so deploys do not overwrite dashboard settings.
+
+## Mobile / PWA Notes
+
+The project is structured as both a PWA and a Capacitor app. The Android app id is configured in `capacitor.config.ts`, and local notification settings are wired through Capacitor plugins. Web push support uses Firebase Messaging and the service worker assets in `static`.
+
+## Project Status
+
+Memo Alarm is an active personal productivity project. The repository contains ongoing planning and history documents under `docs/`, alongside implementation code for memo, todo, reminder, sync, and notification flows.
