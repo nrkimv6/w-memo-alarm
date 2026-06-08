@@ -93,6 +93,14 @@ M. ☐ **main merge 이후 검증으로 넘긴다** — live-test phase fence
    - ☐ `{plan}`: live/browser/localhost 검증은 Phase M 이후 `/merge-test` owner의 Phase T4 또는 Phase T5로 배치한다고 적는다
    - ☐ `{plan}`: `post-merge + root-worktree + main` 조건이 충족되기 전에는 T4/T5를 실행하지 않는다고 적는다
 
+### Phase DB-Direct: Running DB 반영 확인 (/merge-test owner, DB schema 변경 시)
+
+DB. ☐ **running DB 반영 evidence를 T4/T5 전에 확보한다** — DB-direct phase fence
+   - ☐ `{DB 반영 경로}`: 실행 SQL/명령 또는 자동 bootstrap/restart 경로를 evidence로 남긴다
+   - ☐ `{DB inspect}`: 테이블/컬럼 존재 확인 쿼리 또는 SQLAlchemy inspect 결과를 남긴다
+   - ☐ `{live API/runtime}`: 반영된 schema를 사용하는 live API 또는 runtime 결과를 남긴다
+   - ☐ `{plan}`: Phase DB-Direct 완료 전에는 T4/T5를 실행하지 않는다고 적는다
+
 ### Phase DS: Downstream Sync Evidence (skill/agent/common-doc 변경 시)
 
 DS. ☐ **Downstream Sync Phase** — T4/T5 선행 sync evidence gate
@@ -298,6 +306,14 @@ M. ☐ **main merge 이후 검증으로 넘긴다** — live-test phase fence
    - ☐ `{plan}`: T1/T2/T3에는 Browser MCP, `localhost`, `127.0.0.1`, `6101`, `8001`, `restart-*`, `Invoke-WebRequest`, Vite dev server, live API/http_live 검증을 넣지 않는다고 적는다
    - ☐ `{plan}`: live/browser/localhost 검증은 Phase M 이후 `/merge-test` owner의 Phase T4 또는 Phase T5로 배치한다고 적는다
    - ☐ `{plan}`: `post-merge + root-worktree + main` 조건이 충족되기 전에는 T4/T5를 실행하지 않는다고 적는다
+
+## Phase DB-Direct: Running DB 반영 확인 (/merge-test owner, DB schema 변경 시)
+
+DB. ☐ **running DB 반영 evidence를 T4/T5 전에 확보한다** — DB-direct phase fence
+   - ☐ `{DB 반영 경로}`: 실행 SQL/명령 또는 자동 bootstrap/restart 경로를 evidence로 남긴다
+   - ☐ `{DB inspect}`: 테이블/컬럼 존재 확인 쿼리 또는 SQLAlchemy inspect 결과를 남긴다
+   - ☐ `{live API/runtime}`: 반영된 schema를 사용하는 live API 또는 runtime 결과를 남긴다
+   - ☐ `{plan}`: Phase DB-Direct 완료 전에는 T4/T5를 실행하지 않는다고 적는다
 
 ## Phase DS: Downstream Sync Evidence (skill/agent/common-doc 변경 시)
 

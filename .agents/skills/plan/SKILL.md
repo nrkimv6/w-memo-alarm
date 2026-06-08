@@ -175,6 +175,11 @@ wtools authoring surface 변경 plan에서 실행 체크박스 또는 파일 경
   - Phase M은 `/implement` 완료 후 main merge를 `/merge-test` owner에게 넘기는 gate다.
   - 기본 owner step은 `머지대기 전환`, `main merge 전 T4/T5/live 검증 금지`, `post-merge + root-worktree + main 조건 확인`을 포함한다.
   - Phase M보다 앞선 T1/T2/T3에는 Browser MCP, `localhost`, `127.0.0.1`, `6101`, `8001`, `restart-*`, `Invoke-WebRequest`, Vite dev server, live API 호출을 넣지 않는다.
+- DB schema 변경, migration SQL 파일, `_add_col`, `ALTER TABLE`, `CREATE TABLE`, `REQUIRED_BOOTSTRAP_TABLES`, `Base.metadata.create_all()` 자동 생성 의존, 또는 running DB read-back이 필요한 계획이면 `### Phase DB-Direct: Running DB 반영 확인 (/merge-test owner)`를 **Phase M 다음, Phase T4/T5 앞**에 넣는다.
+  - 이 phase는 `/implement`가 아니라 `/merge-test` owner가 post-merge + root-worktree + main에서 수행한다. worktree 단계에서 running DB 직접 실행, service restart, live API 호출을 계획하지 않는다.
+  - 체크박스는 최소 3종 evidence를 요구한다: `실행 SQL/명령 또는 자동 bootstrap/restart 경로`, `존재 확인 쿼리(DB inspect 포함)`, `live API 또는 runtime 결과`.
+  - migration SQL이 수동 참조용이고 앱 bootstrap/restart가 실제 반영 경로라면, 실행 명령 대신 `자동 bootstrap/restart 경로`와 `DB inspect read-back`을 명시한다. `CREATE TABLE IF NOT EXISTS` 단독이라도 running DB에 새 테이블/컬럼이 생기는 계획이면 이 phase를 생략하지 않는다.
+  - Phase DB-Direct가 완료되기 전에는 T4/T5를 실행하지 않는다고 적는다. T4/T5 evidence table에는 DB-direct read-back 결과를 log_ref 또는 별도 evidence row로 연결한다.
 - TODO 마지막에 `### Phase Z: Post-Merge Cleanup (/merge-test owner)`를 넣는다.
   - 이 phase의 체크박스는 `/implement` 완료 판정에 포함하지 않는다.
   - 기본 owner step은 `main merge 시도`, `root dirty stash/apply (if needed)`, `T4/T5`, `worktree remove`, `branch remove`, `header meta 제거`까지를 포함한다.

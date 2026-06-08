@@ -391,7 +391,7 @@ Claude가 구현 요청 받으면:
    - 테스트 작성 (RIGHT-BICEP)
    - 코드 작성
    - **테스트 파일 네이밍 규칙**: `_e2e` 접미사는 실서버(localhost) 또는 실브라우저(Playwright) 필요 테스트에만 사용. mock/AsyncMock 기반 테스트는 `_integration` 또는 도메인명만 사용 (예: `test_coupang_monitor_integration.py`)
-   - **DB 마이그레이션 SQL 파일을 생성한 경우 → 즉시 실행** (커밋 전 필수, 실행 안 하면 API 장애)
+   - **DB 마이그레이션 SQL 파일 또는 DB schema 변경이 있는 경우 running DB 직접 실행은 implement에서 하지 않는다.** 계획서의 `Phase DB-Direct`에 따라 post-merge + root-worktree + main에서 `/merge-test` owner가 실행/확인한다.
    - **plan 또는 `_todo`에 `Phase DB-Direct`가 있으면 running DB 직접 실행은 아직 미완료로 남긴다** — worktree 단계에서는 `DB-direct 미실행`, `live 검증 미실행`, `직접 실행 대기` 상태를 유지하고 `/merge-test` owner step으로 넘긴다.
    - 기존 테스트 통과 확인
    - **⚠️ frontend verify (webapp-testing / `npm run build` / `npm run check` / `npm run check:watch` / `svelte-kit sync` / `svelte-check` / `vite build` / `node ... svelte-kit.js sync`)는 워크트리에서 실행 금지** — 반드시 `/merge-test`에서 main 머지 후 실행

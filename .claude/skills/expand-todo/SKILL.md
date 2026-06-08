@@ -114,36 +114,37 @@ plan/TODO에 **DB 스키마 변경(마이그레이션)** 작업이 포함될 가
 
 | 분류 | 키워드 |
 |------|--------|
-| SQL DDL | `ALTER TABLE`, `ADD COLUMN`, `DROP COLUMN`, `RENAME COLUMN` |
-| 코드 패턴 | `_add_col(`, `migrate_`, `migration`, `마이그레이션` |
+| SQL DDL | `ALTER TABLE`, `CREATE TABLE`, `ADD COLUMN`, `DROP COLUMN`, `RENAME COLUMN` |
+| 코드 패턴 | `_add_col(`, `migrate_`, `migration`, `마이그레이션`, `REQUIRED_BOOTSTRAP_TABLES`, `Base.metadata.create_all()` |
 | 파일/경로 | `database.py` 수정, `migrations/` 수정, `migrate_sqlite_to_pg`, `.sql` 파일 신규 생성 |
 | 삭제+DB | 파일 삭제 키워드 AND 위 키워드 동시 감지 (삭제 파일 내 마이그레이션 코드 이전 여부 강제 확인) |
 
-> **`CREATE TABLE` 단독은 트리거에서 제외**: SQLAlchemy `Base.metadata.create_all()`이 자동 생성하므로 오탐 위험. `CREATE TABLE`은 `_add_col` 또는 `ALTER TABLE`과 함께 등장하는 경우에만 감지.
+> `CREATE TABLE IF NOT EXISTS` 단독이라도 running DB에 새 테이블/컬럼이 생기는 계획이면 DB-Direct 후보로 본다. SQLAlchemy `Base.metadata.create_all()` 자동 생성 경로도 running DB read-back이 필요하면 DB-Direct 대상이다.
 
-**삽입 조건**: 키워드는 advisory trigger일 뿐이다. 아래 3가지가 모두 충족될 때만 구현 Phase 마지막 항목 직후·T1 Phase 직전에 Phase DB-Direct를 삽입한다.
+**삽입 조건**: 키워드는 advisory trigger일 뿐이다. 아래 3가지가 모두 충족될 때만 Phase M 다음·T4/T5 직전에 Phase DB-Direct를 삽입한다.
 1. 실제 SQL/DDL, migration file, `_add_col`, schema 초기화 코드 같은 structural evidence가 있다.
 2. worktree 구현과 main merge 후 running DB 반영이 분리되는 변경이다.
 3. AI가 DB-direct evidence 3종이 필요한 mutation-ready 후보라고 확인한다.
 
-조건을 만족하면 아래 Phase를 삽입 (Phase IA와 동일 위치):
+조건을 만족하면 아래 Phase를 삽입 (Phase M 다음, Phase T4/T5 앞):
 
 ```
-### Phase DB-Direct: DB 스키마 직접 수행 (마이그레이션 필수)
+### Phase DB-Direct: Running DB 반영 확인 (/merge-test owner)
 
 N. - [ ] **마이그레이션 코드 추가 (DB 모듈 또는 마이그레이션 스크립트)** — worktree/impl 단계에서 수행
    - [ ] 프로젝트의 DB 초기화 모듈에 `_add_col` / SQL DDL 추가 — 앱 재시작 시 자동 마이그레이션
    - [ ] 신규 컬럼이 있으면 `ADD COLUMN IF NOT EXISTS` 패턴 사용
 
-N+1. - [ ] **DB에 직접 실행 (running DB 즉시 반영)** — ⚠️ 실행 시점: main 머지 후, T4/T5 직전
-   - [ ] 실행 중인 DB에 `ALTER TABLE {테이블} ADD COLUMN IF NOT EXISTS {컬럼} {타입} DEFAULT {값}` 직접 실행
-   - [ ] 실행 확인: `SELECT column_name FROM information_schema.columns WHERE table_name='{테이블}'`로 컬럼 존재 검증
+N+1. - [ ] **running DB 반영 경로 실행/확인** — ⚠️ 실행 시점: main 머지 후, T4/T5 직전
+   - [ ] 실행 SQL/명령 또는 자동 bootstrap/restart 경로를 evidence로 남긴다
+   - [ ] 존재 확인: `information_schema` 또는 SQLAlchemy inspect로 테이블/컬럼 존재 검증
+   - [ ] live API 또는 runtime 결과로 새 schema 사용 경로가 정상 동작함을 확인
 
 N+2. - [ ] **스키마 드리프트 검증** — N+1 직후 실행
    - [ ] `routes/`, `services/` 등에서 수정된 테이블을 SELECT하는 쿼리 Grep 검색
    - [ ] 쿼리에서 참조하는 컬럼이 실제 DB 스키마에 모두 존재하는지 대조 확인
 
-⚠️ N+1·N+2는 main 머지 후에 실행해야 한다 (worktree 코드는 running 서버에 반영되지 않으므로). Pipeline 순서: impl(N) → /merge-test(머지) → N+1·N+2 → T4/T5.
+⚠️ N+1·N+2는 main 머지 후, T4/T5 전에 실행해야 한다 (worktree 코드는 running 서버에 반영되지 않으므로). Pipeline 순서: impl(N) → /merge-test(머지) → Phase DB-Direct(N+1·N+2) → T4/T5.
 ```
 
 **삭제+DB 복합 감지**: 파일 삭제 키워드(2.3단계 트리거)와 DB 키워드가 동시에 감지되면, N+2(스키마 드리프트 검증)에 추가 체크박스를 삽입:
