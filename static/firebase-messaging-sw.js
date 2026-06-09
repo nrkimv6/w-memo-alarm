@@ -13,6 +13,21 @@ self.addEventListener('activate', (event) => {
 });
 
 // memo-alarm service worker — wservice-cross-noti 프로젝트 전용
+//
+// ⚠️  Secret boundary 확인 (2026-06-09)
+// 아래 값은 모두 FCM Web Client public config다.
+//   - apiKey: Firebase Web API key (FCM 등록·메시징 전용, 클라이언트 측 식별자)
+//   - appId, messagingSenderId, projectId 등: Firebase 프로젝트 공개 식별자
+// 이 값들은 Firebase console > Project settings > General > Your apps에서 확인 가능하며,
+// 브라우저 JS에 노출되어도 무방한 공개 설정이다. Firebase 접근 제어는 Firestore Rules와
+// Firebase Auth로 수행되며, 이 키만으로는 서버 자원에 접근할 수 없다.
+//
+// ❌ server credential은 이 파일에 없음 (Firebase Admin SDK key, GCP service account 등
+//    은 절대 client bundle / service worker에 포함하지 않는다).
+//
+// Service Worker는 import.meta.env를 지원하지 않으므로 값이 직접 인라인되어 있다.
+// 환경별 분기가 필요해지면 SW 빌드 시 Vite 플러그인 주입 방식으로 전환한다.
+// 참고: docs/plan/secret-manager-boundary.md
 firebase.initializeApp({
 	apiKey: 'AIzaSyAVh8Enn3VjbLo4JMBmvhK5zE2nZJvMzDA',
 	authDomain: 'wservice-cross-noti.firebaseapp.com',

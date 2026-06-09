@@ -91,6 +91,39 @@ Typical local setup uses a gitignored `.dev.vars` or equivalent environment file
 
 Cloudflare production variables should be configured in the Cloudflare dashboard. `wrangler.toml` intentionally avoids checked-in placeholder `[vars]` values so deploys do not overwrite dashboard settings.
 
+## Secret Management
+
+### Public vs. Secret boundary
+
+All environment variables currently in use are public client-side config (`PUBLIC_*` prefix). There are no server-side secrets because this app has no server-side worker or API.
+
+| Variable group | Prefix | Storage | Client bundle |
+|---|---|---|---|
+| Supabase URL + anon key | `PUBLIC_` | Cloudflare dashboard vars / `.dev.vars` locally | Allowed |
+| Firebase Web client config | `PUBLIC_FIREBASE_*` | Cloudflare dashboard vars / `.dev.vars` locally | Allowed |
+| Firebase VAPID key | `PUBLIC_FIREBASE_VAPID_KEY` | Cloudflare dashboard vars / `.dev.vars` locally | Allowed |
+| Firebase Admin SDK / GCP service account | — | **Not present** — server-side only when added | Forbidden |
+| Supabase service role key | — | **Not present** — server-side only when added | Forbidden |
+
+### Source-of-truth per secret type
+
+| Secret type | Source-of-truth | Notes |
+|---|---|---|
+| Supabase URL + anon key | Supabase project dashboard (Settings > API) | Public anon key; row-level security enforces access |
+| Firebase Web client config | Firebase console (Project settings > Your apps > Web) | Public client config; not a server credential |
+| Firebase VAPID key | Firebase console (Project settings > Cloud Messaging > Web Push certificates) | Public key for browser push subscription |
+| Firebase Admin SDK key | **Not in use** — add to GCP Secret Manager when server-side FCM send is needed | Never in client bundle |
+| GCP service account credentials | **Not in use** — add to GCP Secret Manager or Cloudflare Worker Secrets when server-side GCP API calls are needed | Never in client bundle |
+
+### GCP Secret Manager adoption criteria
+
+Secret Manager is **not currently used** (`ENABLE_SECRET_MANAGER=false` default). It should be adopted only when:
+
+1. A server-side Cloudflare Worker or API route is added that needs to call Firebase Admin SDK, GCP APIs, or Supabase with a service role key.
+2. The secret cannot be safely stored as a Cloudflare dashboard environment variable.
+
+Activating Secret Manager before that point adds cost and complexity with no benefit. See `docs/plan/secret-manager-boundary.md` for the full adoption gate and billing notes.
+
 ## Mobile / PWA Notes
 
 The project is structured as both a PWA and a Capacitor app. The Android app id is configured in `capacitor.config.ts`, and local notification settings are wired through Capacitor plugins. Web push support uses Firebase Messaging and the service worker assets in `static`.
