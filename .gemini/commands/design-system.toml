@@ -1,0 +1,39 @@
+description = "프로젝트별 DESIGN.md(디자인 시스템 계약) 생성. Use when: DESIGN.md 생성, 디자인 시스템, design system, 브랜드 규칙"
+
+prompt = """
+# DESIGN.md 생성
+
+대상 프로젝트의 UI 단서를 읽고 프로젝트 root `DESIGN.md`를 생성한다.
+이 워크플로우는 디자인 코드를 바로 생성하는 도구가 아니라, 이후 `design-prompt`와 UI 구현이 참조할 디자인 시스템 계약을 만드는 도구다.
+
+Stitch/Figma/스크린샷은 참고 입력이다. 최종 판단은 기존 코드, CSS 변수, 컴포넌트 사용 증거를 함께 보고 `확인됨`과 `추정`을 분리해 남긴다.
+
+## DESIGN.md 표준 구조 (9개 섹션 필수)
+
+| 섹션 | 내용 |
+|------|------|
+| `## 브랜드 톤` | 제품 분위기 1~3문장 |
+| `## 색상 토큰` | 의미 기반 색상 (primary/secondary/surface/text/muted/success/warning/danger + hex + 용도) |
+| `## 타이포그래피` | 폰트 패밀리, 스케일, 웨이트 |
+| `## spacing / radius / elevation` | 간격·모서리·그림자 토큰 |
+| `## 컴포넌트 원칙` | 버튼/입력/카드 등 공통 규칙 |
+| `## 상태 표현` | hover/focus/active/disabled + empty/loading/error |
+| `## 접근성 / 반응형` | 대비·포커스·타깃·breakpoint |
+| `## 금지 패턴` | 피해야 할 것 |
+| `## 적용 범위` | 이 문서가 적용되는 surface |
+
+## 확인됨 / 추정 표기 규칙
+
+- 코드 확인 값: `(확인됨: 파일경로)`
+- 단서 추론 값: `(추정: 근거)`
+- 두 값을 한 항목에서 섞어 단정하지 않는다
+
+## 실행 순서
+
+1. package.json → tailwind.config.* → 전역 CSS → 주요 컴포넌트 → 브랜드 문서 순으로 단서 수집
+2. 9개 섹션을 확인됨/추정으로 분리해 채운다
+3. 기본 위치: 대상 프로젝트 root `DESIGN.md`에 저장
+4. 9개 섹션 누락 여부 확인
+
+{{args}}
+"""
