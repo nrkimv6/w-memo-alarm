@@ -25,6 +25,10 @@ paths:
 - **아이콘 라이브러리 사용 필수** — 아이콘이 필요하면 `lucide-svelte`에서 import하여 사용
 - 예: `import { Monitor, Calendar, Search } from 'lucide-svelte';`
 
+## DESIGN.md 적합성 (프로젝트 DESIGN.md 존재 시)
+- 프로젝트 root `DESIGN.md`가 있으면 색상/폰트/간격/아이콘/상태 표현과 대조한다
+- `DESIGN.md`가 없으면 임의 스타일 확장 대신 부재를 기록한다
+
 ## 기존 탭과 교차 검증
 - 동일 모듈 내 유사 탭의 기능 목록과 대조
 - 누락된 기능이 "의도적 제외"인지 "미구현"인지 명시
