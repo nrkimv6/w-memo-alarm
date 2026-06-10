@@ -64,9 +64,7 @@ git add .
 
 | 문서 | 위치 |
 |------|------|
-| TODO | `TODO.md` |
-| 완료 이력 | `docs/DONE.md` |
-| 계획 문서 | `docs/plan/` |
-| 아카이브 | `docs/archive/` |
-
-> ⚠️ 계획 문서 경로는 `_path-rules.md` 우선순위 로직 참조. `.worktrees/plans/docs/plan/`이 존재하면 해당 경로 우선 적용.
+| TODO | `.worktrees/plans/TODO.md` |
+| 완료 이력 | `.worktrees/plans/docs/DONE.md` |
+| 계획 문서 | `.worktrees/plans/docs/plan/` |
+| 아카이브 | `.worktrees/plans/docs/archive/` |

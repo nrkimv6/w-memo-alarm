@@ -64,13 +64,13 @@ git add .
 
 | 문서 | 위치 |
 |------|------|
-| TODO | `TODO.md` |
-| 완료 이력 | `docs/DONE.md` |
-| 아카이브 | `docs/archive/` |
+| TODO | `.worktrees/plans/TODO.md` |
+| 완료 이력 | `.worktrees/plans/docs/DONE.md` |
+| 아카이브 | `.worktrees/plans/docs/archive/` |
 
 ## 완료 처리 보강 규칙
 
-- `/done`으로 계획서를 `docs/archive/`로 이동한 뒤에는 LLM Wiki ingest를 반드시 시도한다.
+- `/done`으로 계획서를 `.worktrees/plans/docs/archive/`로 이동한 뒤에는 LLM Wiki ingest를 반드시 시도한다.
 - 별도 MCP 도구가 보이지 않더라도 "도구 없음"으로 종료하지 말고, 로컬 절차를 사용한다:
   - 1순위: `.agents/skills/archive-sweep/SKILL.md`의 LLM Wiki ingest 절차
   - 2순위: `D:\work\project\service\wtools\common\tools\archive-ingest-lib.ps1`의 `Invoke-LlmWikiIngest`
