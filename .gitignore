@@ -26,8 +26,7 @@ ios/*.xcworkspace
 
 # IDE
 .idea/
-.vscode/*
-!.vscode/settings.json
+.vscode/
 *.swp
 *.swo
 
@@ -47,3 +46,20 @@ nul
 
 # Git worktrees (Cloudflare Pages submodule clone 오류 방지)
 .worktrees/
+
+# internal tool files (local-only)
+.agent/
+.agents/
+.claude/
+.gemini/
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+MANUAL_TASKS.md
+docs/MANUAL-TASKS.md
+docs/PRD.md
+docs/VERSIONING.md
+docs/design-prompt-settings.md
+docs/history/
+docs/prd/
+docs/session-memo/
