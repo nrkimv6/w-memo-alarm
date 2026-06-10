@@ -158,3 +158,16 @@ git push
 - `Resolve-DocsCommitCandidates` 반환 파일만 `git add`한다.
 - plans commit root 기준 exact file은 `TODO.md`, `docs/DONE.md`이고, directory lineage는 `docs/plan/`, `docs/archive/`, `docs/history/`다.
 - `git add -A` / `git add .` / `git add docs/`는 plans 워크트리에서도 금지한다.
+
+### plans push — 로컬 전용 분기
+
+plans lineage 커밋 후 push 단계에서 반드시 upstream 존재 여부를 먼저 확인한다:
+
+```bash
+git -C "<plans-worktree>" rev-parse --abbrev-ref "plans@{u}" 2>/dev/null
+```
+
+- **upstream 없음(빈 출력 또는 에러)** → 로컬 전용 모드: push를 skip하고 `plans: local-only mode, push skipped` evidence를 기록한다. push 실패로 취급하지 않는다.
+- **upstream 있음** → 기존대로 `git push` (또는 동등 명령) 실행 후 read-back 확인한다.
+
+이 분기는 backward-compatible이다. upstream이 있는 plans(예: monitor-page `origin/plans` 추적)는 기존 동작 그대로 유지된다.

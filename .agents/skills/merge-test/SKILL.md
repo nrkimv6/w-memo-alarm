@@ -112,6 +112,8 @@ Receiver closeout 결과표 includes `receiver`, `rev-list tuple`, `action`, `re
 
 For wtools docs closeout, run the same tuple logic against the docs commit root upstream, normally `.worktrees/plans` tracking `origin/plans`. If code `main` is `0 0` but docs `plans` is ahead-only, `session-target-router.ps1` must receive `plans_ahead_only=true` or equivalent relation evidence and return `decision=continue`, `next_owner=plans push/read-back`; final wording is forbidden until push, fetch/recheck, and `origin/plans:<archive-or-ledger-path>` read-back succeed.
 
+**plans 로컬 전용 예외**: plans upstream 확인(`git rev-parse --abbrev-ref plans@{u}`)이 실패하거나 빈 출력이면 로컬 전용 모드 — plans ahead-only/push-read-back을 차단 사유로 쓰지 않고, `plans_local_only=true`를 `session-target-router.ps1` 입력에 전달한다. router는 이를 `next_owner=plans push/read-back`이 아닌 로컬 전용 closeout으로 처리한다. upstream이 있는 plans는 기존대로 push → read-back 필수.
+
 ## T4/T5 Orchestration
 
 The machine-readable evidence table must keep these columns: `stage`, `command`, `cwd`, `result`, `exit_code`, `log_ref`, `blocker_code`. Valid stages are `T4`, `T4-operational-merge`, `T5-http`, `T5-http_live`; valid results are `완료`, `미실행`, `해당 없음`, `실패`, and `failed -> recovered`.

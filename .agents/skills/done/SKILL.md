@@ -27,12 +27,13 @@ The deterministic completion flow is owned by `common\tools\auto-done.ps1`. Use 
 | 2 | `remaining executable leaf` > 0 | **continue** | 같은 턴에서 다음 leaf |
 | 3 | `remaining targets` > 0 | **continue** | 같은 턴에서 다음 target |
 | 4 | `archive/read-back` 미완료 (TODO→DONE 이동, plan 체크, archive, DONE.md, 커밋 포함) | **continue** | read-back 완료까지 진행 |
-| 5 | docs `plans` branch push/read-back 미완료 | **continue** | `.worktrees/plans` push + fetch/recheck + `origin/plans:<path>` read-back |
+| 5 | docs `plans` branch push/read-back 미완료 (upstream 있는 경우만) | **continue** | `.worktrees/plans` push + fetch/recheck + `origin/plans:<path>` read-back |
 | 6 | `next owner step` 있음 | **continue** | 해당 owner 실행 |
 | 7 | 위 조건 모두 해당 없음 | **final** | 완료 보고 허용 |
 
 > archive/read-back은 TODO→DONE 이동 + plan 체크 + archive 커밋 + DONE.md 기록 + 4-surface read-back 확인 전부를 포함한다. 하나라도 미완이면 row 4 `continue`.
 > DONE row가 `.worktrees/plans/docs/DONE.md`에서 `.worktrees/plans/docs/archive/DONE-YYYY-MM.md`로 월간 이동된 경우는 DONE ledger success-equivalent다. 이 경우 DONE.md 재삽입을 하지 말고 monthly archive path/read-back을 evidence로 남긴다.
+> **plans 로컬 전용 예외**: `git rev-parse --abbrev-ref plans@{u}` 실패 또는 빈 출력이면 plans upstream 없음 = 로컬 전용 모드. 이 경우 row 5의 push/read-back을 차단 사유로 쓰지 않으며 로컬 전용 closeout으로 진행한다. `plans_local_only=true` evidence를 closeout 표에 기록한다.
 
 ## Session Target Router Final Guard
 
@@ -48,7 +49,7 @@ Before any final response, run `common\tools\session-target-router.ps1 -Json` ag
 - `branch/worktree present -> /merge-test; absent -> /done` 판정은 같은 턴에서 수행하며, 사용자에게 같은 지시를 다시 입력하라고 떠넘기지 않는다.
 - `/merge-test` owner가 필요하면 같은 턴에서 local/project `/merge-test` `SKILL.md`를 읽고 이어간다.
 - 이미 `/merge-test`에서 archive/read-back까지 완료된 plan을 `/done`이 no-op으로 확인하는 경우에도 직전 cleanup evidence를 한 줄로 남긴다. 예: `cleanup: cleanup_ready=true hard_blockers=[] warnings=[ignored_dirty] archive_read_back=ok`. `warnings=[ignored_dirty]`만으로 완료를 보류하지 않는다.
-- `/done` no-op 또는 archive success 이후에도 명시된 `/reflect`가 남거나 docs `plans` branch가 ahead-only이면 final하지 않는다. 결과표의 `남은 조치`는 `/reflect` 또는 `plans push/read-back`이어야 한다.
+- `/done` no-op 또는 archive success 이후에도 명시된 `/reflect`가 남거나 docs `plans` branch가 ahead-only이면 final하지 않는다. 결과표의 `남은 조치`는 `/reflect` 또는 `plans push/read-back`이어야 한다. **단**, plans upstream이 없으면(로컬 전용 모드) ahead-only를 차단 사유로 쓰지 않는다.
 
 → 상단 STOP/CONTINUE Decision Table 우선. 이 섹션은 세부 근거 참조용.
 

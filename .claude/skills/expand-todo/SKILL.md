@@ -33,6 +33,7 @@ Phase insertion triggers must be treated as advisory evidence first. Use `common
 - 변경이 없으면 guard `Commit status=no-op` 또는 `End status=ok` 결과를 포함한다.
 - 최종 응답 직전 `End`를 호출한다. commit hash, `no-op`, 또는 `End status=ok` 결과를 출력하지 못하면 성공 종료하지 않는다.
 - shared docs guard mode references는 `Begin`, `Commit`, `End`만 canonical이다. 출력과 evidence에서는 `docs-dirty-guard: mode=Begin`, `docs-dirty-guard: mode=Commit`, `docs-dirty-guard: mode=End` spelling을 유지한다.
+- 커밋 성공 후 plans push 단계: `_path-rules.md`의 **plans push — 로컬 전용 분기** 규칙에 따라 upstream 확인 후 push하거나 `plans: local-only mode, push skipped` evidence를 기록한다. upstream 없는 plans에서 push 실패를 closeout 차단 사유로 쓰지 않는다.
 
 ### PowerShell helper 인자 예시
 

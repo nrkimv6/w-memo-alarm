@@ -402,7 +402,7 @@ expand-todo의 5.6단계가 expand 결과를 자체 커밋한다. review-plan의
 - 커밋 메시지: `docs: review — {계획서 제목 요약}`
 - 커밋 스크립트 사용 (git commit 직접 사용 금지)
 - race 방지가 필요하면 `commit.ps1 -Files` 또는 `commit.sh --files`로 add+commit을 한 호출에 묶는다.
-- push가 필요하면 literal `origin plans`가 아니라 현재 docs commit root가 추적하는 upstream으로만 `git push`한다.
+- push가 필요하면 `_path-rules.md`의 **plans push — 로컬 전용 분기** 규칙에 따라 upstream 확인 후 push하거나 `plans: local-only mode, push skipped` evidence를 기록한다. literal `origin plans`가 아니라 현재 docs commit root가 추적하는 upstream으로만 `git push`한다. upstream 없는 plans에서 push 실패를 closeout 차단 사유로 쓰지 않는다.
 - 커밋 또는 push가 실패하면 non-blocking으로 경고와 복구 명령만 남기고 종료한다.
 
 ### 3.5단계: closeout 계약 (상태·커밋 evidence 보장)
@@ -416,6 +416,7 @@ expand-todo의 5.6단계가 expand 결과를 자체 커밋한다. review-plan의
 - 각 입력 plan에 대해 `plan`, `skill_source`, `status_before`, `status_after`, `commit_hash`, `remaining_owner`, `input_coverage`를 closeout evidence 표에 기록한다.
 - `skill_source`에는 explicit path, 실제 read path, source provenance를 기록한다. explicit path와 read path가 다르면 `REVIEW_PLAN_SKILL_SOURCE_MISMATCH`로 closeout 완료를 보고하지 않는다. Marker: `skill_source_provenance=required`.
 - `.worktrees/plans` 대상 plan이면 그 cwd에서 `commit.ps1`을 호출한다. 커밋 실패 또는 staged ownership mismatch가 발생하면 성공으로 표시하지 않는다.
+- 커밋 성공 후 plans push 단계: `_path-rules.md`의 **plans push — 로컬 전용 분기** 규칙에 따라 plans upstream 확인 후 push하거나 `plans: local-only mode, push skipped` evidence를 기록한다. upstream 없는 plans에서 push 실패를 closeout 차단 사유로 쓰지 않는다.
 - `status_after`가 `검토완료` 또는 보류 사유 없이 비어 있으면 closeout 완료로 보고하지 않는다.
 - `input_coverage`가 `declared={N}; expanded={M}; processed={K}; skipped=0; remaining=0` 형태가 아니거나, `skipped>0`이면 closeout 완료로 보고하지 않는다.
 

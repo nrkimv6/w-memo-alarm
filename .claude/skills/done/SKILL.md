@@ -92,7 +92,7 @@ The deterministic completion flow is owned by `common\tools\auto-done.ps1`. Use 
 
 - 사용자가 `[$done] [$reflect]`처럼 여러 skill을 같은 턴에 명시하면 각 skill을 독립 target으로 취급하고 아래 결과표를 출력한다.
 - 이미 완료된 plan에 대한 `/done`은 no-op 분기로 처리하되, archive/DONE/commit evidence를 read-back하고 `already_archived`로 보고한다. archive/TODO/DONE을 재삽입하거나 재이동하지 않는다.
-- `/done` no-op 또는 archive success 이후에도 명시된 `/reflect`가 남거나 docs `plans` branch가 ahead-only이면 final하지 않는다. 결과표의 `남은 조치`는 `/reflect` 또는 `plans push/read-back`이어야 한다.
+- `/done` no-op 또는 archive success 이후에도 명시된 `/reflect`가 남거나 docs `plans` branch가 ahead-only이면 final하지 않는다. 결과표의 `남은 조치`는 `/reflect` 또는 `plans push/read-back`이어야 한다. **단**, plans upstream이 없으면(로컬 전용 모드: `git rev-parse --abbrev-ref plans@{u}` 실패 또는 빈 출력) ahead-only를 차단 사유로 쓰지 않으며, `plans_local_only=true` evidence를 closeout 표에 기록하고 로컬 전용 closeout으로 진행한다.
 - 일부 skill을 실행하지 못했으면 `남은 조치`에 같은 턴에서 이어갈 owner 또는 blocker를 적는다.
 
 | skill | 실행 여부 | evidence | 남은 조치 |
